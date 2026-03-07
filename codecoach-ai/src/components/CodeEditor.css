@@ -1,0 +1,26 @@
+.code-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #1e1e1e;
+}
+
+.editor-header {
+  padding: 8px 16px;
+  background-color: #252526;
+  color: #969696;
+  font-size: 12px;
+  border-bottom: 1px solid #333;
+}
+
+.editor-textarea {
+  flex: 1;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  padding: 20px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+}
