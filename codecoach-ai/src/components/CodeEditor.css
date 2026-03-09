@@ -3,6 +3,7 @@
   flex-direction: column;
   height: 100%;
   background-color: #1e1e1e;
+  overflow: hidden;
 }
 
 .editor-header {
@@ -13,14 +14,7 @@
   border-bottom: 1px solid #333;
 }
 
-.editor-textarea {
+.editor-container {
   flex: 1;
-  background-color: #1e1e1e;
-  color: #d4d4d4;
-  border: none;
-  padding: 20px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-  resize: none;
-  outline: none;
+  overflow: hidden;
 }
