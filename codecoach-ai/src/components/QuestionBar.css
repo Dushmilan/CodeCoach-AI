@@ -1,81 +1,113 @@
 .question-bar {
-  padding: 20px;
-  background-color: #1e1e1e;
+  padding: 24px;
   color: #d4d4d4;
   height: 100%;
-  border-right: 1px solid #333;
   overflow-y: auto;
+  background: transparent;
 }
 
 .question-header h2 {
   margin-top: 0;
   color: #fff;
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .question-meta {
   display: flex;
   gap: 12px;
-  margin: 12px 0 24px;
+  margin: 16px 0 32px;
 }
 
 .difficulty {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: capitalize;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.difficulty.easy { background-color: rgba(0, 184, 163, 0.15); color: #00b8a3; }
-.difficulty.medium { background-color: rgba(255, 184, 0, 0.15); color: #ffb800; }
-.difficulty.hard { background-color: rgba(255, 45, 85, 0.15); color: #ff2d55; }
+.difficulty.easy { 
+  background-color: rgba(16, 185, 129, 0.1); 
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.difficulty.medium { 
+  background-color: rgba(245, 158, 11, 0.1); 
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.difficulty.hard { 
+  background-color: rgba(239, 68, 68, 0.1); 
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
 
 .category {
-  padding: 4px 12px;
-  background-color: rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 6px 14px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
   color: #888;
+  text-transform: uppercase;
 }
 
 .question-content {
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .description {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   font-size: 15px;
-  color: #ccc;
+  color: #b0b0b0;
 }
 
 .example {
-  background-color: #262626;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  border: 1px solid #333;
+  background-color: rgba(255, 255, 255, 0.02);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .example p {
-  margin: 6px 0;
+  margin: 8px 0;
   font-family: 'Fira Code', monospace;
   font-size: 13px;
 }
 
 h3 {
-  font-size: 18px;
-  margin: 32px 0 16px;
+  font-size: 16px;
+  margin: 40px 0 16px;
   color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 ul {
   padding-left: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 li {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   font-size: 14px;
-  color: #aaa;
+  color: #999;
+}
+
+.question-bar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.question-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.question-bar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
 }

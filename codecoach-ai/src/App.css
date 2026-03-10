@@ -4,76 +4,164 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg-dark: #0a0a0c;
+  --panel-bg: rgba(18, 18, 22, 0.7);
+  --header-bg: rgba(25, 25, 30, 0.85);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --accent-blue: #3b82f6;
+  --accent-glow: rgba(59, 130, 246, 0.3);
+}
+
 .App {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: #1e1e1e;
+  background-color: var(--bg-dark);
   color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Animated Background */
+.animated-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+  animation: grid-fade 8s ease-in-out infinite alternate;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  animation: orb-float 20s infinite alternate ease-in-out;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #3b82f6, transparent);
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #8b5cf6, transparent);
+  bottom: -150px;
+  right: -100px;
+  animation-delay: -5s;
+}
+
+.orb-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #ec4899, transparent);
+  top: 40%;
+  left: 60%;
+  animation-delay: -10s;
+}
+
+@keyframes grid-fade {
+  from { opacity: 0.4; }
+  to { opacity: 0.8; }
+}
+
+@keyframes orb-float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, 30px) scale(1.1); }
+  100% { transform: translate(-20px, 60px) scale(0.9); }
+}
+
+/* Layout */
 .main-container {
   display: grid;
-  grid-template-columns: 400px 1fr 400px;
+  grid-template-columns: 420px 1fr 400px;
   height: 100%;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(4px);
 }
 
 .left-panel {
   display: flex;
   flex-direction: column;
-  background-color: #1a1a1a;
-  border-right: 1px solid #333;
+  background-color: var(--panel-bg);
+  border-right: 1px solid var(--border-color);
   height: 100%;
   position: relative;
+  overflow: hidden;
 }
 
 .left-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background-color: #252526;
-  border-bottom: 1px solid #333;
+  padding: 12px 20px;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
   z-index: 20;
 }
 
 .problem-list-btn {
-  background: transparent;
-  border: 1px solid #454545;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #ccc;
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 8px 14px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .problem-list-btn:hover, .problem-list-btn.active {
-  background-color: #3e3e42;
+  background-color: rgba(59, 130, 246, 0.1);
   color: #fff;
-  border-color: #666;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .nav-controls {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .nav-controls button {
-  background-color: #3e3e42;
-  color: #fff;
-  border: 1px solid #454545;
-  border-radius: 4px;
-  padding: 4px 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ccc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 6px 12px;
   cursor: pointer;
   font-size: 14px;
+  transition: all 0.2s;
 }
 
 .nav-controls button:hover {
-  background-color: #505050;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .left-panel-content {
@@ -90,64 +178,67 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(26, 26, 26, 0.98);
+  background-color: rgba(10, 10, 12, 0.95);
+  backdrop-filter: blur(10px);
   z-index: 10;
-  padding: 12px;
+  padding: 20px;
   overflow-y: auto;
-  border-bottom: 1px solid #333;
 }
 
 .question-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .question-item {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  background-color: #252526;
-  border-radius: 6px;
+  padding: 14px 20px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
   border: 1px solid transparent;
 }
 
 .question-item:hover {
-  background-color: #3e3e42;
+  background-color: rgba(255, 255, 255, 0.06);
+  transform: translateX(5px);
 }
 
 .question-item.active {
-  background-color: #2a2d2e;
-  border-color: #007acc;
+  background-color: rgba(59, 130, 246, 0.08);
+  border-color: var(--accent-blue);
+  box-shadow: inset 0 0 10px var(--accent-glow);
 }
 
 .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  margin-right: 12px;
+  margin-right: 15px;
 }
 
-.dot.easy { background-color: #00b8a3; }
-.dot.medium { background-color: #ffb800; }
-.dot.hard { background-color: #ff2d55; }
+.dot.easy { background-color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+.dot.medium { background-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+.dot.hard { background-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
 
 .q-title {
   font-size: 14px;
   color: #ddd;
+  font-weight: 500;
 }
 
 .center-panel {
   display: flex;
   flex-direction: column;
-  background-color: #1e1e1e;
+  background-color: var(--panel-bg);
   height: 100%;
 }
 
 .right-panel {
-  background-color: #1a1a1a;
-  border-left: 1px solid #333;
+  background-color: var(--panel-bg);
+  border-left: 1px solid var(--border-color);
   height: 100%;
 }

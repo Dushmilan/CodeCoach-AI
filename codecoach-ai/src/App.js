@@ -35,6 +35,12 @@ function App() {
 
   return (
     <div className="App">
+      <div className="animated-bg">
+        <div className="grid-overlay"></div>
+        <div className="orb orb-1"></div>
+        <div className="orb orb-2"></div>
+        <div className="orb orb-3"></div>
+      </div>
       <div className="main-container">
         <aside className="left-panel">
           <div className="left-panel-header">
