@@ -36,15 +36,20 @@ const CodeEditor = ({ question }) => {
   return (
     <div className="code-editor">
       <div className="editor-header">
-        {languages.map(lang => (
-          <div
-            key={lang.id}
-            className={`tab ${selectedLanguage === lang.id ? 'active' : ''}`}
-            onClick={() => setSelectedLanguage(lang.id)}
+        <div className="language-selector">
+          <label htmlFor="language-select">Language:</label>
+          <select 
+            id="language-select"
+            value={selectedLanguage} 
+            onChange={(e) => setSelectedLanguage(e.target.value)}
           >
-            {lang.label}
-          </div>
-        ))}
+            {languages.map(lang => (
+              <option key={lang.id} value={lang.id}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="editor-container">
         <Editor
