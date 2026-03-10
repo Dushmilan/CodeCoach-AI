@@ -7,11 +7,31 @@
 }
 
 .editor-header {
-  padding: 8px 16px;
+  display: flex;
   background-color: #252526;
-  color: #969696;
-  font-size: 12px;
   border-bottom: 1px solid #333;
+}
+
+.tab {
+  padding: 8px 20px;
+  background-color: #2d2d2d;
+  color: #969696;
+  font-size: 13px;
+  cursor: pointer;
+  border-right: 1px solid #333;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.tab:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.tab.active {
+  background-color: #1e1e1e;
+  color: #fff;
+  border-bottom: 2px solid #007acc;
 }
 
 .editor-container {

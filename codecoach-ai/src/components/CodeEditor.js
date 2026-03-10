@@ -1,23 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import './CodeEditor.css';
 
-const CodeEditor = () => {
+const CodeEditor = ({ question }) => {
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [code, setCode] = useState({
+    javascript: '',
+    python: '',
+    java: ''
+  });
+
+  useEffect(() => {
+    if (question && question.starter) {
+      setCode({
+        javascript: question.starter.javascript || '',
+        python: question.starter.python || '',
+        java: question.starter.java || ''
+      });
+    }
+  }, [question]);
+
   const handleEditorChange = (value) => {
-    // This is where you can handle the code content as it changes
-    console.log('Editor content:', value);
+    setCode(prev => ({
+      ...prev,
+      [selectedLanguage]: value
+    }));
   };
+
+  const languages = [
+    { id: 'python', label: 'Python' },
+    { id: 'java', label: 'Java' },
+    { id: 'javascript', label: 'JavaScript' }
+  ];
 
   return (
     <div className="code-editor">
       <div className="editor-header">
-        <span>main.js</span>
+        {languages.map(lang => (
+          <div
+            key={lang.id}
+            className={`tab ${selectedLanguage === lang.id ? 'active' : ''}`}
+            onClick={() => setSelectedLanguage(lang.id)}
+          >
+            {lang.label}
+          </div>
+        ))}
       </div>
-      <div className="editor-container" style={{ flex: 1, height: '100%' }}>
+      <div className="editor-container">
         <Editor
           height="100%"
-          defaultLanguage="javascript"
-          defaultValue={`function solution() {\n  // Start coding\n}`}
+          language={selectedLanguage}
+          value={code[selectedLanguage]}
           theme="vs-dark"
           onChange={handleEditorChange}
           options={{
