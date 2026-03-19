@@ -1,70 +1,87 @@
-# Getting Started with Create React App
+# CodeCoach AI 🚀
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**CodeCoach AI** is your intelligent, personal coding companion designed to elevate your problem-solving skills. Whether you're preparing for technical interviews or just sharpening your algorithmic thinking, CodeCoach AI provides a seamless, modern environment to practice, learn, and grow.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## ✨ Features
 
-### `npm start`
+- 🧠 **AI-Powered Assistance**: Get real-time hints and guidance from the integrated AI Assistant (Coming Soon).
+- 💻 **Pro Editor Experience**: A high-performance code editor powered by **Monaco** (the engine behind VS Code).
+- 📚 **Curated Problem Library**: Hand-picked challenges covering Strings, Arrays, Stacks, Linked Lists, and Dynamic Programming.
+- 🎨 **Modern Glassmorphic UI**: A visually stunning interface with animated backgrounds and a clean, focused layout.
+- 🔄 **Smart Navigation**: Quickly jump between problems, filter by difficulty, or take a leap of faith with the "Random" challenge button.
+- 🌍 **Multi-Language Support**: Work on solutions in JavaScript, Python, or Java.
 
-Runs the app in the development mode.\
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: [React 19](https://react.dev/)
+- **Code Editor**: [@monaco-editor/react](https://github.com/suren-atoyan/monaco-react)
+- **Styling**: Vanilla CSS3 (Custom Animations, Glassmorphism)
+- **Tooling**: Create React App (CRA)
+
+---
+
+## 🚀 Getting Started
+
+Follow these steps to get your own instance of CodeCoach AI running locally:
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v16.x or higher recommended)
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/CodeCoach-AI.git
+   ```
+
+2. **Navigate to the project directory**:
+   ```bash
+   cd CodeCoach-AI/codecoach-ai
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+4. **Start the development server**:
+   ```bash
+   npm start
+   ```
+
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 📂 Project Structure
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```text
+codecoach-ai/
+├── public/             # Static assets
+└── src/
+    ├── components/     # UI Components (AiBar, CodeEditor, QuestionBar)
+    ├── data/           # Questions and problem sets (JSON)
+    ├── App.js          # Main application logic
+    └── index.js        # Entry point
+```
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🤝 Contributing
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Contributions are welcome! If you have ideas for new problems, AI features, or UI improvements, feel free to open an issue or submit a pull request.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 📄 License
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+*Happy Coding!* 🎈
