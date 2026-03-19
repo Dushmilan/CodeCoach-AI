@@ -3,6 +3,7 @@ import './App.css';
 import QuestionBar from './components/QuestionBar';
 import CodeEditor from './components/CodeEditor';
 import AiBar from './components/AiBar';
+import ApiKeyModal from './components/ApiKeyModal';
 import questionsData from './data/questions.json';
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showQuestionList, setShowQuestionList] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [apiKey, setApiKey] = useState('');
   const [code, setCode] = useState({
     javascript: '',
     python: '',
@@ -58,6 +60,7 @@ function App() {
 
   return (
     <div className="App">
+      {!apiKey && <ApiKeyModal onSave={setApiKey} />}
       <div className="animated-bg">
         <div className="grid-overlay"></div>
         <div className="orb orb-1"></div>
@@ -114,6 +117,7 @@ function App() {
             currentCode={code[selectedLanguage]} 
             selectedLanguage={selectedLanguage}
             question={selectedQuestion}
+            apiKey={apiKey}
           />
         </aside>
       </div>

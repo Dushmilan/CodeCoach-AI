@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AiBar.css';
 
-const AiBar = ({ currentCode, selectedLanguage, question }) => {
+const AiBar = ({ currentCode, selectedLanguage, question, apiKey }) => {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: "I am here to help you with your code. Ask me anything or I'll provide suggestions as you type." }
   ]);
@@ -26,9 +26,8 @@ const AiBar = ({ currentCode, selectedLanguage, question }) => {
     setIsLoading(true);
 
     try {
-      const apiKey = process.env.REACT_APP_NVIDIA_API_KEY;
       if (!apiKey) {
-        throw new Error('NVIDIA API Key is missing. Please add it to your .env file as REACT_APP_NVIDIA_API_KEY.');
+        throw new Error('NVIDIA API Key is missing. Please enter it in the prompt.');
       }
 
       const systemPrompt = `You are an expert coding assistant for a platform called CodeCoach-AI.
