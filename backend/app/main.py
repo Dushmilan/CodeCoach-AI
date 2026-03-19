@@ -13,7 +13,8 @@ logger = structlog.get_logger()
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     logger.info("Starting up...")
-    await init_db()
+    # Skip database initialization for now - focus on CodeCoach AI endpoints
+    # await init_db()
     yield
     logger.info("Shutting down...")
 
