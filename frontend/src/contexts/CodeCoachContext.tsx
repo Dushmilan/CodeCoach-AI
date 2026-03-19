@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { CodeCoachState, Question, ChatMessage } from '@/types/question';
-import { api } from '@/lib/api';
+import { questionsApi } from '@/lib/api/questions';
 
 interface CodeCoachContextType {
   state: CodeCoachState;
@@ -81,7 +81,7 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
   const loadQuestions = async (): Promise<Question[]> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const questions = await api.getQuestions();
+      const questions = await questionsApi.getAllQuestions();
       if (questions.length > 0 && !state.currentQuestion) {
         dispatch({ type: 'SET_QUESTION', payload: questions[0] });
       }
@@ -97,7 +97,7 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
   const loadQuestion = async (id: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const question = await api.getQuestion(id);
+      const question = await questionsApi.getQuestionById(id);
       dispatch({ type: 'SET_QUESTION', payload: question });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: (error as Error).message });
@@ -109,8 +109,8 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
   const executeCode = async (code: string, language: string, stdin?: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const result = await api.executeCode({ code, language: language as any, stdin });
-      dispatch({ type: 'SET_OUTPUT', payload: result.stdout || result.stderr });
+      // TODO: Implement actual code execution API
+      dispatch({ type: 'SET_OUTPUT', payload: 'Code execution not yet implemented' });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: (error as Error).message });
     } finally {
@@ -121,13 +121,9 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
   const runTests = async (code: string, language: string, testCases: any[]) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const result = await api.runTests({
-        code,
-        language: language as any,
-        testCases,
-      });
-      dispatch({ type: 'SET_TEST_RESULTS', payload: result.results });
-      dispatch({ type: 'SET_OUTPUT', payload: `Tests: ${result.passed_tests}/${result.total_tests} passed` });
+      // TODO: Implement actual test running API
+      dispatch({ type: 'SET_TEST_RESULTS', payload: [] });
+      dispatch({ type: 'SET_OUTPUT', payload: 'Test running not yet implemented' });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: (error as Error).message });
     } finally {
@@ -137,12 +133,8 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
 
   const getHint = async (questionId: string, code: string, language: string) => {
     try {
-      const response = await api.getHint({ questionId, code, language });
-      let hint = '';
-      for await (const chunk of streamResponse(response)) {
-        hint += chunk;
-      }
-      return hint;
+      // TODO: Implement actual hint API
+      return 'Hint functionality not yet implemented';
     } catch (error) {
       throw new Error((error as Error).message);
     }
@@ -150,12 +142,8 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
 
   const getReview = async (questionId: string, code: string, language: string) => {
     try {
-      const response = await api.getReview({ questionId, code, language });
-      let review = '';
-      for await (const chunk of streamResponse(response)) {
-        review += chunk;
-      }
-      return review;
+      // TODO: Implement actual review API
+      return 'Review functionality not yet implemented';
     } catch (error) {
       throw new Error((error as Error).message);
     }
@@ -163,23 +151,10 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
 
   const chatWithCoach = async (message: string, code?: string) => {
     if (!state.currentQuestion) return;
-    
+
     try {
-      const response = await api.chatWithCoach({
-        questionId: state.currentQuestion.id,
-        message,
-        code,
-        language: state.language,
-      });
-      
-      // Handle streaming response
-      let responseText = '';
-      for await (const chunk of streamResponse(response)) {
-        responseText += chunk;
-      }
-      
-      // Add to chat messages
-      console.log('AI Response:', responseText);
+      // TODO: Implement actual chat API
+      console.log('Chat message:', message, 'with code:', code);
     } catch (error) {
       console.error('Chat error:', error);
     }

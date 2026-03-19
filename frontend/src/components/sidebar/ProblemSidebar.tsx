@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCodeCoach } from '@/contexts/CodeCoachContext';
 import { Question } from '@/types/question';
+import { questionsApi } from '@/lib/api/questions';
 
 interface ProblemSidebarProps {
   className?: string;
@@ -17,8 +18,8 @@ export function ProblemSidebar({ className = '' }: ProblemSidebarProps) {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        const questions = await api.getQuestions();
-        setQuestions(questions as Question[]);
+        const questions = await questionsApi.getAllQuestions();
+        setQuestions(questions);
       } catch (error) {
         console.error('Failed to load questions:', error);
         setQuestions([]);
@@ -26,7 +27,7 @@ export function ProblemSidebar({ className = '' }: ProblemSidebarProps) {
         setLoading(false);
       }
     };
-    
+
     fetchQuestions();
   }, []);
 
