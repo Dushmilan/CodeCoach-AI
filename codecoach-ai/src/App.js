@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import QuestionBar from './components/QuestionBar';
 import CodeEditor from './components/CodeEditor';
@@ -9,8 +9,24 @@ function App() {
   const [questions] = useState(questionsData);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showQuestionList, setShowQuestionList] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [code, setCode] = useState({
+    javascript: '',
+    python: '',
+    java: ''
+  });
 
   const selectedQuestion = questions[currentIndex];
+
+  useEffect(() => {
+    if (selectedQuestion && selectedQuestion.starter) {
+      setCode({
+        javascript: selectedQuestion.starter.javascript || '',
+        python: selectedQuestion.starter.python || '',
+        java: selectedQuestion.starter.java || ''
+      });
+    }
+  }, [selectedQuestion]);
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % questions.length);
@@ -31,6 +47,13 @@ function App() {
   const selectQuestion = (index) => {
     setCurrentIndex(index);
     setShowQuestionList(false);
+  };
+
+  const handleCodeChange = (newCode) => {
+    setCode(prev => ({
+      ...prev,
+      [selectedLanguage]: newCode
+    }));
   };
 
   return (
@@ -78,10 +101,20 @@ function App() {
           </div>
         </aside>
         <main className="center-panel">
-          <CodeEditor question={selectedQuestion} />
+          <CodeEditor 
+            question={selectedQuestion} 
+            selectedLanguage={selectedLanguage}
+            setSelectedLanguage={setSelectedLanguage}
+            currentCode={code[selectedLanguage]}
+            onCodeChange={handleCodeChange}
+          />
         </main>
         <aside className="right-panel">
-          <AiBar />
+          <AiBar 
+            currentCode={code[selectedLanguage]} 
+            selectedLanguage={selectedLanguage}
+            question={selectedQuestion}
+          />
         </aside>
       </div>
     </div>

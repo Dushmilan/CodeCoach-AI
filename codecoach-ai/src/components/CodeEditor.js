@@ -1,32 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Editor from '@monaco-editor/react';
 import './CodeEditor.css';
 
-const CodeEditor = ({ question }) => {
-  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
-  const [code, setCode] = useState({
-    javascript: '',
-    python: '',
-    java: ''
-  });
-
-  useEffect(() => {
-    if (question && question.starter) {
-      setCode({
-        javascript: question.starter.javascript || '',
-        python: question.starter.python || '',
-        java: question.starter.java || ''
-      });
-    }
-  }, [question]);
-
-  const handleEditorChange = (value) => {
-    setCode(prev => ({
-      ...prev,
-      [selectedLanguage]: value
-    }));
-  };
-
+const CodeEditor = ({ 
+  selectedLanguage, 
+  setSelectedLanguage, 
+  currentCode, 
+  onCodeChange 
+}) => {
   const languages = [
     { id: 'python', label: 'Python' },
     { id: 'java', label: 'Java' },
@@ -55,9 +36,9 @@ const CodeEditor = ({ question }) => {
         <Editor
           height="100%"
           language={selectedLanguage}
-          value={code[selectedLanguage]}
+          value={currentCode}
           theme="vs-dark"
-          onChange={handleEditorChange}
+          onChange={onCodeChange}
           options={{
             fontSize: 14,
             minimap: { enabled: false },
