@@ -1,0 +1,45 @@
+# Test dependencies for CodeCoach AI API testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+pytest-benchmark>=4.0.0
+pytest-cov>=4.1.0
+pytest-xdist>=3.3.0
+httpx>=0.25.0
+factory-boy>=3.3.0
+locust>=2.17.0
+psutil>=5.9.0
+faker>=19.6.0
+hypothesis>=6.88.0
+bandit>=1.7.5
+safety>=2.3.0
+semgrep>=1.45.0
+pylint>=2.17.0
+flake8>=6.0.0
+black>=23.0.0
+mypy>=1.5.0
+pre-commit>=3.4.0
+
+# Security testing
+dependency-check>=0.0.1
+safety>=2.3.0
+bandit>=1.7.5
+
+# Performance testing
+pytest-benchmark>=4.0.0
+memory-profiler>=0.61.0
+
+# API testing
+schemathesis>=3.19.0
+prance>=0.11.0
+openapi-spec-validator>=0.6.0
+
+# Mocking and testing utilities
+responses>=0.23.0
+pytest-mock>=3.11.0
+freezegun>=1.2.0
+
+# Coverage and reporting
+pytest-html>=4.0.0
+pytest-json-report>=1.5.0
+coverage>=7.3.0

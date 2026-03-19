@@ -14,7 +14,8 @@ class ApiClient {
     if (!response.ok) {
       throw new Error('Failed to fetch questions');
     }
-    return response.json();
+    const data = await response.json();
+    return data.questions || [];
   }
 
   async getQuestion(id: string): Promise<Question> {
@@ -46,12 +47,19 @@ class ApiClient {
     message: string,
     mode: string
   ): Promise<ReadableStream<Uint8Array>> {
-    const response = await fetch(`${this.baseUrl}/api/coach`, {
+    const response = await fetch(`${this.baseUrl}/api/coach/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ problem, language, code, message, mode }),
+      body: JSON.stringify({ 
+        problem, 
+        code, 
+        message, 
+        mode, 
+        language: language.toLowerCase(),
+        difficulty: 'medium' 
+      }),
     });
     if (!response.ok) {
       throw new Error('Failed to get coaching response');

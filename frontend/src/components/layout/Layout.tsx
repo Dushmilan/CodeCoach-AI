@@ -1,47 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header } from './Header';
-import { Sidebar } from './Sidebar';
+import { EnhancedSidebar } from './EnhancedSidebar';
 import { CodeEditor } from '@/components/editor/CodeEditor';
 import { AIChatPanel } from '@/components/chat/AIChatPanel';
 import { Question, ChatMessage, Language } from '@/types';
 import { api } from '@/lib/api';
 
+interface LayoutProps {
+  userProgress?: Record<string, 'attempted' | 'solved'>;
+  selectedQuestion?: Question | null;
+  onQuestionSelect?: (question: Question) => void;
+}
+
 const sampleQuestions: Question[] = [
-  {
-    id: 'two-sum',
-    title: 'Two Sum',
-    difficulty: 'easy',
-    category: 'Arrays',
-    company_tags: ['Google', 'Amazon', 'Meta'],
-    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
-    starter: {
-      python: 'def two_sum(nums, target):\n    # Your code here\n    pass',
-      javascript: 'function twoSum(nums, target) {\n    // Your code here\n}',
-      java: 'class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Your code here\n    }\n}'
-    },
-    examples: [
-      { input: 'nums = [2,7,11,15], target = 9', output: '[0,1]' },
-      { input: 'nums = [3,2,4], target = 6', output: '[1,2]' }
-    ],
-    test_cases: [
-      { input: [[2, 7, 11, 15], 9], expected: [0, 1] },
-      { input: [[3, 2, 4], 6], expected: [1, 2] }
-    ],
-    hints: [
-      'Try using a hash map to store the complement of each number',
-      'Iterate through the array and check if the complement exists in the hash map'
-    ],
-    solution: 'Use a hash map to store the complement of each number as you iterate through the array.',
-    time_complexity: 'O(n)',
-    space_complexity: 'O(n)'
-  }
+{
+  id: 'two-sum',
+  title: 'Two Sum',
+  difficulty: 'easy',
+  category: 'Arrays',
+  company_tags: ['Google', 'Amazon', 'Meta'],
+  description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+  starter: {
+    python: 'def two_sum(nums, target):\n # Your code here\n pass',
+    javascript: 'function twoSum(nums, target) {\n // Your code here\n}',
+    java: 'class Solution {\n public int[] twoSum(int[] nums, int target) {\n // Your code here\n }\n}'
+  },
+  examples: [
+    { input: 'nums = [2,7,11,15], target = 9', output: '[0,1]' },
+    { input: 'nums = [3,2,4], target = 6', output: '[1,2]' }
+  ],
+  test_cases: [
+    { input: [[2, 7, 11, 15], 9], expected: [0, 1] },
+    { input: [[3, 2, 4], 6], expected: [1, 2] }
+  ],
+  hints: [
+    'Try using a hash map to store the complement of each number',
+    'Iterate through the array and check if the complement exists in the hash map'
+  ],
+  solution: 'Use a hash map to store the complement of each number as you iterate through the array.',
+  time_complexity: 'O(n)',
+  space_complexity: 'O(n)'
+}
 ];
 
-export function Layout() {
+export function Layout({ 
+  userProgress: externalUserProgress, 
+  selectedQuestion: externalSelectedQuestion,
+  onQuestionSelect: externalOnQuestionSelect 
+}: LayoutProps) {
   const [questions, setQuestions] = useState<Question[]>(sampleQuestions);
-  const [selectedQuestion, setSelectedQuestion] = useState<Question>(sampleQuestions[0]);
+  const [internalSelectedQuestion, setInternalSelectedQuestion] = useState<Question>(sampleQuestions[0]);
   const [currentCode, setCurrentCode] = useState('');
   const [language, setLanguage] = useState<Language>('python');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -49,12 +59,38 @@ export function Layout() {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
-  const [userProgress, setUserProgress] = useState<Record<string, 'attempted' | 'solved'>>({});
+  const [internalUserProgress, setInternalUserProgress] = useState<Record<string, 'attempted' | 'solved'>>({});
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Use external props if provided, otherwise use internal state
+  const selectedQuestion = externalSelectedQuestion ?? internalSelectedQuestion;
+  const userProgress = externalUserProgress ?? internalUserProgress;
+  const handleQuestionSelect = externalOnQuestionSelect ?? setInternalSelectedQuestion;
+  
+  // Prevent hydration issues by ensuring consistent initial state
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+
 
   useEffect(() => {
     // Load questions from API
     api.getQuestions()
-      .then(setQuestions)
+      .then((response) => {
+        // Ensure response is an array
+        if (Array.isArray(response)) {
+          setQuestions(response);
+        } else {
+          console.error('API returned non-array response:', response);
+          setQuestions(sampleQuestions);
+        }
+      })
       .catch((error) => {
         console.error('Failed to load questions:', error);
         // Fallback to sample questions if API fails
@@ -64,17 +100,17 @@ export function Layout() {
 
   useEffect(() => {
     // Initialize code with starter for selected language
-    if (selectedQuestion) {
-      setCurrentCode(selectedQuestion.starter[language]);
+    if (selectedQuestion && selectedQuestion.starter) {
+      setCurrentCode(selectedQuestion.starter[language] || '');
     }
   }, [selectedQuestion, language]);
 
-  const handleQuestionSelect = (question: Question) => {
-    setSelectedQuestion(question);
+  const handleQuestionSelection = useCallback((question: Question) => {
+    handleQuestionSelect(question);
     setMessages([]); // Clear chat when switching questions
     setOutput('');
     setError('');
-  };
+  }, [handleQuestionSelect]);
 
   const handleSendMessage = async (message: string, mode: string) => {
     const userMessage: ChatMessage = {
@@ -120,15 +156,16 @@ export function Layout() {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
             if (data === '[DONE]') continue;
+            if (data.includes('"done": true')) continue;
 
             try {
               const parsed = JSON.parse(data);
-              const content = parsed.choices?.[0]?.delta?.content || '';
+              const content = parsed.chunk || parsed.choices?.[0]?.delta?.content || '';
               if (content) {
                 assistantMessage += content;
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === assistantMessageObj.id 
+                setMessages(prev =>
+                  prev.map(msg =>
+                    msg.id === assistantMessageObj.id
                       ? { ...msg, content: assistantMessage }
                       : msg
                   )
@@ -136,14 +173,16 @@ export function Layout() {
               }
             } catch (e) {
               // Handle non-JSON data
-              assistantMessage += data;
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === assistantMessageObj.id 
-                    ? { ...msg, content: assistantMessage }
-                    : msg
-                )
-              );
+              if (data.trim() && !data.includes('"error"')) {
+                assistantMessage += data;
+                setMessages(prev =>
+                  prev.map(msg =>
+                    msg.id === assistantMessageObj.id
+                      ? { ...msg, content: assistantMessage }
+                      : msg
+                  )
+                );
+              }
             }
           }
         }
@@ -163,9 +202,96 @@ export function Layout() {
   };
 
   const handleRunCode = async () => {
+    if (!selectedQuestion) return;
+    
     setIsRunning(true);
     setOutput('');
     setError('');
+
+    if (language === 'javascript') {
+      const logs: string[] = [];
+      const originalConsoleLog = console.log;
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
+      
+      const captureLog = (...args: any[]) => {
+        const formattedArgs = args.map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+        ).join(' ');
+        logs.push(formattedArgs);
+        originalConsoleLog(...args);
+      };
+
+      console.log = captureLog;
+      console.error = captureLog;
+      console.warn = captureLog;
+
+      try {
+        // Identify the function name from starter code
+        const jsStarter = selectedQuestion.starter.javascript;
+        const fnNameMatch = jsStarter.match(/function\s+(\w+)\s*\(/) || 
+                           jsStarter.match(/var\s+(\w+)\s*=\s*function/) ||
+                           jsStarter.match(/const\s+(\w+)\s*=\s*/);
+        
+        const fnName = fnNameMatch ? fnNameMatch[1] : null;
+
+        if (!fnName) {
+          throw new Error("Could not identify the target function name for testing.");
+        }
+
+        // Create a test runner
+        const testRunner = new Function('testCases', `
+          ${currentCode}
+          
+          if (typeof ${fnName} !== 'function') {
+            throw new Error('Function "${fnName}" is not defined or is not a function.');
+          }
+          
+          return testCases.map((tc, index) => {
+            try {
+              // Deep clone input to prevent modification from affecting subsequent tests
+              const input = JSON.parse(JSON.stringify(tc.input));
+              const result = ${fnName}(...input);
+              const passed = JSON.stringify(result) === JSON.stringify(tc.expected);
+              return { index: index + 1, passed, input: tc.input, expected: tc.expected, actual: result };
+            } catch (e) {
+              return { index: index + 1, passed: false, error: e.message, input: tc.input };
+            }
+          });
+        `);
+
+        const results = testRunner(selectedQuestion.test_cases);
+        
+        let outputText = logs.length > 0 ? `Console Output:\n${logs.join('\n')}\n\n` : '';
+        outputText += "Test Results:\n";
+        
+        let allPassed = true;
+        results.forEach((r: any) => {
+          if (r.error) {
+            outputText += `❌ Test Case ${r.index}: Error - ${r.error}\n`;
+            allPassed = false;
+          } else if (r.passed) {
+            outputText += `✅ Test Case ${r.index}: Passed\n`;
+          } else {
+            outputText += `❌ Test Case ${r.index}: Failed\n   Input: ${JSON.stringify(r.input)}\n   Expected: ${JSON.stringify(r.expected)}\n   Actual: ${JSON.stringify(r.actual)}\n`;
+            allPassed = false;
+          }
+        });
+
+        setOutput(outputText);
+        if (allPassed) {
+          setInternalUserProgress(prev => ({ ...prev, [selectedQuestion.id]: 'solved' }));
+        }
+      } catch (err: any) {
+        setError(err.message || 'An error occurred during execution');
+      } finally {
+        console.log = originalConsoleLog;
+        console.error = originalConsoleError;
+        console.warn = originalConsoleWarn;
+        setIsRunning(false);
+      }
+      return;
+    }
 
     try {
       const result = await api.runCode(language, currentCode);
@@ -184,51 +310,97 @@ export function Layout() {
     }
   };
 
+  // Memoize expensive computations
+  const questionSummary = useMemo(() => {
+    if (!selectedQuestion) return null;
+    
+    const progress = userProgress[selectedQuestion.id];
+    const status = progress === 'solved' ? '✅ Solved' : 
+                   progress === 'attempted' ? '🔄 Attempted' : '⏳ Not started';
+    
+    return `${selectedQuestion.title} - ${status}`;
+  }, [selectedQuestion, userProgress]);
+
+  // Memoize difficulty badge styles
+  const difficultyBadge = useMemo(() => {
+    if (!selectedQuestion) return null;
+    
+    const styles = {
+      easy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+      hard: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+    };
+    
+    return styles[selectedQuestion.difficulty] || styles.easy;
+  }, [selectedQuestion]);
+
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar
+    <main className="flex h-screen bg-background" role="main" aria-label="CodeCoach AI Learning Platform">
+      <EnhancedSidebar
         questions={questions}
         selectedQuestion={selectedQuestion}
-        onSelectQuestion={handleQuestionSelect}
+        onSelectQuestion={handleQuestionSelection}
         userProgress={userProgress}
       />
-      
+
       <div className="flex-1 flex flex-col">
         <Header />
-        
+
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 flex flex-col p-4">
+          <section 
+            className="flex-1 flex flex-col p-4" 
+            aria-labelledby="question-content"
+          >
             {selectedQuestion && (
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold mb-2">{selectedQuestion.title}</h2>
-                <div className="flex items-center space-x-2 mb-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    selectedQuestion.difficulty === 'easy' ? 'bg-green-500/10 text-green-500' :
-                    selectedQuestion.difficulty === 'medium' ? 'bg-yellow-500/10 text-yellow-500' :
-                    'bg-red-500/10 text-red-500'
-                  }`}>
-                    {selectedQuestion.difficulty}
-                  </span>
-                  <span className="text-sm text-muted-foreground">{selectedQuestion.category}</span>
-                </div>
-                <div className="prose prose-sm dark:prose-invert max-w-none">
+              <article className="mb-4" aria-labelledby="question-title">
+                <header className="mb-4">
+                  <h1 id="question-title" className="text-2xl font-bold mb-2">
+                    {selectedQuestion.title}
+                  </h1>
+                  <div className="flex items-center gap-2 mb-4" role="group" aria-label="Question metadata">
+                    <span 
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${difficultyBadge}`}
+                      aria-label={`Difficulty: ${selectedQuestion.difficulty}`}
+                    >
+                      {selectedQuestion.difficulty}
+                    </span>
+                    <span className="text-sm text-muted-foreground" aria-label={`Category: ${selectedQuestion.category}`}>
+                      {selectedQuestion.category}
+                    </span>
+                    <span className="text-sm text-muted-foreground" aria-label={`Status: ${questionSummary?.split(' - ')[1] || 'Not started'}`}>
+                      {questionSummary?.split(' - ')[1] || ''}
+                    </span>
+                  </div>
+                </header>
+                
+                <div className="prose prose-sm dark:prose-invert max-w-none" role="article">
                   <p>{selectedQuestion.description}</p>
-                  {selectedQuestion.examples.map((example, index) => (
-                    <div key={index} className="mt-2">
-                      <strong>Example {index + 1}:</strong>
-                      <div className="bg-secondary p-2 rounded mt-1">
-                        <div><strong>Input:</strong> {example.input}</div>
-                        <div><strong>Output:</strong> {example.output}</div>
-                        {example.explanation && (
-                          <div><strong>Explanation:</strong> {example.explanation}</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  {selectedQuestion.examples && selectedQuestion.examples.length > 0 && (
+                    selectedQuestion.examples.map((example, index) => (
+                      <section key={index} className="mt-4" aria-labelledby={`example-${index}`}>
+                        <h3 id={`example-${index}`} className="font-semibold mb-2">
+                          Example {index + 1}:
+                        </h3>
+                        <div className="bg-muted/50 p-3 rounded-md border" role="figure" aria-label={`Example ${index + 1} details`}>
+                          <div className="font-mono text-sm">
+                            <strong>Input:</strong> <code>{example.input}</code>
+                          </div>
+                          <div className="font-mono text-sm mt-1">
+                            <strong>Output:</strong> <code>{example.output}</code>
+                          </div>
+                          {example.explanation && (
+                            <div className="text-sm mt-2">
+                              <strong>Explanation:</strong> {example.explanation}
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    ))
+                  )}
                 </div>
-              </div>
+              </article>
             )}
-            
+
             <div className="flex-1">
               <CodeEditor
                 language={language}
@@ -241,9 +413,9 @@ export function Layout() {
                 error={error}
               />
             </div>
-          </div>
-          
-          <div className="w-96 p-4">
+          </section>
+
+          <aside className="w-96 p-4 border-l" aria-label="AI Assistant Panel">
             <AIChatPanel
               messages={messages}
               onSendMessage={handleSendMessage}
@@ -252,9 +424,8 @@ export function Layout() {
               currentCode={currentCode}
               language={language}
             />
-          </div>
+          </aside>
         </div>
       </div>
-    </div>
-  );
-}
+    </main>
+  )};

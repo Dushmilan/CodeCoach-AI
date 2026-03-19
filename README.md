@@ -102,6 +102,7 @@ CodeCoach-AI/
 ### Backend (.env)
 ```
 # API Keys
+NVIDIA_API_KEY=your_nvidia_nim_api_key
 OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_anthropic_key
 
@@ -114,6 +115,8 @@ REDIS_URL=redis://localhost:6379
 # Piston (code execution service)
 PISTON_API_URL=https://emkc.org/api/v2/piston
 ```
+
+**Note:** The `NVIDIA_API_KEY` is required for AI coaching features. Get your free API key from [NVIDIA NIM](https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct).
 
 ### Frontend (.env.local)
 ```
