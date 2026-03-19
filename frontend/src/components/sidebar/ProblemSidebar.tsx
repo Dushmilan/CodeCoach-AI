@@ -44,6 +44,22 @@ export function ProblemSidebar({ className = '' }: ProblemSidebarProps) {
     }
   };
 
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const categories = Array.from(new Set(questions.map(q => q.category)));
+  
+  const filteredQuestions = questions.filter(question => {
+    const matchesDifficulty = selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
+    const matchesCategory = selectedCategory === 'all' || question.category === selectedCategory;
+    const matchesSearch = searchQuery === '' || 
+      question.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      question.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesDifficulty && matchesCategory && matchesSearch;
+  });
+
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
       'Strings': 'text-blue-400',
@@ -80,13 +96,57 @@ export function ProblemSidebar({ className = '' }: ProblemSidebarProps) {
       <div className="p-4 border-b border-gray-700">
         <h2 className="text-lg font-semibold text-white">Problems</h2>
         <p className="text-sm text-gray-400 mt-1">
-          {questions.length} problems available
+          {filteredQuestions.length} problems available
         </p>
+      </div>
+
+      {/* Filters */}
+      <div className="p-4 border-b border-gray-700 space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Search</label>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search problems..."
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Difficulty</label>
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value)}
+              className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded-md text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded-md text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-3">
-          {questions.map((question) => (
+          {filteredQuestions.map((question) => (
             <div
               key={question.id}
               onClick={() => loadQuestion(question.id)}
@@ -108,11 +168,11 @@ export function ProblemSidebar({ className = '' }: ProblemSidebarProps) {
                   {question.difficulty}
                 </span>
               </div>
-              
+
               <p className="text-xs text-gray-400 mb-2 line-clamp-2">
                 {question.description.substring(0, 100)}...
               </p>
-              
+
               <div className="flex items-center space-x-2">
                 <span className={`text-xs ${getCategoryColor(question.category)}`}>
                   {question.category}

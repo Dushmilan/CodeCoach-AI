@@ -14,6 +14,8 @@ interface CodeCoachContextType {
   getHint: (questionId: string, code: string, language: string) => Promise<string>;
   getReview: (questionId: string, code: string, language: string) => Promise<string>;
   chatWithCoach: (message: string, code?: string) => Promise<void>;
+  logout: () => void;
+  setApiKey: (key: string) => void;
 }
 
 type CodeCoachAction =
@@ -25,7 +27,10 @@ type CodeCoachAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'ADD_CHAT_MESSAGE'; payload: ChatMessage }
-  | { type: 'SET_CHAT_MESSAGES'; payload: ChatMessage[] };
+  | { type: 'SET_CHAT_MESSAGES'; payload: ChatMessage[] }
+  | { type: 'SET_USER'; payload: any }
+  | { type: 'SET_API_KEY'; payload: string | null }
+  | { type: 'LOGOUT' };
 
 const initialState: CodeCoachState = {
   currentQuestion: null,
@@ -35,6 +40,8 @@ const initialState: CodeCoachState = {
   testResults: [],
   isLoading: false,
   error: null,
+  user: null,
+  apiKey: null,
 };
 
 function codeCoachReducer(state: CodeCoachState, action: CodeCoachAction): CodeCoachState {
@@ -68,6 +75,16 @@ function codeCoachReducer(state: CodeCoachState, action: CodeCoachAction): CodeC
       return { ...state };
     case 'SET_CHAT_MESSAGES':
       return { ...state };
+    case 'SET_USER':
+      return { ...state, user: action.payload };
+    case 'SET_API_KEY':
+      return { ...state, apiKey: action.payload };
+    case 'LOGOUT':
+      return {
+        ...state,
+        user: null,
+        apiKey: null,
+      };
     default:
       return state;
   }
@@ -160,6 +177,14 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const logout = () => {
+    dispatch({ type: 'LOGOUT' });
+  };
+
+  const setApiKey = (key: string) => {
+    dispatch({ type: 'SET_API_KEY', payload: key });
+  };
+
   // Load questions on mount
   useEffect(() => {
     loadQuestions();
@@ -175,6 +200,8 @@ export function CodeCoachProvider({ children }: { children: ReactNode }) {
     getHint,
     getReview,
     chatWithCoach,
+    logout,
+    setApiKey,
   };
 
   return (

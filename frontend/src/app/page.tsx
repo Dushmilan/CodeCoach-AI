@@ -1,46 +1,61 @@
 'use client';
 
-import { useEffect } from 'react';
-import { CodeCoachProvider } from '@/contexts/CodeCoachContext';
+import { useState, useEffect } from 'react';
+import { useCodeCoach } from '@/contexts/CodeCoachContext';
 import { ProblemSidebar } from '@/components/sidebar/ProblemSidebar';
-import { CodeEditor } from '@/components/editor/CodeEditor';
+import CodeEditor from '@/components/editor/CodeEditor';
 import { AIChatPanel } from '@/components/chat/AIChatPanel';
+import { OutputBar } from '@/components/OutputBar';
+import { APIKeyModal } from '@/components/APIKeyModal';
+import { Header } from '@/components/Header';
 
-export default function CodeCoachPage() {
+export default function LeetCodeClone() {
+  const { state } = useCodeCoach();
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+
+  useEffect(() => {
+    // Show API key modal if no key is set
+    if (!state.apiKey) {
+      setShowApiKeyModal(true);
+    }
+  }, [state.apiKey]);
+
   return (
-    <CodeCoachProvider>
-      <div className="flex h-screen bg-gray-100">
-        {/* Left Sidebar - Questions */}
-        <div className="w-80 bg-white border-r border-gray-200 overflow-hidden">
+    <div className="h-screen flex flex-col bg-gray-950">
+      {/* Header is now in layout.tsx */}
+      
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar - Problem List */}
+        <div className="w-80 flex-shrink-0 border-r border-gray-700">
           <ProblemSidebar />
         </div>
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <h1 className="text-2xl font-bold text-gray-900">CodeCoach AI</h1>
-            <p className="text-sm text-gray-600">
-              Practice coding with AI assistance
-            </p>
-          </div>
-
-          {/* Main Content */}
+          {/* Top - Code Editor */}
           <div className="flex-1 flex">
-            {/* Code Editor Area */}
-            <div className="flex-1 flex flex-col">
-              <div className="flex-1 bg-white">
-                <CodeEditor />
-              </div>
+            <div className="flex-1">
+              <CodeEditor />
             </div>
-
-            {/* AI Chat Panel */}
-            <div className="w-96 bg-white border-l border-gray-200">
+            
+            {/* Right Panel - AI Chat */}
+            <div className="w-96 flex-shrink-0 border-l border-gray-700">
               <AIChatPanel />
             </div>
           </div>
+
+          {/* Bottom - Output Bar */}
+          <div className="h-64 flex-shrink-0 border-t border-gray-700">
+            <OutputBar />
+          </div>
         </div>
       </div>
-    </CodeCoachProvider>
+
+      {/* API Key Modal */}
+      <APIKeyModal 
+        isOpen={showApiKeyModal} 
+        onClose={() => setShowApiKeyModal(false)} 
+      />
+    </div>
   );
 }

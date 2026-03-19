@@ -34,7 +34,7 @@ export function AIChatPanel() {
 
     try {
       await chatWithCoach(message, state.code);
-      
+
       // For now, we'll simulate the AI response
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -42,13 +42,32 @@ export function AIChatPanel() {
         content: `I understand you're working on ${state.currentQuestion?.title || 'the problem'}. Let me help you with that.`,
         timestamp: new Date().toISOString(),
       };
-      
+
       setChatMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
+  const quickActions = [
+    { label: 'Explain this code', action: 'Can you explain this code?' },
+    { label: 'Give me a hint', action: 'Give me a hint for this problem' },
+    { label: 'Show test cases', action: 'Show me the test cases for this problem' },
+    { label: 'Optimize solution', action: 'How can I optimize my solution?' },
+  ];
+
+  const handleQuickAction = (action: string) => {
+    setMessage(action);
+    handleSendMessage({ preventDefault: () => {} } as React.FormEvent);
   };
 
   return (
@@ -91,20 +110,41 @@ export function AIChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Quick Actions */}
+      {chatMessages.length === 0 && (
+        <div className="p-4 border-t border-gray-200">
+          <p className="text-sm text-gray-600 mb-3">Quick actions:</p>
+          <div className="flex flex-wrap gap-2">
+            {quickActions.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => handleQuickAction(action.action)}
+                disabled={isTyping}
+                className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 disabled:opacity-50 transition-colors"
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
         <div className="flex space-x-2">
-          <input
-            type="text"
+          <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ask a question..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onKeyDown={handleKeyDown}
+            placeholder="Ask a question... (Shift+Enter for new line)"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             disabled={isTyping}
+            rows={1}
+            style={{ minHeight: '40px', maxHeight: '120px' }}
           />
           <button
             type="submit"
             disabled={!message.trim() || isTyping}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Send
           </button>

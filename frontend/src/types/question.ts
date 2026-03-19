@@ -31,6 +31,19 @@ export interface Question {
   spaceComplexity: string;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  apiKey?: string;
+  preferences?: {
+    theme: 'light' | 'dark';
+    language: 'python' | 'javascript' | 'java';
+    fontSize: number;
+  };
+}
+
 export interface CodeCoachState {
   currentQuestion: Question | null;
   code: string;
@@ -39,6 +52,8 @@ export interface CodeCoachState {
   testResults: TestResult[];
   isLoading: boolean;
   error: string | null;
+  user: User | null;
+  apiKey: string | null;
 }
 
 export interface TestResult {
