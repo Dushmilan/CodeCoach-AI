@@ -13,6 +13,11 @@
   --accent-glow: rgba(59, 130, 246, 0.3);
 }
 
+/* Hide Webpack Dev Server Overlay (ResizeObserver loop error) */
+iframe#webpack-dev-server-client-overlay {
+  display: none !important;
+}
+
 .App {
   height: 100vh;
   width: 100vw;

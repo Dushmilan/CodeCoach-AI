@@ -5,6 +5,18 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
+// Suppress ResizeObserver loop limit exceeded error which is common with Monaco Editor
+window.addEventListener('error', e => {
+  if (e.message === 'ResizeObserver loop completed with undelivered notifications.' || 
+      e.message === 'ResizeObserver loop limit exceeded') {
+    const resizeObserverErrGuid = 'f719468e-01be-49b0-9003-f09520445a43';
+    if (e.stopImmediatePropagation) {
+      e.stopImmediatePropagation();
+    }
+  }
+});
+
 root.render(
   <React.StrictMode>
     <App />
