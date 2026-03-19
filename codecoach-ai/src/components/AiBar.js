@@ -103,6 +103,14 @@ Provide constructive feedback and hints for improvement.`;
     setMessages([initialMessage]);
   };
 
+  const quickActions = [
+    { label: 'Hint', prompt: 'Give me a small hint to move forward with this problem.' },
+    { label: 'Complexity', prompt: 'Analyze the time and space complexity of my current code.' },
+    { label: 'Optimal', prompt: 'What is the most optimal approach for this problem in terms of complexity?' },
+    { label: 'Explain', prompt: 'Explain how my current code works step by step.' },
+    { label: 'Edge Cases', prompt: 'What are some tricky edge cases I should consider for this problem?' }
+  ];
+
   return (
     <div className="ai-bar">
       <div className="ai-header">
@@ -142,8 +150,11 @@ Provide constructive feedback and hints for improvement.`;
         ))}
         {isLoading && (
           <div className="message assistant loading">
-            <div className="typing-indicator">
-              <span></span><span></span><span></span>
+            <div className="typing-indicator-wrap">
+              <div className="typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+              <span className="typing-text">Coach is thinking...</span>
             </div>
           </div>
         )}
@@ -151,26 +162,40 @@ Provide constructive feedback and hints for improvement.`;
       </div>
 
       <div className="ai-chat-controls">
-        <textarea 
-          placeholder="Ask your coach anything..." 
-          className="ai-input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          rows={1}
-        />
-        <button 
-          className="send-btn" 
-          onClick={handleSend}
-          disabled={isLoading || !input.trim()}
-        >
-          {isLoading ? '...' : 'Send'}
-        </button>
+        <div className="quick-actions">
+          {quickActions.map((action) => (
+            <button
+              key={action.label}
+              className="quick-chip"
+              onClick={() => handleSend(action.prompt)}
+              disabled={isLoading || (action.label !== 'Optimal' && !currentCode.trim())}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+        <div className="input-wrap">
+          <textarea 
+            placeholder="Ask your coach anything..." 
+            className="ai-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            rows={1}
+          />
+          <button 
+            className="send-btn" 
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+          >
+            {isLoading ? '...' : 'Send'}
+          </button>
+        </div>
       </div>
     </div>
   );

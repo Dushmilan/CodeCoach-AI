@@ -115,6 +115,16 @@
   border-radius: 8px;
   font-size: 0.9rem;
   line-height: 1.4;
+  animation: messageFadeIn 0.3s ease-out forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes messageFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message.user {
@@ -140,9 +150,49 @@
 }
 
 .ai-chat-controls {
-  padding: 15px;
+  padding: 10px 15px 15px 15px;
   background-color: #252526;
   border-top: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+.quick-actions::-webkit-scrollbar {
+  height: 4px;
+}
+
+.quick-chip {
+  background-color: #333;
+  color: #bbb;
+  border: 1px solid #444;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-chip:hover:not(:disabled) {
+  background-color: #444;
+  color: #fff;
+  border-color: #007acc;
+}
+
+.quick-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.input-wrap {
   display: flex;
   gap: 10px;
   align-items: flex-end;
@@ -186,18 +236,30 @@
 }
 
 /* Typing Indicator */
+.typing-indicator-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .typing-indicator {
   display: flex;
   gap: 4px;
-  padding: 5px 0;
 }
 
 .typing-indicator span {
   width: 6px;
   height: 6px;
-  background-color: #666;
+  background-color: #007acc;
   border-radius: 50%;
   animation: bounce 1.3s infinite;
+  box-shadow: 0 0 5px rgba(0, 122, 204, 0.4);
+}
+
+.typing-text {
+  font-size: 0.75rem;
+  color: #888;
+  font-style: italic;
 }
 
 .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
