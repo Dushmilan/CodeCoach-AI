@@ -128,7 +128,6 @@ const CodeEditor = ({
       const pyodide = pyodideRef.current;
       setOutput('Python ready. Running tests...\n');
 
-      // Pre-evaluate once to handle errors early and define functions
       try {
         await pyodide.runPythonAsync(currentCode);
       } catch (err) {
@@ -141,7 +140,6 @@ const CodeEditor = ({
         const { input, expected, pythonFunctionName, inPlace } = tc;
         
         try {
-          // Check existence explicitly
           const checkCode = `
 import json
 try:
@@ -199,13 +197,13 @@ __run_single_test()
   };
 
   const runRemoteTests = async () => {
-    const PISTON_URL = 'https://piston.pensioner.dev/api/v2/execute';
-    setOutput('Requesting remote execution (Community Instance)...\n');
+    // Route through local proxy to Judge0 CE (Standard Public Instance)
+    const JUDGE0_URL = '/api/judge0/submissions?base64_encoded=false&wait=true';
+    setOutput('Requesting remote execution via Judge0 proxy...\n');
     
     const testCases = question.testCases || [];
     let wrapperCode = '';
-    let languageId = selectedLanguage;
-    let version = '*';
+    let languageId = 62; // Judge0 Language ID for Java (OpenJDK 13+)
 
     if (selectedLanguage === 'java') {
       const functionName = testCases[0]?.javaFunctionName;
@@ -213,37 +211,54 @@ __run_single_test()
       
       const toJavaValue = (val) => {
         if (Array.isArray(val)) {
-          if (typeof val[0] === 'string') return `new char[]{${val.map(c => `'${c}'`).join(',')}}`;
-          return `new int[]{${val.join(',')}}`;
+          if (val.length === 0) return "new Object[]{}";
+          // If it's a character array (common in LeetCode style)
+          if (typeof val[0] === 'string' && val[0].length === 1) {
+            return `new char[]{${val.map(c => `'${c}'`).join(',')}}`;
+          }
+          // If it's a string array
+          if (typeof val[0] === 'string') {
+            return `new String[]{${val.map(s => JSON.stringify(s)).join(',')}}`;
+          }
+          // If it's an integer array
+          if (typeof val[0] === 'number') {
+            return `new int[]{${val.join(',')}}`;
+          }
+          return `new Object[]{${val.map(toJavaValue).join(',')}}`;
         }
         return JSON.stringify(val);
       };
 
-      const testInvocations = testCases.map((tc, i) => {
-        const javaInput = tc.input.map(toJavaValue).join(', ');
-        if (inPlace) {
-          return `
-            try {
-                Object input = ${toJavaValue(tc.input[0])};
-                sol.${functionName}((${tc.input[0] instanceof Array && typeof tc.input[0][0] === 'string' ? 'char[]' : 'int[]'})input);
-                printResult(${i}, ${JSON.stringify(tc.expected)}, input);
-            } catch (Exception e) {
-                printError(${i}, e.getMessage());
-            }
-          `;
-        } else {
-          return `
-            try {
-                Object actual = sol.${functionName}(${javaInput});
-                printResult(${i}, ${JSON.stringify(tc.expected)}, actual);
-            } catch (Exception e) {
-                printError(${i}, e.getMessage());
-            }
-          `;
-        }
-      }).join('\n');
+    const testInvocations = testCases.map((tc, i) => {
+      const javaInput = tc.input.map(toJavaValue).join(', ');
+      const expectedValue = toJavaValue(tc.expected);
 
-      wrapperCode = `
+      if (inPlace) {
+        return `
+        try {
+          ${tc.input[0] instanceof Array && typeof tc.input[0][0] === 'string' && tc.input[0][0].length === 1 ? 
+            `char[] input = ${toJavaValue(tc.input[0])};` : 
+            `int[] input = ${toJavaValue(tc.input[0])};`
+          }
+          sol.${functionName}(input);
+          printResult(${i}, ${expectedValue}, input);
+        } catch (Exception e) {
+          printError(${i}, e.getMessage());
+        }
+        `;
+      } else {
+        return `
+        try {
+          Object actual = sol.${functionName}(${javaInput});
+          printResult(${i}, ${expectedValue}, actual);
+        } catch (Exception e) {
+          printError(${i}, e.getMessage());
+        }
+        `;
+      }
+    }).join('\n');
+
+    wrapperCode = `
 import java.util.*;
 
 ${currentCode}
@@ -283,32 +298,34 @@ public class Main {
     }
 
     try {
-      const response = await fetch(PISTON_URL, {
+      const response = await fetch(JUDGE0_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          language: languageId,
-          version: version,
-          files: [{ content: wrapperCode }]
+          source_code: wrapperCode,
+          language_id: languageId,
         })
       });
 
-      const data = await response.json();
+      const rawText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        setTestResults([{ error: `Proxy Error: The proxy returned an invalid response. This often means the React Dev server needs to be restarted after editing setupProxy.js. (Raw: ${rawText.substring(0, 100)}...)` }]);
+        return;
+      }
       
-      if (!data.run) {
-        setTestResults([{ error: `Execution Error: ${data.message || 'Server returned unexpected response.'}` }]);
+      const stdout = data.stdout;
+      const stderr = data.stderr;
+      const compile_output = data.compile_output;
+
+      if (stderr || compile_output) {
+        setTestResults([{ error: `Execution Error: ${stderr || compile_output}` }]);
         return;
       }
 
-      const stdout = data.run.stdout;
-      const stderr = data.run.stderr;
-
-      if (stderr) {
-        setTestResults([{ error: `Execution Error: ${stderr}` }]);
-        return;
-      }
-
-      const match = stdout.match(/---RESULTS_START---\n([\s\S]*)\n---RESULTS_END---/);
+      const match = stdout?.match(/---RESULTS_START---\n([\s\S]*)\n---RESULTS_END---/);
       if (match) {
         const results = JSON.parse(match[1]);
         setTestResults(results.map((res, i) => ({
@@ -321,7 +338,7 @@ public class Main {
         })));
       } else {
         setOutput(stdout || 'No output from remote runner.');
-        setTestResults([{ error: 'Could not parse test results.' }]);
+        setTestResults([{ error: 'Could not parse test results. This may be due to a compilation error or runtime timeout.' }]);
       }
     } catch (err) {
       setTestResults([{ error: `Network Error: ${err.message}` }]);
