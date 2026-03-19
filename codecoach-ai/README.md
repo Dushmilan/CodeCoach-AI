@@ -6,21 +6,27 @@
 
 ## ✨ Features
 
-- 🧠 **AI-Powered Assistance**: Get real-time hints and guidance from the integrated AI Assistant (Coming Soon).
+- 🧠 **NVIDIA NIM AI Coach**: Real-time coding guidance powered by `meta/llama-3.1-8b-instruct`.
+- ⚡ **Inline Code Execution**: Run your JavaScript solutions directly in the browser with an integrated console.
+- 📋 **AI Code Review**: Get instant, comprehensive feedback on logic, complexity, and best practices with one click.
+- 💡 **Quick-Action Chips**: One-tap access to hints, complexity analysis, optimal approaches, and edge case discovery.
+- 💬 **Rich Chat Interface**: A freeform coach chat with Markdown support, code block rendering, and session management.
+- 🔐 **Secure Key Management**: Volatile, memory-only storage for your NVIDIA API key—never persisted to disk or local storage.
 - 💻 **Pro Editor Experience**: A high-performance code editor powered by **Monaco** (the engine behind VS Code).
 - 📚 **Curated Problem Library**: Hand-picked challenges covering Strings, Arrays, Stacks, Linked Lists, and Dynamic Programming.
-- 🎨 **Modern Glassmorphic UI**: A visually stunning interface with animated backgrounds and a clean, focused layout.
+- 🎨 **Modern Glassmorphic UI**: A visually stunning interface with animated backgrounds, typing indicators, and message fade-in effects.
 - 🔄 **Smart Navigation**: Quickly jump between problems, filter by difficulty, or take a leap of faith with the "Random" challenge button.
-- 🌍 **Multi-Language Support**: Work on solutions in JavaScript, Python, or Java.
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Framework**: [React 19](https://react.dev/)
+- **AI Model**: [NVIDIA NIM (Llama 3.1 8B Instruct)](https://build.nvidia.com/meta/llama-3.1-8b-instruct)
 - **Code Editor**: [@monaco-editor/react](https://github.com/suren-atoyan/monaco-react)
+- **Markdown**: [react-markdown](https://github.com/remarkjs/react-markdown) & [remark-gfm](https://github.com/remarkjs/remark-gfm)
+- **Proxy**: [http-proxy-middleware](https://github.com/chimurai/http-proxy-middleware) (Bypasses CORS for local development)
 - **Styling**: Vanilla CSS3 (Custom Animations, Glassmorphism)
-- **Tooling**: Create React App (CRA)
 
 ---
 
@@ -31,6 +37,7 @@ Follow these steps to get your own instance of CodeCoach AI running locally:
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v16.x or higher recommended)
 - npm or yarn
+- **NVIDIA API Key**: Get a free key at [NVIDIA Build](https://build.nvidia.com/meta/llama-3.1-8b-instruct).
 
 ### Installation
 
@@ -54,7 +61,7 @@ Follow these steps to get your own instance of CodeCoach AI running locally:
    npm start
    ```
 
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+5. **Enter your API Key**: When the app loads, paste your NVIDIA API key into the secure modal to enable the AI features.
 
 ---
 
@@ -64,9 +71,10 @@ Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 codecoach-ai/
 ├── public/             # Static assets
 └── src/
-    ├── components/     # UI Components (AiBar, CodeEditor, QuestionBar)
+    ├── components/     # UI Components (AiBar, CodeEditor, ApiKeyModal, QuestionBar)
     ├── data/           # Questions and problem sets (JSON)
-    ├── App.js          # Main application logic
+    ├── setupProxy.js   # Local development CORS proxy
+    ├── App.js          # Main application logic & state management
     └── index.js        # Entry point
 ```
 
