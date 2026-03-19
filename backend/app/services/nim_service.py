@@ -12,8 +12,11 @@ class NIMService:
     
     def __init__(self, api_key: str = None):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
+        logger.info(f"Initializing NIMService with API key: {'***' + self.api_key[-4:] if self.api_key else 'None'}")
         if not self.api_key:
+            logger.error("NVIDIA_API_KEY environment variable is required but not found")
             raise ValueError("NVIDIA_API_KEY environment variable is required")
+        logger.info("NVIDIA_API_KEY successfully loaded")
         
         self.base_url = "https://integrate.api.nvidia.com/v1"
         self.headers = {

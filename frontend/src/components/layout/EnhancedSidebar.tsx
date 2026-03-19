@@ -14,17 +14,13 @@ interface EnhancedSidebarProps {
 
 export function EnhancedSidebar({ questions, selectedQuestion, onSelectQuestion, userProgress }: EnhancedSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const [filter, setFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  const [filter, setFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   const filteredQuestions = useMemo(() => {
     if (!Array.isArray(questions)) return [];
@@ -85,92 +81,117 @@ export function EnhancedSidebar({ questions, selectedQuestion, onSelectQuestion,
     }
   };
 
+  if (!isMounted) {
+    return (
+      <aside className="w-80 border-r border-border bg-card flex flex-col">
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Problems</h2>
+            <div className="p-1 w-8 h-8 bg-secondary rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="flex-1 p-4">
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-secondary rounded animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside className={cn(
       "border-r border-border bg-card transition-all duration-300 flex flex-col",
-      !isMounted ? "w-80" : isCollapsed ? "w-16" : "w-80"
+      isCollapsed ? "w-16" : "w-80"
     )}>
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
-        {isMounted && !isCollapsed && (
-          <h2 className="text-lg font-semibold">Problems</h2>
-        )}
+          <div className={cn(
+            "transition-all duration-300 overflow-hidden",
+            isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+          )}>
+            <h2 className="text-lg font-semibold whitespace-nowrap">Problems</h2>
+          </div>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 hover:bg-secondary rounded"
+            className="p-1 hover:bg-secondary rounded transition-colors"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronRight className={cn(
-              "h-4 w-4 transition-transform",
+              "h-4 w-4 transition-transform duration-300",
               isCollapsed ? "rotate-0" : "rotate-90"
             )} />
           </button>
         </div>
       </div>
 
-      {/* Navigation Buttons */}
-      {isMounted && !isCollapsed && (
-        <div className="p-3 border-b border-border">
-          <div className="grid grid-cols-2 gap-2 mb-3">
+      {/* Navigation Buttons - Always rendered but visibility controlled by CSS */}
+      <div className={cn(
+        "p-3 border-b border-border transition-all duration-300",
+        isCollapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100 h-auto"
+      )}>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <button
+            onClick={handleAll}
+            className={cn(
+              "flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md transition-colors",
+              filter === 'all'
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary hover:bg-secondary/80"
+            )}
+          >
+            <List className="h-3 w-3 mr-1" />
+            All
+          </button>
+          <button
+            onClick={handleRandom}
+            className="flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md bg-secondary hover:bg-secondary/80 transition-colors"
+          >
+            <Shuffle className="h-3 w-3 mr-1" />
+            Random
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={handlePrevious}
+            disabled={filteredQuestions.length <= 1}
+            className="flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="h-3 w-3 mr-1" />
+            Prev
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={filteredQuestions.length <= 1}
+            className="flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRightIcon className="h-3 w-3 mr-1" />
+            Next
+          </button>
+        </div>
+
+        {/* Difficulty Filters */}
+        <div className="flex gap-1 mt-3">
+          {(['easy', 'medium', 'hard'] as const).map((diff) => (
             <button
-              onClick={handleAll}
+              key={diff}
+              onClick={() => handleFilterChange(diff)}
               className={cn(
-                "flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md transition-colors",
-                filter === 'all' 
-                  ? "bg-primary text-primary-foreground" 
+                "flex-1 px-2 py-1 text-xs font-medium rounded-md transition-colors",
+                filter === diff
+                  ? getDifficultyColor(diff)
                   : "bg-secondary hover:bg-secondary/80"
               )}
             >
-              <List className="h-3 w-3 mr-1" />
-              All
+              <span className="mr-1">{getDifficultyIcon(diff)}</span>
+              {diff.charAt(0).toUpperCase() + diff.slice(1)}
             </button>
-            <button
-              onClick={handleRandom}
-              className="flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md bg-secondary hover:bg-secondary/80 transition-colors"
-            >
-              <Shuffle className="h-3 w-3 mr-1" />
-              Random
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={handlePrevious}
-              disabled={filteredQuestions.length <= 1}
-              className="flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="h-3 w-3 mr-1" />
-              Prev
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={filteredQuestions.length <= 1}
-              className="flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronRightIcon className="h-3 w-3 mr-1" />
-              Next
-            </button>
-          </div>
-
-          {/* Difficulty Filters */}
-          <div className="flex gap-1 mt-3">
-            {(['easy', 'medium', 'hard'] as const).map((diff) => (
-              <button
-                key={diff}
-                onClick={() => handleFilterChange(diff)}
-                className={cn(
-                  "flex-1 px-2 py-1 text-xs font-medium rounded-md transition-colors",
-                  filter === diff 
-                    ? getDifficultyColor(diff) 
-                    : "bg-secondary hover:bg-secondary/80"
-                )}
-              >
-                <span className="mr-1">{getDifficultyIcon(diff)}</span>
-                {diff.charAt(0).toUpperCase() + diff.slice(1)}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* Questions List */}
       <div className="overflow-y-auto flex-1">
@@ -202,20 +223,21 @@ export function EnhancedSidebar({ questions, selectedQuestion, onSelectQuestion,
                     )}
                     <h3 className="text-sm font-medium truncate">{question.title}</h3>
                   </div>
-                  
-          {isMounted && !isCollapsed && (
-            <div className="flex items-center space-x-2 mt-1">
-              <span className={cn(
-                "text-xs px-2 py-0.5 rounded-full border",
-                getDifficultyColor(question.difficulty)
-              )}>
-                {getDifficultyIcon(question.difficulty)} {question.difficulty}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {question.category}
-              </span>
-            </div>
-          )}
+
+                  <div className={cn(
+                    "flex items-center space-x-2 mt-1 transition-all duration-300",
+                    isCollapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100 h-auto"
+                  )}>
+                    <span className={cn(
+                      "text-xs px-2 py-0.5 rounded-full border",
+                      getDifficultyColor(question.difficulty)
+                    )}>
+                      {getDifficultyIcon(question.difficulty)} {question.difficulty}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {question.category}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -223,15 +245,16 @@ export function EnhancedSidebar({ questions, selectedQuestion, onSelectQuestion,
         })}
       </div>
 
-      {/* Progress Summary */}
-      {isMounted && !isCollapsed && (
-        <div className="p-3 border-t border-border text-xs text-muted-foreground">
-          <div className="flex justify-between">
-            <span>Total: {filteredQuestions.length}</span>
-            <span>Solved: {Object.values(userProgress).filter(p => p === 'solved').length}</span>
-          </div>
+      {/* Progress Summary - Always rendered but visibility controlled by CSS */}
+      <div className={cn(
+        "p-3 border-t border-border text-xs text-muted-foreground transition-all duration-300",
+        isCollapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100 h-auto"
+      )}>
+        <div className="flex justify-between">
+          <span>Total: {filteredQuestions.length}</span>
+          <span>Solved: {Object.values(userProgress).filter(p => p === 'solved').length}</span>
         </div>
-      )}
+      </div>
     </aside>
   );
 }

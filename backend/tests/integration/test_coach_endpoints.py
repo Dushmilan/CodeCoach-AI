@@ -5,14 +5,16 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 import json
+from unittest.mock import patch
 
 from app.models.schemas import CoachingMode, Language, Difficulty
 
 
+@pytest.mark.usefixtures("test_env_vars")
 class TestCoachEndpoints:
     """Test cases for coach endpoints."""
     
-    def test_get_coaching_basic(self, test_client: TestClient):
+    def test_get_coaching_basic(self, test_client: TestClient, test_env_vars):
         """Test basic coaching endpoint."""
         coaching_request = {
             "problem": "Find the maximum element in an array",
@@ -22,12 +24,12 @@ class TestCoachEndpoints:
             "mode": "review",
             "difficulty": "easy"
         }
-        
+
         response = test_client.post("/api/coach/", json=coaching_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "response" in data
         assert data["mode"] == "review"
         assert data["language"] == "python"
@@ -245,7 +247,7 @@ class TestCoachEndpoints:
         assert response.status_code == 200  # Should handle gracefully
     
     @pytest.mark.asyncio
-    async def test_coaching_async(self, async_client: AsyncClient):
+    async def test_coaching_async(self, async_client):
         """Test coaching with async client."""
         coaching_request = {
             "problem": "Find the maximum element in an array",

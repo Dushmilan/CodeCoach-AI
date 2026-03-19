@@ -52,13 +52,13 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
-        problem, 
-        code, 
-        message, 
-        mode, 
+      body: JSON.stringify({
+        problem,
+        code,
+        message,
+        mode: mode.toLowerCase(),
         language: language.toLowerCase(),
-        difficulty: 'medium' 
+        difficulty: 'medium'
       }),
     });
     if (!response.ok) {

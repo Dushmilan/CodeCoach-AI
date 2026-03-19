@@ -9,49 +9,50 @@ import { Question, ChatMessage, Language } from '@/types';
 import { api } from '@/lib/api';
 
 interface LayoutProps {
+  questions: Question[];
   userProgress?: Record<string, 'attempted' | 'solved'>;
   selectedQuestion?: Question | null;
   onQuestionSelect?: (question: Question) => void;
 }
 
 const sampleQuestions: Question[] = [
-{
-  id: 'two-sum',
-  title: 'Two Sum',
-  difficulty: 'easy',
-  category: 'Arrays',
-  company_tags: ['Google', 'Amazon', 'Meta'],
-  description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
-  starter: {
-    python: 'def two_sum(nums, target):\n # Your code here\n pass',
-    javascript: 'function twoSum(nums, target) {\n // Your code here\n}',
-    java: 'class Solution {\n public int[] twoSum(int[] nums, int target) {\n // Your code here\n }\n}'
-  },
-  examples: [
-    { input: 'nums = [2,7,11,15], target = 9', output: '[0,1]' },
-    { input: 'nums = [3,2,4], target = 6', output: '[1,2]' }
-  ],
-  test_cases: [
-    { input: [[2, 7, 11, 15], 9], expected: [0, 1] },
-    { input: [[3, 2, 4], 6], expected: [1, 2] }
-  ],
-  hints: [
-    'Try using a hash map to store the complement of each number',
-    'Iterate through the array and check if the complement exists in the hash map'
-  ],
-  solution: 'Use a hash map to store the complement of each number as you iterate through the array.',
-  time_complexity: 'O(n)',
-  space_complexity: 'O(n)'
-}
+  {
+    id: 'two-sum',
+    title: 'Two Sum',
+    difficulty: 'easy',
+    category: 'Arrays',
+    company_tags: ['Google', 'Amazon', 'Meta'],
+    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+    starter: {
+      python: 'def two_sum(nums, target):\n # Your code here\n pass',
+      javascript: 'function twoSum(nums, target) {\n // Your code here\n}',
+      java: 'class Solution {\n public int[] twoSum(int[] nums, int target) {\n // Your code here\n }\n}'
+    },
+    examples: [
+      { input: 'nums = [2,7,11,15], target = 9', output: '[0,1]' },
+      { input: 'nums = [3,2,4], target = 6', output: '[1,2]' }
+    ],
+    test_cases: [
+      { input: [[2, 7, 11, 15], 9], expected: [0, 1] },
+      { input: [[3, 2, 4], 6], expected: [1, 2] }
+    ],
+    hints: [
+      'Try using a hash map to store the complement of each number',
+      'Iterate through the array and check if the complement exists in the hash map'
+    ],
+    solution: 'Use a hash map to store the complement of each number as you iterate through the array.',
+    time_complexity: 'O(n)',
+    space_complexity: 'O(n)'
+  }
 ];
 
-export function Layout({ 
-  userProgress: externalUserProgress, 
+export function Layout({
+  questions,
+  userProgress: externalUserProgress,
   selectedQuestion: externalSelectedQuestion,
-  onQuestionSelect: externalOnQuestionSelect 
+  onQuestionSelect: externalOnQuestionSelect
 }: LayoutProps) {
-  const [questions, setQuestions] = useState<Question[]>(sampleQuestions);
-  const [internalSelectedQuestion, setInternalSelectedQuestion] = useState<Question>(sampleQuestions[0]);
+  const [internalSelectedQuestion, setInternalSelectedQuestion] = useState<Question>(questions[0] || sampleQuestions[0]);
   const [currentCode, setCurrentCode] = useState('');
   const [language, setLanguage] = useState<Language>('python');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -62,40 +63,13 @@ export function Layout({
   const [internalUserProgress, setInternalUserProgress] = useState<Record<string, 'attempted' | 'solved'>>({});
   const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   // Use external props if provided, otherwise use internal state
   const selectedQuestion = externalSelectedQuestion ?? internalSelectedQuestion;
   const userProgress = externalUserProgress ?? internalUserProgress;
   const handleQuestionSelect = externalOnQuestionSelect ?? setInternalSelectedQuestion;
-  
-  // Prevent hydration issues by ensuring consistent initial state
-  
+
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-  
-
-
-  useEffect(() => {
-    // Load questions from API
-    api.getQuestions()
-      .then((response) => {
-        // Ensure response is an array
-        if (Array.isArray(response)) {
-          setQuestions(response);
-        } else {
-          console.error('API returned non-array response:', response);
-          setQuestions(sampleQuestions);
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to load questions:', error);
-        // Fallback to sample questions if API fails
-        setQuestions(sampleQuestions);
-      });
   }, []);
 
   useEffect(() => {
@@ -203,7 +177,7 @@ export function Layout({
 
   const handleRunCode = async () => {
     if (!selectedQuestion) return;
-    
+
     setIsRunning(true);
     setOutput('');
     setError('');
@@ -213,9 +187,9 @@ export function Layout({
       const originalConsoleLog = console.log;
       const originalConsoleError = console.error;
       const originalConsoleWarn = console.warn;
-      
+
       const captureLog = (...args: any[]) => {
-        const formattedArgs = args.map(arg => 
+        const formattedArgs = args.map(arg =>
           typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
         ).join(' ');
         logs.push(formattedArgs);
@@ -229,10 +203,10 @@ export function Layout({
       try {
         // Identify the function name from starter code
         const jsStarter = selectedQuestion.starter.javascript;
-        const fnNameMatch = jsStarter.match(/function\s+(\w+)\s*\(/) || 
-                           jsStarter.match(/var\s+(\w+)\s*=\s*function/) ||
-                           jsStarter.match(/const\s+(\w+)\s*=\s*/);
-        
+        const fnNameMatch = jsStarter.match(/function\s+(\w+)\s*\(/) ||
+          jsStarter.match(/var\s+(\w+)\s*=\s*function/) ||
+          jsStarter.match(/const\s+(\w+)\s*=\s*/);
+
         const fnName = fnNameMatch ? fnNameMatch[1] : null;
 
         if (!fnName) {
@@ -242,11 +216,11 @@ export function Layout({
         // Create a test runner
         const testRunner = new Function('testCases', `
           ${currentCode}
-          
+
           if (typeof ${fnName} !== 'function') {
             throw new Error('Function "${fnName}" is not defined or is not a function.');
           }
-          
+
           return testCases.map((tc, index) => {
             try {
               // Deep clone input to prevent modification from affecting subsequent tests
@@ -261,10 +235,10 @@ export function Layout({
         `);
 
         const results = testRunner(selectedQuestion.test_cases);
-        
+
         let outputText = logs.length > 0 ? `Console Output:\n${logs.join('\n')}\n\n` : '';
         outputText += "Test Results:\n";
-        
+
         let allPassed = true;
         results.forEach((r: any) => {
           if (r.error) {
@@ -273,7 +247,7 @@ export function Layout({
           } else if (r.passed) {
             outputText += `✅ Test Case ${r.index}: Passed\n`;
           } else {
-            outputText += `❌ Test Case ${r.index}: Failed\n   Input: ${JSON.stringify(r.input)}\n   Expected: ${JSON.stringify(r.expected)}\n   Actual: ${JSON.stringify(r.actual)}\n`;
+            outputText += `❌ Test Case ${r.index}: Failed\n Input: ${JSON.stringify(r.input)}\n Expected: ${JSON.stringify(r.expected)}\n Actual: ${JSON.stringify(r.actual)}\n`;
             allPassed = false;
           }
         });
@@ -313,26 +287,70 @@ export function Layout({
   // Memoize expensive computations
   const questionSummary = useMemo(() => {
     if (!selectedQuestion) return null;
-    
+
     const progress = userProgress[selectedQuestion.id];
-    const status = progress === 'solved' ? '✅ Solved' : 
-                   progress === 'attempted' ? '🔄 Attempted' : '⏳ Not started';
-    
+    const status = progress === 'solved' ? '✅ Solved' :
+      progress === 'attempted' ? '🔄 Attempted' : '⏳ Not started';
+
     return `${selectedQuestion.title} - ${status}`;
   }, [selectedQuestion, userProgress]);
 
   // Memoize difficulty badge styles
   const difficultyBadge = useMemo(() => {
     if (!selectedQuestion) return null;
-    
+
     const styles = {
       easy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
       medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
       hard: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
     };
-    
+
     return styles[selectedQuestion.difficulty] || styles.easy;
   }, [selectedQuestion]);
+
+  if (!isMounted) {
+    return (
+      <main className="flex h-screen bg-background" role="main" aria-label="CodeCoach AI Learning Platform">
+        <aside className="w-80 border-r border-border bg-card animate-pulse">
+          <div className="p-4 border-b border-border">
+            <div className="h-6 bg-secondary rounded w-24" />
+          </div>
+          <div className="p-4 space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-secondary rounded" />
+            ))}
+          </div>
+        </aside>
+        
+        <div className="flex-1 flex flex-col">
+          <header className="border-b border-border bg-card p-4">
+            <div className="h-8 bg-secondary rounded w-48 animate-pulse" />
+          </header>
+          
+          <div className="flex-1 flex">
+            <section className="flex-1 p-4">
+              <div className="space-y-4">
+                <div className="h-8 bg-secondary rounded w-64 animate-pulse" />
+                <div className="h-4 bg-secondary rounded w-32 animate-pulse" />
+                <div className="h-20 bg-secondary rounded animate-pulse" />
+              </div>
+            </section>
+            
+            <aside className="w-96 border-l border-border p-4">
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 bg-secondary rounded animate-pulse" />
+                ))}
+              </div>
+            </aside>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Prevent hydration issues by delaying API calls until mounted
+  // The component structure is consistent between server and client
 
   return (
     <main className="flex h-screen bg-background" role="main" aria-label="CodeCoach AI Learning Platform">
@@ -347,8 +365,8 @@ export function Layout({
         <Header />
 
         <div className="flex-1 flex overflow-hidden">
-          <section 
-            className="flex-1 flex flex-col p-4" 
+          <section
+            className="flex-1 flex flex-col p-4"
             aria-labelledby="question-content"
           >
             {selectedQuestion && (
@@ -358,7 +376,7 @@ export function Layout({
                     {selectedQuestion.title}
                   </h1>
                   <div className="flex items-center gap-2 mb-4" role="group" aria-label="Question metadata">
-                    <span 
+                    <span
                       className={`px-2 py-1 text-xs font-medium rounded-full ${difficultyBadge}`}
                       aria-label={`Difficulty: ${selectedQuestion.difficulty}`}
                     >
@@ -372,7 +390,7 @@ export function Layout({
                     </span>
                   </div>
                 </header>
-                
+
                 <div className="prose prose-sm dark:prose-invert max-w-none" role="article">
                   <p>{selectedQuestion.description}</p>
                   {selectedQuestion.examples && selectedQuestion.examples.length > 0 && (
@@ -428,4 +446,5 @@ export function Layout({
         </div>
       </div>
     </main>
-  )};
+  );
+}

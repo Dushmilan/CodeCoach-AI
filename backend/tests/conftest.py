@@ -2,6 +2,7 @@
 Test configuration and fixtures for CodeCoach AI API testing.
 """
 import pytest
+import pytest_asyncio
 import asyncio
 from typing import Generator, AsyncGenerator
 from fastapi.testclient import TestClient
@@ -32,8 +33,8 @@ def test_client() -> Generator:
         yield client
 
 
-@pytest.fixture(scope="session")
-async def async_client() -> AsyncGenerator:
+@pytest_asyncio.fixture(scope="session")
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create an async test client for asynchronous testing."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
