@@ -1,8 +1,0 @@
-[project]
-name = "qa"
-version = "1.0.0"
-dependencies = [
-    "fastapi>=0.110",
-    "uvicorn[standard]",
-    "openai>=1.30"
-]
