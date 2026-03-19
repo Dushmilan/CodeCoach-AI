@@ -1,155 +1,154 @@
-# CodeCoach AI - Full Stack Implementation
+# CodeCoach AI
 
-## Overview
-CodeCoach AI is an AI-powered coding interview practice platform that provides real-time coaching and code execution capabilities. This is the Phase 2 full-stack implementation.
-
-## Architecture
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Next.js       │    │   FastAPI       │    │   NVIDIA NIM    │
-│   Frontend      │◄──►│   Backend       │◄──►│   AI Coaching   │
-│   (Vercel)      │    │   (Render)      │    │   (Free Tier)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                       ┌─────────────────┐
-                       │   Piston API    │
-                       │   Code Exec     │
-                       └─────────────────┘
-```
+A comprehensive AI-powered coding assistant that provides real-time code coaching, debugging help, and learning guidance.
 
 ## Project Structure
+
 ```
-codecoach-ai/
-├── frontend/          # Next.js 14 application
-│   ├── src/
-│   │   ├── app/       # App Router
-│   │   ├── components/ # React components
-│   │   └── lib/       # Utilities and types
-│   ├── package.json
-│   └── next.config.js
-├── backend/           # FastAPI application
-│   ├── app/
-│   │   ├── api/       # API endpoints
-│   │   ├── models/    # Pydantic models
-│   │   └── services/  # Business logic
-│   ├── questions/     # Question bank JSON files
-│   ├── requirements.txt
-│   └── Dockerfile
-├── shared/            # Shared types and utilities
-└── plans/             # Implementation plans
+CodeCoach-AI/
+├── backend/           # FastAPI backend service
+├── frontend/          # Next.js frontend application
+├── plans/            # Project planning documents
+└── shared/           # Shared utilities and types
 ```
 
 ## Quick Start
 
-### Prerequisites
-- Node.js 18+ and npm
-- Python 3.11+
-- NVIDIA NIM API key (free from build.nvidia.com)
-
 ### Backend Setup
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
 
-# Copy environment variables
-cp .env.example .env
-# Edit .env with your NVIDIA API key
+1. **Navigate to backend directory:**
+   ```bash
+   cd backend
+   ```
 
-# Run development server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+2. **Create virtual environment:**
+   ```bash
+   python -m venv venv
+   ```
+
+3. **Activate virtual environment:**
+   - Windows: `venv\Scripts\activate`
+   - macOS/Linux: `source venv/bin/activate`
+
+4. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` with your actual configuration values.
+
+6. **Start the backend server:**
+   ```bash
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
 
 ### Frontend Setup
-```bash
-cd frontend
-npm install
 
-# Copy environment variables
-cp .env.example .env.local
-# Edit .env.local with your configuration
+1. **Navigate to frontend directory:**
+   ```bash
+   cd frontend
+   ```
 
-# Run development server
-npm run dev
-```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   # or
+   pnpm install
+   # or
+   yarn install
+   ```
 
-## Features
-- **AI Coaching**: Real-time hints and code review via NVIDIA NIM
-- **Code Execution**: Multi-language support via Piston API
-- **Progress Tracking**: User authentication and progress persistence
-- **Responsive Design**: Mobile-first responsive design
-- **Zero Cost**: Deployed on free tiers of Vercel, Render, and Supabase
+3. **Set up environment variables:**
+   ```bash
+   cp .env.example .env.local
+   ```
+   Edit `.env.local` with your actual configuration values.
 
-## API Endpoints
-- `POST /api/coach` - AI coaching proxy
-- `POST /api/run` - Code execution
-- `GET /api/questions` - List all questions
-- `GET /api/questions/:id` - Get specific question
-- `GET /health` - Health check
+4. **Start the development server:**
+   ```bash
+   npm run dev
+   # or
+   pnpm dev
+   # or
+   yarn dev
+   ```
+
+### Access the Application
+
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:8000
+- **API Documentation:** http://localhost:8000/docs
+
+## Development Commands
+
+### Backend
+- `uvicorn app.main:app --reload` - Start with auto-reload
+- `python -m pytest` - Run tests
+- `python -m black .` - Format code
+- `python -m flake8` - Lint code
+
+### Frontend
+- `npm run dev` - Development server
+- `npm run build` - Production build
+- `npm start` - Production server
+- `npm run lint` - Lint code
 
 ## Environment Variables
 
 ### Backend (.env)
-```bash
-NVIDIA_API_KEY=your_nvidia_nim_api_key
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-PORT=8000
+```
+# API Keys
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
+
+# Database
+DATABASE_URL=sqlite:///./codecoach.db
+
+# Redis (for rate limiting)
+REDIS_URL=redis://localhost:6379
+
+# Piston (code execution service)
+PISTON_API_URL=https://emkc.org/api/v2/piston
 ```
 
 ### Frontend (.env.local)
-```bash
+```
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
 ```
 
-## Deployment
+## Docker Setup (Optional)
 
-### Vercel (Frontend)
-1. Connect GitHub repository to Vercel
-2. Set environment variables
-3. Deploy automatically on push to main
+1. **Build and run with Docker Compose:**
+   ```bash
+   docker-compose up --build
+   ```
 
-### Render (Backend)
-1. Create new web service
-2. Use Dockerfile for deployment
-3. Set environment variables
-4. Deploy automatically on push to main
+2. **Access the application:**
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:8000
 
-### Supabase (Database & Auth)
-1. Create new Supabase project
-2. Run database migrations
-3. Configure GitHub OAuth
-4. Set up row-level security
+## Features
 
-## Development
+- **Real-time Code Coaching:** Get instant feedback on your code
+- **Multi-language Support:** Support for Python, JavaScript, TypeScript, and more
+- **Interactive Debugging:** Step-by-step debugging assistance
+- **Learning Paths:** Personalized coding challenges and tutorials
+- **Code Execution:** Safe code execution in sandboxed environment
+- **Progress Tracking:** Monitor your learning progress
 
-### Adding New Questions
-Add JSON files to `backend/questions/` following the schema:
-```json
-{
-  "id": "two-sum",
-  "title": "Two Sum",
-  "difficulty": "easy",
-  "category": "Arrays",
-  "description": "...",
-  "starter": {
-    "python": "...",
-    "javascript": "...",
-    "java": "..."
-  },
-  "test_cases": [...]
-}
-```
+## Contributing
 
-### Contributing
 1. Fork the repository
-2. Create feature branch
-3. Make changes
+2. Create a feature branch
+3. Make your changes
 4. Add tests
-5. Submit pull request
+5. Submit a pull request
 
 ## License
-MIT License - see LICENSE file for details
+
+MIT License - see LICENSE file for details.
