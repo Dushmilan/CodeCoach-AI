@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import './AiBar.css';
 
 const AiBar = ({ currentCode, selectedLanguage, question, apiKey }) => {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: "I am here to help you with your code. Ask me anything or I'll provide suggestions as you type." }
-  ]);
+  const initialMessage = { role: 'assistant', content: "I am your AI Coding Coach. I'm here to help you solve this problem through guidance and hints, not just by giving you the solution. What's on your mind?" };
+  const [messages, setMessages] = useState([initialMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -17,12 +18,13 @@ const AiBar = ({ currentCode, selectedLanguage, question, apiKey }) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (overrideInput = null) => {
+    const messageText = overrideInput || input;
+    if (!messageText.trim() || isLoading) return;
 
-    const userMessage = { role: 'user', content: input };
+    const userMessage = { role: 'user', content: messageText };
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    if (!overrideInput) setInput('');
     setIsLoading(true);
 
     try {
@@ -30,16 +32,17 @@ const AiBar = ({ currentCode, selectedLanguage, question, apiKey }) => {
         throw new Error('NVIDIA API Key is missing. Please enter it in the prompt.');
       }
 
-      const systemPrompt = `You are an expert coding assistant for a platform called CodeCoach-AI.
-Current context:
-- Problem: ${question?.title || 'Unknown'}
-- Language: ${selectedLanguage}
-- Current Code: 
+      const systemPrompt = `You are an expert coding coach for CodeCoach-AI. 
+Your goal is to help users learn by providing guidance, hints, and explanations.
+- Never provide a full solution upfront unless explicitly asked and after several hints.
+- Always consider the current problem: "${question?.title || 'Unknown'}"
+- Current language: ${selectedLanguage}
+- User's current code:
 \`\`\`${selectedLanguage}
 ${currentCode}
 \`\`\`
-
-Provide helpful, concise, and accurate coding advice. If the user asks for a solution, guide them instead of just giving the full code.`;
+- Keep responses encouraging and professional.
+- Use Markdown for all code snippets and formatting.`;
 
       const response = await fetch('/api/nvidia/v1/chat/completions', {
         method: 'POST',
@@ -51,11 +54,11 @@ Provide helpful, concise, and accurate coding advice. If the user asks for a sol
           model: "meta/llama-3.1-8b-instruct",
           messages: [
             { role: 'system', content: systemPrompt },
-            ...messages.slice(-5), // Keep last 5 messages for context
+            ...messages.slice(-6),
             userMessage
           ],
-          max_tokens: 1024,
-          temperature: 0.5,
+          max_tokens: 1500,
+          temperature: 0.7,
           top_p: 1,
           stream: false
         })
@@ -77,27 +80,63 @@ Provide helpful, concise, and accurate coding advice. If the user asks for a sol
       console.error('AI Error:', error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `Error: ${error.message}. Make sure your API key is correct and you have enough credits.` 
+        content: `**Error:** ${error.message}. Please check your API key and connection.` 
       }]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleReview = () => {
+    const reviewPrompt = `Please perform a comprehensive review of my code for the "${question?.title}" problem. 
+Check for:
+1. Logic errors or potential bugs.
+2. Time and space complexity optimizations.
+3. Code readability and best practices.
+4. How well it handles edge cases.
+
+Provide constructive feedback and hints for improvement.`;
+    handleSend(reviewPrompt);
+  };
+
+  const clearChat = () => {
+    setMessages([initialMessage]);
+  };
+
   return (
     <div className="ai-bar">
       <div className="ai-header">
-        <h2>AI Assistant</h2>
-        <span className="model-badge">Llama 3.1 8B</span>
+        <div className="ai-title-wrap">
+          <h2>AI Coach</h2>
+          <span className="model-badge">Llama 3.1 8B</span>
+        </div>
+        <div className="header-actions">
+          <button 
+            className="header-btn" 
+            onClick={handleReview}
+            disabled={isLoading || !currentCode.trim()}
+            title="Get a full code review"
+          >
+            Review
+          </button>
+          <button 
+            className="header-btn secondary" 
+            onClick={clearChat}
+            disabled={isLoading || messages.length <= 1}
+            title="Clear chat history"
+          >
+            Clear
+          </button>
+        </div>
       </div>
       
       <div className="ai-messages">
         {messages.map((msg, index) => (
           <div key={index} className={`message ${msg.role}`}>
             <div className="message-content">
-              {msg.content.split('\n').map((line, i) => (
-                <p key={i}>{line}</p>
-              ))}
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {msg.content}
+              </ReactMarkdown>
             </div>
           </div>
         ))}
@@ -113,7 +152,7 @@ Provide helpful, concise, and accurate coding advice. If the user asks for a sol
 
       <div className="ai-chat-controls">
         <textarea 
-          placeholder="Ask AI..." 
+          placeholder="Ask your coach anything..." 
           className="ai-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -138,3 +177,4 @@ Provide helpful, concise, and accurate coding advice. If the user asks for a sol
 };
 
 export default AiBar;
+  
