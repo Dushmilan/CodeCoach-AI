@@ -16,10 +16,9 @@ interface AIChatPanelProps {
 
 const quickActions = [
   { id: 'hint', label: 'Hint', icon: Lightbulb, mode: 'hint' },
-  { id: 'complexity', label: 'Complexity', icon: Clock, mode: 'complexity' },
-  { id: 'optimal', label: 'Optimal', icon: Target, mode: 'optimal' },
+  { id: 'review', label: 'Review', icon: Clock, mode: 'review' },
   { id: 'explain', label: 'Explain', icon: BookOpen, mode: 'explain' },
-  { id: 'edge', label: 'Edge Cases', icon: AlertTriangle, mode: 'edge' },
+  { id: 'debug', label: 'Debug', icon: AlertTriangle, mode: 'debug' },
 ];
 
 export function AIChatPanel({
