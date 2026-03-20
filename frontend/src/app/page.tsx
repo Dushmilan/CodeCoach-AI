@@ -2,6 +2,9 @@ import { Layout } from '@/components/layout/Layout';
 import { api } from '@/lib/api';
 import { QuestionSummary } from '@/types';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 async function getQuestions(): Promise<QuestionSummary[]> {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/questions`, {
