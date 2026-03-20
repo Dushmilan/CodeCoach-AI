@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { Play, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,6 @@ interface CodeEditorProps {
   onLanguageChange: (language: Language) => void;
   onRunCode: () => void;
   isRunning?: boolean;
-  output?: string;
-  error?: string;
 }
 
 const languageOptions = [
@@ -30,8 +28,6 @@ export function CodeEditor({
   onLanguageChange,
   onRunCode,
   isRunning,
-  output,
-  error,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
 
@@ -63,7 +59,7 @@ export function CodeEditor({
             ))}
           </select>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -106,17 +102,6 @@ export function CodeEditor({
           }}
         />
       </div>
-
-      {(output || error) && (
-        <div className="border-t border-border p-3 bg-secondary/50">
-          <div className="text-sm font-medium mb-2">Output:</div>
-          <pre className={`text-sm p-3 rounded-md overflow-auto max-h-32 ${
-            error ? "bg-red-500/10 text-red-400" : "bg-secondary text-foreground"
-          }`}>
-            {error || output}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }

@@ -206,3 +206,6 @@ cython_debug/
 
 # Docker
 .dockerignore
+
+# Piston runtime (code execution engine)
+piston/

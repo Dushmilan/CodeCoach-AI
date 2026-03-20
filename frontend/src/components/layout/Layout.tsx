@@ -2,9 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header } from './Header';
-import { EnhancedSidebar } from './EnhancedSidebar';
-import { CodeEditor } from '@/components/editor/CodeEditor';
-import { AIChatPanel } from '@/components/chat/AIChatPanel';
 import { Question, ChatMessage, Language } from '@/types';
 import { api } from '@/lib/api';
 import {
@@ -14,7 +11,6 @@ import {
   MainContentContainer,
   ContentLayoutContainer,
   QuestionContentSection,
-  QuestionArticle,
   CodeEditorContainer,
   AIChatPanelContainer,
 } from './elements';
@@ -334,19 +330,13 @@ export function Layout({
         selectedQuestion={selectedQuestion}
         onSelectQuestion={handleQuestionSelection}
         userProgress={userProgress}
+        difficultyBadge={difficultyBadge || ''}
       />
 
       <MainContentContainer>
         <Header />
         <ContentLayoutContainer>
           <QuestionContentSection>
-            {selectedQuestion && (
-            <QuestionArticle
-              selectedQuestion={selectedQuestion}
-              difficultyBadge={difficultyBadge || ''}
-              questionSummary={questionSummary}
-            />
-            )}
             <CodeEditorContainer
               language={language}
               currentCode={currentCode}

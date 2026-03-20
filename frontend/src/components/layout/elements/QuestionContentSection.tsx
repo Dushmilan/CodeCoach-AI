@@ -7,7 +7,7 @@ interface QuestionContentSectionProps {
 export function QuestionContentSection({ children }: QuestionContentSectionProps) {
   return (
     <section
-      className="flex-1 flex flex-col p-4"
+      className="flex-1 flex flex-col p-4 overflow-hidden"
       aria-labelledby="question-content"
     >
       {children}

@@ -12,3 +12,4 @@ export { ExampleContainer } from './ExampleContainer';
 export { ExampleSection } from './ExampleSection';
 export { CodeEditorContainer } from './CodeEditorContainer';
 export { AIChatPanelContainer } from './AIChatPanelContainer';
+export { QuestionDescriptionPanel } from './QuestionDescriptionPanel';
