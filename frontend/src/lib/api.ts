@@ -1,4 +1,4 @@
-import { Question, QuestionSummary, CodeExecutionResult } from '@/types';
+import { Question, QuestionSummary, CodeExecutionResult, StructuredCoachingResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -12,13 +12,13 @@ class ApiClient {
   async getQuestions(): Promise<QuestionSummary[]> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
+
     try {
       const response = await fetch(`${this.baseUrl}/api/questions`, {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch questions: ${response.status} ${response.statusText}`);
       }
@@ -36,13 +36,13 @@ class ApiClient {
   async getQuestion(id: string): Promise<Question> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
+
     try {
       const response = await fetch(`${this.baseUrl}/api/questions/${id}`, {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch question: ${response.status} ${response.statusText}`);
       }
@@ -112,8 +112,8 @@ class ApiClient {
     code: string,
     message: string,
     mode: string
-  ): Promise<ReadableStream<Uint8Array>> {
-    const response = await fetch(`${this.baseUrl}/api/coach/stream`, {
+  ): Promise<{ response: string; structured: StructuredCoachingResponse | null }> {
+    const response = await fetch(`${this.baseUrl}/api/coach/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -130,10 +130,11 @@ class ApiClient {
     if (!response.ok) {
       throw new Error('Failed to get coaching response');
     }
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-    return response.body;
+    const data = await response.json();
+    return {
+      response: data.response,
+      structured: data.structured || null
+    };
   }
 }
 

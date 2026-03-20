@@ -22,18 +22,28 @@ class SimplePythonValidator:
         try:
             # Parse input arguments from test case
             input_str = test_case['input']
-            # The input might have literal '\n' (two chars) or actual newlines
-            # Replace literal '\n' strings with actual newlines, then split
-            normalized_input = input_str.replace('\\n', '\n')
-            input_lines = normalized_input.split('\n')
+            
+            # Check if input contains newlines (multi-argument case)
+            has_newlines = '\n' in input_str or '\\n' in input_str
             
             parsed_args = []
-            for line in input_lines:
-                if line.strip():
-                    try:
-                        parsed_args.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        parsed_args.append(line)
+            if has_newlines:
+                # Multi-line input: split by newlines and parse each line
+                normalized_input = input_str.replace('\\n', '\n')
+                input_lines = normalized_input.split('\n')
+                
+                for line in input_lines:
+                    if line.strip():
+                        try:
+                            parsed_args.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            parsed_args.append(line)
+            else:
+                # Single-line input: try JSON first, then raw string
+                try:
+                    parsed_args.append(json.loads(input_str))
+                except json.JSONDecodeError:
+                    parsed_args.append(input_str)
             
             # Create wrapper code that calls the function
             args_str = ', '.join(f'arg{i}' for i in range(len(parsed_args)))

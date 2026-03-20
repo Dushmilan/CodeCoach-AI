@@ -106,7 +106,7 @@ export function Layout({
     setIsTyping(true);
 
     try {
-      const response = await api.getCoachResponse(
+      const data = await api.getCoachResponse(
         displayQuestion!.title,
         language,
         currentCode,
@@ -114,57 +114,15 @@ export function Layout({
         mode
       );
 
-      const reader = response.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = '';
-
       const assistantMessageObj: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: '',
+        content: data.response,
+        structured: data.structured,
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, assistantMessageObj]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-            if (data.includes('"done": true')) continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.chunk || parsed.choices?.[0]?.delta?.content || '';
-              if (content) {
-                assistantMessage += content;
-                setMessages(prev =>  prev.map(msg =>
-                  msg.id === assistantMessageObj.id
-                    ? { ...msg, content: assistantMessage }
-                    : msg
-                ));
-              }
-            } catch (e) {
-              // Handle non-JSON data
-              if (data.trim() && !data.includes('"error"')) {
-                assistantMessage += data;
-                setMessages(prev =>  prev.map(msg =>
-                  msg.id === assistantMessageObj.id
-                    ? { ...msg, content: assistantMessage }
-                    : msg
-                ));
-              }
-            }
-          }
-        }
-      }
     } catch (error) {
       console.error('Error getting coach response:', error);
       const errorMessage: ChatMessage = {
@@ -249,19 +207,23 @@ export function Layout({
         const results = testRunner(fullQuestionData.test_cases);
 
         let outputText = logs.length > 0 ? `Console Output:\n${logs.join('\n')}\n\n` : '';
-        outputText += "Test Results:\n";
+        outputText += "Test Results:\n\n";
 
         let allPassed = true;
         results.forEach((r: any) => {
+          const testCase = fullQuestionData.test_cases[r.index - 1];
+          const status = r.passed ? 'Pass' : 'Fail';
+          outputText += `${r.passed ? '✅' : '❌'} Test Case ${r.index}:\n`;
+          outputText += `   Status: ${status}\n`;
+          outputText += `   Input: ${r.input}\n`;
+          outputText += `   Expected Output: ${r.expected}\n`;
           if (r.error) {
-            outputText += `❌ Test Case ${r.index}: Error - ${r.error}\n`;
-            allPassed = false;
-          } else if (r.passed) {
-            outputText += `✅ Test Case ${r.index}: Passed\n`;
+            outputText += `   Actual Output: (Error) ${r.error}\n`;
           } else {
-            outputText += `❌ Test Case ${r.index}: Failed\n Input: ${r.input}\n Expected: ${r.expected}\n Actual: ${JSON.stringify(r.actual)}\n`;
-            allPassed = false;
+            outputText += `   Actual Output: ${JSON.stringify(r.actual)}\n`;
           }
+          outputText += '\n';
+          if (!r.passed) allPassed = false;
         });
 
         setOutput(outputText);
@@ -286,23 +248,20 @@ export function Layout({
       let outputText = '';
       outputText += `Test Results: ${validation.passed_tests}/${validation.total_tests} passed\n`;
       outputText += `Success Rate: ${(validation.success_rate * 100).toFixed(0)}%\n\n`;
-      
+
       validation.results.forEach((r, index) => {
         const testCase = fullQuestionData.test_cases[index];
+        const status = r.passed ? 'Pass' : 'Fail';
         outputText += `${r.passed ? '✅' : '❌'} ${r.test_name || `Test ${index + 1}`}:\n`;
-        if (r.passed) {
-          outputText += `   Status: Passed\n`;
-        } else {
-          outputText += `   Status: Failed\n`;
-          if (r.error) {
-            outputText += `   Error: ${r.error}\n`;
-          }
-          if (r.stderr) {
-            outputText += `   stderr: ${r.stderr}\n`;
-          }
-          outputText += `   Input: ${testCase.input}\n`;
-          outputText += `   Expected: ${testCase.expected_output}\n`;
-          outputText += `   Got: ${r.stdout}\n`;
+        outputText += `   Status: ${status}\n`;
+        outputText += `   Input: ${testCase.input}\n`;
+        outputText += `   Expected Output: ${testCase.expected_output}\n`;
+        outputText += `   Actual Output: ${r.stdout || '(empty)'}\n`;
+        if (r.error) {
+          outputText += `   Error: ${r.error}\n`;
+        }
+        if (r.stderr) {
+          outputText += `   Stderr: ${r.stderr}\n`;
         }
         outputText += '\n';
       });

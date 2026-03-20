@@ -274,9 +274,9 @@ export function EnhancedSidebar({ questions, selectedQuestion, fullQuestion, onS
 		);
 		})
 	) : (
-		selectedQuestion && (
+		(fullQuestion || selectedQuestion) && (
 		<QuestionDescriptionPanel
-			selectedQuestion={selectedQuestion}
+			selectedQuestion={fullQuestion || selectedQuestion}
 			difficultyBadge={difficultyBadge || ''}
 			onToggleView={() => setViewMode('list')}
 		/>

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Lightbulb, Clock, Target, BookOpen, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChatMessage } from '@/types';
+import { StructuredResponse } from './StructuredResponse';
 
 interface AIChatPanelProps {
   messages: ChatMessage[];
@@ -75,14 +76,18 @@ export function AIChatPanel({
                   : 'bg-secondary text-secondary-foreground'
               }`}
             >
-              <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+              {message.role === 'assistant' && message.structured ? (
+                <StructuredResponse structured={message.structured} />
+              ) : (
+                <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+              )}
               <div className="text-xs opacity-70 mt-1">
                 {new Date(message.timestamp).toLocaleTimeString()}
               </div>
             </div>
           </div>
         ))}
-        
+
         {isTyping && (
           <div className="flex justify-start">
             <div className="bg-secondary text-secondary-foreground rounded-lg px-4 py-2">
@@ -94,7 +99,7 @@ export function AIChatPanel({
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 

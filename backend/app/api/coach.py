@@ -87,14 +87,14 @@ async def get_coaching(
     """
     Get AI coaching response for coding problems.
 
-    This endpoint provides streaming AI coaching using NVIDIA NIM API.
-    The response is returned as a Server-Sent Events stream for real-time interaction.
+    This endpoint provides structured AI coaching using NVIDIA NIM API.
+    Returns both raw text response and structured JSON response.
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     # DEBUG: Log incoming request details
-    logger.info("=== COACH API REQUEST (non-streaming) ===")
+    logger.info("=== COACH API REQUEST (structured) ===")
     logger.info(f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}...")
     logger.info(f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}...")
     logger.info(f"Language: {request.language.value}")
@@ -105,26 +105,27 @@ async def get_coaching(
     logger.info("=========================================")
 
     try:
-        # For non-streaming response, collect the entire response
-        response_chunks = []
-        async for chunk in nim_service.get_coaching_response(
+        # Get structured response
+        structured_data = await nim_service.get_structured_coaching_response(
             problem=request.problem,
             code=request.code,
             language=request.language.value,
             message=request.message,
             mode=request.mode.value,
             difficulty=request.difficulty.value
-        ):
-            response_chunks.append(chunk)
+        )
 
-        full_response = "".join(response_chunks)
+        # Create raw text response from structured data for backward compatibility
+        raw_response = _format_structured_as_text(structured_data)
+        
         logger.info(f"=== COACH API RESPONSE ===")
-        logger.info(f"Response length: {len(full_response)} characters")
-        logger.info(f"Response (first 200 chars): {full_response[:200] if full_response else 'EMPTY'}...")
+        logger.info(f"Structured response keys: {list(structured_data.keys())}")
+        logger.info(f"Summary: {structured_data.get('summary', 'N/A')[:100]}...")
         logger.info("==========================")
 
         return CoachingResponse(
-            response=full_response,
+            response=raw_response,
+            structured=structured_data,
             mode=request.mode,
             language=request.language
         )
@@ -139,6 +140,62 @@ async def get_coaching(
             status_code=500,
             detail=f"Error generating coaching response: {str(e)}"
         )
+
+
+def _format_structured_as_text(structured_data: dict) -> str:
+    """Format structured data as readable text for backward compatibility."""
+    lines = []
+    
+    # Summary
+    if structured_data.get("summary"):
+        lines.append(f"📝 {structured_data['summary']}")
+        lines.append("")
+    
+    # Hints
+    if structured_data.get("hints"):
+        lines.append("💡 **Hints:**")
+        for i, hint in enumerate(structured_data["hints"], 1):
+            lines.append(f"  {i}. {hint}")
+        lines.append("")
+    
+    # Code Review
+    if structured_data.get("code_review"):
+        lines.append("🔍 **Code Review:**")
+        lines.append(structured_data["code_review"])
+        lines.append("")
+    
+    # Complexity Analysis
+    if structured_data.get("complexity_analysis"):
+        lines.append("⏱️ **Complexity Analysis:**")
+        lines.append(structured_data["complexity_analysis"])
+        lines.append("")
+    
+    # Suggestions
+    if structured_data.get("suggestions"):
+        lines.append("✨ **Suggestions:**")
+        for i, suggestion in enumerate(structured_data["suggestions"], 1):
+            lines.append(f"  {i}. {suggestion}")
+        lines.append("")
+    
+    # Edge Cases
+    if structured_data.get("edge_cases"):
+        lines.append("⚠️ **Edge Cases:**")
+        for i, edge_case in enumerate(structured_data["edge_cases"], 1):
+            lines.append(f"  {i}. {edge_case}")
+        lines.append("")
+    
+    # Explanation
+    if structured_data.get("explanation"):
+        lines.append("📚 **Explanation:**")
+        lines.append(structured_data["explanation"])
+        lines.append("")
+    
+    # Debug Help
+    if structured_data.get("debug_help"):
+        lines.append("🐛 **Debug Help:**")
+        lines.append(structured_data["debug_help"])
+    
+    return "\n".join(lines).strip()
 
 @router.post("/stream")
 async def get_coaching_stream(

@@ -16,9 +16,9 @@ interface CodeEditorProps {
 }
 
 const languageOptions = [
-  { value: 'python', label: 'Python', version: '3.10' },
-  { value: 'javascript', label: 'JavaScript', version: '18.15.0' },
-  { value: 'java', label: 'Java', version: '15.0.2' },
+  { value: 'python', label: 'Python', version: '3.10', disabled: false },
+  { value: 'javascript', label: 'JavaScript', version: '18.15.0', disabled: true },
+  { value: 'java', label: 'Java', version: '15.0.2', disabled: true },
 ];
 
 export function CodeEditor({
@@ -53,8 +53,13 @@ export function CodeEditor({
             className="px-3 py-1 text-sm bg-secondary border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {languageOptions.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option
+                key={option.value}
+                value={option.value}
+                disabled={option.disabled}
+              >
                 {option.label} {option.version}
+                {option.disabled && ' (still in progress)'}
               </option>
             ))}
           </select>

@@ -31,10 +31,22 @@ export interface Question extends QuestionSummary {
   space_complexity: string;
 }
 
+export interface StructuredCoachingResponse {
+  summary: string;
+  hints: string[];
+  code_review: string | null;
+  complexity_analysis: string | null;
+  suggestions: string[];
+  edge_cases: string[];
+  explanation: string | null;
+  debug_help: string | null;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  structured?: StructuredCoachingResponse | null;
   timestamp: Date;
 }
 

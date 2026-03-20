@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Menu, X, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 
 export function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   return (
@@ -30,15 +28,6 @@ export function Header() {
             ) : (
               <Moon className="h-4 w-4" />
             )}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>
       </div>

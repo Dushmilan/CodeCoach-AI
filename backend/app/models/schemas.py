@@ -32,8 +32,21 @@ class CoachingRequest(BaseModel):
     mode: CoachingMode = Field(default=CoachingMode.HINT, description="Coaching mode")
     difficulty: Difficulty = Field(default=Difficulty.MEDIUM, description="Problem difficulty")
 
+class StructuredCoachingResponse(BaseModel):
+    """Structured AI coaching response with categorized sections."""
+    summary: str = Field(..., description="Brief summary of the response")
+    hints: list[str] = Field(default=[], description="List of hints for solving the problem")
+    code_review: Optional[str] = Field(None, description="Code review feedback")
+    complexity_analysis: Optional[str] = Field(None, description="Time and space complexity analysis")
+    suggestions: list[str] = Field(default=[], description="List of improvement suggestions")
+    edge_cases: list[str] = Field(default=[], description="List of edge cases to consider")
+    explanation: Optional[str] = Field(None, description="Detailed explanation of concepts")
+    debug_help: Optional[str] = Field(None, description="Debugging assistance")
+
+
 class CoachingResponse(BaseModel):
-    response: str = Field(..., description="AI coaching response")
+    response: str = Field(..., description="AI coaching response (raw text)")
+    structured: Optional[StructuredCoachingResponse] = Field(None, description="Structured AI coaching response")
     mode: CoachingMode = Field(..., description="Coaching mode used")
     language: Language = Field(..., description="Programming language")
 
