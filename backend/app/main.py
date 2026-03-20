@@ -13,7 +13,7 @@ from pathlib import Path
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
 
-from app.api import coach, run, questions, health, debug, validation
+from app.api import coach, run, questions, health, debug, validation, question_validation
 
 app = FastAPI(
     title="CodeCoach AI Backend",
@@ -56,6 +56,7 @@ app.include_router(questions.router, prefix="/api/questions", tags=["questions"]
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(debug.router, prefix="/debug", tags=["debug"])
 app.include_router(validation.router, prefix="/api/validate", tags=["validation"])
+app.include_router(question_validation.router, prefix="/api/question-validation", tags=["question-validation"])
 
 @app.get("/")
 async def root():
