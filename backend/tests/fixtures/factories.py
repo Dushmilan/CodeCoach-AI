@@ -17,13 +17,13 @@ from app.models.schemas import (
 
 class CoachingRequestFactory(factory.Factory):
     """Factory for generating coaching requests."""
-    
+
     class Meta:
         model = CoachingRequest
-    
+
     problem = factory.Faker('text', max_nb_chars=200)
-    code = factory.LazyAttribute(lambda obj: f"def solution({obj.language.value}):\n    pass")
-    language = factory.Iterator([Language.PYTHON, Language.JAVASCRIPT, Language.JAVA])
+    code = factory.LazyAttribute(lambda obj: f"def solution():\n    pass")
+    language = factory.Iterator([Language.PYTHON])
     message = factory.Faker('text', max_nb_chars=100)
     mode = factory.Iterator([CoachingMode.HINT, CoachingMode.REVIEW, CoachingMode.EXPLAIN, CoachingMode.DEBUG])
     difficulty = factory.Iterator([Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD])
@@ -31,52 +31,48 @@ class CoachingRequestFactory(factory.Factory):
 
 class CoachingResponseFactory(factory.Factory):
     """Factory for generating coaching responses."""
-    
+
     class Meta:
         model = CoachingResponse
-    
+
     response = factory.Faker('text', max_nb_chars=500)
     mode = factory.Iterator([CoachingMode.HINT, CoachingMode.REVIEW, CoachingMode.EXPLAIN, CoachingMode.DEBUG])
-    language = factory.Iterator([Language.PYTHON, Language.JAVASCRIPT, Language.JAVA])
+    language = factory.Iterator([Language.PYTHON])
 
 
 class CodeExecutionRequestFactory(factory.Factory):
     """Factory for generating code execution requests."""
-    
+
     class Meta:
         model = CodeExecutionRequest
-    
-    language = factory.Iterator([Language.PYTHON, Language.JAVASCRIPT, Language.JAVA])
-    code = factory.LazyAttribute(lambda obj: {
-        Language.PYTHON: "print('Hello, World!')\nprint(sum([1, 2, 3, 4, 5]))",
-        Language.JAVASCRIPT: "console.log('Hello, World!');\nconsole.log([1, 2, 3, 4, 5].reduce((a, b) => a + b));",
-        Language.JAVA: "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n        System.out.println(Arrays.stream(new int[]{1,2,3,4,5}).sum());\n    }\n}"
-    }[obj.language])
+
+    language = factory.Iterator([Language.PYTHON])
+    code = factory.LazyAttribute(lambda obj: "print('Hello, World!')\nprint(sum([1, 2, 3, 4, 5]))")
     stdin = factory.Faker('text', max_nb_chars=50)
     version = factory.Faker('semver')
 
 
 class CodeExecutionResultFactory(factory.Factory):
     """Factory for generating code execution results."""
-    
+
     class Meta:
         model = CodeExecutionResult
-    
+
     stdout = factory.Faker('text', max_nb_chars=100)
     stderr = factory.Faker('text', max_nb_chars=50)
     exit_code = factory.Iterator([0, 1, 2])
     execution_time = factory.Faker('numerify', text='0.##s')
     memory_usage = factory.Faker('numerify', text='##.#MB')
-    language = factory.Iterator(["python", "javascript", "java"])
+    language = factory.Iterator(["python"])
     version = factory.Faker('semver')
 
 
 class QuestionFactory(factory.Factory):
     """Factory for generating complete question objects."""
-    
+
     class Meta:
         model = Question
-    
+
     id = factory.Sequence(lambda n: f"question-{n}")
     title = factory.Faker('sentence', nb_words=4)
     difficulty = factory.Iterator([Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD])
@@ -84,13 +80,11 @@ class QuestionFactory(factory.Factory):
     company_tags = factory.LazyFunction(lambda: random.sample(["Google", "Amazon", "Microsoft", "Facebook", "Apple"], k=random.randint(1, 3)))
     description = factory.Faker('text', max_nb_chars=300)
     starter = factory.LazyAttribute(lambda obj: {
-        "python": f"def solution({obj.category}):\n    # TODO: Implement solution\n    pass",
-        "javascript": f"function solution({obj.category}) {{\n    // TODO: Implement solution\n    \n}}",
-        "java": f"public class Solution {{\n    public int solution({obj.category}) {{\n        // TODO: Implement solution\n        return 0;\n    }}\n}}"
+        "python": f"def solution({obj.category}):\n    # TODO: Implement solution\n    pass"
     })
     examples = factory.LazyFunction(lambda: [
             {
-                "input": f"{random.choice(['nums', 's', 'root'])} = {random.choice(['[1,2,3]', '"hello"', '5'])}",
+                "input": f"{random.choice(['nums', 's', 'root'])} = {random.choice(['[1,2,3]', '\"hello\"', '5'])}",
                 "output": str(random.randint(1, 100)),
                 "explanation": "Example explanation"
             }
@@ -217,9 +211,7 @@ class TestDataGenerator:
         """Generate test data for performance testing."""
         return {
             "large_code_snippets": {
-                "python": "\n".join([f"def function_{i}():\n    return {i}" for i in range(100)]),
-                "javascript": "\n".join([f"function function{i}() {{\n    return {i};\n}}" for i in range(100)]),
-                "java": "\n".join([f"public int function{i}() {{\n    return {i};\n}}" for i in range(100)])
+                "python": "\n".join([f"def function_{i}():\n    return {i}" for i in range(100)])
             },
             "complex_problems": [
                 "Given a 1000x1000 matrix, find the longest increasing path...",
@@ -247,9 +239,7 @@ class TestDataGenerator:
                 "company_tags": question.company_tags,
                 "description": question.description,
                 "starter": {
-                    "python": f"def solution(input):\n    # TODO: Implement solution for {question.title}\n    pass",
-                    "javascript": f"function solution(input) {{\n    // TODO: Implement solution for {question.title}\n    \n}}",
-                    "java": f"public class Solution {{\n    public int solution(int[] input) {{\n        // TODO: Implement solution for {question.title}\n        return 0;\n    }}\n}}"
+                    "python": f"def solution(input):\n    # TODO: Implement solution for {question.title}\n    pass"
                 },
                 "examples": [
                     {
@@ -288,14 +278,6 @@ COMMON_TEST_SCENARIOS = {
             "language": "python",
             "message": "Is this the most efficient solution?",
             "mode": "review",
-            "difficulty": "easy"
-        },
-        {
-            "problem": "Check if a string is a palindrome",
-            "code": "function isPalindrome(s) {\n    return s === s.split('').reverse().join('');\n}",
-            "language": "javascript",
-            "message": "Please review my approach",
-            "mode": "hint",
             "difficulty": "easy"
         }
     ],

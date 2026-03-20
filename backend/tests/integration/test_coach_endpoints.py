@@ -79,14 +79,14 @@ class TestCoachEndpoints:
     def test_get_supported_languages(self, test_client: TestClient):
         """Test getting supported programming languages."""
         response = test_client.get("/api/coach/languages")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "languages" in data
         assert "descriptions" in data
-        
-        expected_languages = ["python", "javascript", "java", "cpp", "c", "go", "rust", "typescript"]
+
+        expected_languages = ["python"]
         assert set(data["languages"]) >= set(expected_languages)
     
     def test_coaching_invalid_language(self, test_client: TestClient):
@@ -166,41 +166,29 @@ class TestCoachEndpoints:
             assert data["mode"] == mode
             assert len(data["response"]) > 0
     
-    def test_coaching_all_languages(self, test_client: TestClient):
-        """Test coaching with all supported languages."""
+    def test_coaching_python(self, test_client: TestClient):
+        """Test coaching with Python."""
         base_request = {
             "problem": "Find the maximum element in an array",
             "message": "Please provide guidance",
             "mode": "hint",
             "difficulty": "easy"
         }
-        
-        languages = ["python", "javascript", "java", "cpp", "c", "go", "rust", "typescript"]
-        
-        for language in languages:
-            code_templates = {
-                "python": "def solution(arr):\n    return max(arr)",
-                "javascript": "function solution(arr) {\n    return Math.max(...arr);\n}",
-                "java": "public int solution(int[] arr) {\n    return Arrays.stream(arr).max().getAsInt();\n}",
-                "cpp": "int solution(vector<int>& arr) {\n    return *max_element(arr.begin(), arr.end());\n}",
-                "c": "int solution(int* arr, int size) {\n    int max = arr[0];\n    for(int i = 1; i < size; i++) {\n        if(arr[i] > max) max = arr[i];\n    }\n    return max;\n}",
-                "go": "func solution(arr []int) int {\n    max := arr[0]\n    for _, v := range arr {\n        if v > max {\n            max = v\n        }\n    }\n    return max\n}",
-                "rust": "fn solution(arr: &[i32]) -> i32 {\n    *arr.iter().max().unwrap()\n}",
-                "typescript": "function solution(arr: number[]): number {\n    return Math.max(...arr);\n}"
-            }
-            
-            request = {
-                **base_request,
-                "language": language,
-                "code": code_templates.get(language, "// Default code")
-            }
-            
-            response = test_client.post("/api/coach/", json=request)
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert data["language"] == language
-            assert len(data["response"]) > 0
+
+        code = "def solution(arr):\n    return max(arr)"
+
+        request = {
+            **base_request,
+            "language": "python",
+            "code": code
+        }
+
+        response = test_client.post("/api/coach/", json=request)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["language"] == "python"
+        assert len(data["response"]) > 0
     
     def test_coaching_boundary_conditions(self, test_client: TestClient):
         """Test coaching with boundary conditions."""

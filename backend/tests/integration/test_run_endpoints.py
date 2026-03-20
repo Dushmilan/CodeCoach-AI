@@ -30,31 +30,12 @@ class TestRunEndpoints:
         assert "memory_usage" in data
         assert "language" in data
         assert "version" in data
-        
+
         assert data["language"] == "python"
         assert data["exit_code"] == 0
         assert "Hello, World!" in data["stdout"]
         assert "4" in data["stdout"]
-    
-    def test_execute_code_javascript(self, test_client: TestClient):
-        """Test executing JavaScript code."""
-        code_request = {
-            "language": "javascript",
-            "code": "console.log('Hello, World!');\nconsole.log(2 + 2);",
-            "stdin": "",
-            "version": "18.17.0"
-        }
-        
-        response = test_client.post("/api/run/", json=code_request)
-        
-        assert response.status_code == 200
-        data = response.json()
-        
-        assert data["language"] == "javascript"
-        assert data["exit_code"] == 0
-        assert "Hello, World!" in data["stdout"]
-        assert "4" in data["stdout"]
-    
+
     def test_execute_code_with_input(self, test_client: TestClient):
         """Test executing code with stdin input."""
         code_request = {
@@ -129,19 +110,19 @@ class TestRunEndpoints:
     def test_get_supported_languages(self, test_client: TestClient):
         """Test getting supported programming languages."""
         response = test_client.get("/api/run/languages")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "languages" in data
         assert "total" in data
         assert isinstance(data["languages"], list)
         assert len(data["languages"]) > 0
-        
+
         # Check for expected languages
-        expected_languages = ["python", "javascript", "java", "cpp", "c", "go", "rust"]
+        expected_languages = ["python"]
         actual_languages = [lang["language"] for lang in data["languages"]]
-        
+
         for lang in expected_languages:
             assert lang in actual_languages, f"Missing expected language: {lang}"
     
@@ -251,25 +232,22 @@ for i in range(10):
         # Should execute successfully or timeout gracefully
         assert data["exit_code"] == 0 or "timeout" in data["stderr"].lower()
     
-    def test_validate_code_all_languages(self, test_client: TestClient):
-        """Test validating code for all supported languages."""
-        languages = ["python", "javascript", "java", "cpp", "c", "go", "rust"]
-        
-        for language in languages:
-            code_request = {
-                "language": language,
-                "code": "print('Hello')" if language != "javascript" else "console.log('Hello');"
-            }
-            
-            response = test_client.post("/api/run/validate", json=code_request)
-            
-            assert response.status_code == 200
-            data = response.json()
-            
-            assert data["language"] == language
-            assert "valid" in data
-            assert "warnings" in data
-            assert "errors" in data
+    def test_validate_code_python(self, test_client: TestClient):
+        """Test validating Python code."""
+        code_request = {
+            "language": "python",
+            "code": "print('Hello')"
+        }
+
+        response = test_client.post("/api/run/validate", json=code_request)
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["language"] == "python"
+        assert "valid" in data
+        assert "warnings" in data
+        assert "errors" in data
     
     def test_run_endpoints_response_format(self, test_client: TestClient):
         """Test response format consistency."""

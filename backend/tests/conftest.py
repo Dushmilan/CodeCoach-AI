@@ -76,18 +76,9 @@ def mock_piston_service():
                     "memory_usage": "8.2MB",
                     "language": "python",
                     "version": "3.11.0"
-                },
-                "javascript": {
-                    "stdout": "Hello, World!\n",
-                    "stderr": "",
-                    "exit_code": 0,
-                    "execution_time": "0.03s",
-                    "memory_usage": "12.1MB",
-                    "language": "javascript",
-                    "version": "18.17.0"
                 }
             }
-            
+
             result = mock_results.get(language, {
                 "stdout": "",
                 "stderr": f"Language {language} not supported",
@@ -97,13 +88,13 @@ def mock_piston_service():
                 "language": language,
                 "version": version or "unknown"
             })
-            
+
             if "error" in code.lower():
                 result["stderr"] = "SyntaxError: invalid syntax"
                 result["exit_code"] = 1
-                
+
             return result
-        
+
         def validate_code(self, language: str, code: str):
             """Mock code validation."""
             is_valid = "error" not in code.lower()
@@ -112,7 +103,7 @@ def mock_piston_service():
                 "warnings": ["Consider adding type hints"] if language == "python" else [],
                 "errors": ["Syntax error on line 1"] if not is_valid else []
             }
-        
+
         async def get_runtimes(self):
             """Mock runtime information."""
             return [
@@ -121,21 +112,9 @@ def mock_piston_service():
                     "version": "3.11.0",
                     "aliases": ["py", "python3"],
                     "runtime": "cpython"
-                },
-                {
-                    "language": "javascript",
-                    "version": "18.17.0",
-                    "aliases": ["js", "node"],
-                    "runtime": "node"
-                },
-                {
-                    "language": "java",
-                    "version": "17.0.0",
-                    "aliases": ["java"],
-                    "runtime": "openjdk"
                 }
             ]
-    
+
     return MockPistonService
 
 
@@ -145,7 +124,7 @@ def mock_questions_service():
     class MockQuestionsService:
         def __init__(self):
             self.questions = self._load_mock_questions()
-        
+
         def _load_mock_questions(self):
             """Load mock questions data."""
             return [
@@ -157,9 +136,7 @@ def mock_questions_service():
                     "company_tags": ["Google", "Amazon", "Facebook"],
                     "description": "Given an array of integers, return indices of the two numbers...",
                     "starter": {
-                        "python": "def two_sum(nums, target):\n    pass",
-                        "javascript": "function twoSum(nums, target) {\n    \n}",
-                        "java": "public int[] twoSum(int[] nums, int target) {\n    \n}"
+                        "python": "def two_sum(nums, target):\n    pass"
                     },
                     "examples": [
                         {
@@ -184,9 +161,7 @@ def mock_questions_service():
                     "company_tags": ["Microsoft", "Apple"],
                     "description": "Reverse a singly linked list.",
                     "starter": {
-                        "python": "def reverse_list(head):\n    pass",
-                        "javascript": "function reverseList(head) {\n    \n}",
-                        "java": "public ListNode reverseList(ListNode head) {\n    \n}"
+                        "python": "def reverse_list(head):\n    pass"
                     },
                     "examples": [
                         {
@@ -285,9 +260,7 @@ def sample_question_data():
         "company_tags": ["TestCompany"],
         "description": "This is a test question for unit testing.",
         "starter": {
-            "python": "def test_function(input):\n    pass",
-            "javascript": "function testFunction(input) {\n    \n}",
-            "java": "public int testFunction(int input) {\n    \n}"
+            "python": "def test_function(input):\n    pass"
         },
         "examples": [
             {
@@ -348,9 +321,7 @@ def temp_questions_file():
             "company_tags": ["TestCompany"],
             "description": "Test description 1",
             "starter": {
-                "python": "def test1(input):\n    pass",
-                "javascript": "function test1(input) {\n    \n}",
-                "java": "public int test1(int input) {\n    \n}"
+                "python": "def test1(input):\n    pass"
             },
             "examples": [{"input": "[1,2,3]", "output": "6", "explanation": "Sum"}],
             "test_cases": [{"input": "[1,2,3]", "expected_output": "6", "description": "Test"}]
@@ -363,9 +334,7 @@ def temp_questions_file():
             "company_tags": ["AnotherCompany"],
             "description": "Test description 2",
             "starter": {
-                "python": "def test2(input):\n    pass",
-                "javascript": "function test2(input) {\n    \n}",
-                "java": "public String test2(String input) {\n    \n}"
+                "python": "def test2(input):\n    pass"
             },
             "examples": [{"input": "'hello'", "output": "'olleh'", "explanation": "Reverse"}],
             "test_cases": [{"input": "'hello'", "expected_output": "'olleh'", "description": "Test"}]

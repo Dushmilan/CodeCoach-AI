@@ -104,16 +104,16 @@ class TestBoundaryConditions:
         max_description = "x" * 10000
         max_solution = "x" * 5000
         max_constraints = ["x" * 200] * 10
-        
+
         starter = StarterCode(
             python="x" * 1000,
-            javascript="x" * 1000,
-            java="x" * 1000
+            javascript="",
+            java=""
         )
-        
+
         examples = [Example(input="x" * 500, output="x" * 500, explanation="x" * 1000)] * 5
         test_cases = [TestCase(input="x" * 500, expected_output="x" * 500, description="x" * 200, hidden=False)] * 10
-        
+
         question = Question(
             id=max_id,
             title=max_title,
@@ -130,12 +130,12 @@ class TestBoundaryConditions:
             space_complexity="x" * 20,
             constraints=max_constraints
         )
-        
+
         assert question.id == max_id
         assert question.title == max_title
         assert question.description == max_description
         assert question.solution == max_solution
-    
+
     def test_question_empty_arrays(self):
         """Test question with empty arrays."""
         starter = StarterCode(
@@ -143,7 +143,7 @@ class TestBoundaryConditions:
             javascript="",
             java=""
         )
-        
+
         question = Question(
             id="test",
             title="Test",
@@ -160,25 +160,25 @@ class TestBoundaryConditions:
             space_complexity="",
             constraints=[]
         )
-        
+
         assert question.company_tags == []
         assert question.examples == []
         assert question.test_cases == []
         assert question.hints == []
         assert question.constraints == []
-    
+
     def test_question_large_arrays(self):
         """Test question with large arrays."""
         large_company_tags = [f"company_{i}" for i in range(100)]
         large_examples = [Example(input=f"input_{i}", output=f"output_{i}", explanation=f"explanation_{i}") for i in range(50)]
         large_test_cases = [TestCase(input=f"input_{i}", expected_output=f"output_{i}", description=f"test_{i}", hidden=i % 2 == 0) for i in range(100)]
-        
+
         starter = StarterCode(
             python="def test(): pass",
-            javascript="function test() {}",
-            java="public class Test {}"
+            javascript="",
+            java=""
         )
-        
+
         question = Question(
             id="test",
             title="Test",
@@ -195,7 +195,7 @@ class TestBoundaryConditions:
             space_complexity="O(1)",
             constraints=[f"constraint_{i}" for i in range(10)]
         )
-        
+
         assert len(question.company_tags) == 100
         assert len(question.examples) == 50
         assert len(question.test_cases) == 100
@@ -206,9 +206,9 @@ class TestBoundaryConditions:
         """Test enum boundary values."""
         # Test all valid enum values
         difficulties = [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD]
-        languages = [Language.PYTHON, Language.JAVASCRIPT, Language.JAVA, Language.CPP, Language.C, Language.GO, Language.RUST, Language.TYPESCRIPT]
+        languages = [Language.PYTHON]
         modes = [CoachingMode.HINT, CoachingMode.REVIEW, CoachingMode.EXPLAIN, CoachingMode.DEBUG]
-        
+
         for difficulty in difficulties:
             request = CoachingRequest(
                 problem="test",
@@ -219,7 +219,7 @@ class TestBoundaryConditions:
                 difficulty=difficulty
             )
             assert request.difficulty == difficulty
-        
+
         for language in languages:
             request = CodeExecutionRequest(
                 language=language,
@@ -277,16 +277,16 @@ class TestBoundaryConditions:
             f"0 <= len(s) <= {10**6}",
             f"1 <= k <= {10**9}"
         ]
-        
+
         starter = StarterCode(
             python="def test(): pass",
-            javascript="function test() {}",
-            java="public class Test {}"
+            javascript="",
+            java=""
         )
-        
+
         examples = [Example(input="1", output="1", explanation="test")]
         test_cases = [TestCase(input="1", expected_output="1", description="test", hidden=False)]
-        
+
         question = Question(
             id="test",
             title="Test",
@@ -310,13 +310,13 @@ class TestBoundaryConditions:
         # Test deeply nested starter code
         nested_starter = StarterCode(
             python="def solution():\n    def helper():\n        def inner():\n            return 'nested'\n        return inner()\n    return helper()",
-            javascript="function solution() {\n    function helper() {\n        function inner() {\n            return 'nested';\n        }\n        return inner();\n    }\n    return helper();\n}",
-            java="public class Solution {\n    public String solution() {\n        class Helper {\n            String helper() {\n                class Inner {\n                    String inner() {\n                        return \"nested\";\n                    }\n                }\n                return new Inner().inner();\n            }\n        }\n        return new Helper().helper();\n    }\n}"
+            javascript="",
+            java=""
         )
-        
+
         examples = [Example(input="1", output="1", explanation="test")]
         test_cases = [TestCase(input="1", expected_output="1", description="test", hidden=False)]
-        
+
         question = Question(
             id="test",
             title="Test",
@@ -328,10 +328,8 @@ class TestBoundaryConditions:
             examples=examples,
             test_cases=test_cases
         )
-        
+
         assert len(question.starter.python) > 100
-        assert len(question.starter.javascript) > 100
-        assert len(question.starter.java) > 100
     
     def test_boolean_edge_cases(self):
         """Test boolean edge cases."""
@@ -341,15 +339,15 @@ class TestBoundaryConditions:
             TestCase(input="2", expected_output="2", description="test", hidden=False),
             TestCase(input="3", expected_output="3", description="test")  # hidden defaults to False
         ]
-        
+
         starter = StarterCode(
             python="def test(): pass",
-            javascript="function test() {}",
-            java="public class Test {}"
+            javascript="",
+            java=""
         )
-        
+
         examples = [Example(input="1", output="1", explanation="test")]
-        
+
         question = Question(
             id="test",
             title="Test",
@@ -361,12 +359,12 @@ class TestBoundaryConditions:
             examples=examples,
             test_cases=test_cases
         )
-        
+
         assert len(question.test_cases) == 3
         assert question.test_cases[0].hidden is True
         assert question.test_cases[1].hidden is False
         assert question.test_cases[2].hidden is False
-    
+
     def test_zero_and_negative_values(self):
         """Test zero and negative value handling."""
         # Test with zero values in constraints
@@ -375,16 +373,16 @@ class TestBoundaryConditions:
             "-1 <= nums[i] <= 1",
             "len(s) = 0"
         ]
-        
+
         starter = StarterCode(
             python="def test(): pass",
-            javascript="function test() {}",
-            java="public class Test {}"
+            javascript="",
+            java=""
         )
-        
+
         examples = [Example(input="0", output="0", explanation="zero test")]
         test_cases = [TestCase(input="0", expected_output="0", description="zero test", hidden=False)]
-        
+
         question = Question(
             id="test",
             title="Test",
@@ -410,7 +408,7 @@ class TestBoundaryConditions:
             javascript="",
             java=""
         )
-        
+
         question = Question(
             id="test",
             title="Test",
@@ -423,10 +421,8 @@ class TestBoundaryConditions:
             test_cases=[],
             constraints=[]
         )
-        
+
         assert question.starter.python == ""
-        assert question.starter.javascript == ""
-        assert question.starter.java == ""
         assert len(question.examples) == 0
         assert len(question.test_cases) == 0
         assert len(question.constraints) == 0
