@@ -4,14 +4,14 @@ import * as React from "react";
 
 type Theme = "dark" | "light" | "system";
 
-type ThemeProviderProps = {
+interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   storageKey?: string;
   attribute?: string;
   enableSystem?: boolean;
   disableTransitionOnChange?: boolean;
-};
+}
 
 export function ThemeProvider({
   children,
@@ -27,15 +27,15 @@ export function ThemeProvider({
     setMounted(true);
     const storedTheme = localStorage.getItem(storageKey) as Theme | null;
     const initialTheme = storedTheme || defaultTheme;
-    
+
     const root = document.documentElement;
     root.classList.remove("light", "dark");
-    
+
     let actualTheme: string = initialTheme;
     if (initialTheme === "system" && enableSystem) {
       actualTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
-    
+
     root.classList.add(actualTheme);
   }, [defaultTheme, storageKey, enableSystem]);
 
@@ -79,19 +79,18 @@ export const useTheme = () => {
   const setTheme = (newTheme: Theme) => {
     localStorage.setItem("ui-theme", newTheme);
     setThemeState(newTheme);
-    
+
     const root = document.documentElement;
     root.classList.remove("light", "dark");
-    
+
     let actualTheme: string = newTheme;
     if (newTheme === "system") {
       actualTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
-    
+
     root.classList.add(actualTheme);
   };
 
-  // Return default theme during SSR
   if (!mounted) {
     return { theme: "dark", setTheme };
   }

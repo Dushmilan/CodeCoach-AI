@@ -5,6 +5,7 @@ import Editor from '@monaco-editor/react';
 import { Play, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types';
+import { LANGUAGE_OPTIONS } from './constants';
 
 interface CodeEditorProps {
   language: Language;
@@ -14,12 +15,6 @@ interface CodeEditorProps {
   onRunCode: () => void;
   isRunning?: boolean;
 }
-
-const languageOptions = [
-  { value: 'python', label: 'Python', version: '3.10', disabled: false },
-  { value: 'javascript', label: 'JavaScript', version: '18.15.0', disabled: true },
-  { value: 'java', label: 'Java', version: '15.0.2', disabled: true },
-];
 
 export function CodeEditor({
   language,
@@ -52,7 +47,7 @@ export function CodeEditor({
             onChange={(e) => handleLanguageChange(e.target.value as Language)}
             className="px-3 py-1 text-sm bg-secondary border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            {languageOptions.map((option) => (
+            {LANGUAGE_OPTIONS.map((option) => (
               <option
                 key={option.value}
                 value={option.value}
