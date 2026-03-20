@@ -1,0 +1,24 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install
+
+# Copy source code
+COPY . .
+
+# Create .env file
+RUN echo "NEXT_PUBLIC_API_URL=http://host.docker.internal:8000" > .env
+
+# Expose port
+EXPOSE 3000
+
+# Run dev server (works for demos)
+CMD ["pnpm", "dev", "-H", "0.0.0.0"]

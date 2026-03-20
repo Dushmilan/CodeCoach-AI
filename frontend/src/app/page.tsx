@@ -2,8 +2,9 @@ import { Layout } from '@/components/layout/Layout';
 import { api } from '@/lib/api';
 import { QuestionSummary } from '@/types';
 
-// Force dynamic rendering
+// Force dynamic rendering - don't statically generate
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 async function getQuestions(): Promise<QuestionSummary[]> {
   try {
