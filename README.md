@@ -7,9 +7,21 @@ A comprehensive AI-powered coding assistant that provides real-time code coachin
 ```
 CodeCoach-AI/
 ├── backend/           # FastAPI backend service
+│   ├── app/
+│   │   ├── api/       # API endpoints (coach, health, questions, run, validation)
+│   │   ├── middleware/# Rate limiting middleware
+│   │   ├── models/    # Pydantic schemas
+│   │   └── services/  # Business logic (NIM, Piston, validators)
+│   ├── tests/         # Comprehensive test suite
+│   └── questions/     # Sample coding questions
 ├── frontend/          # Next.js frontend application
-├── plans/            # Project planning documents
-└── shared/           # Shared utilities and types
+│   └── src/
+│       ├── app/       # Next.js app router
+│       ├── components/# React components (chat, editor, layout)
+│       ├── lib/       # API utilities
+│       └── types/     # TypeScript types
+├── plans/             # Project planning documents
+└── shared/            # Shared utilities and types
 ```
 
 ## Quick Start
@@ -17,65 +29,65 @@ CodeCoach-AI/
 ### Backend Setup
 
 1. **Navigate to backend directory:**
-   ```bash
-   cd backend
-   ```
+```bash
+cd backend
+```
 
 2. **Create virtual environment:**
-   ```bash
-   python -m venv venv
-   ```
+```bash
+python -m venv venv
+```
 
 3. **Activate virtual environment:**
-   - Windows: `venv\Scripts\activate`
-   - macOS/Linux: `source venv/bin/activate`
+- Windows: `venv\Scripts\activate`
+- macOS/Linux: `source venv/bin/activate`
 
 4. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 
 5. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` with your actual configuration values.
+```bash
+cp .env.example .env
+```
+Edit `.env` with your actual configuration values.
 
 6. **Start the backend server:**
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
 ### Frontend Setup
 
 1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend
-   ```
+```bash
+cd frontend
+```
 
 2. **Install dependencies:**
-   ```bash
-   npm install
-   # or
-   pnpm install
-   # or
-   yarn install
-   ```
+```bash
+npm install
+# or
+pnpm install
+# or
+yarn install
+```
 
 3. **Set up environment variables:**
-   ```bash
-   cp .env.example .env.local
-   ```
-   Edit `.env.local` with your actual configuration values.
+```bash
+cp .env.example .env.local
+```
+Edit `.env.local` with your actual configuration values.
 
 4. **Start the development server:**
-   ```bash
-   npm run dev
-   # or
-   pnpm dev
-   # or
-   yarn dev
-   ```
+```bash
+npm run dev
+# or
+pnpm dev
+# or
+yarn dev
+```
 
 ### Access the Application
 
@@ -103,8 +115,6 @@ CodeCoach-AI/
 ```
 # API Keys
 NVIDIA_API_KEY=your_nvidia_nim_api_key
-OPENAI_API_KEY=your_openai_key
-ANTHROPIC_API_KEY=your_anthropic_key
 
 # Database
 DATABASE_URL=sqlite:///./codecoach.db
@@ -113,7 +123,10 @@ DATABASE_URL=sqlite:///./codecoach.db
 REDIS_URL=redis://localhost:6379
 
 # Piston (code execution service)
+# Use public instance:
 PISTON_API_URL=https://emkc.org/api/v2/piston
+# Or local instance (recommended for development):
+# PISTON_API_URL=http://localhost:2000/api/v2/piston
 ```
 
 **Note:** The `NVIDIA_API_KEY` is required for AI coaching features. Get your free API key from [NVIDIA NIM](https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct).
@@ -124,16 +137,42 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_WS_URL=ws://localhost:8000
 ```
 
+## Local Piston Setup (Optional)
+
+For faster code execution during development, you can run Piston locally:
+
+1. **Install Piston via Docker:**
+```bash
+docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston
+```
+
+2. **Update your `.env` file:**
+```
+PISTON_API_URL=http://localhost:2000/api/v2/piston
+```
+
+3. **Verify Piston is running:**
+```bash
+curl http://localhost:2000/api/v2/runtimes
+```
+
+4. **Test code execution:**
+```bash
+curl -X POST http://localhost:2000/api/v2/execute \
+  -H "Content-Type: application/json" \
+  -d '{"language":"python","version":"*","files":[{"name":"test.py","content":"print(\"Hello from Piston!\")"}]}'
+```
+
 ## Docker Setup (Optional)
 
 1. **Build and run with Docker Compose:**
-   ```bash
-   docker-compose up --build
-   ```
+```bash
+docker-compose up --build
+```
 
 2. **Access the application:**
-   - Frontend: http://localhost:3000
-   - Backend: http://localhost:8000
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
 
 ## Features
 
@@ -143,6 +182,27 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8000
 - **Learning Paths:** Personalized coding challenges and tutorials
 - **Code Execution:** Safe code execution in sandboxed environment
 - **Progress Tracking:** Monitor your learning progress
+
+## Recent Improvements
+
+### Code Validation System
+- **Simple Validators:** Added lightweight validators for Python, JavaScript, and Java that run test cases locally
+- **Output Comparison:** Smart output matching supporting string, JSON, and numeric comparisons
+- **Error Handling:** User-friendly error messages with emoji indicators for different error types
+
+### Test Suite
+- **Comprehensive Testing:** Production-grade test suite covering functional, boundary, load, and security tests
+- **Test Categories:**
+  - Unit tests for validators and boundary conditions
+  - Integration tests for all API endpoints
+  - Performance tests for concurrent request handling
+  - Security tests for injection prevention (SQL, XSS, command, path traversal)
+- **Test Utilities:** Factory fixtures for generating test data
+
+### API Enhancements
+- **Rate Limiting:** Middleware for API rate limiting to prevent abuse
+- **Health Endpoints:** Detailed health checks for monitoring
+- **Validation Endpoints:** Pre-execution code validation without running code
 
 ## Contributing
 

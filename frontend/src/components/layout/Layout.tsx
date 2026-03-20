@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header } from './Header';
-import { Question, ChatMessage, Language } from '@/types';
+import { Question, QuestionSummary, ChatMessage, Language } from '@/types';
 import { api } from '@/lib/api';
 import {
   LoadingSkeleton,
@@ -16,42 +16,11 @@ import {
 } from './elements';
 
 interface LayoutProps {
-  questions: Question[];
+  questions: QuestionSummary[];
   userProgress?: Record<string, 'attempted' | 'solved'>;
-  selectedQuestion?: Question | null;
-  onQuestionSelect?: (question: Question) => void;
+  selectedQuestion?: QuestionSummary | null;
+  onQuestionSelect?: (question: QuestionSummary) => void;
 }
-
-const sampleQuestions: Question[] = [
-  {
-    id: 'two-sum',
-    title: 'Two Sum',
-    difficulty: 'easy',
-    category: 'Arrays',
-    company_tags: ['Google', 'Amazon', 'Meta'],
-    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
-    starter: {
-      python: 'def two_sum(nums, target):\n # Your code here\n pass',
-      javascript: 'function twoSum(nums, target) {\n // Your code here\n}',
-      java: 'class Solution {\n public int[] twoSum(int[] nums, int target) {\n // Your code here\n }\n}'
-    },
-    examples: [
-      { input: 'nums = [2,7,11,15], target = 9', output: '[0,1]' },
-      { input: 'nums = [3,2,4], target = 6', output: '[1,2]' }
-    ],
-    test_cases: [
-      { input: [[2, 7, 11, 15], 9], expected: [0, 1] },
-      { input: [[3, 2, 4], 6], expected: [1, 2] }
-    ],
-    hints: [
-      'Try using a hash map to store the complement of each number',
-      'Iterate through the array and check if the complement exists in the hash map'
-    ],
-    solution: 'Use a hash map to store the complement of each number as you iterate through the array.',
-    time_complexity: 'O(n)',
-    space_complexity: 'O(n)'
-  }
-];
 
 export function Layout({
   questions,
@@ -59,13 +28,11 @@ export function Layout({
   selectedQuestion: externalSelectedQuestion,
   onQuestionSelect: externalOnQuestionSelect
 }: LayoutProps) {
-  const [internalSelectedQuestion, setInternalSelectedQuestion] = useState<Question>(questions[0] || sampleQuestions[0]);
-    const [language, setLanguage] = useState<Language>('python');
-    // Initialize code with starter for the default question and language
-    const [currentCode, setCurrentCode] = useState<string>(() => {
-      const defaultQuestion = questions[0] || sampleQuestions[0];
-      return defaultQuestion?.starter?.['python'] || '';
-    });
+  const [internalSelectedQuestion, setInternalSelectedQuestion] = useState<QuestionSummary | null>(null);
+  const [fullQuestionData, setFullQuestionData] = useState<Question | null>(null);
+  const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
+  const [language, setLanguage] = useState<Language>('python');
+  const [currentCode, setCurrentCode] = useState<string>('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -76,6 +43,8 @@ export function Layout({
 
   // Use external props if provided, otherwise use internal state
   const selectedQuestion = externalSelectedQuestion ?? internalSelectedQuestion;
+  // Use full question data if available, otherwise use the summary
+  const displayQuestion: Question | QuestionSummary | null = fullQuestionData || selectedQuestion;
   const userProgress = externalUserProgress ?? internalUserProgress;
   const handleQuestionSelect = externalOnQuestionSelect ?? setInternalSelectedQuestion;
 
@@ -83,15 +52,39 @@ export function Layout({
     setIsMounted(true);
   }, []);
 
+  // Fetch full question data when a question is selected
   useEffect(() => {
-    // Initialize code with starter for selected language
-    if (selectedQuestion && selectedQuestion.starter) {
-      setCurrentCode(selectedQuestion.starter[language] || '');
+    if (selectedQuestion && selectedQuestion.id) {
+      // Check if we already have the full data
+      if (fullQuestionData?.id === selectedQuestion.id) {
+        return;
+      }
+      
+      setIsLoadingQuestion(true);
+      api.getQuestion(selectedQuestion.id)
+        .then((fullData) => {
+          setFullQuestionData(fullData);
+          setCurrentCode(fullData.starter?.[language] || '');
+        })
+        .catch((err) => {
+          console.error('Failed to fetch full question data:', err);
+        })
+        .finally(() => {
+          setIsLoadingQuestion(false);
+        });
     }
-  }, [selectedQuestion, language]);
+  }, [selectedQuestion?.id, language]);
 
-  const handleQuestionSelection = useCallback((question: Question) => {
+  // Update code when language changes
+  useEffect(() => {
+    if (fullQuestionData && fullQuestionData.starter) {
+      setCurrentCode(fullQuestionData.starter[language] || '');
+    }
+  }, [language, fullQuestionData]);
+
+  const handleQuestionSelection = useCallback((question: QuestionSummary) => {
     handleQuestionSelect(question);
+    setFullQuestionData(null); // Reset full data when switching questions
     setMessages([]); // Clear chat when switching questions
     setOutput('');
     setError('');
@@ -110,7 +103,7 @@ export function Layout({
 
     try {
       const response = await api.getCoachResponse(
-        selectedQuestion.title,
+        displayQuestion!.title,
         language,
         currentCode,
         message,
@@ -148,25 +141,21 @@ export function Layout({
               const content = parsed.chunk || parsed.choices?.[0]?.delta?.content || '';
               if (content) {
                 assistantMessage += content;
-                setMessages(prev =>
-                  prev.map(msg =>
-                    msg.id === assistantMessageObj.id
-                      ? { ...msg, content: assistantMessage }
-                      : msg
-                  )
-                );
+                setMessages(prev =>  prev.map(msg =>
+                  msg.id === assistantMessageObj.id
+                    ? { ...msg, content: assistantMessage }
+                    : msg
+                ));
               }
             } catch (e) {
               // Handle non-JSON data
               if (data.trim() && !data.includes('"error"')) {
                 assistantMessage += data;
-                setMessages(prev =>
-                  prev.map(msg =>
-                    msg.id === assistantMessageObj.id
-                      ? { ...msg, content: assistantMessage }
-                      : msg
-                  )
-                );
+                setMessages(prev =>  prev.map(msg =>
+                  msg.id === assistantMessageObj.id
+                    ? { ...msg, content: assistantMessage }
+                    : msg
+                ));
               }
             }
           }
@@ -187,7 +176,13 @@ export function Layout({
   };
 
   const handleRunCode = async () => {
-    if (!selectedQuestion) return;
+    if (!displayQuestion) return;
+
+    // Check if we have full question data
+    if (!fullQuestionData) {
+      setError('Question data is still loading. Please wait...');
+      return;
+    }
 
     setIsRunning(true);
     setOutput('');
@@ -213,7 +208,7 @@ export function Layout({
 
       try {
         // Identify the function name from starter code
-        const jsStarter = selectedQuestion.starter.javascript;
+        const jsStarter = fullQuestionData.starter.javascript;
         const fnNameMatch = jsStarter.match(/function\s+(\w+)\s*\(/) ||
           jsStarter.match(/var\s+(\w+)\s*=\s*function/) ||
           jsStarter.match(/const\s+(\w+)\s*=\s*/);
@@ -234,18 +229,20 @@ export function Layout({
 
           return testCases.map((tc, index) => {
             try {
-              // Deep clone input to prevent modification from affecting subsequent tests
-              const input = JSON.parse(JSON.stringify(tc.input));
-              const result = ${fnName}(...input);
-              const passed = JSON.stringify(result) === JSON.stringify(tc.expected);
-              return { index: index + 1, passed, input: tc.input, expected: tc.expected, actual: result };
+              // Parse input string (format: "[1,2,3]\\narg2")
+              const inputLines = tc.input.split('\\n');
+              const parsedArgs = inputLines.map(line => JSON.parse(line));
+              const result = ${fnName}(...parsedArgs);
+              const expectedOutput = JSON.parse(tc.expected_output);
+              const passed = JSON.stringify(result) === JSON.stringify(expectedOutput);
+              return { index: index + 1, passed, input: tc.input, expected: tc.expected_output, actual: result };
             } catch (e) {
               return { index: index + 1, passed: false, error: e.message, input: tc.input };
             }
           });
         `);
 
-        const results = testRunner(selectedQuestion.test_cases);
+        const results = testRunner(fullQuestionData.test_cases);
 
         let outputText = logs.length > 0 ? `Console Output:\n${logs.join('\n')}\n\n` : '';
         outputText += "Test Results:\n";
@@ -258,14 +255,14 @@ export function Layout({
           } else if (r.passed) {
             outputText += `✅ Test Case ${r.index}: Passed\n`;
           } else {
-            outputText += `❌ Test Case ${r.index}: Failed\n Input: ${JSON.stringify(r.input)}\n Expected: ${JSON.stringify(r.expected)}\n Actual: ${JSON.stringify(r.actual)}\n`;
+            outputText += `❌ Test Case ${r.index}: Failed\n Input: ${r.input}\n Expected: ${r.expected}\n Actual: ${JSON.stringify(r.actual)}\n`;
             allPassed = false;
           }
         });
 
         setOutput(outputText);
         if (allPassed) {
-          setInternalUserProgress(prev => ({ ...prev, [selectedQuestion.id]: 'solved' }));
+          setInternalUserProgress(prev => ({ ...prev, [fullQuestionData.id]: 'solved' }));
         }
       } catch (err: any) {
         setError(err.message || 'An error occurred during execution');
@@ -297,18 +294,18 @@ export function Layout({
 
   // Memoize expensive computations
   const questionSummary = useMemo(() => {
-    if (!selectedQuestion) return null;
+    if (!displayQuestion) return null;
 
-    const progress = userProgress[selectedQuestion.id];
+    const progress = userProgress[displayQuestion.id];
     const status = progress === 'solved' ? '✅ Solved' :
       progress === 'attempted' ? '🔄 Attempted' : '⏳ Not started';
 
-    return `${selectedQuestion.title} - ${status}`;
-  }, [selectedQuestion, userProgress]);
+    return `${displayQuestion.title} - ${status}`;
+  }, [displayQuestion, userProgress]);
 
   // Memoize difficulty badge styles
   const difficultyBadge = useMemo(() => {
-    if (!selectedQuestion) return null;
+    if (!displayQuestion) return null;
 
     const styles = {
       easy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
@@ -316,8 +313,8 @@ export function Layout({
       hard: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
     };
 
-    return styles[selectedQuestion.difficulty] || styles.easy;
-  }, [selectedQuestion]);
+    return styles[displayQuestion.difficulty] || styles.easy;
+  }, [displayQuestion]);
 
   if (!isMounted) {
     return <LoadingSkeleton />;
@@ -352,7 +349,7 @@ export function Layout({
             messages={messages}
             onSendMessage={handleSendMessage}
             isTyping={isTyping}
-            selectedQuestion={selectedQuestion?.title || ''}
+            selectedQuestion={displayQuestion?.title || ''}
             currentCode={currentCode}
             language={language}
           />

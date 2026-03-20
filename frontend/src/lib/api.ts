@@ -1,4 +1,4 @@
-import { Question, CodeExecutionResult } from '@/types';
+import { Question, QuestionSummary, CodeExecutionResult } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -9,7 +9,7 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  async getQuestions(): Promise<Question[]> {
+  async getQuestions(): Promise<QuestionSummary[]> {
     const response = await fetch(`${this.baseUrl}/api/questions`);
     if (!response.ok) {
       throw new Error('Failed to fetch questions');

@@ -1,11 +1,11 @@
 import React from 'react';
 import { EnhancedSidebar } from '../EnhancedSidebar';
-import { Question } from '@/types';
+import { QuestionSummary } from '@/types';
 
 interface SidebarContainerProps {
-  questions: Question[];
-  selectedQuestion: Question;
-  onSelectQuestion: (question: Question) => void;
+  questions: QuestionSummary[];
+  selectedQuestion: QuestionSummary | null;
+  onSelectQuestion: (question: QuestionSummary) => void;
   userProgress: Record<string, 'attempted' | 'solved'>;
   difficultyBadge?: string;
 }

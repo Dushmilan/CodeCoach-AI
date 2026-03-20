@@ -1,9 +1,13 @@
-export interface Question {
+export interface QuestionSummary {
   id: string;
   title: string;
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
   company_tags: string[];
+  solved?: boolean;
+}
+
+export interface Question extends QuestionSummary {
   description: string;
   starter: {
     python: string;
@@ -16,8 +20,10 @@ export interface Question {
     explanation?: string;
   }>;
   test_cases: Array<{
-    input: any[];
-    expected: any;
+    input: string;
+    expected_output: string;
+    description?: string;
+    hidden?: boolean;
   }>;
   hints: string[];
   solution: string;

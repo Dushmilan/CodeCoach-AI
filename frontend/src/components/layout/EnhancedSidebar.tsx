@@ -2,14 +2,14 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { ChevronRight, CheckCircle, AlertCircle, ChevronLeft, ChevronRight as ChevronRightIcon, Shuffle, List, FileText } from 'lucide-react';
-import { Question } from '@/types';
+import { QuestionSummary, Question } from '@/types';
 import { cn } from '@/lib/utils';
 import { QuestionDescriptionPanel } from './elements/QuestionDescriptionPanel';
 
 interface EnhancedSidebarProps {
-  questions: Question[];
-  selectedQuestion: Question | null;
-  onSelectQuestion: (question: Question) => void;
+  questions: QuestionSummary[];
+  selectedQuestion: QuestionSummary | null;
+  onSelectQuestion: (question: QuestionSummary) => void;
   userProgress: Record<string, 'attempted' | 'solved'>;
   difficultyBadge?: string;
 }
