@@ -77,7 +77,7 @@ export function AIChatPanel({
               }`}
             >
               {message.role === 'assistant' && message.structured ? (
-                <StructuredResponse structured={message.structured} />
+                <StructuredResponse structured={message.structured} rawContent={message.content} />
               ) : (
                 <div className="whitespace-pre-wrap text-sm">{message.content}</div>
               )}

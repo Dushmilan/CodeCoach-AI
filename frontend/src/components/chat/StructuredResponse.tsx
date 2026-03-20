@@ -1,53 +1,142 @@
 'use client';
 
-import { Lightbulb, Code, Clock, Sparkles, AlertTriangle, BookOpen, Bug, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
 import { StructuredCoachingResponse } from '@/types';
 
 interface StructuredResponseProps {
   structured: StructuredCoachingResponse;
+  rawContent?: string;
 }
 
-interface SectionProps {
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-  colorClass: string;
-}
-
-function Section({ title, icon: Icon, children, defaultOpen = true, colorClass }: SectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  if (!children) return null;
-
+/**
+ * Formats text with basic markdown-like support for bold and code
+ */
+function FormattedText({ text }: { text: string }) {
+  if (!text) return null;
+  
+  const lines = text.split('\n');
+  
   return (
-    <div className="border border-border rounded-lg overflow-hidden mb-3">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between px-4 py-3 ${colorClass} hover:opacity-90 transition-opacity`}
-      >
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4" />
-          <span className="font-semibold text-sm">{title}</span>
-        </div>
-        {isOpen ? (
-          <ChevronUp className="h-4 w-4" />
-        ) : (
-          <ChevronDown className="h-4 w-4" />
-        )}
-      </button>
-      {isOpen && (
-        <div className="px-4 py-3 bg-card border-t border-border">
-          {children}
-        </div>
-      )}
+    <div className="space-y-2">
+      {lines.map((line, idx) => {
+        // Skip empty lines
+        if (!line.trim()) return null;
+        
+        // Check for numbered list
+        if (line.match(/^\d+\./)) {
+          return (
+            <div key={idx} className="flex gap-2 text-sm">
+              <span className="text-muted-foreground">{line.match(/^\d+\./)?.[0]}</span>
+              <span>{formatInlineStyles(line.replace(/^\d+\.\s*/, ''))}</span>
+            </div>
+          );
+        }
+        
+        // Check for bullet points
+        if (line.match(/^[\-\•\*]\s/)) {
+          return (
+            <div key={idx} className="flex gap-2 text-sm">
+              <span className="text-muted-foreground">•</span>
+              <span>{formatInlineStyles(line.replace(/^[\-\•\*]\s*/, ''))}</span>
+            </div>
+          );
+        }
+        
+        // Check for section headers (lines ending with :)
+        if (line.match(/^\w+[\s\w]*:$/)) {
+          return (
+            <div key={idx} className="font-semibold text-sm mt-3">
+              {formatInlineStyles(line)}
+            </div>
+          );
+        }
+        
+        // Regular paragraph
+        return (
+          <div key={idx} className="text-sm leading-relaxed">
+            {formatInlineStyles(line)}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-export function StructuredResponse({ structured }: StructuredResponseProps) {
-  if (!structured) return null;
+/**
+ * Formats inline styles like **bold** and `code`
+ */
+function formatInlineStyles(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+  
+  // Process bold and code iteratively
+  while (remaining.length > 0) {
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+    const codeMatch = remaining.match(/`(.+?)`/);
+    
+    // Find which comes first
+    const boldIndex = boldMatch ? remaining.indexOf(boldMatch[0]) : Infinity;
+    const codeIndex = codeMatch ? remaining.indexOf(codeMatch[0]) : Infinity;
+    
+    if (boldIndex === Infinity && codeIndex === Infinity) {
+      // No more matches, add remaining text
+      parts.push(remaining);
+      break;
+    }
+    
+    if (boldIndex < codeIndex) {
+      // Bold comes first
+      if (boldIndex > 0) {
+        parts.push(remaining.slice(0, boldIndex));
+      }
+      parts.push(
+        <strong key={key++} className="font-semibold">
+          {boldMatch![1]}
+        </strong>
+      );
+      remaining = remaining.slice(boldIndex + boldMatch![0].length);
+    } else {
+      // Code comes first
+      if (codeIndex > 0) {
+        parts.push(remaining.slice(0, codeIndex));
+      }
+      parts.push(
+        <code key={key++} className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
+          {codeMatch![1]}
+        </code>
+      );
+      remaining = remaining.slice(codeIndex + codeMatch![0].length);
+    }
+  }
+  
+  return parts.length === 1 ? parts[0] : parts;
+}
+
+/**
+ * Validates if the structured response has valid data
+ */
+function isValidStructuredResponse(structured: StructuredCoachingResponse): boolean {
+  if (!structured.summary || structured.summary.length < 5) return false;
+  
+  const trimmedSummary = structured.summary.trim();
+  if (trimmedSummary.startsWith('{') || trimmedSummary.startsWith('[')) return false;
+  if (trimmedSummary.includes('":') && !trimmedSummary.includes(': ')) return false;
+  
+  return true;
+}
+
+export function StructuredResponse({ structured, rawContent }: StructuredResponseProps) {
+  // Validate structured response - fall back to raw text if malformed
+  if (!structured || !isValidStructuredResponse(structured)) {
+    if (rawContent) {
+      return (
+        <div className="space-y-2">
+          <FormattedText text={rawContent} />
+        </div>
+      );
+    }
+    return null;
+  }
 
   const {
     summary,
@@ -60,121 +149,91 @@ export function StructuredResponse({ structured }: StructuredResponseProps) {
     debug_help,
   } = structured;
 
-  return (
-    <div className="space-y-3">
-      {/* Summary - Always visible */}
-      {summary && (
-        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-          <div className="flex items-start gap-2">
-            <div className="mt-0.5">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-foreground">{summary}</p>
-            </div>
+  // Build response sections
+  const sections: React.ReactNode[] = [];
+
+  // Summary
+  if (summary) {
+    sections.push(<FormattedText key="summary" text={summary} />);
+  }
+
+  // Hints
+  if (hints && hints.length > 0) {
+    sections.push(
+      <div key="hints" className="space-y-1 mt-3">
+        {hints.map((hint, idx) => (
+          <div key={idx} className="flex gap-2 text-sm">
+            <span className="text-muted-foreground">{idx + 1}.</span>
+            <span>{hint}</span>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+    );
+  }
 
-      {/* Hints */}
-      {hints && hints.length > 0 && (
-        <Section
-          title="Hints"
-          icon={Lightbulb}
-          colorClass="bg-yellow-500/10 text-yellow-500"
-        >
-          <ul className="space-y-2">
-            {hints.map((hint, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-foreground">
-                <span className="text-yellow-500 font-semibold">{index + 1}.</span>
-                <span>{hint}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+  // Code Review
+  if (code_review) {
+    sections.push(
+      <div key="code_review" className="mt-3">
+        <FormattedText text={code_review} />
+      </div>
+    );
+  }
 
-      {/* Code Review */}
-      {code_review && (
-        <Section
-          title="Code Review"
-          icon={Code}
-          colorClass="bg-blue-500/10 text-blue-500"
-        >
-          <p className="text-sm text-foreground whitespace-pre-wrap">{code_review}</p>
-        </Section>
-      )}
+  // Complexity Analysis
+  if (complexity_analysis) {
+    sections.push(
+      <div key="complexity" className="mt-3">
+        <FormattedText text={complexity_analysis} />
+      </div>
+    );
+  }
 
-      {/* Complexity Analysis */}
-      {complexity_analysis && (
-        <Section
-          title="Complexity Analysis"
-          icon={Clock}
-          colorClass="bg-purple-500/10 text-purple-500"
-        >
-          <p className="text-sm text-foreground whitespace-pre-wrap">{complexity_analysis}</p>
-        </Section>
-      )}
+  // Suggestions
+  if (suggestions && suggestions.length > 0) {
+    sections.push(
+      <div key="suggestions" className="space-y-1 mt-3">
+        {suggestions.map((suggestion, idx) => (
+          <div key={idx} className="flex gap-2 text-sm">
+            <span className="text-muted-foreground">{idx + 1}.</span>
+            <span>{suggestion}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-      {/* Suggestions */}
-      {suggestions && suggestions.length > 0 && (
-        <Section
-          title="Suggestions"
-          icon={Sparkles}
-          colorClass="bg-green-500/10 text-green-500"
-        >
-          <ul className="space-y-2">
-            {suggestions.map((suggestion, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-foreground">
-                <span className="text-green-500 font-semibold">{index + 1}.</span>
-                <span>{suggestion}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+  // Edge Cases
+  if (edge_cases && edge_cases.length > 0) {
+    sections.push(
+      <div key="edge_cases" className="space-y-1 mt-3">
+        {edge_cases.map((edgeCase, idx) => (
+          <div key={idx} className="flex gap-2 text-sm">
+            <span className="text-muted-foreground">{idx + 1}.</span>
+            <span>{edgeCase}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-      {/* Edge Cases */}
-      {edge_cases && edge_cases.length > 0 && (
-        <Section
-          title="Edge Cases"
-          icon={AlertTriangle}
-          colorClass="bg-orange-500/10 text-orange-500"
-        >
-          <ul className="space-y-2">
-            {edge_cases.map((edgeCase, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-foreground">
-                <span className="text-orange-500 font-semibold">{index + 1}.</span>
-                <span>{edgeCase}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+  // Explanation
+  if (explanation) {
+    sections.push(
+      <div key="explanation" className="mt-3">
+        <FormattedText text={explanation} />
+      </div>
+    );
+  }
 
-      {/* Explanation */}
-      {explanation && (
-        <Section
-          title="Explanation"
-          icon={BookOpen}
-          colorClass="bg-cyan-500/10 text-cyan-500"
-          defaultOpen={false}
-        >
-          <p className="text-sm text-foreground whitespace-pre-wrap">{explanation}</p>
-        </Section>
-      )}
+  // Debug Help
+  if (debug_help) {
+    sections.push(
+      <div key="debug_help" className="mt-3">
+        <FormattedText text={debug_help} />
+      </div>
+    );
+  }
 
-      {/* Debug Help */}
-      {debug_help && (
-        <Section
-          title="Debug Help"
-          icon={Bug}
-          colorClass="bg-red-500/10 text-red-500"
-          defaultOpen={false}
-        >
-          <p className="text-sm text-foreground whitespace-pre-wrap">{debug_help}</p>
-        </Section>
-      )}
-    </div>
-  );
+  return <div className="space-y-2">{sections}</div>;
 }

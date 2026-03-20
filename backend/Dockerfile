@@ -3,12 +3,15 @@ FROM python:3.11-alpine
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache gcc musl-dev linux-headers
+RUN apk add --no-cache gcc musl-dev linux-headers wget
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+# Create data directory for SQLite database
+RUN mkdir -p /app/data
 
 EXPOSE 8000
 
