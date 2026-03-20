@@ -86,11 +86,24 @@ async def get_coaching(
 ):
     """
     Get AI coaching response for coding problems.
-    
+
     This endpoint provides streaming AI coaching using NVIDIA NIM API.
     The response is returned as a Server-Sent Events stream for real-time interaction.
     """
+    import logging
+    logger = logging.getLogger(__name__)
     
+    # DEBUG: Log incoming request details
+    logger.info("=== COACH API REQUEST (non-streaming) ===")
+    logger.info(f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}...")
+    logger.info(f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}...")
+    logger.info(f"Language: {request.language.value}")
+    logger.info(f"Message: {request.message}")
+    logger.info(f"Mode: {request.mode.value}")
+    logger.info(f"Difficulty: {request.difficulty.value}")
+    logger.info(f"NIM Service initialized: {nim_service is not None}")
+    logger.info("=========================================")
+
     try:
         # For non-streaming response, collect the entire response
         response_chunks = []
@@ -103,16 +116,25 @@ async def get_coaching(
             difficulty=request.difficulty.value
         ):
             response_chunks.append(chunk)
-        
+
         full_response = "".join(response_chunks)
-        
+        logger.info(f"=== COACH API RESPONSE ===")
+        logger.info(f"Response length: {len(full_response)} characters")
+        logger.info(f"Response (first 200 chars): {full_response[:200] if full_response else 'EMPTY'}...")
+        logger.info("==========================")
+
         return CoachingResponse(
             response=full_response,
             mode=request.mode,
             language=request.language
         )
-        
+
     except Exception as e:
+        logger.error(f"=== COACH API ERROR ===")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Error message: {str(e)}")
+        logger.error(f"Error args: {e.args}")
+        logger.error("=======================")
         raise HTTPException(
             status_code=500,
             detail=f"Error generating coaching response: {str(e)}"
@@ -125,13 +147,28 @@ async def get_coaching_stream(
 ):
     """
     Get streaming AI coaching response using Server-Sent Events.
-    
+
     Returns a streaming response with Server-Sent Events format.
     Each chunk is sent as a separate SSE event.
     """
+    import logging
+    logger = logging.getLogger(__name__)
     
+    # DEBUG: Log incoming request details for streaming endpoint
+    logger.info("=== COACH API STREAM REQUEST ===")
+    logger.info(f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}...")
+    logger.info(f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}...")
+    logger.info(f"Language: {request.language.value}")
+    logger.info(f"Message: {request.message}")
+    logger.info(f"Mode: {request.mode.value}")
+    logger.info(f"Difficulty: {request.difficulty.value}")
+    logger.info(f"NIM Service initialized: {nim_service is not None}")
+    logger.info("================================")
+
     async def generate_stream() -> AsyncIterator[str]:
+        chunk_count = 0
         try:
+            logger.info("Starting to stream chunks from NIM service...")
             async for chunk in nim_service.get_coaching_response(
                 problem=request.problem,
                 code=request.code,
@@ -140,20 +177,30 @@ async def get_coaching_stream(
                 mode=request.mode.value,
                 difficulty=request.difficulty.value
             ):
+                chunk_count += 1
                 # Format as SSE
                 data = json.dumps({"chunk": chunk})
                 yield f"data: {data}\n\n"
-                
+
                 # Small delay to prevent overwhelming the client
                 await asyncio.sleep(0.01)
-                
+
+            logger.info(f"=== STREAM COMPLETE ===")
+            logger.info(f"Total chunks sent: {chunk_count}")
+            logger.info("=======================")
+            
             # Send completion signal
             yield f"data: {json.dumps({'done': True})}\n\n"
-            
+
         except Exception as e:
+            logger.error(f"=== STREAM ERROR ===")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error message: {str(e)}")
+            logger.error(f"Chunks sent before error: {chunk_count}")
+            logger.error("====================")
             error_data = json.dumps({"error": str(e)})
             yield f"data: {error_data}\n\n"
-    
+
     return StreamingResponse(
         generate_stream(),
         media_type="text/event-stream",
@@ -173,7 +220,8 @@ async def get_coaching_modes():
             CoachingMode.HINT.value: "Get gentle hints to guide your thinking",
             CoachingMode.REVIEW.value: "Get code review and feedback",
             CoachingMode.EXPLAIN.value: "Get explanations of concepts or approaches",
-            CoachingMode.DEBUG.value: "Get help debugging your code"
+            CoachingMode.DEBUG.value: "Get help debugging your code",
+            CoachingMode.FREEFORM.value: "Ask any question and get a natural response"
         }
     }
 

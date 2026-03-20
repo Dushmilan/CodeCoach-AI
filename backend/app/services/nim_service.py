@@ -25,10 +25,11 @@ class NIMService:
         }
         
         # Model routing based on problem complexity
+        # Using meta/llama-3.1-8b-instruct for faster responses
         self.models = {
-            "easy": "nvidia/llama-3.1-nemotron-70b-instruct",
-            "medium": "nvidia/llama-3.1-nemotron-70b-instruct", 
-            "hard": "nvidia/llama-3.1-nemotron-70b-instruct"
+            "easy": "meta/llama-3.1-8b-instruct",
+            "medium": "meta/llama-3.1-8b-instruct",
+            "hard": "meta/llama-3.1-8b-instruct"
         }
     
     async def get_coaching_response(
@@ -73,6 +74,13 @@ class NIMService:
         }
         
         try:
+            logger.info("=== NIM API CALL ===")
+            logger.info(f"URL: {self.base_url}/chat/completions")
+            logger.info(f"Model: {model}")
+            logger.info(f"System prompt (first 100 chars): {system_prompt[:100]}...")
+            logger.info(f"User prompt (first 100 chars): {user_prompt[:100]}...")
+            logger.info("====================")
+            
             async with httpx.AsyncClient(timeout=30.0) as client:
                 async with client.stream(
                     "POST",
@@ -80,36 +88,46 @@ class NIMService:
                     headers=self.headers,
                     json=payload
                 ) as response:
-                    
+                    logger.info(f"NIM API Response status: {response.status_code}")
+
                     if response.status_code != 200:
                         error_text = await response.aread()
+                        logger.error(f"NIM API Error response: {error_text.decode()}")
                         raise HTTPException(
                             status_code=response.status_code,
                             detail=f"NVIDIA NIM API error: {error_text.decode()}"
                         )
-                    
+
+                    line_count = 0
+                    content_yielded = 0
                     async for line in response.aiter_lines():
+                        line_count += 1
                         if line.startswith("data: "):
                             data = line[6:]
                             if data == "[DONE]":
+                                logger.info(f"NIM stream complete. Lines processed: {line_count}, Chunks yielded: {content_yielded}")
                                 break
-                            
+
                             try:
                                 chunk = json.loads(data)
                                 if "choices" in chunk and chunk["choices"]:
                                     delta = chunk["choices"][0].get("delta", {})
                                     if "content" in delta:
+                                        content_yielded += 1
                                         yield delta["content"]
                             except json.JSONDecodeError:
+                                logger.warning(f"Failed to decode JSON from line {line_count}: {data[:50]}...")
                                 continue
-                                
+
         except httpx.TimeoutException:
+            logger.error("NVIDIA NIM API timeout after 30 seconds")
             raise HTTPException(
                 status_code=504,
                 detail="NVIDIA NIM API timeout"
             )
         except Exception as e:
             logger.error(f"Error calling NVIDIA NIM API: {str(e)}")
+            logger.error(f"Exception type: {type(e).__name__}")
             raise HTTPException(
                 status_code=500,
                 detail="Internal server error"
@@ -158,13 +176,20 @@ Explain concepts, algorithms, or approaches clearly. Focus on:
 - Step-by-step reasoning""",
             
             "debug": """
-Help debug code issues. Focus on:
-- Identifying specific bugs or errors
-- Suggesting debugging strategies
-- Explaining why the current approach fails
-- Guiding toward the fix"""
+    Help debug code issues. Focus on:
+    - Identifying specific bugs or errors
+    - Suggesting debugging strategies
+    - Explaining why the current approach fails
+    - Guiding toward the fix""",
+    
+            "freeform": """
+    Respond naturally to the user's question or request. Focus on:
+    - Answering their specific question directly
+    - Providing helpful context and examples
+    - Offering guidance appropriate to their question
+    - Being conversational while staying educational"""
         }
-        
+    
         return base_prompt.format(language=language) + mode_specific.get(mode, "")
     
     def _build_user_prompt(self, problem: str, code: str, message: str, mode: str) -> str:

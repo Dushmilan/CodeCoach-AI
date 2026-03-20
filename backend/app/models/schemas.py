@@ -7,6 +7,7 @@ class CoachingMode(str, Enum):
     REVIEW = "review"
     EXPLAIN = "explain"
     DEBUG = "debug"
+    FREEFORM = "freeform"
 
 class Language(str, Enum):
     PYTHON = "python"

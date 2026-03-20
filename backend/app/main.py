@@ -1,7 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file with explicit path
 from pathlib import Path
@@ -17,6 +22,20 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Add validation error handler for detailed error messages
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.error(f"=== VALIDATION ERROR ===")
+    logger.error(f"Request URL: {request.url}")
+    logger.error(f"Request method: {request.method}")
+    logger.error(f"Validation errors: {exc.errors()}")
+    logger.error(f"Request body: {await request.body()}")
+    logger.error("========================")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
 
 # Configure CORS
 app.add_middleware(
