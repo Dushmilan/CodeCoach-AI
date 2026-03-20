@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 class PistonService:
     """Service for executing code via Piston API."""
-    
+
     def __init__(self):
-        self.base_url = "https://emkc.org/api/v2/piston"
+        self.base_url = "http://localhost:2000/api/v2/piston"
         self.timeout = 30.0
         
         # Supported languages and their versions
