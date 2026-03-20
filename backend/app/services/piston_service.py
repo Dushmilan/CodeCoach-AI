@@ -10,7 +10,7 @@ class PistonService:
     """Service for executing code via Piston API."""
 
     def __init__(self):
-        self.base_url = "http://localhost:2000/api/v2/piston"
+        self.base_url = "http://localhost:2000/api/v2"
         self.timeout = 30.0
         
         # Supported languages and their versions
@@ -66,7 +66,7 @@ class PistonService:
             "stdin": stdin,
             "args": [],
             "compile_timeout": 10000,
-            "run_timeout": 5000,
+            "run_timeout": 3000,
             "compile_memory_limit": -1,
             "run_memory_limit": -1
         }
@@ -96,11 +96,13 @@ class PistonService:
                 status_code=504,
                 detail="Code execution timeout"
             )
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error executing code: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail="Internal server error during code execution"
+                detail=f"Internal server error during code execution: {str(e)}"
             )
     
     async def get_runtimes(self) -> Dict[str, Any]:

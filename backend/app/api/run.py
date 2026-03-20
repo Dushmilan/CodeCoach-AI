@@ -22,9 +22,11 @@ async def execute_code(request: CodeExecutionRequest):
             stdin=request.stdin,
             version=request.version
         )
-        
+
         return CodeExecutionResult(**result)
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,

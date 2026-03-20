@@ -27,7 +27,7 @@ class ApiClient {
   }
 
   async runCode(language: string, code: string, version?: string): Promise<CodeExecutionResult> {
-    const response = await fetch(`${this.baseUrl}/api/run`, {
+    const response = await fetch(`${this.baseUrl}/api/run/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
