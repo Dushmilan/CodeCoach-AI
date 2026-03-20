@@ -7,6 +7,17 @@ import { CodeEditor } from '@/components/editor/CodeEditor';
 import { AIChatPanel } from '@/components/chat/AIChatPanel';
 import { Question, ChatMessage, Language } from '@/types';
 import { api } from '@/lib/api';
+import {
+  LoadingSkeleton,
+  MainLayoutContainer,
+  SidebarContainer,
+  MainContentContainer,
+  ContentLayoutContainer,
+  QuestionContentSection,
+  QuestionArticle,
+  CodeEditorContainer,
+  AIChatPanelContainer,
+} from './elements';
 
 interface LayoutProps {
   questions: Question[];
@@ -309,142 +320,50 @@ export function Layout({
   }, [selectedQuestion]);
 
   if (!isMounted) {
-    return (
-      <main className="flex h-screen bg-background" role="main" aria-label="CodeCoach AI Learning Platform">
-        <aside className="w-80 border-r border-border bg-card animate-pulse">
-          <div className="p-4 border-b border-border">
-            <div className="h-6 bg-secondary rounded w-24" />
-          </div>
-          <div className="p-4 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 bg-secondary rounded" />
-            ))}
-          </div>
-        </aside>
-        
-        <div className="flex-1 flex flex-col">
-          <header className="border-b border-border bg-card p-4">
-            <div className="h-8 bg-secondary rounded w-48 animate-pulse" />
-          </header>
-          
-          <div className="flex-1 flex">
-            <section className="flex-1 p-4">
-              <div className="space-y-4">
-                <div className="h-8 bg-secondary rounded w-64 animate-pulse" />
-                <div className="h-4 bg-secondary rounded w-32 animate-pulse" />
-                <div className="h-20 bg-secondary rounded animate-pulse" />
-              </div>
-            </section>
-            
-            <aside className="w-96 border-l border-border p-4">
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-16 bg-secondary rounded animate-pulse" />
-                ))}
-              </div>
-            </aside>
-          </div>
-        </div>
-      </main>
-    );
+    return <LoadingSkeleton />;
   }
 
-  // Prevent hydration issues by delaying API calls until mounted
-  // The component structure is consistent between server and client
-
   return (
-    <main className="flex h-screen bg-background" role="main" aria-label="CodeCoach AI Learning Platform">
-      <EnhancedSidebar
+    <MainLayoutContainer>
+      <SidebarContainer
         questions={questions}
         selectedQuestion={selectedQuestion}
         onSelectQuestion={handleQuestionSelection}
         userProgress={userProgress}
       />
 
-      <div className="flex-1 flex flex-col">
+      <MainContentContainer>
         <Header />
-
-        <div className="flex-1 flex overflow-hidden">
-          <section
-            className="flex-1 flex flex-col p-4"
-            aria-labelledby="question-content"
-          >
+        <ContentLayoutContainer>
+          <QuestionContentSection>
             {selectedQuestion && (
-              <article className="mb-4" aria-labelledby="question-title">
-                <header className="mb-4">
-                  <h1 id="question-title" className="text-2xl font-bold mb-2">
-                    {selectedQuestion.title}
-                  </h1>
-                  <div className="flex items-center gap-2 mb-4" role="group" aria-label="Question metadata">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${difficultyBadge}`}
-                      aria-label={`Difficulty: ${selectedQuestion.difficulty}`}
-                    >
-                      {selectedQuestion.difficulty}
-                    </span>
-                    <span className="text-sm text-muted-foreground" aria-label={`Category: ${selectedQuestion.category}`}>
-                      {selectedQuestion.category}
-                    </span>
-                    <span className="text-sm text-muted-foreground" aria-label={`Status: ${questionSummary?.split(' - ')[1] || 'Not started'}`}>
-                      {questionSummary?.split(' - ')[1] || ''}
-                    </span>
-                  </div>
-                </header>
-
-                <div className="prose prose-sm dark:prose-invert max-w-none" role="article">
-                  <p>{selectedQuestion.description}</p>
-                  {selectedQuestion.examples && selectedQuestion.examples.length > 0 && (
-                    selectedQuestion.examples.map((example, index) => (
-                      <section key={index} className="mt-4" aria-labelledby={`example-${index}`}>
-                        <h3 id={`example-${index}`} className="font-semibold mb-2">
-                          Example {index + 1}:
-                        </h3>
-                        <div className="bg-muted/50 p-3 rounded-md border" role="figure" aria-label={`Example ${index + 1} details`}>
-                          <div className="font-mono text-sm">
-                            <strong>Input:</strong> <code>{example.input}</code>
-                          </div>
-                          <div className="font-mono text-sm mt-1">
-                            <strong>Output:</strong> <code>{example.output}</code>
-                          </div>
-                          {example.explanation && (
-                            <div className="text-sm mt-2">
-                              <strong>Explanation:</strong> {example.explanation}
-                            </div>
-                          )}
-                        </div>
-                      </section>
-                    ))
-                  )}
-                </div>
-              </article>
-            )}
-
-            <div className="flex-1">
-              <CodeEditor
-                language={language}
-                code={currentCode}
-                onCodeChange={setCurrentCode}
-                onLanguageChange={setLanguage}
-                onRunCode={handleRunCode}
-                isRunning={isRunning}
-                output={output}
-                error={error}
-              />
-            </div>
-          </section>
-
-          <aside className="w-96 p-4 border-l" aria-label="AI Assistant Panel">
-            <AIChatPanel
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              isTyping={isTyping}
-              selectedQuestion={selectedQuestion?.title || ''}
-              currentCode={currentCode}
-              language={language}
+            <QuestionArticle
+              selectedQuestion={selectedQuestion}
+              difficultyBadge={difficultyBadge || ''}
+              questionSummary={questionSummary}
             />
-          </aside>
-        </div>
-      </div>
-    </main>
+            )}
+            <CodeEditorContainer
+              language={language}
+              currentCode={currentCode}
+              isRunning={isRunning}
+              output={output}
+              error={error}
+              onCodeChange={setCurrentCode}
+              onLanguageChange={setLanguage}
+              onRunCode={handleRunCode}
+            />
+          </QuestionContentSection>
+          <AIChatPanelContainer
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isTyping={isTyping}
+            selectedQuestion={selectedQuestion?.title || ''}
+            currentCode={currentCode}
+            language={language}
+          />
+        </ContentLayoutContainer>
+      </MainContentContainer>
+    </MainLayoutContainer>
   );
 }
