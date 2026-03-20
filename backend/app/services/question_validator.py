@@ -4,6 +4,7 @@ Question Validator Service.
 Orchestrates all validation use cases to provide comprehensive question validation.
 """
 
+import asyncio
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import logging
@@ -154,25 +155,23 @@ class QuestionValidatorService:
         )
     
     async def validate_batch(
-        self, 
+        self,
         questions: List[Question]
     ) -> List[QuestionValidationResult]:
         """
-        Validate multiple questions.
-        
+        Validate multiple questions in parallel.
+
         Args:
             questions: List of questions to validate
-            
+
         Returns:
-            List of validation results
+            List of validation results (in same order as input)
         """
-        results = []
-        
-        for question in questions:
-            result = await self.validate_question(question)
-            results.append(result)
-        
-        return results
+        # Use asyncio.gather for parallel execution
+        results = await asyncio.gather(*[
+            self.validate_question(question) for question in questions
+        ])
+        return list(results)
     
     def get_use_case_order(self) -> List[ValidationUseCase]:
         """

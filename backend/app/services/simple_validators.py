@@ -13,45 +13,89 @@ from typing import Dict, Any, List
 
 class SimplePythonValidator:
     """Simple Python code validator using subprocess execution."""
-    
+
     def __init__(self):
         self.limits = {'time_ms': 1000, 'memory_mb': 64}
-    
+
     def validate(self, code: str, test_case: Dict[str, Any]) -> Dict[str, Any]:
         """Validate Python code against a test case."""
         try:
+            # Parse input arguments from test case
+            input_str = test_case['input']
+            # The input might have literal '\n' (two chars) or actual newlines
+            # Replace literal '\n' strings with actual newlines, then split
+            normalized_input = input_str.replace('\\n', '\n')
+            input_lines = normalized_input.split('\n')
+            
+            parsed_args = []
+            for line in input_lines:
+                if line.strip():
+                    try:
+                        parsed_args.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        parsed_args.append(line)
+            
+            # Create wrapper code that calls the function
+            args_str = ', '.join(f'arg{i}' for i in range(len(parsed_args)))
+            args_assignment = '\n'.join(f'arg{i} = {repr(arg)}' for i, arg in enumerate(parsed_args))
+            
+            # Detect function name from code
+            import re
+            fn_match = re.search(r'def\s+(\w+)\s*\(', code)
+            fn_name = fn_match.group(1) if fn_match else 'solution'
+            
+            wrapper_code = f"""
+import sys
+import json
+
+{code}
+
+{args_assignment}
+result = {fn_name}({args_str})
+if isinstance(result, list):
+    print(json.dumps(result))
+elif isinstance(result, dict):
+    print(json.dumps(result))
+elif isinstance(result, bool):
+    print('true' if result else 'false')
+elif result is None:
+    print('null')
+else:
+    print(result)
+"""
+
             # Create temporary file for Python code
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-                f.write(code)
+                f.write(wrapper_code)
                 temp_file = f.name
-            
+
             try:
-                # Execute with input
+                # Execute
                 start_time = time.time()
-                
+
                 process = subprocess.run(
                     ['python', temp_file],
-                    input=test_case['input'],
+                    input='',
                     text=True,
                     capture_output=True,
                     timeout=self.limits['time_ms'] / 1000
                 )
-                
+
                 execution_time = (time.time() - start_time) * 1000
-                
+
                 if process.returncode != 0:
                     return {
                         'passed': False,
                         'error': process.stderr,
                         'execution_time': execution_time
                     }
-                
+
                 # Compare outputs
                 actual_output = process.stdout.strip()
                 expected_output = test_case['expected_output'].strip()
-                
+
                 passed = self.compare_outputs(actual_output, expected_output)
-                
+
                 return {
                     'passed': passed,
                     'actual_output': actual_output,
@@ -59,7 +103,7 @@ class SimplePythonValidator:
                     'execution_time': execution_time,
                     'error': None
                 }
-                
+
             except subprocess.TimeoutExpired:
                 return {
                     'passed': False,
@@ -68,7 +112,7 @@ class SimplePythonValidator:
                 }
             finally:
                 os.unlink(temp_file)
-                
+
         except Exception as e:
             return {
                 'passed': False,

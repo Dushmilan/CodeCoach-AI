@@ -6,6 +6,7 @@ Provides endpoints for validating questions before they are made available to us
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional, Dict, Any
+from functools import lru_cache
 
 from app.models.schemas import Question
 from app.models.question_validation_schemas import (
@@ -18,27 +19,17 @@ from app.services.piston_service import PistonService
 
 router = APIRouter()
 
-# Initialize services (these would typically be injected)
-_piston_service: Optional[PistonService] = None
-_validator_service: Optional[QuestionValidatorService] = None
 
-
+@lru_cache()
 def get_piston_service() -> PistonService:
-    """Get or create Piston service instance."""
-    global _piston_service
-    if _piston_service is None:
-        _piston_service = PistonService()
-    return _piston_service
+    """Get or create Piston service instance (cached)."""
+    return PistonService()
 
 
-def get_validator_service(
-    piston_service: PistonService = Depends(get_piston_service)
-) -> QuestionValidatorService:
-    """Get or create validator service instance."""
-    global _validator_service
-    if _validator_service is None:
-        _validator_service = QuestionValidatorService(piston_service=piston_service)
-    return _validator_service
+@lru_cache()
+def get_validator_service() -> QuestionValidatorService:
+    """Get or create validator service instance (cached)."""
+    return QuestionValidatorService(piston_service=get_piston_service())
 
 
 @router.post("/validate", response_model=QuestionValidationResult)

@@ -47,8 +47,8 @@ class CodeExecutionResult(BaseModel):
     stdout: str = Field(..., description="Standard output from execution")
     stderr: str = Field(..., description="Standard error from execution")
     exit_code: int = Field(..., description="Exit code from execution")
-    execution_time: Optional[str] = Field(None, description="Execution time")
-    memory_usage: Optional[str] = Field(None, description="Memory usage")
+    execution_time: Optional[int] = Field(None, description="Execution time in milliseconds")
+    memory_usage: Optional[int] = Field(None, description="Memory usage in bytes")
     language: str = Field(..., description="Language used")
     version: str = Field(..., description="Language version")
 

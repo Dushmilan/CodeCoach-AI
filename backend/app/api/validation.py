@@ -18,7 +18,7 @@ display = SimpleResultsDisplay()
 async def validate_code(request: CodeValidationRequest):
     """
     Validate code against visible test cases for Java, JavaScript, or Python.
-    
+
     Example request:
     {
         "language": "python",
@@ -36,17 +36,20 @@ async def validate_code(request: CodeValidationRequest):
         # Validate input
         if not request.code.strip():
             raise HTTPException(status_code=400, detail="Code cannot be empty")
-        
+
         if not request.test_cases:
             raise HTTPException(status_code=400, detail="At least one test case is required")
-        
+
+        # Convert Pydantic models to dictionaries
+        test_cases_dict = [tc.model_dump() for tc in request.test_cases]
+
         # Run validation
         results = runner.run_all_tests(
             language=request.language,
             code=request.code,
-            test_cases=request.test_cases
+            test_cases=test_cases_dict
         )
-        
+
         # Format results for API response
         return ValidationResult(
             total_tests=results['total_tests'],
@@ -55,7 +58,7 @@ async def validate_code(request: CodeValidationRequest):
             results=results['results'],
             formatted_output=display.format_results(results)
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -1,10 +1,11 @@
 import React from 'react';
 import { EnhancedSidebar } from '../EnhancedSidebar';
-import { QuestionSummary } from '@/types';
+import { QuestionSummary, Question } from '@/types';
 
 interface SidebarContainerProps {
   questions: QuestionSummary[];
   selectedQuestion: QuestionSummary | null;
+  fullQuestion: Question | QuestionSummary | null;
   onSelectQuestion: (question: QuestionSummary) => void;
   userProgress: Record<string, 'attempted' | 'solved'>;
   difficultyBadge?: string;
@@ -13,6 +14,7 @@ interface SidebarContainerProps {
 export function SidebarContainer({
   questions,
   selectedQuestion,
+  fullQuestion,
   onSelectQuestion,
   userProgress,
   difficultyBadge
@@ -21,6 +23,7 @@ export function SidebarContainer({
     <EnhancedSidebar
       questions={questions}
       selectedQuestion={selectedQuestion}
+      fullQuestion={fullQuestion}
       onSelectQuestion={onSelectQuestion}
       userProgress={userProgress}
       difficultyBadge={difficultyBadge}

@@ -47,15 +47,18 @@ class QuestionsService:
             if os.path.exists(sample_file):
                 with open(sample_file, 'r', encoding='utf-8') as f:
                     questions_data = json.load(f)
+                    # Handle both list format and dict with 'questions' key
+                    if isinstance(questions_data, dict):
+                        questions_data = questions_data.get('questions', [])
                     for question_data in questions_data:
                         question = Question(**question_data)
                         self.questions[question.id] = question
-                        
+
                         # Initialize validation status
                         self.validation_statuses[question.id] = QuestionValidationStatus(
                             is_validated=False
                         )
-                        
+
                         # Validate if configured
                         if self.validate_on_load and self.validator:
                             self._validate_question_sync(question)
@@ -72,14 +75,12 @@ class QuestionsService:
     def _validate_question_sync(self, question: Question):
         """Synchronously validate a question (for use during loading)."""
         try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        
-        try:
-            result = loop.run_until_complete(self.validator.validate_question(question))
+            # asyncio.run() creates a new event loop and is the recommended approach
+            result = asyncio.run(self.validator.validate_question(question))
             self._update_validation_status(question.id, result)
+        except RuntimeError as e:
+            # Handle case where we might be in an async context already
+            logger.warning(f"Cannot run sync validation in async context for {question.id}: {e}")
         except Exception as e:
             logger.error(f"Error validating question {question.id}: {e}")
     

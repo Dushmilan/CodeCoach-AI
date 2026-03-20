@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 
 from app.models.schemas import (
-    Question, QuestionSummary, QuestionsListResponse, 
+    Question, QuestionSummary, QuestionsListResponse,
     Difficulty
 )
 from app.services.questions_service import QuestionsService

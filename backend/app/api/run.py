@@ -1,6 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import CodeExecutionRequest, CodeExecutionResult, Language
 from app.services.piston_service import PistonService
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -11,10 +14,10 @@ piston_service = PistonService()
 async def execute_code(request: CodeExecutionRequest):
     """
     Execute code using Piston API.
-    
+
     Supports multiple programming languages with safe execution environment.
     """
-    
+
     try:
         result = await piston_service.execute_code(
             language=request.language.value,
@@ -22,12 +25,15 @@ async def execute_code(request: CodeExecutionRequest):
             stdin=request.stdin,
             version=request.version
         )
+        
+        logger.info(f"Raw result from piston_service: {result}")
 
         return CodeExecutionResult(**result)
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error executing code: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error executing code: {str(e)}"

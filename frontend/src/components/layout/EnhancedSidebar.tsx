@@ -9,12 +9,13 @@ import { QuestionDescriptionPanel } from './elements/QuestionDescriptionPanel';
 interface EnhancedSidebarProps {
   questions: QuestionSummary[];
   selectedQuestion: QuestionSummary | null;
+  fullQuestion: Question | QuestionSummary | null;
   onSelectQuestion: (question: QuestionSummary) => void;
   userProgress: Record<string, 'attempted' | 'solved'>;
   difficultyBadge?: string;
 }
 
-export function EnhancedSidebar({ questions, selectedQuestion, onSelectQuestion, userProgress, difficultyBadge }: EnhancedSidebarProps) {
+export function EnhancedSidebar({ questions, selectedQuestion, fullQuestion, onSelectQuestion, userProgress, difficultyBadge }: EnhancedSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [filter, setFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
   const [currentIndex, setCurrentIndex] = useState(0);

@@ -271,14 +271,16 @@ class TestCaseValidationUseCase(BaseValidationUseCase):
         for i, test_case in enumerate(question.test_cases):
             try:
                 # Create a simple Python script that parses the input
+                # Use JSON encoding to properly escape the input
+                escaped_input = json.dumps(test_case.input)
                 test_code = f'''
-import sys
-import json
-
-# Read and parse input
-input_data = """{test_case.input}"""
-print("Input parsed successfully")
-'''
+    import sys
+    import json
+    
+    # Read and parse input
+    input_data = json.loads({escaped_input})
+    print("Input parsed successfully")
+    '''
                 
                 result = await self.piston_service.execute_code(
                     language="python",

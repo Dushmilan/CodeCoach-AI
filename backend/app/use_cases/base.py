@@ -6,7 +6,7 @@ must inherit from, ensuring consistent interface and behavior.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import List, Optional
 import time
 
 from app.models.schemas import Question
@@ -124,15 +124,15 @@ class BaseValidationUseCase(ABC):
     def _create_result(
         self,
         passed: bool,
-        issues: list = None
+        issues: Optional[List] = None
     ) -> UseCaseValidationResult:
         """
         Helper method to create a validation result.
-        
+
         Args:
             passed: Whether validation passed
-            issues: List of validation issues
-            
+            issues: List of validation issues (optional)
+
         Returns:
             UseCaseValidationResult instance
         """

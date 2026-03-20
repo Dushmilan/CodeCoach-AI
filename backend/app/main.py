@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from dotenv import load_dotenv
 import os
 import logging

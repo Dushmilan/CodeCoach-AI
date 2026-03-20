@@ -151,17 +151,29 @@ class PistonService:
     def _process_execution_result(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """Process and sanitize execution result."""
         
+        try:
+            logger.info(f"Piston API response: {json.dumps(result, indent=2)}")
+        except Exception as e:
+            logger.warning(f"Could not log full response: {e}")
+
         # Extract relevant information
+        run_info = result.get("run", {})
         processed = {
-            "stdout": result.get("run", {}).get("stdout", ""),
-            "stderr": result.get("run", {}).get("stderr", ""),
-            "exit_code": result.get("run", {}).get("code", 1),
-            "signal": result.get("run", {}).get("signal", None),
-            "execution_time": result.get("run", {}).get("stdout", ""),  # Piston returns this in stdout
-            "memory_usage": None,  # Piston doesn't provide memory usage
+            "stdout": run_info.get("stdout", ""),
+            "stderr": run_info.get("stderr", ""),
+            "exit_code": run_info.get("code", 1),
+            "signal": run_info.get("signal", None),
+            "execution_time": run_info.get("wall_time", run_info.get("time", None)),
+            "memory_usage": run_info.get("memory", None),
             "language": result.get("language", ""),
             "version": result.get("version", "")
         }
+        
+        try:
+            stdout_preview = processed['stdout'][:100] if processed['stdout'] else ''
+            logger.info(f"Processed execution result: stdout='{stdout_preview}...', exit_code={processed['exit_code']}")
+        except Exception as e:
+            logger.warning(f"Could not log processed result: {e}")
         
         # Clean up stderr to remove compilation warnings
         stderr = processed["stderr"]

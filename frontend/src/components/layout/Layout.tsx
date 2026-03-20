@@ -57,23 +57,27 @@ export function Layout({
     if (selectedQuestion && selectedQuestion.id) {
       // Check if we already have the full data
       if (fullQuestionData?.id === selectedQuestion.id) {
+        console.log('Already have full data for question:', selectedQuestion.id);
         return;
       }
-      
+
+      console.log('Fetching full question data for:', selectedQuestion.id);
       setIsLoadingQuestion(true);
       api.getQuestion(selectedQuestion.id)
         .then((fullData) => {
+          console.log('Successfully fetched question data:', selectedQuestion.id);
           setFullQuestionData(fullData);
           setCurrentCode(fullData.starter?.[language] || '');
         })
         .catch((err) => {
-          console.error('Failed to fetch full question data:', err);
+          console.error('Failed to fetch full question data:', selectedQuestion.id, err);
+          setError(`Failed to load question: ${err instanceof Error ? err.message : 'Unknown error'}`);
         })
         .finally(() => {
           setIsLoadingQuestion(false);
         });
     }
-  }, [selectedQuestion?.id, language]);
+  }, [selectedQuestion?.id, language, fullQuestionData?.id]);
 
   // Update code when language changes
   useEffect(() => {
@@ -276,12 +280,39 @@ export function Layout({
     }
 
     try {
-      const result = await api.runCode(language, currentCode);
+      // For Python/Java, use the validation endpoint to run test cases
+      const validation = await api.validateCode(language, currentCode, fullQuestionData.test_cases);
 
-      if (result.exit_code === 0) {
-        setOutput(result.stdout);
+      let outputText = '';
+      outputText += `Test Results: ${validation.passed_tests}/${validation.total_tests} passed\n`;
+      outputText += `Success Rate: ${(validation.success_rate * 100).toFixed(0)}%\n\n`;
+      
+      validation.results.forEach((r, index) => {
+        const testCase = fullQuestionData.test_cases[index];
+        outputText += `${r.passed ? '✅' : '❌'} ${r.test_name || `Test ${index + 1}`}:\n`;
+        if (r.passed) {
+          outputText += `   Status: Passed\n`;
+        } else {
+          outputText += `   Status: Failed\n`;
+          if (r.error) {
+            outputText += `   Error: ${r.error}\n`;
+          }
+          if (r.stderr) {
+            outputText += `   stderr: ${r.stderr}\n`;
+          }
+          outputText += `   Input: ${testCase.input}\n`;
+          outputText += `   Expected: ${testCase.expected_output}\n`;
+          outputText += `   Got: ${r.stdout}\n`;
+        }
+        outputText += '\n';
+      });
+
+      if (validation.passed_tests === validation.total_tests) {
+        setOutput(outputText);
+        setInternalUserProgress(prev => ({ ...prev, [fullQuestionData.id]: 'solved' }));
       } else {
-        setError(result.stderr || result.stdout);
+        setOutput(outputText);
+        setInternalUserProgress(prev => ({ ...prev, [fullQuestionData.id]: 'attempted' }));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -325,6 +356,7 @@ export function Layout({
       <SidebarContainer
         questions={questions}
         selectedQuestion={selectedQuestion}
+        fullQuestion={displayQuestion}
         onSelectQuestion={handleQuestionSelection}
         userProgress={userProgress}
         difficultyBadge={difficultyBadge || ''}
