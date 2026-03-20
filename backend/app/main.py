@@ -8,7 +8,7 @@ from pathlib import Path
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
 
-from app.api import coach, run, questions, health, debug
+from app.api import coach, run, questions, health, debug, validation
 
 app = FastAPI(
     title="CodeCoach AI Backend",
@@ -24,7 +24,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "https://codecoach-ai-frontend.vercel.app",
-    ],  # Configure properly for production
+    ], # Configure properly for production
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -36,6 +36,7 @@ app.include_router(run.router, prefix="/api/run", tags=["run"])
 app.include_router(questions.router, prefix="/api/questions", tags=["questions"])
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(debug.router, prefix="/debug", tags=["debug"])
+app.include_router(validation.router, prefix="/api/validate", tags=["validation"])
 
 @app.get("/")
 async def root():

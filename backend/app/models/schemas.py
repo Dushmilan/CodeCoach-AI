@@ -57,6 +57,22 @@ class TestCase(BaseModel):
     description: Optional[str] = Field(None, description="Test case description")
     hidden: bool = Field(default=False, description="Whether this is a hidden test case")
 
+
+class CodeValidationRequest(BaseModel):
+    """Request for code validation against test cases."""
+    language: Language = Field(..., description="Programming language")
+    code: str = Field(..., description="Source code to validate")
+    test_cases: List[TestCase] = Field(..., description="List of test cases to validate against")
+
+
+class ValidationResult(BaseModel):
+    """Result of code validation."""
+    total_tests: int = Field(..., description="Total number of test cases")
+    passed_tests: int = Field(..., description="Number of test cases that passed")
+    success_rate: float = Field(..., description="Success rate as a percentage")
+    results: List[Dict[str, Any]] = Field(..., description="Detailed results for each test case")
+    formatted_output: str = Field(..., description="User-friendly formatted output")
+
 class Example(BaseModel):
     input: str = Field(..., description="Example input")
     output: str = Field(..., description="Example output")

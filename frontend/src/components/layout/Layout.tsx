@@ -64,8 +64,12 @@ export function Layout({
   onQuestionSelect: externalOnQuestionSelect
 }: LayoutProps) {
   const [internalSelectedQuestion, setInternalSelectedQuestion] = useState<Question>(questions[0] || sampleQuestions[0]);
-  const [currentCode, setCurrentCode] = useState('');
-  const [language, setLanguage] = useState<Language>('python');
+    const [language, setLanguage] = useState<Language>('python');
+    // Initialize code with starter for the default question and language
+    const [currentCode, setCurrentCode] = useState<string>(() => {
+      const defaultQuestion = questions[0] || sampleQuestions[0];
+      return defaultQuestion?.starter?.['python'] || '';
+    });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
