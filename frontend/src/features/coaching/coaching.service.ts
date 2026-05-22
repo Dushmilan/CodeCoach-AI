@@ -19,6 +19,12 @@ export interface CoachingResponse {
 export class CoachingService {
   constructor(private http: HttpClient) {}
 
+  private getApiKeyHeader(): Record<string, string> {
+    if (typeof window === 'undefined') return {};
+    const key = localStorage.getItem('nvidia_api_key');
+    return key ? { 'X-NVIDIA-API-Key': key } : {};
+  }
+
   async getCoachResponse(
     problem: string,
     language: string,
@@ -27,6 +33,7 @@ export class CoachingService {
     mode: string,
     difficulty: string = 'medium'
   ): Promise<CoachingResponse> {
+    const headers = this.getApiKeyHeader();
     const data = await this.http.post<{ response: string; structured: StructuredCoachingResponse | null }>(
       '/api/coach/',
       {
@@ -36,7 +43,8 @@ export class CoachingService {
         mode: mode.toLowerCase(),
         language: language.toLowerCase(),
         difficulty,
-      }
+      },
+      { headers }
     );
 
     return {

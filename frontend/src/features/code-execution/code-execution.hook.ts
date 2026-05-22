@@ -3,13 +3,14 @@
 import { useState, useCallback } from 'react';
 import { Question } from '@/types';
 import { codeExecutionService } from './code-execution.service';
-import { CodeExecutionFeature, TestCase, ValidationResponse } from './code-execution.types';
+import { CodeExecutionFeature, SubmitResponse, TestCase, ValidationResponse } from './code-execution.types';
 
 export function useCodeExecution(): CodeExecutionFeature {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<ValidationResponse | null>(null);
+  const [lastSubmitResult, setLastSubmitResult] = useState<SubmitResponse | null>(null);
 
   const runCode = useCallback(
     async (language: string, code: string, version?: string) => {
@@ -40,6 +41,46 @@ export function useCodeExecution(): CodeExecutionFeature {
         return result;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to validate code';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setIsRunning(false);
+      }
+    },
+    []
+  );
+
+  const submitCode = useCallback(
+    async (questionId: string, language: string, code: string): Promise<SubmitResponse> => {
+      setIsRunning(true);
+      setError(null);
+      try {
+        const result = await codeExecutionService.submitCode(questionId, language, code);
+        setLastSubmitResult(result);
+        const outputLines = result.results.map((r) => {
+          const status = r.passed ? 'Pass' : 'Fail';
+          let line = `${r.passed ? '✅' : '❌'} Test ${r.index}: ${status}`;
+          if (!r.hidden) {
+            line += ` | Input: ${r.input} | Expected: ${r.expected} | Actual: ${r.actual}`;
+          }
+          return line;
+        });
+        setOutput(`Submit Results: ${result.passed_count}/${result.total} passed\n\n${outputLines.join('\n')}`);
+        setLastResult({
+          total_tests: result.total,
+          passed_tests: result.passed_count,
+          success_rate: result.total > 0 ? result.passed_count / result.total : 0,
+          results: result.results.map((r) => ({
+            test_name: `Test ${r.index}`,
+            passed: r.passed,
+            stdout: r.actual,
+            stderr: '',
+          })),
+          formatted_output: '',
+        });
+        return result;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to submit code';
         setError(errorMessage);
         throw err;
       } finally {
@@ -158,8 +199,10 @@ export function useCodeExecution(): CodeExecutionFeature {
     output,
     error,
     lastResult,
+    lastSubmitResult,
     runCode,
     validateCode,
+    submitCode,
     runLocalJavaScript,
     clearOutput,
     clearError,

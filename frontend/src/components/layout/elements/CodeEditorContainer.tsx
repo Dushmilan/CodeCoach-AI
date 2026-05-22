@@ -15,6 +15,7 @@ interface CodeEditorContainerProps {
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: Language) => void;
   onRunCode: () => void;
+  onSubmitCode: () => void;
 }
 
 export function CodeEditorContainer({
@@ -26,6 +27,7 @@ export function CodeEditorContainer({
   onCodeChange,
   onLanguageChange,
   onRunCode,
+  onSubmitCode,
 }: CodeEditorContainerProps) {
   const [outputHeight, setOutputHeight] = useState(200); // Default 200px
   const [outputCollapsed, setOutputCollapsed] = useState(false);
@@ -78,8 +80,9 @@ export function CodeEditorContainer({
           code={currentCode}
           onCodeChange={onCodeChange}
           onLanguageChange={onLanguageChange}
-          onRunCode={onRunCode}
-          isRunning={isRunning}
+            onRunCode={onRunCode}
+            onSubmitCode={onSubmitCode}
+            isRunning={isRunning}
         />
       </div>
 

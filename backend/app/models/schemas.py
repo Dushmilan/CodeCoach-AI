@@ -127,6 +127,25 @@ class QuestionsListResponse(BaseModel):
     page: int = Field(default=1, description="Current page")
     per_page: int = Field(default=20, description="Questions per page")
 
+class SubmitRequest(BaseModel):
+    question_id: str = Field(..., description="Question ID to submit against")
+    language: Language = Field(..., description="Programming language")
+    code: str = Field(..., description="Source code to submit")
+
+class SubmitResult(BaseModel):
+    index: int = Field(..., description="Test case index (1-based)")
+    passed: bool = Field(..., description="Whether the test case passed")
+    input: str = Field(default="", description="Test input (empty for hidden)")
+    expected: str = Field(default="", description="Expected output (empty for hidden)")
+    actual: str = Field(default="", description="Actual output (empty for hidden)")
+    hidden: bool = Field(default=False, description="Whether this is a hidden test case")
+
+class SubmitResponse(BaseModel):
+    passed: bool = Field(..., description="Whether all test cases passed")
+    total: int = Field(..., description="Total number of test cases")
+    passed_count: int = Field(..., description="Number of test cases passed")
+    results: List[SubmitResult] = Field(..., description="Detailed results per test case")
+
 class HealthResponse(BaseModel):
     status: str = Field(..., description="Service status")
     service: str = Field(..., description="Service name")

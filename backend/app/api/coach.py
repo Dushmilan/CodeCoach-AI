@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from fastapi.responses import StreamingResponse
-from typing import AsyncIterator
+from typing import AsyncIterator, Optional
 import asyncio
 import json
 import os
@@ -11,9 +11,11 @@ from app.services.nim_service import NIMService
 
 router = APIRouter()
 
-def get_nim_service() -> NIMService:
+def get_nim_service(
+    x_nvidia_api_key: Optional[str] = Header(None, alias="X-NVIDIA-API-Key"),
+) -> NIMService:
     """Dependency injection for NIM service."""
-    api_key = os.getenv("NVIDIA_API_KEY")
+    api_key = x_nvidia_api_key or os.getenv("NVIDIA_API_KEY")
     environment = os.getenv("ENVIRONMENT", "production")
     
     import logging
@@ -25,8 +27,9 @@ def get_nim_service() -> NIMService:
     env_path = Path(__file__).parent.parent.parent / '.env'
     load_dotenv(env_path)
     
-    # Re-check API key after forced reload
-    api_key = os.getenv("NVIDIA_API_KEY")
+    # Fall back to env var if header was not provided
+    if not api_key:
+        api_key = os.getenv("NVIDIA_API_KEY")
     
     logger.info(f"Environment: {environment}")
     logger.info(f"Forced .env reload from: {env_path}")

@@ -9,6 +9,7 @@ import { Question, QuestionSummary, Language } from '@/types';
 import { useQuestion } from '@/features/question/question.hook';
 import { useCodeExecution } from '@/features/code-execution/code-execution.hook';
 import { useCoaching } from '@/features/coaching/coaching.hook';
+import { useLocalStorage } from '@/hooks';
 import {
   LoadingSkeleton,
   MainLayoutContainer,
@@ -22,7 +23,7 @@ import {
 export function MainWorkspace() {
   const [language, setLanguage] = useState<Language>('python');
   const [currentCode, setCurrentCode] = useState<string>('');
-  const [userProgress, setUserProgress] = useState<Record<string, 'attempted' | 'solved'>>({});
+  const [userProgress, setUserProgress] = useLocalStorage<Record<string, 'attempted' | 'solved'>>('user_progress', {});
   const [isMounted, setIsMounted] = useState(false);
 
   const {
@@ -42,6 +43,7 @@ export function MainWorkspace() {
     output,
     error: executionError,
     validateCode,
+    submitCode,
     runLocalJavaScript,
     clearOutput,
     clearError: clearExecutionError,
@@ -78,9 +80,7 @@ export function MainWorkspace() {
   );
 
   const handleRunCode = useCallback(async () => {
-    if (!fullQuestion) {
-      return;
-    }
+    if (!fullQuestion) return;
 
     if (language === 'javascript') {
       try {
@@ -92,14 +92,14 @@ export function MainWorkspace() {
     }
 
     try {
-      const validation = await validateCode(language, currentCode, fullQuestion.test_cases);
+      const visibleTestCases = fullQuestion.test_cases.filter((tc) => !tc.hidden).slice(0, 3);
+      const validation = await validateCode(language, currentCode, visibleTestCases);
 
       let outputText = '';
-      outputText += `Test Results: ${validation.passed_tests}/${validation.total_tests} passed\n`;
-      outputText += `Success Rate: ${(validation.success_rate * 100).toFixed(0)}%\n\n`;
+      outputText += `Run Results: ${validation.passed_tests}/${validation.total_tests} passed\n\n`;
 
       validation.results.forEach((r, index) => {
-        const testCase = fullQuestion.test_cases[index];
+        const testCase = visibleTestCases[index];
         const status = r.passed ? 'Pass' : 'Fail';
         outputText += `${r.passed ? '✅' : '❌'} ${r.test_name || `Test ${index + 1}`}:\n`;
         outputText += `   Status: ${status}\n`;
@@ -115,15 +115,27 @@ export function MainWorkspace() {
         outputText += '\n';
       });
 
-      if (validation.passed_tests === validation.total_tests) {
+      setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'attempted' }));
+    } catch (error) {
+      console.error('Code execution error:', error);
+    }
+  }, [fullQuestion, language, currentCode, validateCode, runLocalJavaScript]);
+
+  const handleSubmitCode = useCallback(async () => {
+    if (!fullQuestion) return;
+
+    try {
+      const result = await submitCode(fullQuestion.id, language, currentCode);
+
+      if (result.passed_count === result.total) {
         setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'solved' }));
       } else {
         setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'attempted' }));
       }
     } catch (error) {
-      console.error('Code execution error:', error);
+      console.error('Submit error:', error);
     }
-  }, [fullQuestion, language, currentCode, validateCode, runLocalJavaScript]);
+  }, [fullQuestion, language, currentCode, submitCode]);
 
   const difficultyBadge = useMemo(() => {
     if (!displayQuestion) return '';
@@ -165,6 +177,7 @@ export function MainWorkspace() {
               onCodeChange={setCurrentCode}
               onLanguageChange={setLanguage}
               onRunCode={handleRunCode}
+              onSubmitCode={handleSubmitCode}
             />
           </QuestionContentSection>
           <AIChatPanelContainer

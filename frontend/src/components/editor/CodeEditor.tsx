@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types';
 import { LANGUAGE_OPTIONS } from './constants';
@@ -13,6 +13,7 @@ interface CodeEditorProps {
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: Language) => void;
   onRunCode: () => void;
+  onSubmitCode: () => void;
   isRunning?: boolean;
 }
 
@@ -22,6 +23,7 @@ export function CodeEditor({
   onCodeChange,
   onLanguageChange,
   onRunCode,
+  onSubmitCode,
   isRunning,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
@@ -74,10 +76,19 @@ export function CodeEditor({
             size="sm"
             onClick={onRunCode}
             disabled={isRunning}
-            className="bg-primary hover:bg-primary/90"
+            variant="outline"
           >
             <Play className="h-3 w-3 mr-1" />
-            {isRunning ? 'Running...' : 'Run'}
+            Run
+          </Button>
+          <Button
+            size="sm"
+            onClick={onSubmitCode}
+            disabled={isRunning}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            {isRunning ? 'Running...' : 'Submit'}
           </Button>
         </div>
       </div>

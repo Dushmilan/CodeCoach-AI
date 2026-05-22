@@ -34,6 +34,23 @@ export interface CodeExecutionState {
   output: string;
   error: string | null;
   lastResult: ValidationResponse | null;
+  lastSubmitResult: SubmitResponse | null;
+}
+
+export interface SubmitResult {
+  index: number;
+  passed: boolean;
+  input: string;
+  expected: string;
+  actual: string;
+  hidden: boolean;
+}
+
+export interface SubmitResponse {
+  passed: boolean;
+  total: number;
+  passed_count: number;
+  results: SubmitResult[];
 }
 
 export interface CodeExecutionActions {
@@ -43,6 +60,7 @@ export interface CodeExecutionActions {
     code: string,
     testCases: TestCase[]
   ) => Promise<ValidationResponse>;
+  submitCode: (questionId: string, language: string, code: string) => Promise<SubmitResponse>;
   runLocalJavaScript: (code: string, question: Question, fnName?: string) => Promise<string>;
   clearOutput: () => void;
   clearError: () => void;
