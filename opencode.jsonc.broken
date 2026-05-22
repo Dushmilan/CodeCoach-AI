@@ -1,0 +1,86 @@
+{
+  "$schema": "https://opencode.ai/schemas/opencode.json",
+  // Custom commands are not directly supported - use tasks or scripts
+  // Instead, you can define them as custom tasks in the "tasks" section
+  "tasks": {
+    "test": {
+      "description": "Run all tests (backend + frontend)",
+      "command": "cd backend && python -m pytest && cd ../frontend && pnpm test:run",
+      "type": "shell"
+    },
+    "test-backend": {
+      "description": "Run backend tests with coverage",
+      "command": "cd backend && python -m pytest --cov=app --cov-report=term-missing",
+      "type": "shell"
+    },
+    "test-frontend": {
+      "description": "Run frontend tests",
+      "command": "cd frontend && pnpm test:run",
+      "type": "shell"
+    },
+    "dev-backend": {
+      "description": "Start backend dev server",
+      "command": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+      "type": "shell"
+    },
+    "dev-frontend": {
+      "description": "Start frontend dev server",
+      "command": "cd frontend && pnpm dev",
+      "type": "shell"
+    },
+    "lint": {
+      "description": "Lint both backend and frontend",
+      "command": "cd backend && ruff check . && ruff format . --check && cd ../frontend && pnpm lint",
+      "type": "shell"
+    },
+    "typecheck": {
+      "description": "Type-check both backend and frontend",
+      "command": "cd backend && mypy app/ && cd ../frontend && pnpm typecheck",
+      "type": "shell"
+    }
+  },
+  // Providers configuration
+  "providers": {
+    "openai": {
+      "apiKey": "${OPENAI_API_KEY}",
+      "baseURL": "https://api.openai.com/v1",
+      "models": [
+        "gpt-4",
+        "gpt-4-turbo-preview",
+        "gpt-3.5-turbo"
+      ]
+    },
+    "anthropic": {
+      "apiKey": "${ANTHROPIC_API_KEY}",
+      "baseURL": "https://api.anthropic.com",
+      "models": [
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229"
+      ]
+    }
+  },
+  // Project context - system prompts for different modes
+  "context": {
+    "backend": "You work on the FastAPI backend. Follow clean architecture: ports go in app/ports/, adapters in app/adapters/, use cases in app/use_cases/, services in app/services/. Always add tests. Run `ruff check .` and `python -m pytest` before finishing.",
+    "frontend": "You work on the Next.js frontend. Follow feature-based structure under src/features/. Services go in *.service.ts, hooks in *.hook.ts, types in *.types.ts. Never use `any`. Run `pnpm typecheck` and `pnpm lint` before finishing.",
+    "testing": "You write tests for both backend (pytest) and frontend (Vitest). Backend tests go in tests/{unit,integration,performance,security}/. Frontend tests go next to their service files (*.test.ts). Aim for 85%+ coverage. Use factory fixtures for test data."
+  },
+  // Settings
+  "settings": {
+    "defaultModel": "gpt-4-turbo-preview",
+    "defaultProvider": "openai",
+    "temperature": 0.7,
+    "maxTokens": 4096
+  },
+  // File watching and ignore patterns
+  "ignore": [
+    "**/__pycache__/**",
+    "**/node_modules/**",
+    "**/venv/**",
+    "**/.next/**",
+    "**/*.db",
+    "**/*.sqlite",
+    "**/dist/**",
+    "**/build/**"
+  ]
+}
