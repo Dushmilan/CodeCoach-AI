@@ -1,0 +1,109 @@
+{
+  // OpenCode CLI Configuration for CodeCoach AI
+  "$schema": "https://opencode.ai/schemas/opencode.json",
+
+  "customCommands": [
+    {
+      "name": "test",
+      "description": "Run all tests (backend + frontend)",
+      "command": "cd backend && python -m pytest && cd ../frontend && pnpm test:run"
+    },
+    {
+      "name": "test:backend",
+      "description": "Run backend tests with coverage",
+      "command": "cd backend && python -m pytest --cov=app --cov-report=term-missing"
+    },
+    {
+      "name": "test:backend:unit",
+      "description": "Run backend unit tests only",
+      "command": "cd backend && python -m pytest tests/unit/ -v"
+    },
+    {
+      "name": "test:backend:integration",
+      "description": "Run backend integration tests only",
+      "command": "cd backend && python -m pytest tests/integration/ -v"
+    },
+    {
+      "name": "test:frontend",
+      "description": "Run frontend tests",
+      "command": "cd frontend && pnpm test:run"
+    },
+    {
+      "name": "lint",
+      "description": "Lint both backend and frontend",
+      "command": "cd backend && ruff check . && ruff format . --check && cd ../frontend && pnpm lint"
+    },
+    {
+      "name": "lint:backend",
+      "description": "Lint backend with ruff",
+      "command": "cd backend && ruff check . && ruff format . --check"
+    },
+    {
+      "name": "typecheck",
+      "description": "Type-check both backend and frontend",
+      "command": "cd backend && mypy app/ && cd ../frontend && pnpm typecheck"
+    },
+    {
+      "name": "dev:backend",
+      "description": "Start backend dev server",
+      "command": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    },
+    {
+      "name": "dev:frontend",
+      "description": "Start frontend dev server",
+      "command": "cd frontend && pnpm dev"
+    },
+    {
+      "name": "docker:up",
+      "description": "Start full stack with Docker Compose",
+      "command": "docker compose up --build"
+    },
+    {
+      "name": "coverage:html",
+      "description": "Generate HTML coverage report",
+      "command": "cd backend && python -m pytest --cov=app --cov-report=html && start htmlcov/index.html"
+    }
+  ],
+
+  "agents": {
+    "backend": {
+      "description": "Specialist for backend Python/FastAPI work",
+      "instructions": "You work on the FastAPI backend. Follow clean architecture: ports go in app/ports/, adapters in app/adapters/, use cases in app/use_cases/, services in app/services/. Always add tests. Run `ruff check .` and `python -m pytest` before finishing."
+    },
+    "frontend": {
+      "description": "Specialist for frontend Next.js/React/TypeScript work",
+      "instructions": "You work on the Next.js frontend. Follow feature-based structure under src/features/. Services go in *.service.ts, hooks in *.hook.ts, types in *.types.ts. Never use `any`. Run `pnpm typecheck` and `pnpm lint` before finishing."
+    },
+    "testing": {
+      "description": "Specialist for writing and maintaining tests",
+      "instructions": "You write tests for both backend (pytest) and frontend (Vitest). Backend tests go in tests/{unit,integration,performance,security}/. Frontend tests go next to their service files (*.test.ts). Aim for 85%+ coverage. Use factory fixtures for test data."
+    }
+  },
+
+  "permissions": [
+    {
+      "pattern": "backend/**/*.py",
+      "allow": ["read", "write", "edit"]
+    },
+    {
+      "pattern": "frontend/src/**/*.{ts,tsx}",
+      "allow": ["read", "write", "edit"]
+    },
+    {
+      "pattern": "frontend/src/**/*.test.{ts,tsx}",
+      "allow": ["read", "write", "edit"]
+    },
+    {
+      "pattern": "{CLAUDE,CONTEXT}.md",
+      "allow": ["read", "write", "edit"]
+    },
+    {
+      "pattern": "opencode.jsonc",
+      "allow": ["read", "write", "edit"]
+    },
+    {
+      "pattern": "{__pycache__,node_modules,venv,.next,*.db,*.sqlite}/**",
+      "deny": ["read", "write", "edit"]
+    }
+  ]
+}

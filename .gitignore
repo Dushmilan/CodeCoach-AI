@@ -212,3 +212,9 @@ piston/
 
 # User data (created at runtime)
 data/
+
+# Ruff cache
+.ruff_cache/
+
+# Pre-commit
+.pre-commit-config.local.yaml
