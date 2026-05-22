@@ -27,8 +27,6 @@ class ValidationUseCase(str, Enum):
     TIME_LIMITS = "time_limits"
     FUNCTION_SIGNATURE = "function_signature"
     OUTPUT_FORMAT = "output_format"
-    CONSTRAINTS = "constraints"
-    DIFFICULTY = "difficulty"
 
 
 class ValidationIssue(BaseModel):

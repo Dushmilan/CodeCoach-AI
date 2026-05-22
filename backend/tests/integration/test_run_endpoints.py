@@ -5,6 +5,8 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
+from app.main import app
+
 
 class TestRunEndpoints:
     """Test cases for code execution endpoints."""
@@ -305,6 +307,28 @@ for i in range(10):
         assert data["exit_code"] == 0
         assert "Hello, World!" in data["stdout"]
     
+    def test_dependency_override_injects_mock(self, test_client: TestClient):
+        """Test that piston_service dependency can be overridden via app.dependency_overrides."""
+
+        class MockPiston:
+            async def execute_code(self, language, code, stdin="", version=None):
+                return {"stdout": "mock-output", "stderr": "", "exit_code": 0, "language": language}
+            def validate_code(self, language, code):
+                return {"valid": True, "warnings": [], "errors": []}
+            async def get_runtimes(self):
+                return [{"language": "python", "version": "99.0", "aliases": ["py"], "runtime": "mock"}]
+
+        from app.api.run import get_piston_service
+
+        app.dependency_overrides[get_piston_service] = lambda: MockPiston()
+        try:
+            response = test_client.get("/api/run/languages")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["languages"][0]["version"] == "99.0"
+        finally:
+            app.dependency_overrides.clear()
+
     def test_run_endpoints_response_time(self, test_client: TestClient):
         """Test run endpoints response time."""
         import time

@@ -9,6 +9,9 @@ import pytest
 from typing import Dict, Any, List
 from unittest.mock import AsyncMock, MagicMock, patch
 import asyncio
+import json
+import os
+import tempfile
 
 from app.models.schemas import Question, TestCase, Example, StarterCode, Difficulty
 from app.models.question_validation_schemas import (
@@ -146,10 +149,10 @@ def question_with_bad_starter_code() -> Question:
 
 @pytest.fixture
 def mock_piston_service():
-    """Create a mock Piston service for testing."""
-    mock = AsyncMock()
-    mock.execute_code = AsyncMock()
-    return mock
+    """Create a mock executor for testing."""
+    from app.ports.code_executor import CodeExecutor
+    from unittest.mock import AsyncMock
+    return AsyncMock(spec=CodeExecutor)
 
 
 # ============================================================================
@@ -262,20 +265,16 @@ class TestTestCaseValidationUseCase:
     async def test_test_case_executability_validated_with_piston(self, valid_question, mock_piston_service):
         """Test that test case executability is validated using Piston."""
         from app.use_cases.validate_test_cases import TestCaseValidationUseCase
-        
-        # Mock Piston response for successful execution
-        mock_piston_service.execute_code.return_value = {
-            "stdout": "[1, 2, 3]",
-            "stderr": "",
-            "exit_code": 0,
-            "execution_time": "100ms"
-        }
-        
-        use_case = TestCaseValidationUseCase(piston_service=mock_piston_service)
+        from app.ports.code_executor import ExecutionResult
+
+        # Mock executor response for successful execution
+        mock_piston_service.execute.return_value = ExecutionResult(stdout="[1, 2, 3]", exit_code=0)
+
+        use_case = TestCaseValidationUseCase(executor=mock_piston_service)
         result = await use_case.execute(valid_question)
-        
-        # Should have called Piston to validate test case executability
-        assert mock_piston_service.execute_code.called or result.passed is True
+
+        # Should have called executor to validate test case executability
+        assert mock_piston_service.execute.called or result.passed is True
     
     @pytest.mark.asyncio
     async def test_hidden_test_cases_have_different_inputs(self, valid_question_data):
@@ -307,53 +306,47 @@ class TestStarterCodeValidationUseCase:
     async def test_valid_starter_code_passes_validation(self, valid_question, mock_piston_service):
         """Test that valid starter code passes validation."""
         from app.use_cases.validate_starter_code import StarterCodeValidationUseCase
-        
-        # Mock Piston to return success for syntax check
-        mock_piston_service.execute_code.return_value = {
-            "stdout": "",
-            "stderr": "",
-            "exit_code": 0
-        }
-        
-        use_case = StarterCodeValidationUseCase(piston_service=mock_piston_service)
+        from app.ports.code_executor import ExecutionResult
+
+        # Mock executor to return success for syntax check
+        mock_piston_service.execute.return_value = ExecutionResult(stdout="", exit_code=0)
+
+        use_case = StarterCodeValidationUseCase(executor=mock_piston_service)
         result = await use_case.execute(valid_question)
-        
+
         assert result.passed is True
     
     @pytest.mark.asyncio
-    async def test_invalid_python_starter_code_fails_validation(self, question_with_bad_starter_code, mock_piston_service):
+    async def test_invalid_python_starter_code_fails_validation(self, question_with_bad_starter_code):
         """Test that invalid Python starter code fails validation."""
         from app.use_cases.validate_starter_code import StarterCodeValidationUseCase
-        
-        # Mock Piston to return syntax error
-        mock_piston_service.execute_code.return_value = {
-            "stdout": "",
-            "stderr": "SyntaxError: invalid syntax",
-            "exit_code": 1
-        }
-        
-        use_case = StarterCodeValidationUseCase(piston_service=mock_piston_service)
+        from unittest.mock import AsyncMock
+        from app.ports.code_executor import CodeExecutor, ExecutionResult
+
+        executor = AsyncMock(spec=CodeExecutor)
+        executor.execute.return_value = ExecutionResult(exit_code=1, stderr="SyntaxError: invalid syntax")
+
+        use_case = StarterCodeValidationUseCase(executor=executor)
         result = await use_case.execute(question_with_bad_starter_code)
-        
+
         assert result.passed is False
         assert any(issue.language == "python" for issue in result.issues)
-    
+
     @pytest.mark.asyncio
-    async def test_all_languages_validated(self, valid_question, mock_piston_service):
+    async def test_all_languages_validated(self, valid_question):
         """Test that all three languages are validated."""
         from app.use_cases.validate_starter_code import StarterCodeValidationUseCase
-        
-        mock_piston_service.execute_code.return_value = {
-            "stdout": "",
-            "stderr": "",
-            "exit_code": 0
-        }
-        
-        use_case = StarterCodeValidationUseCase(piston_service=mock_piston_service)
+        from unittest.mock import AsyncMock
+        from app.ports.code_executor import CodeExecutor, ExecutionResult
+
+        executor = AsyncMock(spec=CodeExecutor)
+        executor.execute.return_value = ExecutionResult(stdout="", exit_code=0)
+
+        use_case = StarterCodeValidationUseCase(executor=executor)
         result = await use_case.execute(valid_question)
-        
+
         # Should validate Python, JavaScript, and Java
-        assert mock_piston_service.execute_code.call_count >= 3
+        assert executor.execute.call_count >= 3
 
 
 # ============================================================================
@@ -367,7 +360,8 @@ class TestSolutionValidationUseCase:
     async def test_solution_passes_all_test_cases(self, valid_question_data, mock_piston_service):
         """Test that the reference solution passes all test cases."""
         from app.use_cases.validate_solution import SolutionValidationUseCase
-        
+        from app.ports.code_executor import ExecutionResult
+
         # Create a question with actual solution code
         valid_question_data["starter"]["python"] = '''
 def solve(nums):
@@ -391,17 +385,13 @@ print(json.dumps(result))
             }
         ]
         question = Question(**valid_question_data)
-        
-        # Mock Piston to return correct output
-        mock_piston_service.execute_code.return_value = {
-            "stdout": "[1,2,3]",
-            "stderr": "",
-            "exit_code": 0
-        }
-        
-        use_case = SolutionValidationUseCase(piston_service=mock_piston_service)
+
+        # Mock executor to return correct output
+        mock_piston_service.execute.return_value = ExecutionResult(stdout="[1,2,3]", exit_code=0)
+
+        use_case = SolutionValidationUseCase(executor=mock_piston_service)
         result = await use_case.execute(question)
-        
+
         # Should pass since we have executable code
         assert result.passed is True
     
@@ -411,19 +401,16 @@ print(json.dumps(result))
         # Create question with solution that doesn't match expected output
         valid_question_data["solution"] = "def solve(nums): return []"  # Wrong solution
         question = Question(**valid_question_data)
-        
+
         from app.use_cases.validate_solution import SolutionValidationUseCase
-        
-        # Mock Piston to return wrong output
-        mock_piston_service.execute_code.return_value = {
-            "stdout": "[]",
-            "stderr": "",
-            "exit_code": 0
-        }
-        
-        use_case = SolutionValidationUseCase(piston_service=mock_piston_service)
+        from app.ports.code_executor import ExecutionResult
+
+        # Mock executor to return wrong output
+        mock_piston_service.execute.return_value = ExecutionResult(stdout="[]", exit_code=0)
+
+        use_case = SolutionValidationUseCase(executor=mock_piston_service)
         result = await use_case.execute(question)
-        
+
         assert result.passed is False
         assert any(issue.use_case == ValidationUseCase.SOLUTION for issue in result.issues)
     
@@ -435,7 +422,7 @@ print(json.dumps(result))
         
         from app.use_cases.validate_solution import SolutionValidationUseCase
         
-        use_case = SolutionValidationUseCase(piston_service=mock_piston_service)
+        use_case = SolutionValidationUseCase(executor=mock_piston_service)
         result = await use_case.execute(question)
         
         assert result.passed is False
@@ -599,7 +586,8 @@ class TestQuestionValidatorService:
     async def test_valid_question_passes_all_validations(self, valid_question_data, mock_piston_service):
         """Test that a valid question passes all validations."""
         from app.services.question_validator import QuestionValidatorService
-        
+        from app.ports.code_executor import ExecutionResult
+
         # Create question with valid Java method signature and executable solution
         valid_question_data["starter"]["java"] = '''
 class Solution {
@@ -637,20 +625,19 @@ print(json.dumps(result))
             }
         ]
         question = Question(**valid_question_data)
-        
-        service = QuestionValidatorService(piston_service=mock_piston_service)
-        
-        # Mock Piston to return appropriate output based on input
-        def mock_execute_side_effect(*args, **kwargs):
-            stdin = kwargs.get('stdin', args[2] if len(args) > 2 else '')
+
+        service = QuestionValidatorService(executor=mock_piston_service)
+
+        # Mock executor to return appropriate output based on input
+        def mock_execute_side_effect(language, code, stdin="", version=None):
             if '[4,5,6]' in stdin:
-                return {"stdout": "[4,5,6]", "stderr": "", "exit_code": 0}
-            return {"stdout": "[1,2,3]", "stderr": "", "exit_code": 0}
-        
-        mock_piston_service.execute_code.side_effect = mock_execute_side_effect
-        
+                return ExecutionResult(stdout="[4,5,6]", exit_code=0)
+            return ExecutionResult(stdout="[1,2,3]", exit_code=0)
+
+        mock_piston_service.execute.side_effect = mock_execute_side_effect
+
         result = await service.validate_question(question)
-        
+
         assert result.valid is True
         assert result.error_count == 0
     
@@ -658,10 +645,13 @@ print(json.dumps(result))
     async def test_invalid_question_fails_validation(self, question_with_invalid_test_cases, mock_piston_service):
         """Test that an invalid question fails validation."""
         from app.services.question_validator import QuestionValidatorService
-        
-        service = QuestionValidatorService(piston_service=mock_piston_service)
+        from app.ports.code_executor import ExecutionResult
+
+        mock_piston_service.execute.return_value = ExecutionResult(stdout="", exit_code=0)
+
+        service = QuestionValidatorService(executor=mock_piston_service)
         result = await service.validate_question(question_with_invalid_test_cases)
-        
+
         assert result.valid is False
         assert result.error_count > 0
     
@@ -669,17 +659,14 @@ print(json.dumps(result))
     async def test_all_use_cases_are_executed(self, valid_question, mock_piston_service):
         """Test that all validation use cases are executed."""
         from app.services.question_validator import QuestionValidatorService
-        
-        service = QuestionValidatorService(piston_service=mock_piston_service)
-        
-        mock_piston_service.execute_code.return_value = {
-            "stdout": "result",
-            "stderr": "",
-            "exit_code": 0
-        }
-        
+        from app.ports.code_executor import ExecutionResult
+
+        service = QuestionValidatorService(executor=mock_piston_service)
+
+        mock_piston_service.execute.return_value = ExecutionResult(stdout="result", exit_code=0)
+
         result = await service.validate_question(valid_question)
-        
+
         # Check that all use cases were run
         expected_use_cases = [
             ValidationUseCase.STRUCTURE,
@@ -690,7 +677,7 @@ print(json.dumps(result))
             ValidationUseCase.FUNCTION_SIGNATURE,
             ValidationUseCase.OUTPUT_FORMAT,
         ]
-        
+
         for use_case in expected_use_cases:
             assert use_case in result.results
     
@@ -699,24 +686,21 @@ print(json.dumps(result))
         """Test that specific use cases can be skipped."""
         from app.services.question_validator import QuestionValidatorService
         from app.models.question_validation_schemas import QuestionValidationConfig
-        
+        from app.ports.code_executor import ExecutionResult
+
         config = QuestionValidationConfig(
             skip_use_cases=[ValidationUseCase.SOLUTION]
         )
-        
+
         service = QuestionValidatorService(
-            piston_service=mock_piston_service,
+            executor=mock_piston_service,
             config=config
         )
-        
-        mock_piston_service.execute_code.return_value = {
-            "stdout": "result",
-            "stderr": "",
-            "exit_code": 0
-        }
-        
+
+        mock_piston_service.execute.return_value = ExecutionResult(stdout="result", exit_code=0)
+
         result = await service.validate_question(valid_question)
-        
+
         # Solution validation should be skipped
         assert ValidationUseCase.SOLUTION not in result.results
 
@@ -728,46 +712,42 @@ print(json.dumps(result))
 class TestQuestionsServiceValidationIntegration:
     """Tests for validation integration with QuestionsService."""
     
+    @pytest.fixture
+    def empty_repo(self):
+        from app.repositories.file_question_repository import FileQuestionRepository
+        fd, path = tempfile.mkstemp(suffix=".json")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump([], f)
+        yield FileQuestionRepository(path)
+        os.unlink(path)
+
     @pytest.mark.asyncio
-    async def test_invalid_question_not_loaded(self, question_with_invalid_test_cases):
+    async def test_invalid_question_not_loaded(self, question_with_invalid_test_cases, empty_repo):
         """Test that invalid questions are not loaded into the question bank."""
         from app.services.questions_service import QuestionsService
-        
-        # This test verifies that validation happens during loading
-        # The service should either reject or mark invalid questions
-        with patch('app.services.questions_service.QuestionsService._load_questions'):
-            service = QuestionsService()
-            service.questions = {}
-            
-            # Attempt to add invalid question without validation
-            result = await service.add_question(question_with_invalid_test_cases, validate=False)
-            
-            # Question should be added but not validated
-            assert result.is_validated is False
-    
+
+        service = QuestionsService(repository=empty_repo)
+
+        result = await service.add_question(question_with_invalid_test_cases, validate=False)
+
+        assert result.is_validated is False
+
     @pytest.mark.asyncio
-    async def test_validation_status_stored_with_question(self, valid_question, mock_piston_service):
+    async def test_validation_status_stored_with_question(self, valid_question, mock_piston_service, empty_repo):
         """Test that validation status is stored with the question."""
         from app.services.questions_service import QuestionsService
         from app.services.question_validator import QuestionValidatorService
-        
-        with patch('app.services.questions_service.QuestionsService._load_questions'):
-            validator = QuestionValidatorService(piston_service=mock_piston_service)
-            service = QuestionsService(validator=validator)
-            service.questions = {}
-            
-            # Mock Piston response
-            mock_piston_service.execute_code.return_value = {
-                "stdout": "result",
-                "stderr": "",
-                "exit_code": 0
-            }
-            
-            # Add question with validation
-            result = await service.add_question(valid_question, validate=True)
-            
-            # Check that validation status is stored
-            assert service.validation_statuses.get(valid_question.id) is not None
+        from app.ports.code_executor import ExecutionResult
+
+        validator = QuestionValidatorService(executor=mock_piston_service)
+        service = QuestionsService(repository=empty_repo, validator=validator)
+
+        # Mock executor response for tests that execute code
+        mock_piston_service.execute.return_value = ExecutionResult(stdout="result", exit_code=0)
+
+        result = await service.add_question(valid_question, validate=True)
+
+        assert service.validation_statuses.get(valid_question.id) is not None
 
 
 # ============================================================================

@@ -34,17 +34,10 @@ class TestCaseValidationUseCase(BaseValidationUseCase):
     
     def __init__(
         self,
-        piston_service: Optional[Any] = None,
+        executor: Optional[Any] = None,
         config: Optional[TestCaseValidationConfig] = None
     ):
-        """
-        Initialize test case validation use case.
-        
-        Args:
-            piston_service: Piston service for code execution
-            config: Configuration for test case validation
-        """
-        self.piston_service = piston_service
+        self.executor = executor
         self.config = config or TestCaseValidationConfig()
     
     @property
@@ -72,7 +65,7 @@ class TestCaseValidationUseCase(BaseValidationUseCase):
         issues.extend(self._check_hidden_visible_distribution(question.test_cases))
         
         # Validate test case executability with Piston (if available)
-        if self.piston_service:
+        if self.executor:
             piston_issues = await self._validate_executability(question)
             issues.extend(piston_issues)
         
@@ -264,7 +257,7 @@ class TestCaseValidationUseCase(BaseValidationUseCase):
         """
         issues = []
         
-        if not self.piston_service:
+        if not self.executor:
             return issues
         
         # Create a simple test harness to validate test case format
@@ -282,20 +275,19 @@ class TestCaseValidationUseCase(BaseValidationUseCase):
     print("Input parsed successfully")
     '''
                 
-                result = await self.piston_service.execute_code(
+                result = await self.executor.execute(
                     language="python",
                     code=test_code,
                     stdin=""
                 )
                 
-                # Check if execution was successful
-                if result.get("exit_code", 0) != 0:
+                if result.exit_code != 0:
                     issues.append(self._create_issue(
                         message=f"Test case {i + 1} input format may cause execution issues",
                         field=f"test_cases[{i}].input",
                         test_case_index=i,
                         severity=ValidationSeverity.WARNING,
-                        details={"error": result.get("stderr", "Unknown error")}
+                        details={"error": result.stderr}
                     ))
                     
             except Exception as e:

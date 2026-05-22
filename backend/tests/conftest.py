@@ -95,6 +95,13 @@ def mock_piston_service():
 
             return result
 
+        async def execute(self, language: str, code: str, stdin: str = "", version: str = None):
+            """Mock execution returning ExecutionResult."""
+            from app.ports.code_executor import ExecutionResult
+            if "error" in code.lower():
+                return ExecutionResult(exit_code=1, stderr="SyntaxError: invalid syntax")
+            return ExecutionResult(stdout="Hello, World!\n", exit_code=0)
+
         def validate_code(self, language: str, code: str):
             """Mock code validation."""
             is_valid = "error" not in code.lower()

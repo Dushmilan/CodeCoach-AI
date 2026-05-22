@@ -10,7 +10,8 @@ class PistonService:
     """Service for executing code via Piston API."""
 
     def __init__(self):
-        self.base_url = "http://localhost:2000/api/v2"
+        import os
+        self.base_url = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
         self.timeout = 30.0
         
         # Supported languages and their versions

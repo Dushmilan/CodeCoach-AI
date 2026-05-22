@@ -16,20 +16,22 @@ from app.models.question_validation_schemas import (
 )
 from app.services.question_validator import QuestionValidatorService
 from app.services.piston_service import PistonService
+from app.adapters.piston_executor import PistonExecutor
+from app.ports.code_executor import CodeExecutor
 
 router = APIRouter()
 
 
 @lru_cache()
-def get_piston_service() -> PistonService:
-    """Get or create Piston service instance (cached)."""
-    return PistonService()
+def get_executor() -> CodeExecutor:
+    """Get or create code executor instance (cached)."""
+    return PistonExecutor(PistonService())
 
 
 @lru_cache()
 def get_validator_service() -> QuestionValidatorService:
     """Get or create validator service instance (cached)."""
-    return QuestionValidatorService(piston_service=get_piston_service())
+    return QuestionValidatorService(executor=get_executor())
 
 
 @router.post("/validate", response_model=QuestionValidationResult)
@@ -248,13 +250,6 @@ def _get_use_case_description(use_case: ValidationUseCase) -> str:
         ValidationUseCase.OUTPUT_FORMAT: (
             "Validates expected outputs have consistent formats across "
             "all test cases."
-        ),
-        ValidationUseCase.CONSTRAINTS: (
-            "Validates problem constraints are properly defined and "
-            "test cases respect them."
-        ),
-        ValidationUseCase.DIFFICULTY: (
-            "Validates difficulty level matches problem complexity."
         ),
     }
     return descriptions.get(use_case, "No description available.")

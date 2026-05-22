@@ -35,15 +35,9 @@ class SolutionValidationUseCase(BaseValidationUseCase):
     
     def __init__(
         self,
-        piston_service: Optional[Any] = None
+        executor: Optional[Any] = None
     ):
-        """
-        Initialize solution validation use case.
-        
-        Args:
-            piston_service: Piston service for code execution
-        """
-        self.piston_service = piston_service
+        self.executor = executor
     
     @property
     def use_case(self) -> ValidationUseCase:
@@ -66,7 +60,7 @@ class SolutionValidationUseCase(BaseValidationUseCase):
             return self._create_result(passed=False, issues=issues)
         
         # Validate solution against test cases using Piston
-        if self.piston_service:
+        if self.executor:
             solution_issues = await self._validate_solution_with_piston(question)
             issues.extend(solution_issues)
         else:
@@ -114,15 +108,14 @@ class SolutionValidationUseCase(BaseValidationUseCase):
         
         for i, test_case in enumerate(question.test_cases):
             try:
-                result = await self.piston_service.execute_code(
+                result = await self.executor.execute(
                     language="python",
                     code=solution_code,
                     stdin=test_case.input
                 )
                 
-                # Check execution result
-                if result.get("exit_code", 0) != 0:
-                    stderr = result.get("stderr", "")
+                if result.exit_code != 0:
+                    stderr = result.stderr
                     issues.append(self._create_issue(
                         message=f"Solution failed on test case {i + 1}: {stderr[:100]}",
                         field="solution",
@@ -135,8 +128,7 @@ class SolutionValidationUseCase(BaseValidationUseCase):
                     ))
                     continue
                 
-                # Compare output
-                actual_output = result.get("stdout", "").strip()
+                actual_output = result.stdout.strip()
                 expected_output = test_case.expected_output.strip()
                 
                 if self._compare_outputs(actual_output, expected_output):

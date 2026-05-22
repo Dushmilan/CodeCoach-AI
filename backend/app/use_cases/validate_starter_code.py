@@ -32,15 +32,9 @@ class StarterCodeValidationUseCase(BaseValidationUseCase):
     
     def __init__(
         self,
-        piston_service: Optional[Any] = None
+        executor: Optional[Any] = None
     ):
-        """
-        Initialize starter code validation use case.
-        
-        Args:
-            piston_service: Piston service for code execution
-        """
-        self.piston_service = piston_service
+        self.executor = executor
     
     @property
     def use_case(self) -> ValidationUseCase:
@@ -67,7 +61,7 @@ class StarterCodeValidationUseCase(BaseValidationUseCase):
                 continue
             
             # Validate syntax using Piston
-            if self.piston_service:
+            if self.executor:
                 syntax_issues = await self._validate_syntax(language, code)
                 issues.extend(syntax_issues)
             else:
@@ -102,15 +96,14 @@ class StarterCodeValidationUseCase(BaseValidationUseCase):
             # Create a test that checks syntax without full execution
             test_code = self._create_syntax_test_code(language, code)
             
-            result = await self.piston_service.execute_code(
+            result = await self.executor.execute(
                 language=language,
                 code=test_code,
                 stdin=""
             )
             
-            # Check for compilation/syntax errors
-            if result.get("exit_code", 0) != 0:
-                stderr = result.get("stderr", "")
+            if result.exit_code != 0:
+                stderr = result.stderr
                 
                 # Parse error message for user-friendly output
                 error_message = self._parse_error_message(language, stderr)

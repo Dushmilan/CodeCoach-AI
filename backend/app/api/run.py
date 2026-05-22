@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from functools import lru_cache
 from app.models.schemas import CodeExecutionRequest, CodeExecutionResult, Language
 from app.services.piston_service import PistonService
 import logging
@@ -7,11 +8,18 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Initialize Piston service
-piston_service = PistonService()
+
+@lru_cache()
+def get_piston_service() -> PistonService:
+    """Get or create Piston service instance (cached)."""
+    return PistonService()
+
 
 @router.post("/", response_model=CodeExecutionResult)
-async def execute_code(request: CodeExecutionRequest):
+async def execute_code(
+    request: CodeExecutionRequest,
+    piston_service: PistonService = Depends(get_piston_service)
+):
     """
     Execute code using Piston API.
 
@@ -39,8 +47,12 @@ async def execute_code(request: CodeExecutionRequest):
             detail=f"Error executing code: {str(e)}"
         )
 
+
 @router.post("/validate")
-async def validate_code(request: CodeExecutionRequest):
+async def validate_code(
+    request: CodeExecutionRequest,
+    piston_service: PistonService = Depends(get_piston_service)
+):
     """
     Validate code before execution.
     
@@ -66,8 +78,11 @@ async def validate_code(request: CodeExecutionRequest):
             detail=f"Error validating code: {str(e)}"
         )
 
+
 @router.get("/languages")
-async def get_supported_languages():
+async def get_supported_languages(
+    piston_service: PistonService = Depends(get_piston_service)
+):
     """Get supported programming languages and their versions."""
     
     try:
@@ -96,8 +111,11 @@ async def get_supported_languages():
             detail=f"Error fetching languages: {str(e)}"
         )
 
+
 @router.get("/runtimes")
-async def get_runtimes():
+async def get_runtimes(
+    piston_service: PistonService = Depends(get_piston_service)
+):
     """Get all available runtimes from Piston API."""
     
     try:

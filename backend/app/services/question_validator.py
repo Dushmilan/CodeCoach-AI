@@ -38,35 +38,25 @@ class QuestionValidatorService:
     
     def __init__(
         self,
-        piston_service: Optional[Any] = None,
+        executor: Optional[Any] = None,
         config: Optional[QuestionValidationConfig] = None
     ):
-        """
-        Initialize the question validator service.
-        
-        Args:
-            piston_service: Piston service for code execution
-            config: Validation configuration
-        """
-        self.piston_service = piston_service
+        self.executor = executor
         self.config = config or QuestionValidationConfig()
-        
-        # Initialize use cases
         self._init_use_cases()
-    
+
     def _init_use_cases(self):
-        """Initialize all validation use cases."""
         self.use_cases: Dict[ValidationUseCase, Any] = {
             ValidationUseCase.STRUCTURE: StructureValidationUseCase(),
             ValidationUseCase.TEST_CASES: TestCaseValidationUseCase(
-                piston_service=self.piston_service,
+                executor=self.executor,
                 config=self.config.test_cases
             ),
             ValidationUseCase.STARTER_CODE: StarterCodeValidationUseCase(
-                piston_service=self.piston_service
+                executor=self.executor
             ),
             ValidationUseCase.SOLUTION: SolutionValidationUseCase(
-                piston_service=self.piston_service
+                executor=self.executor
             ),
             ValidationUseCase.TIME_LIMITS: TimeLimitValidationUseCase(
                 config=self.config.time_limits

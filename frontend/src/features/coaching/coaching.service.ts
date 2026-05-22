@@ -1,6 +1,6 @@
+import { HttpClient } from '@/lib/http-client';
+import { FetchClient } from '@/lib/fetch-client';
 import { StructuredCoachingResponse } from '@/types';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export interface CoachingRequest {
   problem: string;
@@ -17,11 +17,7 @@ export interface CoachingResponse {
 }
 
 export class CoachingService {
-  private baseUrl: string;
-
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
-  }
+  constructor(private http: HttpClient) {}
 
   async getCoachResponse(
     problem: string,
@@ -31,26 +27,18 @@ export class CoachingService {
     mode: string,
     difficulty: string = 'medium'
   ): Promise<CoachingResponse> {
-    const response = await fetch(`${this.baseUrl}/api/coach/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const data = await this.http.post<{ response: string; structured: StructuredCoachingResponse | null }>(
+      '/api/coach/',
+      {
         problem,
         code,
         message,
         mode: mode.toLowerCase(),
         language: language.toLowerCase(),
         difficulty,
-      }),
-    });
+      }
+    );
 
-    if (!response.ok) {
-      throw new Error('Failed to get coaching response');
-    }
-
-    const data = await response.json();
     return {
       response: data.response,
       structured: data.structured || null,
@@ -58,4 +46,4 @@ export class CoachingService {
   }
 }
 
-export const coachingService = new CoachingService();
+export const coachingService = new CoachingService(new FetchClient());

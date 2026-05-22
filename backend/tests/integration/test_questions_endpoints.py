@@ -5,10 +5,49 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
+from app.main import app
+from fastapi import HTTPException
+
 
 class TestQuestionsEndpoints:
     """Test cases for questions endpoints."""
     
+    def test_dependency_override_injects_mock(self, test_client: TestClient):
+        """Test that questions_service dependency can be overridden."""
+
+        class MockQuestions:
+            async def get_all_questions(self, difficulty=None, category=None, page=1, per_page=20):
+                return []
+            async def get_total_count(self):
+                return 0
+            async def get_categories(self):
+                return ["mock-category"]
+            async def get_company_tags(self):
+                return []
+            async def get_difficulty_counts(self):
+                return {}
+            async def get_category_counts(self):
+                return {}
+            async def search_questions(self, query, difficulty=None, category=None):
+                return []
+            async def get_question_by_id(self, question_id):
+                raise HTTPException(404, f"Question not found: {question_id}")
+            async def get_questions_by_category(self, category):
+                return []
+            async def get_questions_by_difficulty(self, difficulty):
+                return []
+
+        from app.api.questions import get_questions_service
+
+        app.dependency_overrides[get_questions_service] = lambda: MockQuestions()
+        try:
+            response = test_client.get("/api/questions/categories")
+            assert response.status_code == 200, f"Got {response.status_code}: {response.json()['detail']}"
+            data = response.json()
+            assert data["categories"] == ["mock-category"]
+        finally:
+            app.dependency_overrides.clear()
+
     def test_get_all_questions_basic(self, test_client: TestClient):
         """Test getting all questions with basic parameters."""
         response = test_client.get("/api/questions/")
