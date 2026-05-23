@@ -152,7 +152,13 @@ export function useCodeExecution(): CodeExecutionFeature {
           return testCases.map((tc, index) => {
             try {
               const inputLines = tc.input.split('\\n');
-              const parsedArgs = inputLines.map(line => JSON.parse(line));
+              const parsedArgs = inputLines.map(line => {
+                try {
+                  return JSON.parse(line);
+                } catch {
+                  return line;
+                }
+              });
               const result = ${functionName}(...parsedArgs);
               const expectedOutput = JSON.parse(tc.expected_output);
               const passed = JSON.stringify(result) === JSON.stringify(expectedOutput);
