@@ -39,7 +39,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     logger.error(f"Request URL: {request.url}")
     logger.error(f"Request method: {request.method}")
     logger.error(f"Validation errors: {exc.errors()}")
-    logger.error(f"Request body: {await request.body()}")
     logger.error("========================")
     return JSONResponse(
         status_code=422,

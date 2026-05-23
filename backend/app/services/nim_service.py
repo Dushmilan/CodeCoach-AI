@@ -216,6 +216,8 @@ class NIMService:
         except httpx.TimeoutException:
             logger.error("NVIDIA NIM API timeout after 60 seconds")
             raise HTTPException(status_code=504, detail="NVIDIA NIM API timeout")
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(
                 f"Error calling NVIDIA NIM API for structured response: {str(e)}"
@@ -328,6 +330,8 @@ class NIMService:
         except httpx.TimeoutException:
             logger.error("NVIDIA NIM API timeout after 30 seconds")
             raise HTTPException(status_code=504, detail="NVIDIA NIM API timeout")
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error calling NVIDIA NIM API: {str(e)}")
             logger.error(f"Exception type: {type(e).__name__}")

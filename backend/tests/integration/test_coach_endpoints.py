@@ -66,7 +66,7 @@ class TestCoachEndpoints:
         assert "modes" in data
         assert "descriptions" in data
         
-        expected_modes = ["hint", "review", "explain", "debug"]
+        expected_modes = ["hint", "review", "explain", "debug", "freeform"]
         assert set(data["modes"]) == set(expected_modes)
         
         # Check descriptions

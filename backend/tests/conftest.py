@@ -44,19 +44,36 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 def mock_nim_service():
     """Mock NIM service for testing."""
     class MockNIMService:
+        responses = {
+            "hint": "Consider using a hash map to solve this problem.",
+            "review": "Your code looks good, but consider edge cases like empty arrays.",
+            "explain": "This is a classic problem that requires understanding of data structures.",
+            "debug": "The issue appears to be in your loop condition. Check line 5.",
+        }
+
         def __init__(self, api_key: str = "test_key"):
             self.api_key = api_key
             
         async def get_coaching_response(self, problem: str, code: str, language: str, 
                                       message: str, mode: str, difficulty: str):
             """Mock coaching response generation."""
-            responses = {
-                "hint": f"Consider using a hash map to solve this {difficulty} problem.",
-                "review": "Your code looks good, but consider edge cases like empty arrays.",
-                "explain": f"This is a classic {difficulty} difficulty problem that requires...",
-                "debug": "The issue appears to be in your loop condition. Check line 5."
+            yield self.responses.get(mode, "Here's some guidance for your problem.")
+
+        async def get_structured_coaching_response(
+            self, problem: str, code: str, language: str,
+            message: str, mode: str, difficulty: str,
+        ):
+            """Mock structured coaching response generation."""
+            return {
+                "summary": self.responses.get(mode, "Here's some guidance for your problem."),
+                "hints": [],
+                "code_review": None,
+                "complexity_analysis": None,
+                "suggestions": [],
+                "edge_cases": [],
+                "explanation": None,
+                "debug_help": None,
             }
-            yield responses.get(mode, "Here's some guidance for your problem.")
     
     return MockNIMService
 

@@ -84,7 +84,7 @@ class QuestionFactory(factory.Factory):
     })
     examples = factory.LazyFunction(lambda: [
             {
-                "input": f"{random.choice(['nums', 's', 'root'])} = {random.choice(['[1,2,3]', '\"hello\"', '5'])}",
+                "input": "{} = {}".format(random.choice(['nums', 's', 'root']), random.choice(['[1,2,3]', '"hello"', '5'])),
                 "output": str(random.randint(1, 100)),
                 "explanation": "Example explanation"
             }
@@ -243,7 +243,7 @@ class TestDataGenerator:
                 },
                 "examples": [
                     {
-                        "input": f"input = {random.choice(['[1,2,3]', '"hello"', '5'])}",
+                        "input": "input = {}".format(random.choice(['[1,2,3]', '"hello"', '5'])),
                         "output": str(random.randint(1, 100)),
                         "explanation": f"Example for {question.title}"
                     }

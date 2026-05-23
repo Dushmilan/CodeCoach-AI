@@ -56,6 +56,13 @@ def get_nim_service(
     if environment == "testing":
         # Create a simple mock service for testing
         class MockNIMService:
+            responses = {
+                "hint": "Consider using a hash map to solve this problem.",
+                "review": "Your code looks good, but consider edge cases like empty arrays.",
+                "explain": "This is a classic problem that requires understanding of data structures.",
+                "debug": "The issue appears to be in your loop condition. Check line 5.",
+            }
+
             async def get_coaching_response(
                 self,
                 problem: str,
@@ -65,13 +72,27 @@ def get_nim_service(
                 mode: str,
                 difficulty: str,
             ):
-                responses = {
-                    "hint": f"Consider using a hash map to solve this {difficulty} problem.",
-                    "review": "Your code looks good, but consider edge cases like empty arrays.",
-                    "explain": f"This is a classic {difficulty} difficulty problem that requires...",
-                    "debug": "The issue appears to be in your loop condition. Check line 5.",
+                yield self.responses.get(mode, "Here's some guidance for your problem.")
+
+            async def get_structured_coaching_response(
+                self,
+                problem: str,
+                code: str,
+                language: str,
+                message: str,
+                mode: str,
+                difficulty: str,
+            ):
+                return {
+                    "summary": self.responses.get(mode, "Here's some guidance for your problem."),
+                    "hints": [],
+                    "code_review": None,
+                    "complexity_analysis": None,
+                    "suggestions": [],
+                    "edge_cases": [],
+                    "explanation": None,
+                    "debug_help": None,
                 }
-                yield responses.get(mode, "Here's some guidance for your problem.")
 
         logger.info("Using MockNIMService for testing environment")
         return MockNIMService()
