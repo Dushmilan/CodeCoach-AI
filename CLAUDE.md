@@ -86,6 +86,24 @@ docker compose up backend   # Backend only
 docker compose up frontend  # Frontend only
 ```
 
+## Language Wrapper Convention
+
+Every language supported by Piston execution must have a code wrapper in `backend/app/services/piston_service.py`. The wrapper adds a test harness to raw user code (function definitions) before sending it to Piston, so the code reads from stdin and writes to stdout.
+
+**Pattern for adding a new language:**
+
+1. Create a `_wrap_<language>_code(self, code: str) -> str` method following the existing pattern
+2. Register it in the dispatch section (around line 57) alongside `python`, `javascript`, `java`
+3. The wrapper must handle:
+   - Extracting the function/method name from the starter code
+   - Reading stdin and passing it as the function argument
+   - Stripping JSON string quotes from stdin when the test data is JSON-encoded
+   - Printing the return value to stdout (booleans as lowercase, objects/arrays as JSON)
+4. For single `String`-param functions: use direct invocation (no reflection, no helpers)
+5. For multi-param or complex-return functions: use reflection + embedded helpers (`__convertArg`, `__toJson`, `__JsonParser`)
+
+See `_wrap_python_code`, `_wrap_javascript_code`, and `_wrap_java_code` as reference implementations.
+
 ## Critical Rules
 
 1. **Never edit** `__pycache__/`, `node_modules/`, `venv/`, `.next/`, `*.db`, `*.sqlite`
@@ -95,6 +113,7 @@ docker compose up frontend  # Frontend only
 5. **Never mutate state directly** — use `useCallback`, `useMemo` for derived values
 6. **Always add tests** for new endpoints, services, or use cases
 7. **Always run lint + typecheck + tests** before claiming work is done
+8. **Every new language must add a `_wrap_<language>_code` method** in `piston_service.py` and register it in the dispatch — without a wrapper, the Piston submit/validate flow will send bare function definitions that produce no output
 
 ## AI Agent Permissions
 
