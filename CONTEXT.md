@@ -16,15 +16,21 @@
 ## Data Flow
 
 ```
-User Code → FastAPI → PistonService → Piston Container (Docker)
+User Code → FastAPI → PistonService → CodeWrapper (wrap code)
+                                  → ExecutionResultFormatter → JSON response
+                                  → Piston Container (Docker)
                                   ↓
-                         ExecutionResult {stdout, stderr, exit_code}
+                         ExecutionResult {stdout, stderr, exit_code, signal, execution_time, memory}
 
-AI Coaching → FastAPI → NIMService → NVIDIA NIM API
+AI Coaching → FastAPI → NIMService → coaching_prompts/ (build prompt per mode)
+                                  → NIM API (NVIDIA)
+                                  → CoachingResponseParser (extract structured JSON)
                                   ↓
-                         StructuredCoachingResponse {summary, hints, ...}
+                         StructuredCoachingResponse {summary, hints, code_review, ...}
 
-Questions → FastAPI → QuestionService → FileQuestionRepository → sample_questions.json
+Questions → FastAPI → QuestionsService → QuestionRepository
+                                  → FileQuestionRepository → sample_questions.json
+                                  → validation status persisted to separate JSON file
 ```
 
 ## Architecture Decisions
@@ -57,9 +63,9 @@ Questions → FastAPI → QuestionService → FileQuestionRepository → sample_
 ## File-to-Concept Mapping
 
 | Concept | Backend File | Frontend File |
-|---|---|---|
-| AI Coaching | `backend/app/api/coach.py`, `backend/app/services/nim_service.py` | `frontend/src/features/coaching/` |
-| Code Execution | `backend/app/api/run.py`, `backend/app/services/piston_service.py`, `backend/app/adapters/piston_executor.py` | `frontend/src/features/code-execution/` |
+|---|---|---|---|
+| AI Coaching | `backend/app/api/coach.py`, `backend/app/services/nim_service.py`, `backend/app/adapters/coaching_prompts/`, `backend/app/adapters/coaching_response_parser.py` | `frontend/src/features/coaching/` |
+| Code Execution | `backend/app/api/run.py`, `backend/app/services/piston_service.py`, `backend/app/adapters/code_wrappers/`, `backend/app/services/execution_result_formatter.py`, `backend/app/services/static_code_validator.py` | `frontend/src/features/code-execution/`, `frontend/src/lib/client-js-executor.ts` |
 | Questions | `backend/app/api/questions.py`, `backend/app/repositories/file_question_repository.py` | `frontend/src/features/question/` |
 | Submission | `backend/app/api/submit.py` | (same as code-execution) |
 | Validation | `backend/app/use_cases/`, `backend/app/services/question_validator.py` | — |

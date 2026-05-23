@@ -25,8 +25,13 @@ Open-source LeetCode alternative for university students. Practice coding interv
 backend/app/
   ports/          Abstract interfaces (ABCs)
   adapters/       Concrete implementations of ports
+    code_wrappers/      Language-specific code test harnesses (Python/JS/Java)
+    coaching_prompts/   Per-mode AI prompt templates (hint/review/explain/debug/freeform)
+    coaching_response_parser.py  Structured JSON response extraction + fallback
   use_cases/      Single-responsibility validation logic
-  services/       Business logic (wraps ports)
+  services/       Business logic (wraps ports, delegates to adapters)
+    execution_result_formatter.py  Piston API response → uniform dict
+    static_code_validator.py       Pre-flight code surface checks
   repositories/   Data storage (file-based, JSON)
   api/            FastAPI route handlers (thin)
   models/         Pydantic schemas
@@ -40,7 +45,7 @@ backend/app/
 frontend/src/
   features/       {coaching, code-execution, question}/ {hook, service, types}
   components/     Reusable UI (editor, chat, sidebar, header, layout)
-  lib/            HTTP client port/adapter
+  lib/            HTTP client port/adapter, client-js-executor
   hooks/          Shared hooks (useLocalStorage, useDebounce)
   providers/      ThemeProvider
 ```
@@ -88,21 +93,21 @@ docker compose up frontend  # Frontend only
 
 ## Language Wrapper Convention
 
-Every language supported by Piston execution must have a code wrapper in `backend/app/services/piston_service.py`. The wrapper adds a test harness to raw user code (function definitions) before sending it to Piston, so the code reads from stdin and writes to stdout.
+Every language supported by Piston execution must have a code wrapper in `backend/app/adapters/code_wrappers/`. The wrapper adds a test harness to raw user code (function definitions) before sending it to Piston, so the code reads from stdin and writes to stdout.
 
 **Pattern for adding a new language:**
 
-1. Create a `_wrap_<language>_code(self, code: str) -> str` method following the existing pattern
-2. Register it in the dispatch section (around line 57) alongside `python`, `javascript`, `java`
+1. Create a `backend/app/adapters/code_wrappers/<language>_wrapper.py` with a class implementing `CodeWrapper` (ABC from `base.py`)
+2. Instantiate it in `adapters/code_wrappers/__init__.py` and add it to `WRAPPERS` dict
 3. The wrapper must handle:
    - Extracting the function/method name from the starter code
    - Reading stdin and passing it as the function argument
    - Stripping JSON string quotes from stdin when the test data is JSON-encoded
    - Printing the return value to stdout (booleans as lowercase, objects/arrays as JSON)
-4. For single `String`-param functions: use direct invocation (no reflection, no helpers)
-5. For multi-param or complex-return functions: use reflection + embedded helpers (`__convertArg`, `__toJson`, `__JsonParser`)
+4. For single `String`-param Java functions: use direct invocation (no reflection, no helpers)
+5. For multi-param or complex-return Java functions: use reflection + embedded helpers (`__convertArg`, `__toJson`, `__JsonParser`)
 
-See `_wrap_python_code`, `_wrap_javascript_code`, and `_wrap_java_code` as reference implementations.
+See `PythonCodeWrapper`, `JavaScriptCodeWrapper`, and `JavaCodeWrapper` as reference implementations.
 
 ## Critical Rules
 
@@ -113,7 +118,7 @@ See `_wrap_python_code`, `_wrap_javascript_code`, and `_wrap_java_code` as refer
 5. **Never mutate state directly** — use `useCallback`, `useMemo` for derived values
 6. **Always add tests** for new endpoints, services, or use cases
 7. **Always run lint + typecheck + tests** before claiming work is done
-8. **Every new language must add a `_wrap_<language>_code` method** in `piston_service.py` and register it in the dispatch — without a wrapper, the Piston submit/validate flow will send bare function definitions that produce no output
+8. **Every new language must add a wrapper class** in `adapters/code_wrappers/` and register it in the `WRAPPERS` dict — without a wrapper, the Piston submit/validate flow will send bare function definitions that produce no output
 
 ## AI Agent Permissions
 

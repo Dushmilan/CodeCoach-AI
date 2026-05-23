@@ -167,12 +167,12 @@ In Phase 2, a FastAPI backend is added to securely proxy NVIDIA NIM API calls se
 
 ### Prompt Strategy
 
-Every message to NVIDIA NIM includes:
+Prompts are assembled from decomposed modules in `backend/app/adapters/coaching_prompts/`:
 
-1. **System context** — expert coding coach persona
-2. **Problem context** — current problem title and language
-3. **User's code** — full editor contents
-4. **User's message** — what they asked
+1. **Persona** (`base.py`) — shared `PERSONA` (conversational) and `STRUCTURED_PERSONA` (JSON-only) templates
+2. **Mode section** — per-mode content from `hints.py`, `review.py`, `explain.py`, `debug.py`, `freeform.py` — each exports `MODE_SECTION` and `STRUCTURED_MODE_SECTION`
+3. **Builders** (`base.py`) — `build_system_prompt()`, `build_structured_system_prompt()`, `build_user_prompt()`, `build_structured_user_prompt()` combine persona + mode section + user context
+4. **Response parsing** (`adapters/coaching_response_parser.py`) — `CoachingResponseParser.parse_structured()` extracts JSON from raw NIM output; `_fallback_parse()` handles malformed JSON via regex extraction + auto-close of unmatched braces/brackets
 
 ### Model Selection Strategy
 
@@ -215,9 +215,11 @@ User clicks "AI Review"
 ```
 User clicks "Run Code"
   → Send {code, language, version} to POST /api/run
-  → FastAPI → Piston API (emkc.org/api/v2/piston/execute)
-  → Piston runs code in sandboxed container
-  → Returns {stdout, stderr, exit_code}
+  → FastAPI → StaticCodeValidator (pre-flight surface checks)
+  → CodeWrapper (wrap bare function definitions with stdin/stdout harness)
+  → PistonService → Piston API (emkc.org/api/v2/piston/execute)
+  → ExecutionResultFormatter (normalise Piston response fields)
+  → Returns {stdout, stderr, exit_code, signal, execution_time, memory_usage}
   → Display in output bar
 ```
 
