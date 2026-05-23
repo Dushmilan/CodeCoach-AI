@@ -59,7 +59,7 @@ services:
     environment:
       - PISTON_DISABLE_NETWORK_ACCESS=true
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2000/api/v2/runtimes"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:2000/api/v2/runtimes',r=>process.exit(r.statusCode==200?0:1)).on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -71,3 +71,4 @@ networks:
 volumes:
   backend-data:
   piston-data:
+    external: true

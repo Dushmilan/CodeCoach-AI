@@ -93,28 +93,7 @@ export function MainWorkspace() {
 
     try {
       const visibleTestCases = fullQuestion.test_cases.filter((tc) => !tc.hidden).slice(0, 3);
-      const validation = await validateCode(language, currentCode, visibleTestCases);
-
-      let outputText = '';
-      outputText += `Run Results: ${validation.passed_tests}/${validation.total_tests} passed\n\n`;
-
-      validation.results.forEach((r, index) => {
-        const testCase = visibleTestCases[index];
-        const status = r.passed ? 'Pass' : 'Fail';
-        outputText += `${r.passed ? '✅' : '❌'} ${r.test_name || `Test ${index + 1}`}:\n`;
-        outputText += `   Status: ${status}\n`;
-        outputText += `   Input: ${testCase.input}\n`;
-        outputText += `   Expected Output: ${testCase.expected_output}\n`;
-        outputText += `   Actual Output: ${r.stdout || '(empty)'}\n`;
-        if (r.error) {
-          outputText += `   Error: ${r.error}\n`;
-        }
-        if (r.stderr) {
-          outputText += `   Stderr: ${r.stderr}\n`;
-        }
-        outputText += '\n';
-      });
-
+      await validateCode(language, currentCode, visibleTestCases);
       setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'attempted' }));
     } catch (error) {
       console.error('Code execution error:', error);

@@ -35,9 +35,25 @@ export function useCodeExecution(): CodeExecutionFeature {
     async (language: string, code: string, testCases: TestCase[]) => {
       setIsRunning(true);
       setError(null);
+      setOutput('');
       try {
         const result = await codeExecutionService.validateCode(language, code, testCases);
         setLastResult(result);
+
+        const lines: string[] = [];
+        lines.push(`Run Results: ${result.passed_tests}/${result.total_tests} passed\n`);
+        result.results.forEach((r, index) => {
+          const tc = testCases[index];
+          lines.push(`${r.passed ? '✅' : '❌'} ${r.test_name || `Test ${index + 1}`}:`);
+          lines.push(`   Status: ${r.passed ? 'Pass' : 'Fail'}`);
+          lines.push(`   Input: ${tc.input}`);
+          lines.push(`   Expected Output: ${tc.expected_output}`);
+          lines.push(`   Actual Output: ${r.stdout || '(empty)'}`);
+          if (r.error) lines.push(`   Error: ${r.error}`);
+          if (r.stderr) lines.push(`   Stderr: ${r.stderr}`);
+        });
+        setOutput(lines.join('\n'));
+
         return result;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to validate code';
