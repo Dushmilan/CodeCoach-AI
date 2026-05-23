@@ -6,14 +6,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class PistonService:
     """Service for executing code via Piston API."""
 
     def __init__(self):
         import os
+
         self.base_url = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
         self.timeout = 30.0
-        
+
         # Supported languages and their versions
         self.languages = {
             "python": {"version": "3.10.0", "aliases": ["py", "python3"]},
@@ -25,117 +27,106 @@ class PistonService:
             "rust": {"version": "1.68.2", "aliases": ["rs", "rust"]},
             "typescript": {"version": "5.0.2", "aliases": ["ts", "typescript"]},
         }
-    
+
     async def execute_code(
-        self,
-        language: str,
-        code: str,
-        stdin: str = "",
-        version: Optional[str] = None
+        self, language: str, code: str, stdin: str = "", version: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Execute code using Piston API.
-        
+
         Args:
             language: Programming language name
             code: Source code to execute
             stdin: Input to provide to the program
             version: Specific language version (optional)
-        
+
         Returns:
             Execution results including stdout, stderr, and runtime info
         """
-        
+
         if language not in self.languages:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unsupported language: {language}. Supported: {list(self.languages.keys())}"
+                detail=f"Unsupported language: {language}. Supported: {list(self.languages.keys())}",
             )
-        
+
         lang_config = self.languages[language]
         version_to_use = version or lang_config["version"]
-        
+
         payload = {
             "language": language,
             "version": version_to_use,
             "files": [
-                {
-                    "name": f"main.{self._get_file_extension(language)}",
-                    "content": code
-                }
+                {"name": f"main.{self._get_file_extension(language)}", "content": code}
             ],
             "stdin": stdin,
             "args": [],
             "compile_timeout": 10000,
             "run_timeout": 3000,
             "compile_memory_limit": -1,
-            "run_memory_limit": -1
+            "run_memory_limit": -1,
         }
-        
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/execute",
                     json=payload,
-                    headers={"Content-Type": "application/json"}
+                    headers={"Content-Type": "application/json"},
                 )
-                
+
                 if response.status_code != 200:
                     error_text = response.text
                     raise HTTPException(
                         status_code=response.status_code,
-                        detail=f"Piston API error: {error_text}"
+                        detail=f"Piston API error: {error_text}",
                     )
-                
+
                 result = response.json()
-                
+
                 # Process and sanitize the response
                 return self._process_execution_result(result)
-                
+
         except httpx.TimeoutException:
-            raise HTTPException(
-                status_code=504,
-                detail="Code execution timeout"
-            )
+            raise HTTPException(status_code=504, detail="Code execution timeout")
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Error executing code: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error during code execution: {str(e)}"
+                detail=f"Internal server error during code execution: {str(e)}",
             )
-    
+
     async def get_runtimes(self) -> Dict[str, Any]:
         """
         Get available runtimes from Piston API.
-        
+
         Returns:
             Dictionary of available languages and their versions
         """
-        
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(f"{self.base_url}/runtimes")
-                
+
                 if response.status_code != 200:
                     raise HTTPException(
                         status_code=response.status_code,
-                        detail="Failed to fetch runtimes"
+                        detail="Failed to fetch runtimes",
                     )
-                
+
                 return response.json()
-                
+
         except Exception as e:
             logger.error(f"Error fetching runtimes: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch available runtimes"
+                status_code=500, detail="Failed to fetch available runtimes"
             )
-    
+
     def _get_file_extension(self, language: str) -> str:
         """Get file extension for given language."""
-        
+
         extensions = {
             "python": "py",
             "javascript": "js",
@@ -144,14 +135,14 @@ class PistonService:
             "c": "c",
             "go": "go",
             "rust": "rs",
-            "typescript": "ts"
+            "typescript": "ts",
         }
-        
+
         return extensions.get(language, "txt")
-    
+
     def _process_execution_result(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """Process and sanitize execution result."""
-        
+
         try:
             logger.info(f"Piston API response: {json.dumps(result, indent=2)}")
         except Exception as e:
@@ -167,58 +158,58 @@ class PistonService:
             "execution_time": run_info.get("wall_time", run_info.get("time", None)),
             "memory_usage": run_info.get("memory", None),
             "language": result.get("language", ""),
-            "version": result.get("version", "")
+            "version": result.get("version", ""),
         }
-        
+
         try:
-            stdout_preview = processed['stdout'][:100] if processed['stdout'] else ''
-            logger.info(f"Processed execution result: stdout='{stdout_preview}...', exit_code={processed['exit_code']}")
+            stdout_preview = processed["stdout"][:100] if processed["stdout"] else ""
+            logger.info(
+                f"Processed execution result: stdout='{stdout_preview}...', exit_code={processed['exit_code']}"
+            )
         except Exception as e:
             logger.warning(f"Could not log processed result: {e}")
-        
+
         # Clean up stderr to remove compilation warnings
         stderr = processed["stderr"]
         if stderr:
             # Filter out common warnings
-            lines = stderr.split('\n')
+            lines = stderr.split("\n")
             filtered_lines = [
-                line for line in lines 
-                if not any(warning in line.lower() for warning in [
-                    "warning", "deprecated", "note:", "#warning"
-                ])
+                line
+                for line in lines
+                if not any(
+                    warning in line.lower()
+                    for warning in ["warning", "deprecated", "note:", "#warning"]
+                )
             ]
-            processed["stderr"] = '\n'.join(filtered_lines).strip()
-        
+            processed["stderr"] = "\n".join(filtered_lines).strip()
+
         return processed
-    
+
     def validate_code(self, language: str, code: str) -> Dict[str, Any]:
         """
         Basic code validation before execution.
-        
+
         Args:
             language: Programming language
             code: Source code to validate
-        
+
         Returns:
             Validation result with any warnings or errors
         """
-        
+
         warnings = []
-        
+
         # Basic checks for common issues
         if language == "python":
             if "input(" in code and "import sys" not in code:
                 warnings.append("Consider using sys.stdin for better compatibility")
-            
+
             if "print(" in code and not code.strip().endswith(")"):
                 warnings.append("Check for unclosed parentheses")
-        
+
         elif language == "javascript":
             if "console.log(" in code and not code.strip().endswith(")"):
                 warnings.append("Check for unclosed parentheses")
-        
-        return {
-            "valid": True,
-            "warnings": warnings,
-            "errors": []
-        }
+
+        return {"valid": True, "warnings": warnings, "errors": []}

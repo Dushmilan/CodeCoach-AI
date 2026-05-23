@@ -8,8 +8,12 @@ import bcrypt
 from jose import JWTError, jwt
 
 from app.models.auth_schemas import (
-    UserInDB, UserResponse, TokenResponse, TokenData,
-    UserRegisterRequest, UserLoginRequest,
+    UserInDB,
+    UserResponse,
+    TokenResponse,
+    TokenData,
+    UserRegisterRequest,
+    UserLoginRequest,
 )
 from app.ports.user_repository import UserRepository
 from app.repositories.file_user_repository import FileUserRepository
@@ -34,12 +38,18 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+    )
 
 
-def create_access_token(data: TokenData, expires_delta: Optional[timedelta] = None) -> tuple[str, int]:
+def create_access_token(
+    data: TokenData, expires_delta: Optional[timedelta] = None
+) -> tuple[str, int]:
     to_encode = {"sub": data.user_id or "", "username": data.username or ""}
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     to_encode["exp"] = expire
     encoded = jwt.encode(to_encode, _get_secret_key(), algorithm=ALGORITHM)
     expires_in = int((expire - datetime.now(timezone.utc)).total_seconds())

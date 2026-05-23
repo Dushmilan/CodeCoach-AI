@@ -14,12 +14,12 @@ class ExecutionResult:
 
 class CodeExecutor(ABC):
     @abstractmethod
-    async def execute(self, language: str, code: str, stdin: str = "", version: Optional[str] = None) -> ExecutionResult:
-        ...
+    async def execute(
+        self, language: str, code: str, stdin: str = "", version: Optional[str] = None
+    ) -> ExecutionResult: ...
 
     @abstractmethod
-    async def get_runtimes(self) -> list[dict]:
-        ...
+    async def get_runtimes(self) -> list[dict]: ...
 
     def validate_code(self, language: str, code: str) -> dict:
         return {"valid": True, "warnings": [], "errors": []}

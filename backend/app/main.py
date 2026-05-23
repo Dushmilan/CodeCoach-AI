@@ -2,19 +2,27 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from dotenv import load_dotenv
-import os
 import logging
 
 logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file with explicit path
 from pathlib import Path
-env_path = Path(__file__).parent.parent / '.env'
+
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
-from app.api import coach, run, questions, submit, health, debug, question_validation, auth
+from app.api import (
+    coach,
+    run,
+    questions,
+    submit,
+    health,
+    debug,
+    question_validation,
+    auth,
+)
 
 app = FastAPI(
     title="CodeCoach AI Backend",
@@ -24,10 +32,11 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+
 # Add validation error handler for detailed error messages
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger.error(f"=== VALIDATION ERROR ===")
+    logger.error("=== VALIDATION ERROR ===")
     logger.error(f"Request URL: {request.url}")
     logger.error(f"Request method: {request.method}")
     logger.error(f"Validation errors: {exc.errors()}")
@@ -38,13 +47,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors(), "body": exc.body},
     )
 
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "https://codecoach-ai-frontend.vercel.app",
-    ], # Configure properly for production
+    ],  # Configure properly for production
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -57,17 +67,25 @@ app.include_router(questions.router, prefix="/api/questions", tags=["questions"]
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(debug.router, prefix="/debug", tags=["debug"])
 app.include_router(submit.router, prefix="/api/submit", tags=["submit"])
-app.include_router(question_validation.router, prefix="/api/question-validation", tags=["question-validation"])
+app.include_router(
+    question_validation.router,
+    prefix="/api/question-validation",
+    tags=["question-validation"],
+)
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+
 
 @app.get("/")
 async def root():
     return {"message": "CodeCoach AI Backend is running"}
 
+
 @app.get("/docs")
 async def docs():
     return {"message": "API documentation available at /docs"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

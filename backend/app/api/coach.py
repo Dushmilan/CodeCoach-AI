@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Header
+from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.responses import StreamingResponse
 from typing import AsyncIterator, Optional
 import asyncio
 import json
 import os
-import sys
 
-from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language, Difficulty
+from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language
 from app.services.nim_service import NIMService
 
 router = APIRouter()
+
 
 def get_nim_service(
     x_nvidia_api_key: Optional[str] = Header(None, alias="X-NVIDIA-API-Key"),
@@ -17,42 +17,59 @@ def get_nim_service(
     """Dependency injection for NIM service."""
     api_key = x_nvidia_api_key or os.getenv("NVIDIA_API_KEY")
     environment = os.getenv("ENVIRONMENT", "production")
-    
+
     import logging
+
     logger = logging.getLogger(__name__)
 
     # Force load environment variables in get_nim_service
     from dotenv import load_dotenv
     from pathlib import Path
-    env_path = Path(__file__).parent.parent.parent / '.env'
+
+    env_path = Path(__file__).parent.parent.parent / ".env"
     load_dotenv(env_path)
-    
+
     # Fall back to env var if header was not provided
     if not api_key:
         api_key = os.getenv("NVIDIA_API_KEY")
-    
+
     logger.info(f"Environment: {environment}")
     logger.info(f"Forced .env reload from: {env_path}")
     logger.info(f"NVIDIA_API_KEY present: {bool(api_key)}")
     if api_key:
-        logger.info(f"NVIDIA_API_KEY format check: starts with {api_key[:8] if len(api_key) >= 8 else 'too short'}... ends with ...{api_key[-4:] if api_key else 'N/A'}")
-        logger.info(f"NVIDIA_API_KEY length: {len(api_key) if api_key else 0} characters")
+        logger.info(
+            f"NVIDIA_API_KEY format check: starts with {api_key[:8] if len(api_key) >= 8 else 'too short'}... ends with ...{api_key[-4:] if api_key else 'N/A'}"
+        )
+        logger.info(
+            f"NVIDIA_API_KEY length: {len(api_key) if api_key else 0} characters"
+        )
     else:
         logger.error("NVIDIA_API_KEY is None - checking all environment variables:")
-        logger.error(f"All NVIDIA-related vars: {[k for k in os.environ.keys() if 'NVIDIA' in k.upper()]}")
-        logger.error(f"All KEY-related vars: {[k for k in os.environ.keys() if 'KEY' in k.upper()]}")
+        logger.error(
+            f"All NVIDIA-related vars: {[k for k in os.environ.keys() if 'NVIDIA' in k.upper()]}"
+        )
+        logger.error(
+            f"All KEY-related vars: {[k for k in os.environ.keys() if 'KEY' in k.upper()]}"
+        )
         logger.error(f"All environment variables: {list(os.environ.keys())}")
 
     if environment == "testing":
         # Create a simple mock service for testing
         class MockNIMService:
-            async def get_coaching_response(self, problem: str, code: str, language: str,
-                                          message: str, mode: str, difficulty: str):
+            async def get_coaching_response(
+                self,
+                problem: str,
+                code: str,
+                language: str,
+                message: str,
+                mode: str,
+                difficulty: str,
+            ):
                 responses = {
                     "hint": f"Consider using a hash map to solve this {difficulty} problem.",
                     "review": "Your code looks good, but consider edge cases like empty arrays.",
                     "explain": f"This is a classic {difficulty} difficulty problem that requires...",
-                    "debug": "The issue appears to be in your loop condition. Check line 5."
+                    "debug": "The issue appears to be in your loop condition. Check line 5.",
                 }
                 yield responses.get(mode, "Here's some guidance for your problem.")
 
@@ -61,31 +78,36 @@ def get_nim_service(
 
     if not api_key:
         logger.error("NVIDIA_API_KEY environment variable is not set")
-        logger.error("Available environment variables: %s", [k for k in os.environ.keys() if 'NVIDIA' in k.upper() or 'KEY' in k.upper()])
-        
+        logger.error(
+            "Available environment variables: %s",
+            [
+                k
+                for k in os.environ.keys()
+                if "NVIDIA" in k.upper() or "KEY" in k.upper()
+            ],
+        )
+
         # Force load environment variables for debugging
         from dotenv import load_dotenv
         from pathlib import Path
-        env_path = Path(__file__).parent.parent.parent / '.env'
+
+        env_path = Path(__file__).parent.parent.parent / ".env"
         load_dotenv(env_path)
-        
+
         # Check again after forced reload
         api_key = os.getenv("NVIDIA_API_KEY")
         logger.error(f"After forced reload, NVIDIA_API_KEY: {api_key}")
-        
+
         if not api_key:
-            raise HTTPException(
-                status_code=500,
-                detail="NVIDIA API key not configured"
-            )
+            raise HTTPException(status_code=500, detail="NVIDIA API key not configured")
 
     logger.info("Successfully initializing NIMService with provided API key")
     return NIMService(api_key=api_key)
 
+
 @router.post("/", response_model=CoachingResponse)
 async def get_coaching(
-    request: CoachingRequest,
-    nim_service: NIMService = Depends(get_nim_service)
+    request: CoachingRequest, nim_service: NIMService = Depends(get_nim_service)
 ):
     """
     Get AI coaching response for coding problems.
@@ -94,12 +116,17 @@ async def get_coaching(
     Returns both raw text response and structured JSON response.
     """
     import logging
+
     logger = logging.getLogger(__name__)
 
     # DEBUG: Log incoming request details
     logger.info("=== COACH API REQUEST (structured) ===")
-    logger.info(f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}...")
-    logger.info(f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}...")
+    logger.info(
+        f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}..."
+    )
+    logger.info(
+        f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}..."
+    )
     logger.info(f"Language: {request.language.value}")
     logger.info(f"Message: {request.message}")
     logger.info(f"Mode: {request.mode.value}")
@@ -115,13 +142,13 @@ async def get_coaching(
             language=request.language.value,
             message=request.message,
             mode=request.mode.value,
-            difficulty=request.difficulty.value
+            difficulty=request.difficulty.value,
         )
 
         # Create raw text response from structured data for backward compatibility
         raw_response = _format_structured_as_text(structured_data)
-        
-        logger.info(f"=== COACH API RESPONSE ===")
+
+        logger.info("=== COACH API RESPONSE ===")
         logger.info(f"Structured response keys: {list(structured_data.keys())}")
         logger.info(f"Summary: {structured_data.get('summary', 'N/A')[:100]}...")
         logger.info("==========================")
@@ -130,80 +157,79 @@ async def get_coaching(
             response=raw_response,
             structured=structured_data,
             mode=request.mode,
-            language=request.language
+            language=request.language,
         )
 
     except Exception as e:
-        logger.error(f"=== COACH API ERROR ===")
+        logger.error("=== COACH API ERROR ===")
         logger.error(f"Error type: {type(e).__name__}")
         logger.error(f"Error message: {str(e)}")
         logger.error(f"Error args: {e.args}")
         logger.error("=======================")
         raise HTTPException(
-            status_code=500,
-            detail=f"Error generating coaching response: {str(e)}"
+            status_code=500, detail=f"Error generating coaching response: {str(e)}"
         )
 
 
 def _format_structured_as_text(structured_data: dict) -> str:
     """Format structured data as readable text for backward compatibility."""
     lines = []
-    
+
     # Summary
     if structured_data.get("summary"):
         lines.append(f"📝 {structured_data['summary']}")
         lines.append("")
-    
+
     # Hints
     if structured_data.get("hints"):
         lines.append("💡 **Hints:**")
         for i, hint in enumerate(structured_data["hints"], 1):
             lines.append(f"  {i}. {hint}")
         lines.append("")
-    
+
     # Code Review
     if structured_data.get("code_review"):
         lines.append("🔍 **Code Review:**")
         lines.append(structured_data["code_review"])
         lines.append("")
-    
+
     # Complexity Analysis
     if structured_data.get("complexity_analysis"):
         lines.append("⏱️ **Complexity Analysis:**")
         lines.append(structured_data["complexity_analysis"])
         lines.append("")
-    
+
     # Suggestions
     if structured_data.get("suggestions"):
         lines.append("✨ **Suggestions:**")
         for i, suggestion in enumerate(structured_data["suggestions"], 1):
             lines.append(f"  {i}. {suggestion}")
         lines.append("")
-    
+
     # Edge Cases
     if structured_data.get("edge_cases"):
         lines.append("⚠️ **Edge Cases:**")
         for i, edge_case in enumerate(structured_data["edge_cases"], 1):
             lines.append(f"  {i}. {edge_case}")
         lines.append("")
-    
+
     # Explanation
     if structured_data.get("explanation"):
         lines.append("📚 **Explanation:**")
         lines.append(structured_data["explanation"])
         lines.append("")
-    
+
     # Debug Help
     if structured_data.get("debug_help"):
         lines.append("🐛 **Debug Help:**")
         lines.append(structured_data["debug_help"])
-    
+
     return "\n".join(lines).strip()
+
 
 @router.post("/stream")
 async def get_coaching_stream(
-    request: CoachingRequest,
-    nim_service: NIMService = Depends(get_nim_service)
+    request: CoachingRequest, nim_service: NIMService = Depends(get_nim_service)
 ):
     """
     Get streaming AI coaching response using Server-Sent Events.
@@ -212,12 +238,17 @@ async def get_coaching_stream(
     Each chunk is sent as a separate SSE event.
     """
     import logging
+
     logger = logging.getLogger(__name__)
-    
+
     # DEBUG: Log incoming request details for streaming endpoint
     logger.info("=== COACH API STREAM REQUEST ===")
-    logger.info(f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}...")
-    logger.info(f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}...")
+    logger.info(
+        f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}..."
+    )
+    logger.info(
+        f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}..."
+    )
     logger.info(f"Language: {request.language.value}")
     logger.info(f"Message: {request.message}")
     logger.info(f"Mode: {request.mode.value}")
@@ -235,7 +266,7 @@ async def get_coaching_stream(
                 language=request.language.value,
                 message=request.message,
                 mode=request.mode.value,
-                difficulty=request.difficulty.value
+                difficulty=request.difficulty.value,
             ):
                 chunk_count += 1
                 # Format as SSE
@@ -245,15 +276,15 @@ async def get_coaching_stream(
                 # Small delay to prevent overwhelming the client
                 await asyncio.sleep(0.01)
 
-            logger.info(f"=== STREAM COMPLETE ===")
+            logger.info("=== STREAM COMPLETE ===")
             logger.info(f"Total chunks sent: {chunk_count}")
             logger.info("=======================")
-            
+
             # Send completion signal
             yield f"data: {json.dumps({'done': True})}\n\n"
 
         except Exception as e:
-            logger.error(f"=== STREAM ERROR ===")
+            logger.error("=== STREAM ERROR ===")
             logger.error(f"Error type: {type(e).__name__}")
             logger.error(f"Error message: {str(e)}")
             logger.error(f"Chunks sent before error: {chunk_count}")
@@ -267,9 +298,10 @@ async def get_coaching_stream(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "Access-Control-Allow-Origin": "*"
-        }
+            "Access-Control-Allow-Origin": "*",
+        },
     )
+
 
 @router.get("/modes")
 async def get_coaching_modes():
@@ -281,9 +313,10 @@ async def get_coaching_modes():
             CoachingMode.REVIEW.value: "Get code review and feedback",
             CoachingMode.EXPLAIN.value: "Get explanations of concepts or approaches",
             CoachingMode.DEBUG.value: "Get help debugging your code",
-            CoachingMode.FREEFORM.value: "Ask any question and get a natural response"
-        }
+            CoachingMode.FREEFORM.value: "Ask any question and get a natural response",
+        },
     }
+
 
 @router.get("/languages")
 async def get_supported_languages():
@@ -298,6 +331,6 @@ async def get_supported_languages():
             Language.C.value: "C",
             Language.GO.value: "Go",
             Language.RUST.value: "Rust",
-            Language.TYPESCRIPT.value: "TypeScript"
-        }
+            Language.TYPESCRIPT.value: "TypeScript",
+        },
     }

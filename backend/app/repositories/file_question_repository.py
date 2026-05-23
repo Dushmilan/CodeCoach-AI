@@ -23,7 +23,9 @@ class FileQuestionRepository(QuestionRepository):
             q = Question(**item)
             self._questions[q.id] = q
 
-    async def get_all(self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None) -> list[Question]:
+    async def get_all(
+        self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None
+    ) -> list[Question]:
         result = list(self._questions.values())
         if difficulty:
             result = [q for q in result if q.difficulty == difficulty]
@@ -34,10 +36,16 @@ class FileQuestionRepository(QuestionRepository):
     async def get_by_id(self, question_id: str) -> Optional[Question]:
         return self._questions.get(question_id)
 
-    async def search(self, query: str, difficulty: Optional[Difficulty] = None, category: Optional[str] = None) -> list[Question]:
+    async def search(
+        self,
+        query: str,
+        difficulty: Optional[Difficulty] = None,
+        category: Optional[str] = None,
+    ) -> list[Question]:
         query = query.lower()
         result = [
-            q for q in self._questions.values()
+            q
+            for q in self._questions.values()
             if query in q.title.lower() or query in q.description.lower()
         ]
         if difficulty:

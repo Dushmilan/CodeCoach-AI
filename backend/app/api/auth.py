@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.models.auth_schemas import (
-    UserRegisterRequest, UserLoginRequest, TokenResponse, UserResponse,
+    UserRegisterRequest,
+    UserLoginRequest,
+    TokenResponse,
+    UserResponse,
 )
 from app.dependencies.auth import get_current_user
 from app.services.auth_service import AuthService
@@ -9,7 +12,9 @@ from app.services.auth_service import AuthService
 router = APIRouter()
 
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(request: UserRegisterRequest):
     auth_service = AuthService()
     try:

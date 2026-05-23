@@ -8,8 +8,12 @@ class PistonExecutor(CodeExecutor):
     def __init__(self, piston_service: Optional[PistonService] = None):
         self._piston = piston_service or PistonService()
 
-    async def execute(self, language: str, code: str, stdin: str = "", version: Optional[str] = None) -> ExecutionResult:
-        raw = await self._piston.execute_code(language, code, stdin=stdin, version=version)
+    async def execute(
+        self, language: str, code: str, stdin: str = "", version: Optional[str] = None
+    ) -> ExecutionResult:
+        raw = await self._piston.execute_code(
+            language, code, stdin=stdin, version=version
+        )
         return ExecutionResult(
             stdout=raw.get("stdout", ""),
             stderr=raw.get("stderr", ""),

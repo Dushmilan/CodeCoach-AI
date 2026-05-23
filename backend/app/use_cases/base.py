@@ -21,7 +21,7 @@ from app.models.question_validation_schemas import (
 class BaseValidationUseCase(ABC):
     """
     Abstract base class for question validation use cases.
-    
+
     Each use case validates a specific aspect of a question:
     - Structure: Required fields, types, and basic validity
     - Test Cases: Executability and correctness of test cases
@@ -31,41 +31,38 @@ class BaseValidationUseCase(ABC):
     - Function Signature: Proper function definitions
     - Output Format: Consistent output formats
     """
-    
+
     @property
     @abstractmethod
     def use_case(self) -> ValidationUseCase:
         """Return the validation use case type."""
         pass
-    
+
     @abstractmethod
-    async def _execute_validation(
-        self, 
-        question: Question
-    ) -> UseCaseValidationResult:
+    async def _execute_validation(self, question: Question) -> UseCaseValidationResult:
         """
         Execute the actual validation logic.
-        
+
         Args:
             question: The question to validate
-            
+
         Returns:
             UseCaseValidationResult with validation outcome
         """
         pass
-    
+
     async def execute(self, question: Question) -> UseCaseValidationResult:
         """
         Execute validation with timing and error handling.
-        
+
         Args:
             question: The question to validate
-            
+
         Returns:
             UseCaseValidationResult with validation outcome
         """
         start_time = time.time()
-        
+
         try:
             result = await self._execute_validation(question)
         except Exception as e:
@@ -77,17 +74,17 @@ class BaseValidationUseCase(ABC):
                     ValidationIssue(
                         use_case=self.use_case,
                         severity=ValidationSeverity.ERROR,
-                        message=f"Validation failed with error: {str(e)}"
+                        message=f"Validation failed with error: {str(e)}",
                     )
-                ]
+                ],
             )
-        
+
         # Record execution time
         execution_time_ms = (time.time() - start_time) * 1000
         result.execution_time_ms = execution_time_ms
-        
+
         return result
-    
+
     def _create_issue(
         self,
         message: str,
@@ -95,11 +92,11 @@ class BaseValidationUseCase(ABC):
         field: Optional[str] = None,
         language: Optional[str] = None,
         test_case_index: Optional[int] = None,
-        details: Optional[dict] = None
+        details: Optional[dict] = None,
     ) -> ValidationIssue:
         """
         Helper method to create a validation issue.
-        
+
         Args:
             message: Human-readable description
             severity: Issue severity level
@@ -107,7 +104,7 @@ class BaseValidationUseCase(ABC):
             language: Language if applicable
             test_case_index: Test case index if applicable
             details: Additional details
-            
+
         Returns:
             ValidationIssue instance
         """
@@ -118,13 +115,11 @@ class BaseValidationUseCase(ABC):
             field=field,
             language=language,
             test_case_index=test_case_index,
-            details=details
+            details=details,
         )
-    
+
     def _create_result(
-        self,
-        passed: bool,
-        issues: Optional[List] = None
+        self, passed: bool, issues: Optional[List] = None
     ) -> UseCaseValidationResult:
         """
         Helper method to create a validation result.
@@ -137,7 +132,5 @@ class BaseValidationUseCase(ABC):
             UseCaseValidationResult instance
         """
         return UseCaseValidationResult(
-            use_case=self.use_case,
-            passed=passed,
-            issues=issues or []
+            use_case=self.use_case, passed=passed, issues=issues or []
         )

@@ -31,7 +31,9 @@ async def submit_code(
 ):
     question = await repository.get_by_id(request.question_id)
     if not question:
-        raise HTTPException(status_code=404, detail=f"Question not found: {request.question_id}")
+        raise HTTPException(
+            status_code=404, detail=f"Question not found: {request.question_id}"
+        )
 
     language_key = request.language.value
     test_cases = question.test_cases

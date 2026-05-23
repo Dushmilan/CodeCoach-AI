@@ -22,29 +22,28 @@ class QuestionsService:
         repository: Optional[QuestionRepository] = None,
         validator: Optional[QuestionValidatorService] = None,
     ):
-        self.repository = repository or FileQuestionRepository("questions/sample_questions.json")
+        self.repository = repository or FileQuestionRepository(
+            "questions/sample_questions.json"
+        )
         self.validator = validator
         self.validation_statuses: Dict[str, QuestionValidationStatus] = {}
 
     async def validate_question(
-        self,
-        question_id: str,
-        use_cases: Optional[List[str]] = None
+        self, question_id: str, use_cases: Optional[List[str]] = None
     ) -> QuestionValidationResult:
         if not self.validator:
             raise HTTPException(
-                status_code=500,
-                detail="Question validator not configured"
+                status_code=500, detail="Question validator not configured"
             )
 
         question = await self.repository.get_by_id(question_id)
         if not question:
             raise HTTPException(
-                status_code=404,
-                detail=f"Question not found: {question_id}"
+                status_code=404, detail=f"Question not found: {question_id}"
             )
 
         from app.models.question_validation_schemas import ValidationUseCase
+
         use_case_enums = None
         if use_cases:
             use_case_enums = [ValidationUseCase(uc) for uc in use_cases]
@@ -54,9 +53,7 @@ class QuestionsService:
         return result
 
     async def add_question(
-        self,
-        question: Question,
-        validate: bool = True
+        self, question: Question, validate: bool = True
     ) -> QuestionValidationStatus:
         if validate and self.validator:
             result = await self.validator.validate_question(question)
@@ -67,7 +64,9 @@ class QuestionsService:
                 await self.repository.add(question)
                 return self.validation_statuses.get(
                     question.id,
-                    QuestionValidationStatus(is_validated=True, validation_passed=False)
+                    QuestionValidationStatus(
+                        is_validated=True, validation_passed=False
+                    ),
                 )
         else:
             self.validation_statuses[question.id] = QuestionValidationStatus(
@@ -76,31 +75,30 @@ class QuestionsService:
 
         await self.repository.add(question)
         return self.validation_statuses.get(
-            question.id,
-            QuestionValidationStatus(is_validated=False)
+            question.id, QuestionValidationStatus(is_validated=False)
         )
 
     def get_validation_status(self, question_id: str) -> QuestionValidationStatus:
         if question_id not in self.validation_statuses:
             raise HTTPException(
-                status_code=404,
-                detail=f"Question not found: {question_id}"
+                status_code=404, detail=f"Question not found: {question_id}"
             )
 
         return self.validation_statuses.get(
-            question_id,
-            QuestionValidationStatus(is_validated=False)
+            question_id, QuestionValidationStatus(is_validated=False)
         )
 
     def get_invalid_questions(self) -> List[str]:
         return [
-            qid for qid, status in self.validation_statuses.items()
+            qid
+            for qid, status in self.validation_statuses.items()
             if status.is_validated and not status.validation_passed
         ]
 
     def get_unvalidated_questions(self) -> List[str]:
         return [
-            qid for qid, status in self.validation_statuses.items()
+            qid
+            for qid, status in self.validation_statuses.items()
             if not status.is_validated
         ]
 
@@ -109,9 +107,11 @@ class QuestionsService:
         difficulty: Optional[Difficulty] = None,
         category: Optional[str] = None,
         page: int = 1,
-        per_page: int = 20
+        per_page: int = 20,
     ) -> List[QuestionSummary]:
-        questions = await self.repository.get_all(difficulty=difficulty, category=category)
+        questions = await self.repository.get_all(
+            difficulty=difficulty, category=category
+        )
         summaries = [
             QuestionSummary(
                 id=q.id,
@@ -119,7 +119,7 @@ class QuestionsService:
                 difficulty=q.difficulty,
                 category=q.category,
                 company_tags=q.company_tags,
-                solved=False
+                solved=False,
             )
             for q in questions
         ]
@@ -131,8 +131,7 @@ class QuestionsService:
         question = await self.repository.get_by_id(question_id)
         if not question:
             raise HTTPException(
-                status_code=404,
-                detail=f"Question not found: {question_id}"
+                status_code=404, detail=f"Question not found: {question_id}"
             )
         return question
 
@@ -145,12 +144,14 @@ class QuestionsService:
                 difficulty=q.difficulty,
                 category=q.category,
                 company_tags=q.company_tags,
-                solved=False
+                solved=False,
             )
             for q in questions
         ]
 
-    async def get_questions_by_difficulty(self, difficulty: Difficulty) -> List[QuestionSummary]:
+    async def get_questions_by_difficulty(
+        self, difficulty: Difficulty
+    ) -> List[QuestionSummary]:
         questions = await self.repository.get_all(difficulty=difficulty)
         return [
             QuestionSummary(
@@ -159,7 +160,7 @@ class QuestionsService:
                 difficulty=q.difficulty,
                 category=q.category,
                 company_tags=q.company_tags,
-                solved=False
+                solved=False,
             )
             for q in questions
         ]
@@ -174,9 +175,11 @@ class QuestionsService:
         self,
         query: str,
         difficulty: Optional[Difficulty] = None,
-        category: Optional[str] = None
+        category: Optional[str] = None,
     ) -> List[QuestionSummary]:
-        questions = await self.repository.search(query, difficulty=difficulty, category=category)
+        questions = await self.repository.search(
+            query, difficulty=difficulty, category=category
+        )
         return [
             QuestionSummary(
                 id=q.id,
@@ -184,7 +187,7 @@ class QuestionsService:
                 difficulty=q.difficulty,
                 category=q.category,
                 company_tags=q.company_tags,
-                solved=False
+                solved=False,
             )
             for q in questions
         ]
@@ -207,7 +210,9 @@ class QuestionsService:
             counts[q.category] = counts.get(q.category, 0) + 1
         return counts
 
-    def _update_validation_status(self, question_id: str, result: QuestionValidationResult):
+    def _update_validation_status(
+        self, question_id: str, result: QuestionValidationResult
+    ):
         self.validation_statuses[question_id] = QuestionValidationStatus(
             is_validated=True,
             last_validated=result.validated_at,
@@ -223,5 +228,5 @@ class QuestionsService:
                 for r in result.results.values()
                 for issue in r.issues
                 if issue.severity.value == "warning"
-            ]
+            ],
         )
