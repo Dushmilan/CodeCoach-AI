@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Moon, Sun, Settings } from 'lucide-react';
 import { useTheme } from '@/hooks';
 import { Button } from '@/components/ui/button';
@@ -16,9 +17,23 @@ export function Header() {
     <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
             CodeCoach AI
-          </h1>
+          </Link>
+          <nav className="hidden sm:flex items-center space-x-1 ml-6">
+            <Link
+              href="/privacy"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md hover:bg-secondary transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/educators"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md hover:bg-secondary transition-colors"
+            >
+              For Educators
+            </Link>
+          </nav>
         </div>
 
         <div className="flex items-center space-x-2">

@@ -1,27 +1,57 @@
-# CodeCoach AI — Goal
+# Goal
 
-## Mission
-An open-source LeetCode alternative for university students. Practice coding interview questions with instant feedback, AI coaching, and progress tracking — all powered by NVIDIA's free-tier API.
+## Why am I building this project?
 
-## Target Audience
-- University students preparing for technical interviews
-- Self-taught programmers looking for structured practice
-- Anyone wanting a free, private coding practice platform
+An actual tool for university students to practice coding — free, accessible, and comprehensive.
 
-## Design Pillars
+## What is the ultimate purpose?
 
-1. **Zero-cost to students** — NVIDIA free-tier API for AI coaching, Piston for code execution (self-hosted), Supabase free tier for optional auth.
-2. **Clean architecture** — Ports/adapters pattern on the backend, dependency-injected services on the frontend. Easy to extend, easy to test.
-3. **Student-first UX** — Two-button workflow (Run → see visible test cases, Submit → all test cases including hidden). Progress persists in localStorage. No account required to start.
-4. **Three languages from day one** — Python, JavaScript, Java.
-5. **AI coaching is a feature, not the product** — The question bank and test runner are the core. Coaching augments, not replaces, the learning process.
+A free, open-source LeetCode alternative with built-in AI coaching, evolving into a full CS curriculum platform (DSA, Programming Languages, DBMS, OOP, Web Dev) that professors recommend to their classes.
 
-## Non-Goals
-- Not a competitive programming platform (no leaderboards, contests, or ratings)
-- Not a code execution marketplace (no server-side code storage, no multi-tenant execution)
-- Not a full LMS (no course management, grading rubrics, or class rosters)
+---
 
-## Success Criteria
-- Students can browse questions, write code in 3 languages, run/submit tests, and get AI coaching — all without paying or creating an account.
-- The entire platform can be `docker compose up`'d by a university CS club advisor.
-- A student who solves 50 questions across 3 difficulty levels is interview-ready for FAANG-adjacent roles.
+## What problem does this website solve?
+
+University students lack a free, structured platform to practice coding interview questions AND learn programming languages (C, Python, Java) with instant AI coaching — without paying for LeetCode Premium or Hackerrank licenses.
+
+## Who is it for?
+
+- **Struggling students** who need hand-holding through the basics
+- **Interview grinders** preparing for tech internships and jobs
+- **Curious non-CS majors** who want to learn programming
+- **Professors** who need a free, curriculum-aligned tool to recommend
+
+All majors welcome. Multi-institution, drop-in, voluntary.
+
+## What makes it different from alternatives?
+
+| | CodeCoach AI | LeetCode | Hackerrank | Exercism |
+|---|---|---|---|---|
+| **Free** | Yes (BYO API key) | Freemium | Freemium | Free |
+| **AI Coaching** | Built-in (NVIDIA NIM) | No | Limited | No |
+| **Language Curricula** | C, Python, Java lessons + exercises | No | Limited tracks | Yes, exercises only |
+| **Open Source** | Yes | No | No | Yes |
+| **Professor-Ready** | Curriculum mapping, privacy-first | No | Enterprise only | No |
+
+## In one sentence, what does this website do?
+
+A free AI-powered coding platform where university students practice DSA problems and learn programming languages through structured lessons with real-time coaching — no payment needed.
+
+## Scope
+
+### Phase 1 — DSA Practice (current)
+- 100 coding questions (30 Easy / 50 Medium / 20 Hard) across 14 standard topics
+- AI coaching with BYO NVIDIA API key
+- Email/password + Google OAuth
+
+### Phase 2 — Programming Language Curricula
+- C, Python, Java — each with ~15-20 interleaved theory + coding exercise lessons
+- Context-aware AI coaching per lesson
+- `/learn` navigation
+
+### Phase 3 — Future Modules
+- DBMS / SQL
+- OOP & Design Patterns
+- Web Development (React, Node)
+- Theory / MCQ question type
+- Classroom dashboard

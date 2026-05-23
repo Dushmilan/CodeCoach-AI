@@ -1,217 +1,302 @@
 # CodeCoach AI
 
-A comprehensive AI-powered coding assistant that provides real-time code coaching, debugging help, and learning guidance.
+**A free, open-source AI-powered coding practice platform for university students.**
+
+Practice DSA problems and learn programming languages with structured lessons and real-time AI coaching — no subscription needed.
+
+---
+
+## Table of Contents
+
+- [What is CodeCoach AI?](#what-is-codecoach-ai)
+- [Who is it for?](#who-is-it-for)
+- [Features](#features)
+- [Roadmap](#roadmap)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## What is CodeCoach AI?
+
+CodeCoach AI is an open-source LeetCode alternative with integrated AI coaching. It helps university students:
+
+- **Practice coding interview questions** — 100 DSA problems across 14 standard topics with Python, JavaScript, and Java starter code
+- **Learn programming languages** — structured C, Python, and Java curricula with interleaved theory and coding exercises (coming soon)
+- **Get instant AI coaching** — hints, code reviews, explanations, and debugging help powered by NVIDIA NIM (LLaMA 3.1 8B)
+- **Submit and grade** — code runs against test cases in an isolated Piston container with pass/fail results
+
+No ads, no data selling, no subscriptions. Students bring their own free NVIDIA API key for AI coaching.
+
+## Who is it for?
+
+| Audience | Need |
+|---|---|
+| **Struggling CS students** | Hand-holding through basics, structured learning |
+| **Interview grinders** | 100+ coding problems with AI coaching |
+| **Non-CS majors** | Learn programming from scratch |
+| **Professors** | Free, curriculum-aligned tool to recommend to classes |
+
+Multi-institution, drop-in, voluntary — students sign up on their own time, zero course credit required.
+
+## Features
+
+### Built
+
+| Feature | Description |
+|---|---|
+| **AI Coaching** | 5 modes (Hint, Review, Explain, Debug, Freeform) via NVIDIA NIM — structured JSON responses + SSE streaming |
+| **Code Execution** | Piston container — Python, JavaScript, Java with smart code wrapping for test harness generation |
+| **Question Bank** | 10 real-world themed questions with full CRUD, search, filter by difficulty/category/company |
+| **Submit & Grade** | Run code against visible + hidden test cases, pass/fail reporting |
+| **Question Validation** | 7 validation use cases — structure, test cases, starter code, solution, time limits, function signature, output format |
+| **Authentication** | JWT-based email/password registration + login, bcrypt hashing |
+| **Frontend Workspace** | Monaco Editor, collapsible sidebar, dark/light theme, resizable panels, AI chat with quick actions |
+| **Testing** | 12 pytest backend test files, 20+ Vitest frontend tests, Playwright E2E tests |
+| **Docker Deployment** | 3-service Docker Compose (backend, frontend, piston) |
+
+### Planned
+
+| Phase | Scope |
+|---|---|
+| **Phase 1 — DSA Ship** | 90 more questions → 100 total (30 Easy / 50 Medium / 20 Hard) across 14 standard topics. Google OAuth. Privacy policy page. Polish pass. |
+| **Phase 2 — Curricula** | C, Python, Java language curricula with interleaved theory + coding exercises. `/learn` navigation. Context-aware AI coaching. |
+| **Phase 3 — Expand** | DBMS/SQL module, OOP/Design Patterns, Web Dev (React, Node), theory/MCQ question type. Classroom dashboard. |
+
+## Roadmap
+
+```
+Phase 1 ─── DSA Practice (current focus)
+├── 100 coding questions ─── 14 standard topics
+├── Google OAuth
+├── Privacy policy + For Educators page
+└── Polish (onboarding, empty states, error handling)
+
+Phase 2 ─── Programming Language Curricula
+├── C curriculum ─── 15-20 lessons
+├── Python curriculum ─── 15-20 lessons
+├── Java curriculum ─── 15-20 lessons
+└── Context-aware AI coaching per lesson
+
+Phase 3 ─── Future Modules
+├── DBMS / SQL
+├── OOP & Design Patterns
+├── Web Development (React, Node)
+├── Theory / MCQ question type
+└── Classroom dashboard
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.11+, FastAPI, Pydantic v2, Uvicorn |
+| **Frontend** | Next.js 14 (App Router), React 18, TypeScript |
+| **Editor** | Monaco Editor (`@monaco-editor/react`) |
+| **Styling** | Tailwind CSS 3, `tailwind-merge`, `clsx` |
+| **Code Execution** | Piston (self-hosted Docker container) |
+| **AI Coach** | NVIDIA NIM (LLaMA 3.1 8B) via `integrate.api.nvidia.com/v1` |
+| **Auth** | JWT (python-jose), bcrypt |
+| **Testing** | pytest (backend), Vitest + Playwright (frontend) |
+| **Infra** | Docker Compose, SQLite (file-based) |
+
+## Architecture
+
+### Backend — Clean Architecture / Hexagonal (Ports/Adapters)
+
+```
+backend/app/
+  ports/            Abstract interfaces (ABCs)
+  adapters/         Concrete implementations (PistonExecutor)
+  use_cases/        Single-responsibility validation logic
+  services/         Business logic wrapping ports
+  repositories/     File-based JSON storage
+  api/              Thin FastAPI route handlers
+  models/           Pydantic schemas
+  middleware/       Rate limiting
+  dependencies/     FastAPI Depends injection
+```
+
+### Frontend — Feature-based
+
+```
+frontend/src/
+  features/     {coaching, code-execution, question}/ {hook, service, types}
+  components/   Reusable UI (editor, chat, sidebar, header, layout)
+  lib/          HTTP client port/adapter (FetchClient)
+  hooks/        Shared hooks (useLocalStorage, useDebounce, useTheme)
+  providers/    ThemeProvider
+```
+
+### Key architectural decisions
+
+- **BYO API key** — NVIDIA API key is stored in browser localStorage, never sent to the backend. The backend proxies requests to NVIDIA NIM using the key from the request header.
+- **Code wrapping** — Every language supported by Piston has a `_wrap_<language>_code` method that adds a test harness converting stdin → function call → stdout. Without this, bare function definitions produce no output.
+- **File-based storage** — Questions and users are stored in JSON files (not SQLite yet). Simple, portable, version-controllable. Migrate to a database when content scales.
+- **Dependency injection** — FastAPI `Depends()` for services, constructor injection for use cases. Makes the backend testable with mocks.
+
+## Getting Started
+
+### Quick start with Docker
+
+```bash
+docker compose up --build
+```
+
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:8000
+- **API Docs:** http://localhost:8000/docs
+
+### Manual setup
+
+#### Backend
+
+```bash
+cd backend
+python -m venv venv
+# Windows: venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with your NVIDIA API key
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Frontend
+
+```bash
+cd frontend
+pnpm install
+cp .env.example .env.local
+pnpm dev
+```
+
+#### Piston (code execution)
+
+```bash
+docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston
+```
+
+### Environment Variables
+
+#### Backend (`.env`)
+
+```
+NVIDIA_API_KEY=your_nvidia_nim_api_key
+JWT_SECRET_KEY=your_jwt_secret_key
+PISTON_API_URL=http://localhost:2000/api/v2/piston
+```
+
+Get a free NVIDIA API key from [NVIDIA NIM](https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct).
+
+#### Frontend (`.env.local`)
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
 ## Project Structure
 
 ```
 CodeCoach-AI/
-├── backend/           # FastAPI backend service
+├── backend/
 │   ├── app/
-│   │   ├── api/       # API endpoints (coach, health, questions, run, validation)
-│   │   ├── middleware/# Rate limiting middleware
-│   │   ├── models/    # Pydantic schemas
-│   │   └── services/  # Business logic (NIM, Piston, validators)
-│   ├── tests/         # Comprehensive test suite
-│   └── questions/     # Sample coding questions
-├── frontend/          # Next.js frontend application
+│   │   ├── api/               # Route handlers
+│   │   │   ├── coach.py           # AI coaching endpoints
+│   │   │   ├── run.py             # Code execution endpoints
+│   │   │   ├── questions.py       # Question bank endpoints
+│   │   │   ├── submit.py          # Submit & grade endpoints
+│   │   │   ├── question_validation.py  # Question validation endpoints
+│   │   │   ├── auth.py            # Authentication endpoints
+│   │   │   ├── health.py          # Health check endpoints
+│   │   │   └── debug.py           # Debug endpoints
+│   │   ├── models/             # Pydantic schemas
+│   │   ├── ports/              # Abstract interfaces (ABCs)
+│   │   ├── adapters/           # Concrete implementations
+│   │   ├── services/           # Business logic
+│   │   ├── use_cases/          # Validation use cases
+│   │   ├── repositories/       # File-based JSON storage
+│   │   ├── middleware/         # Rate limiting
+│   │   └── dependencies/       # FastAPI Depends injection
+│   ├── tests/                  # pytest test suite
+│   └── questions/              # JSON question bank
+├── frontend/
 │   └── src/
-│       ├── app/       # Next.js app router
-│       ├── components/# React components (chat, editor, layout)
-│       ├── lib/       # API utilities
-│       └── types/     # TypeScript types
-├── plans/             # Project planning documents
-└── shared/            # Shared utilities and types
+│       ├── app/                # Next.js App Router pages
+│       │   ├── page.tsx            # Main workspace
+│       │   ├── layout.tsx          # Root layout
+│       │   └── privacy/            # Privacy policy page
+│       ├── components/         # Reusable UI components
+│       │   ├── header/             # App header with nav
+│       │   ├── sidebar/            # Question list, filters, description
+│       │   ├── editor/             # Monaco Editor wrapper
+│       │   ├── chat/               # AI chat panel
+│       │   ├── layout/             # Layout containers
+│       │   ├── settings/           # Settings modal
+│       │   └── ui/                 # Primitive UI components
+│       ├── features/           # Feature modules (hook + service + types)
+│       ├── lib/                # HTTP client
+│       ├── hooks/              # Shared hooks
+│       └── providers/          # Theme provider
+├── docker-compose.yml          # 3-service Docker Compose
+├── goal.md                     # Project vision and scope
+├── progress.md                 # Current progress summary
+├── EDUCATORS.md                # One-pager for professors
+└── CLAUDE.md                   # Engineering guidelines
 ```
 
-## Quick Start
+## Testing
 
-### Backend Setup
+### Backend (pytest)
 
-1. **Navigate to backend directory:**
 ```bash
 cd backend
+python -m pytest                       # All tests
+python -m pytest tests/unit/           # Unit tests
+python -m pytest tests/integration/    # Integration tests
+python -m pytest --cov=app             # With coverage (85% threshold)
 ```
 
-2. **Create virtual environment:**
-```bash
-python -m venv venv
-```
+### Frontend (Vitest)
 
-3. **Activate virtual environment:**
-- Windows: `venv\Scripts\activate`
-- macOS/Linux: `source venv/bin/activate`
-
-4. **Install dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-5. **Set up environment variables:**
-```bash
-cp .env.example .env
-```
-Edit `.env` with your actual configuration values.
-
-6. **Start the backend server:**
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Frontend Setup
-
-1. **Navigate to frontend directory:**
 ```bash
 cd frontend
+pnpm test                             # Watch mode
+pnpm test:run                         # Single run
+pnpm lint                             # ESLint
+pnpm typecheck                        # TypeScript check
 ```
 
-2. **Install dependencies:**
+### E2E (Playwright)
+
 ```bash
-npm install
-# or
-pnpm install
-# or
-yarn install
+cd frontend
+pnpm exec playwright test             # Requires dev server running
 ```
-
-3. **Set up environment variables:**
-```bash
-cp .env.example .env.local
-```
-Edit `.env.local` with your actual configuration values.
-
-4. **Start the development server:**
-```bash
-npm run dev
-# or
-pnpm dev
-# or
-yarn dev
-```
-
-### Access the Application
-
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8000
-- **API Documentation:** http://localhost:8000/docs
-
-## Development Commands
-
-### Backend
-- `uvicorn app.main:app --reload` - Start with auto-reload
-- `python -m pytest` - Run tests
-- `python -m black .` - Format code
-- `python -m flake8` - Lint code
-
-### Frontend
-- `npm run dev` - Development server
-- `npm run build` - Production build
-- `npm start` - Production server
-- `npm run lint` - Lint code
-
-## Environment Variables
-
-### Backend (.env)
-```
-# API Keys
-NVIDIA_API_KEY=your_nvidia_nim_api_key
-
-# Database
-DATABASE_URL=sqlite:///./codecoach.db
-
-# Redis (for rate limiting)
-REDIS_URL=redis://localhost:6379
-
-# Piston (code execution service)
-# Use public instance:
-PISTON_API_URL=https://emkc.org/api/v2/piston
-# Or local instance (recommended for development):
-# PISTON_API_URL=http://localhost:2000/api/v2/piston
-```
-
-**Note:** The `NVIDIA_API_KEY` is required for AI coaching features. Get your free API key from [NVIDIA NIM](https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct).
-
-### Frontend (.env.local)
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_WS_URL=ws://localhost:8000
-```
-
-## Local Piston Setup (Optional)
-
-For faster code execution during development, you can run Piston locally:
-
-1. **Install Piston via Docker:**
-```bash
-docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston
-```
-
-2. **Update your `.env` file:**
-```
-PISTON_API_URL=http://localhost:2000/api/v2/piston
-```
-
-3. **Verify Piston is running:**
-```bash
-curl http://localhost:2000/api/v2/runtimes
-```
-
-4. **Test code execution:**
-```bash
-curl -X POST http://localhost:2000/api/v2/execute \
-  -H "Content-Type: application/json" \
-  -d '{"language":"python","version":"*","files":[{"name":"test.py","content":"print(\"Hello from Piston!\")"}]}'
-```
-
-## Docker Setup (Optional)
-
-1. **Build and run with Docker Compose:**
-```bash
-docker-compose up --build
-```
-
-2. **Access the application:**
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-
-## Features
-
-- **Real-time Code Coaching:** Get instant feedback on your code
-- **Multi-language Support:** Support for Python, JavaScript, TypeScript, and more
-- **Interactive Debugging:** Step-by-step debugging assistance
-- **Learning Paths:** Personalized coding challenges and tutorials
-- **Code Execution:** Safe code execution in sandboxed environment
-- **Progress Tracking:** Monitor your learning progress
-
-## Recent Improvements
-
-### Code Validation System
-- **Simple Validators:** Added lightweight validators for Python, JavaScript, and Java that run test cases locally
-- **Output Comparison:** Smart output matching supporting string, JSON, and numeric comparisons
-- **Error Handling:** User-friendly error messages with emoji indicators for different error types
-
-### Test Suite
-- **Comprehensive Testing:** Production-grade test suite covering functional, boundary, load, and security tests
-- **Test Categories:**
-  - Unit tests for validators and boundary conditions
-  - Integration tests for all API endpoints
-  - Performance tests for concurrent request handling
-  - Security tests for injection prevention (SQL, XSS, command, path traversal)
-- **Test Utilities:** Factory fixtures for generating test data
-
-### API Enhancements
-- **Rate Limiting:** Middleware for API rate limiting to prevent abuse
-- **Health Endpoints:** Detailed health checks for monitoring
-- **Validation Endpoints:** Pre-execution code validation without running code
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes — follow the conventions in [CLAUDE.md](./CLAUDE.md)
+4. Add or update tests
+5. Run lint + typecheck + tests
+6. Submit a pull request
+
+### Conventions
+
+- No comments in code unless logic is genuinely non-obvious
+- Named exports over default exports
+- Async everywhere (backend handlers, services, use cases)
+- FastAPI `Depends()` for dependency injection
+- Every language supported by Piston needs a `_wrap_<language>_code` method
+- Never commit secrets, API keys, or `.env` files
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT — see [LICENSE](LICENSE) for details.

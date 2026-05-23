@@ -1,86 +1,109 @@
-# CodeCoach AI — Progress
+# Progress
 
-## ✅ Done
+## Overview
 
-### Phase 1 — API Refactoring
-- Refactored `api/run.py` and `api/questions.py` to FastAPI `Depends` + `@lru_cache`
-- `dependency_overrides` tests for both endpoints
-- Fixed route-ordering bug in `api/questions.py`
-- Cleaned up `app/main.py` imports
+**Status:** Pre-launch (development complete, not yet deployed)
+**Commits:** ~65
+**Questions:** 10 of 100 target (4 Easy, 6 Medium)
+**Starter Code:** Python, JavaScript, Java
 
-### Phase 2 — Question Repository Port/Adapter
-- `QuestionRepository` ABC at `app/ports/question_repository.py`
-- `FileQuestionRepository` adapter at `app/repositories/file_question_repository.py`
-- `QuestionsService` fully async with repository injection
-- Updated `api/questions.py` route handlers
+---
 
-### Phase 3 — Code Executor Port & Validation Refactor
-- `CodeExecutor` port + `ExecutionResult` dataclass at `app/ports/code_executor.py`
-- `PistonExecutor` adapter at `app/adapters/piston_executor.py`
-- Three validation use cases accept `executor: CodeExecutor` (port)
-- `mock_piston_service` fixture uses `AsyncMock(spec=CodeExecutor)`
-- All 31 validation tests pass
-- Cleaned up dead validation code (deleted old endpoint, 6 old test files)
-- Docker Piston container running on localhost:2000 with Python 3.10.0, Node 18.15.0, Java 15.0.2
-- `PistonService` reads `PISTON_API_URL` env var
-- Integration tests (4/4 fast) pass against local Piston
+## 1. AI Coaching
 
-### Phase 4 — HTTP Client Port
-- `HttpClient` port interface at `frontend/src/lib/http-client.ts`
-- `FetchClient` adapter at `frontend/src/lib/fetch-client.ts`
-- `QuestionService`, `CodeExecutionService`, `CoachingService` all use `HttpClient` injection
+- NVIDIA NIM (LLaMA 3.1 8B) integration via `integrate.api.nvidia.com/v1`
+- Structured JSON responses: hints, reviews, explanations
+- Server-Sent Events (SSE) streaming support
+- 5 coaching modes: Hint, Review, Explain, Debug, Freeform
+- BYO NVIDIA API key via settings modal
+- Rate limited: 10 requests/min
 
-### Step 1 — Language Support & Validate Fix
-- JavaScript and Java enabled in editor constants
-- `validateCode` service iterates test cases via `/api/run/` (was calling deleted `/api/validate/validate`)
-- Frontend TypeScript compiles with 0 errors in our files
+## 2. Code Execution
 
-### Step 2 — Submit Endpoint
-- `POST /api/submit/` endpoint at `app/api/submit.py`
-- Accepts `question_id`, `language`, `code`; runs all test cases via Piston
-- Returns `{ passed, total, passed_count, results[] }`
-- Hidden test cases redact input/expected/actual
-- 4 unit tests (all pass)
+- Piston API integration (self-hosted Docker container)
+- Code wrapping for Python, JavaScript, Java — adds test harness around user functions
+- Local JavaScript execution in browser (bypasses Piston)
+- Multi-language support with runtime version detection
+- Rate limited: 30 requests/min
 
-### Step 3 — Two-Button UI
-- Run button → first 3 visible test cases via `/api/run/`
-- Submit button → all test cases (including hidden) via `/api/submit/`
-- Green Submit button next to Run button in code editor toolbar
+## 3. Question Bank
 
-### Step 4 — NVIDIA API Key Settings
-- Settings gear icon in header
-- SettingsModal component with password input + show/hide toggle
-- `useSettings` hook (localStorage-backed)
-- API key sent as `X-NVIDIA-API-Key` header on coaching requests
-- Backend `get_nim_service` accepts header, falls back to `NVIDIA_API_KEY` env var
+- 10 hand-authored questions with real-world themes
+- Full CRUD via REST API
+- Search by title/category/difficulty
+- Filter by difficulty, category, company
+- Pagination support
+- 58KB JSON file-backed storage
 
-### Step 5 — Progress Persistence
-- `userProgress` (solved/attempted) persisted in localStorage via `useLocalStorage` hook
-- Survives page refresh
+## 4. Submit & Grade
 
-### Step 6 — Frontend Tests
-- Vitest + jsdom + @testing-library installed
-- `vitest.config.ts` created
-- Unit tests for `CodeExecutionService` (`runCode`, `validateCode`, `submitCode`)
-- **Note:** vitest native binding issue on Windows (`rolldown`) — requires `npm i` after deleting `package-lock.json` + `node_modules`
-- Playwright e2e tests not yet written
+- Code submission against visible and hidden test cases
+- Pass/fail reporting with detailed output
+- Performance tracking per submission
+- Integration with Piston code execution
 
-## 🔜 Next
+## 5. Question Validation
 
-### Backend
-- (none planned — all planned endpoints exist)
+- 7 validation use cases: structure, test cases, starter code, solution, time limits, function signature, output format
+- Each use case is a single-responsibility class
+- Orchestrated by `QuestionValidatorService`
+- Batch and single validation endpoints
 
-### Frontend
-- Run `npm i` from scratch to fix vitest native binding
-- Write Vitest tests for hooks (`useCodeExecution`, `useSettings`, etc.)
-- Write Playwright smoke test (browse → edit → run → submit → coaching)
+## 6. Authentication
 
-### Infrastructure
-- Docker Compose for full-stack local dev (frontend + backend + Piston)
-- Production CORS origins config
-- HTTPS/SSL for production
+- JWT-based registration and login (Access + Refresh tokens)
+- bcrypt password hashing
+- File-based user storage
+- `get_current_user` FastAPI dependency with HTTPBearer
+- Rate limited: 20 requests/min
 
-### Future Features
-- Supabase auth (Google OAuth optional, API key storage tied to account)
-- Rich progress dashboard (solved count, streak, topic mastery)
-- Question authoring UI (admin panel for adding new questions)
+## 7. Frontend Workspace
+
+- Monaco Editor (`@monaco-editor/react`) with Python/JS/Java language selector
+- Sidebar with collapsible question list, difficulty filters, random picker
+- Question description panel with hints toggle
+- Code editor with Run / Submit / Reset controls
+- AI chat panel with typing indicator, quick action buttons
+- Structured response renderer (hints, reviews, explanations)
+- Dark/Light theme toggle with persistent storage
+- Settings modal for NVIDIA API key
+- Resizable editor + output panel
+- Navigation controls (prev/next question)
+
+## 8. Testing
+
+### Backend (pytest)
+- 12 test files covering all services, adapters, use cases, middleware
+- 85% coverage threshold
+- Mocked NVIDIA and Piston services
+- Performance/load tests (concurrent requests, memory, locust)
+
+### Frontend (Vitest)
+- 20+ test files covering hooks, services, components
+- FetchClient HTTP service tests
+- Component tests for all UI components
+
+### E2E (Playwright)
+- Homepage smoke test
+- User flow test (question selection → code execution → AI coaching)
+
+## 9. Infrastructure
+
+- Docker Compose with 3 services: backend (FastAPI, port 8000), frontend (Next.js, port 3000), piston (port 2000)
+- Backend Dockerfile (Python 3.11-alpine)
+- Health check and detailed diagnostics endpoints
+- Debug endpoints for environment and API key status
+- Pre-commit hooks configured
+- Issue templates (bug report, feature request)
+
+---
+
+## Gaps (Phase 1)
+
+| Area | Missing | Plan |
+|---|---|---|
+| **Questions** | 90 of 100 | AI-assisted generation across 14 standard DSA topics |
+| **Auth** | Google OAuth | Add Passport/next-auth or custom OAuth flow |
+| **Polish** | Empty states, error handling, onboarding | UX pass before launch |
+| **Educator materials** | No professor-facing content | EDUCATORS.md + For Educators page |
+| **Privacy** | No policy page | `/privacy` route with plain-language policy |
