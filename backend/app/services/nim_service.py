@@ -124,7 +124,7 @@ class NIMService:
                     structured_data = json.loads(content)
 
                     # Validate against schema
-                    structured_response = StructuredCoachingResponse(**structured_data)
+                    StructuredCoachingResponse(**structured_data)
 
                     logger.info("Successfully parsed structured response")
                     return structured_data

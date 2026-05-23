@@ -4,16 +4,15 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file with explicit path
-from pathlib import Path
-
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
-from app.api import (
+from app.api import (  # noqa: E402
     coach,
     run,
     questions,

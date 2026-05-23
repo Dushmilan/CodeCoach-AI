@@ -1,6 +1,7 @@
 import time
-from typing import Dict
+from typing import Dict, Any
 from collections import defaultdict
+from functools import wraps
 from fastapi import HTTPException
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -99,7 +100,6 @@ class RateLimitMiddleware:
 
 
 # Rate limiting decorators for specific endpoints
-from functools import wraps
 
 
 def rate_limit(limit_str: str):

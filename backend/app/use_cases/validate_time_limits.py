@@ -187,7 +187,6 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
 
         if max_input_size and question.time_complexity:
             complexity = question.time_complexity.strip()
-            complexity_level = self._get_complexity_level(complexity)
 
             # Estimate operations based on complexity and input size
             estimated_ops = self._estimate_operations(complexity, max_input_size)

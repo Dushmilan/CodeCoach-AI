@@ -47,7 +47,7 @@ async def check_api_key_status() -> Dict[str, Any]:
 
             # Test API connectivity
             try:
-                service = NIMService(api_key=api_key)
+                NIMService(api_key=api_key)
                 headers = {
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
