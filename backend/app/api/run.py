@@ -1,6 +1,9 @@
+from dataclasses import asdict
 from fastapi import APIRouter, Depends, HTTPException
 from functools import lru_cache
+
 from app.models.schemas import CodeExecutionRequest, CodeExecutionResult, Language
+from app.ports.code_executor import CodeExecutor
 from app.services.piston_service import PistonService
 import logging
 
@@ -10,7 +13,7 @@ router = APIRouter()
 
 
 @lru_cache()
-def get_piston_service() -> PistonService:
+def get_executor() -> CodeExecutor:
     """Get or create Piston service instance (cached)."""
     return PistonService()
 
@@ -18,7 +21,7 @@ def get_piston_service() -> PistonService:
 @router.post("/", response_model=CodeExecutionResult)
 async def execute_code(
     request: CodeExecutionRequest,
-    piston_service: PistonService = Depends(get_piston_service),
+    executor: CodeExecutor = Depends(get_executor),
 ):
     """
     Execute code using Piston API.
@@ -27,16 +30,14 @@ async def execute_code(
     """
 
     try:
-        result = await piston_service.execute_code(
+        result = await executor.execute(
             language=request.language.value,
             code=request.code,
             stdin=request.stdin,
             version=request.version,
         )
 
-        logger.info(f"Raw result from piston_service: {result}")
-
-        return CodeExecutionResult(**result)
+        return CodeExecutionResult(**asdict(result))
 
     except HTTPException:
         raise
@@ -48,7 +49,7 @@ async def execute_code(
 @router.post("/validate")
 async def validate_code(
     request: CodeExecutionRequest,
-    piston_service: PistonService = Depends(get_piston_service),
+    executor: CodeExecutor = Depends(get_executor),
 ):
     """
     Validate code before execution.
@@ -57,7 +58,7 @@ async def validate_code(
     """
 
     try:
-        validation = piston_service.validate_code(
+        validation = executor.validate_code(
             language=request.language.value, code=request.code
         )
 
@@ -74,14 +75,13 @@ async def validate_code(
 
 @router.get("/languages")
 async def get_supported_languages(
-    piston_service: PistonService = Depends(get_piston_service),
+    executor: CodeExecutor = Depends(get_executor),
 ):
     """Get supported programming languages and their versions."""
 
     try:
-        runtimes = await piston_service.get_runtimes()
+        runtimes = await executor.get_runtimes()
 
-        # Filter and format the runtimes
         supported_languages = []
         for runtime in runtimes:
             language = runtime.get("language", "")
@@ -104,11 +104,11 @@ async def get_supported_languages(
 
 
 @router.get("/runtimes")
-async def get_runtimes(piston_service: PistonService = Depends(get_piston_service)):
+async def get_runtimes(executor: CodeExecutor = Depends(get_executor)):
     """Get all available runtimes from Piston API."""
 
     try:
-        runtimes = await piston_service.get_runtimes()
+        runtimes = await executor.get_runtimes()
         return {"runtimes": runtimes}
 
     except Exception as e:

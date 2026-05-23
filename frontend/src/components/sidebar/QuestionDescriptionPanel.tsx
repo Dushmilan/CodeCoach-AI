@@ -1,22 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Question, QuestionSummary } from '@/types';
 import { ChevronRight, ChevronDown, Lightbulb, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuestionDescriptionPanelProps {
   selectedQuestion: Question | QuestionSummary | null;
-  difficultyBadge: string;
   onToggleView?: () => void;
 }
 
 export function QuestionDescriptionPanel({
   selectedQuestion,
-  difficultyBadge,
   onToggleView,
 }: QuestionDescriptionPanelProps) {
   const [hintsExpanded, setHintsExpanded] = useState(false);
+  const difficultyBadge = useMemo(() => {
+    if (!selectedQuestion) return '';
+    const styles: Record<string, string> = {
+      easy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+      hard: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    };
+    return styles[selectedQuestion.difficulty] || styles.easy;
+  }, [selectedQuestion]);
 
   if (!selectedQuestion) return null;
 

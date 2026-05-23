@@ -82,36 +82,6 @@ def mock_nim_service():
 def mock_piston_service():
     """Mock Piston service for testing."""
     class MockPistonService:
-        async def execute_code(self, language: str, code: str, stdin: str = "", version: str = None):
-            """Mock code execution."""
-            mock_results = {
-                "python": {
-                    "stdout": "Hello, World!\n",
-                    "stderr": "",
-                    "exit_code": 0,
-                    "execution_time": "0.05s",
-                    "memory_usage": "8.2MB",
-                    "language": "python",
-                    "version": "3.11.0"
-                }
-            }
-
-            result = mock_results.get(language, {
-                "stdout": "",
-                "stderr": f"Language {language} not supported",
-                "exit_code": 1,
-                "execution_time": "0.01s",
-                "memory_usage": "1MB",
-                "language": language,
-                "version": version or "unknown"
-            })
-
-            if "error" in code.lower():
-                result["stderr"] = "SyntaxError: invalid syntax"
-                result["exit_code"] = 1
-
-            return result
-
         async def execute(self, language: str, code: str, stdin: str = "", version: str = None):
             """Mock execution returning ExecutionResult."""
             from app.ports.code_executor import ExecutionResult

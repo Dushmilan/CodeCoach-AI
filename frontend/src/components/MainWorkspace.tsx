@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Header } from '@/components/header/Header';
 import { Sidebar } from '@/components/sidebar/Sidebar';
-import { CodeEditor } from '@/components/editor/CodeEditor';
-import { AIChatPanel } from '@/components/chat/AIChatPanel';
 import { Question, QuestionSummary, Language } from '@/types';
 import { useQuestion } from '@/features/question/question.hook';
-import { useCodeExecution } from '@/features/code-execution/code-execution.hook';
+import { useCodeRunner } from '@/features/question/use-code-runner.hook';
 import { useCoaching } from '@/features/coaching/coaching.hook';
-import { useLocalStorage } from '@/hooks';
 import {
   LoadingSkeleton,
   MainLayoutContainer,
@@ -23,7 +20,6 @@ import {
 export function MainWorkspace() {
   const [language, setLanguage] = useState<Language>('python');
   const [currentCode, setCurrentCode] = useState<string>('');
-  const [userProgress, setUserProgress] = useLocalStorage<Record<string, 'attempted' | 'solved'>>('user_progress', {});
   const [isMounted, setIsMounted] = useState(false);
 
   const {
@@ -39,15 +35,15 @@ export function MainWorkspace() {
   } = useQuestion();
 
   const {
+    userProgress,
+    handleRunCode,
+    handleSubmitCode,
     isRunning,
     output,
-    error: executionError,
-    validateCode,
-    submitCode,
-    runLocalJavaScript,
+    executionError,
     clearOutput,
-    clearError: clearExecutionError,
-  } = useCodeExecution();
+    clearExecutionError,
+  } = useCodeRunner({ fullQuestion, language, currentCode });
 
   const {
     messages,
@@ -79,55 +75,6 @@ export function MainWorkspace() {
     [displayQuestion, currentCode, language, sendMessage]
   );
 
-  const handleRunCode = useCallback(async () => {
-    if (!fullQuestion) return;
-
-    if (language === 'javascript') {
-      try {
-        await runLocalJavaScript(currentCode, fullQuestion);
-      } catch (err) {
-        console.error('JavaScript execution error:', err);
-      }
-      return;
-    }
-
-    try {
-      const visibleTestCases = fullQuestion.test_cases.filter((tc) => !tc.hidden).slice(0, 3);
-      await validateCode(language, currentCode, visibleTestCases);
-      setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'attempted' }));
-    } catch (error) {
-      console.error('Code execution error:', error);
-    }
-  }, [fullQuestion, language, currentCode, validateCode, runLocalJavaScript]);
-
-  const handleSubmitCode = useCallback(async () => {
-    if (!fullQuestion) return;
-
-    try {
-      const result = await submitCode(fullQuestion.id, language, currentCode);
-
-      if (result.passed_count === result.total) {
-        setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'solved' }));
-      } else {
-        setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'attempted' }));
-      }
-    } catch (error) {
-      console.error('Submit error:', error);
-    }
-  }, [fullQuestion, language, currentCode, submitCode]);
-
-  const difficultyBadge = useMemo(() => {
-    if (!displayQuestion) return '';
-
-    const styles: Record<string, string> = {
-      easy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      hard: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    };
-
-    return styles[displayQuestion.difficulty] || styles.easy;
-  }, [displayQuestion]);
-
   if (!isMounted || isLoading) {
     return <LoadingSkeleton />;
   }
@@ -140,7 +87,6 @@ export function MainWorkspace() {
         fullQuestion={displayQuestion}
         onSelectQuestion={selectQuestion}
         userProgress={userProgress}
-        difficultyBadge={difficultyBadge}
       />
 
       <MainContentContainer>

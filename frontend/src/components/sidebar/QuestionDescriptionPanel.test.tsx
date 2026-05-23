@@ -29,21 +29,21 @@ const fullQuestion: Question = {
 describe('QuestionDescriptionPanel', () => {
   it('returns null when no question is selected', () => {
     const { container } = render(
-      <QuestionDescriptionPanel selectedQuestion={null} difficultyBadge="text-green-500" />
+      <QuestionDescriptionPanel selectedQuestion={null} />
     );
     expect(container.firstChild).toBeNull();
   });
 
   it('renders question title', () => {
     render(
-      <QuestionDescriptionPanel selectedQuestion={summary} difficultyBadge="text-green-500" />
+      <QuestionDescriptionPanel selectedQuestion={summary} />
     );
     expect(screen.getByText('Two Sum')).toBeInTheDocument();
   });
 
   it('renders difficulty and category', () => {
     render(
-      <QuestionDescriptionPanel selectedQuestion={summary} difficultyBadge="text-green-500" />
+      <QuestionDescriptionPanel selectedQuestion={summary} />
     );
     expect(screen.getByText('easy')).toBeInTheDocument();
     expect(screen.getByText('arrays')).toBeInTheDocument();
@@ -51,21 +51,21 @@ describe('QuestionDescriptionPanel', () => {
 
   it('shows loading spinner when only summary data is available', () => {
     render(
-      <QuestionDescriptionPanel selectedQuestion={summary} difficultyBadge="text-green-500" />
+      <QuestionDescriptionPanel selectedQuestion={summary} />
     );
     expect(screen.getByText('Loading description...')).toBeInTheDocument();
   });
 
   it('renders description when full question data is available', () => {
     render(
-      <QuestionDescriptionPanel selectedQuestion={fullQuestion} difficultyBadge="text-green-500" />
+      <QuestionDescriptionPanel selectedQuestion={fullQuestion} />
     );
     expect(screen.getByText('Find two numbers that add up to target.')).toBeInTheDocument();
   });
 
   it('renders examples', () => {
     render(
-      <QuestionDescriptionPanel selectedQuestion={fullQuestion} difficultyBadge="text-green-500" />
+      <QuestionDescriptionPanel selectedQuestion={fullQuestion} />
     );
     expect(screen.getByText(/Example 1/)).toBeInTheDocument();
     expect(screen.getByText(/\[0,1\]/)).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('QuestionDescriptionPanel', () => {
 
   it('renders hints section', () => {
     render(
-      <QuestionDescriptionPanel selectedQuestion={fullQuestion} difficultyBadge="text-green-500" />
+      <QuestionDescriptionPanel selectedQuestion={fullQuestion} />
     );
     expect(screen.getByText('Hints')).toBeInTheDocument();
   });
@@ -81,7 +81,7 @@ describe('QuestionDescriptionPanel', () => {
   it('toggles hints visibility on click', async () => {
     const user = userEvent.setup();
     render(
-      <QuestionDescriptionPanel selectedQuestion={fullQuestion} difficultyBadge="text-green-500" />
+      <QuestionDescriptionPanel selectedQuestion={fullQuestion} />
     );
 
     expect(screen.queryByText('Use a hash map')).not.toBeInTheDocument();

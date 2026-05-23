@@ -747,7 +747,8 @@ class TestQuestionsServiceValidationIntegration:
 
         result = await service.add_question(valid_question, validate=True)
 
-        assert service.validation_statuses.get(valid_question.id) is not None
+        statuses = await empty_repo.get_validation_statuses()
+        assert valid_question.id in statuses
 
 
 # ============================================================================

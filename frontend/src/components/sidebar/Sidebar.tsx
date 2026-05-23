@@ -15,7 +15,6 @@ interface SidebarProps {
   fullQuestion: Question | QuestionSummary | null;
   onSelectQuestion: (question: QuestionSummary) => void;
   userProgress: Record<string, 'attempted' | 'solved'>;
-  difficultyBadge?: string;
 }
 
 export function Sidebar({
@@ -24,7 +23,6 @@ export function Sidebar({
   fullQuestion,
   onSelectQuestion,
   userProgress,
-  difficultyBadge,
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [filter, setFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
@@ -199,12 +197,11 @@ export function Sidebar({
           onSelectQuestion={handleSelectQuestion}
         />
       ) : (
-        fullQuestion && (
-          <QuestionDescriptionPanel
-            selectedQuestion={fullQuestion}
-            difficultyBadge={difficultyBadge || ''}
-            onToggleView={() => setViewMode('list')}
-          />
+          fullQuestion && (
+            <QuestionDescriptionPanel
+              selectedQuestion={fullQuestion}
+              onToggleView={() => setViewMode('list')}
+            />
         )
       )}
 

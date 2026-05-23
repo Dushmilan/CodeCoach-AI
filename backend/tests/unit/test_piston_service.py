@@ -45,11 +45,11 @@ class TestPistonServiceExecute:
             mock_instance.post.return_value = mock_response
 
             service = PistonService()
-            result = await service.execute_code("python", 'print("Hello")')
+            result = await service.execute("python", 'print("Hello")')
 
-            assert result["stdout"] == "Hello\n"
-            assert result["exit_code"] == 0
-            assert result["language"] == "python"
+            assert result.stdout == "Hello\n"
+            assert result.exit_code == 0
+            assert result.language == "python"
 
     @pytest.mark.asyncio
     async def test_execute_code_unsupported_language(self):
@@ -57,7 +57,7 @@ class TestPistonServiceExecute:
 
         service = PistonService()
         with pytest.raises(HTTPException) as exc:
-            await service.execute_code("brainfuck", "code")
+            await service.execute("brainfuck", "code")
         assert exc.value.status_code == 400
 
     @pytest.mark.asyncio
@@ -72,7 +72,7 @@ class TestPistonServiceExecute:
 
             service = PistonService()
             with pytest.raises(HTTPException) as exc:
-                await service.execute_code("python", "x")
+                await service.execute("python", "x")
             assert exc.value.status_code == 504
 
     @pytest.mark.asyncio
@@ -91,7 +91,7 @@ class TestPistonServiceExecute:
 
             service = PistonService()
             with pytest.raises(HTTPException) as exc:
-                await service.execute_code("python", "bad code")
+                await service.execute("python", "bad code")
             assert exc.value.status_code == 400
 
     @pytest.mark.asyncio
@@ -112,9 +112,9 @@ class TestPistonServiceExecute:
             mock_instance.post.return_value = mock_response
 
             service = PistonService()
-            result = await service.execute_code("python", "input()", stdin="world")
+            result = await service.execute("python", "input()", stdin="world")
 
-            assert result["stdout"] == "hello\n"
+            assert result.stdout == "hello\n"
 
 
 class TestPistonServiceValidate:

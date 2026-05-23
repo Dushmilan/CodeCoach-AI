@@ -14,9 +14,8 @@ from app.models.question_validation_schemas import (
     ValidationUseCase,
 )
 from app.services.question_validator import QuestionValidatorService
-from app.services.piston_service import PistonService
-from app.adapters.piston_executor import PistonExecutor
 from app.ports.code_executor import CodeExecutor
+from app.services.piston_service import PistonService
 
 router = APIRouter()
 
@@ -24,7 +23,7 @@ router = APIRouter()
 @lru_cache()
 def get_executor() -> CodeExecutor:
     """Get or create code executor instance (cached)."""
-    return PistonExecutor(PistonService())
+    return PistonService()
 
 
 @lru_cache()
@@ -38,24 +37,7 @@ async def validate_question(
     question: Question,
     validator: QuestionValidatorService = Depends(get_validator_service),
 ):
-    """
-    Validate a single question.
-
-    Runs all validation use cases against the provided question and returns
-    detailed results including any issues found.
-
-    Example request body:
-    {
-        "id": "two-sum",
-        "title": "Two Sum",
-        "difficulty": "easy",
-        "category": "Arrays",
-        "description": "...",
-        "starter": {...},
-        "test_cases": [...],
-        ...
-    }
-    """
+    """Validate a single question."""
     try:
         result = await validator.validate_question(question)
         return result
@@ -68,12 +50,7 @@ async def quick_validate_question(
     question: Question,
     validator: QuestionValidatorService = Depends(get_validator_service),
 ):
-    """
-    Run quick validation on a question.
-
-    Only runs fast validation use cases (structure, output format, time limits,
-    function signature). Skips slower validations like solution execution.
-    """
+    """Run quick validation on a question."""
     try:
         result = await validator.quick_validate(question)
         return result
@@ -87,24 +64,8 @@ async def validate_with_specific_use_cases(
     use_cases: List[str],
     validator: QuestionValidatorService = Depends(get_validator_service),
 ):
-    """
-    Validate a question with specific use cases only.
-
-    Args:
-        question: The question to validate
-        use_cases: List of use case names to run
-
-    Valid use case names:
-        - structure
-        - test_cases
-        - starter_code
-        - solution
-        - time_limits
-        - function_signature
-        - output_format
-    """
+    """Validate a question with specific use cases only."""
     try:
-        # Convert string use cases to enum
         use_case_enums = []
         for uc in use_cases:
             try:
@@ -125,11 +86,7 @@ async def batch_validate_questions(
     questions: List[Question],
     validator: QuestionValidatorService = Depends(get_validator_service),
 ):
-    """
-    Validate multiple questions at once.
-
-    Runs full validation on each question and returns a list of results.
-    """
+    """Validate multiple questions at once."""
     try:
         results = await validator.validate_batch(questions)
         return {
@@ -185,12 +142,7 @@ async def get_validation_summary(
     result: QuestionValidationResult,
     validator: QuestionValidatorService = Depends(get_validator_service),
 ):
-    """
-    Get a human-readable summary of validation results.
-
-    This endpoint takes a validation result and returns a formatted summary
-    suitable for display.
-    """
+    """Get a human-readable summary of validation results."""
     try:
         summary = validator.get_validation_summary(result)
         return summary

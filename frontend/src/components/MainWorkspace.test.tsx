@@ -6,15 +6,15 @@ import { QuestionSummary, Question } from '@/types';
 const mockLoadQuestions = vi.fn();
 const mockSelectQuestion = vi.fn();
 const mockSendMessage = vi.fn();
+const mockClearError = vi.fn();
+const mockClearMessages = vi.fn();
+const mockClearCoachingError = vi.fn();
+const mockSetUserProgress = vi.fn();
 const mockValidateCode = vi.fn();
 const mockSubmitCode = vi.fn();
 const mockRunLocalJavaScript = vi.fn();
-const mockClearError = vi.fn();
-const mockClearOutput = vi.fn();
-const mockClearMessages = vi.fn();
-const mockClearCoachingError = vi.fn();
 const mockClearExecutionError = vi.fn();
-const mockSetUserProgress = vi.fn();
+const mockClearOutput = vi.fn();
 
 const mockUseQuestion = vi.hoisted(() => vi.fn<(...args: unknown[]) => {
   questions: QuestionSummary[];
@@ -38,24 +38,26 @@ const mockUseQuestion = vi.hoisted(() => vi.fn<(...args: unknown[]) => {
   clearError: mockClearError,
 })));
 
-const mockUseCodeExecution = vi.hoisted(() => vi.fn<(...args: unknown[]) => {
+const mockUseCodeRunner = vi.hoisted(() => vi.fn<(...args: unknown[]) => {
+  userProgress: Record<string, 'attempted' | 'solved'>;
+  setUserProgress: (updater: (prev: Record<string, 'attempted' | 'solved'>) => Record<string, 'attempted' | 'solved'>) => void;
+  handleRunCode: () => void;
+  handleSubmitCode: () => void;
   isRunning: boolean;
   output: string;
-  error: string | null;
-  validateCode: () => void;
-  submitCode: () => void;
-  runLocalJavaScript: () => void;
+  executionError: string | null;
   clearOutput: () => void;
-  clearError: () => void;
+  clearExecutionError: () => void;
 }>(() => ({
+  userProgress: {},
+  setUserProgress: vi.fn(),
+  handleRunCode: mockValidateCode,
+  handleSubmitCode: mockSubmitCode,
   isRunning: false,
   output: '',
-  error: null,
-  validateCode: mockValidateCode,
-  submitCode: mockSubmitCode,
-  runLocalJavaScript: mockRunLocalJavaScript,
+  executionError: null,
   clearOutput: mockClearOutput,
-  clearError: mockClearExecutionError,
+  clearExecutionError: mockClearExecutionError,
 })));
 
 const mockUseCoaching = vi.hoisted(() => vi.fn<(...args: unknown[]) => {
@@ -78,8 +80,8 @@ vi.mock('@/features/question/question.hook', () => ({
   useQuestion: mockUseQuestion,
 }));
 
-vi.mock('@/features/code-execution/code-execution.hook', () => ({
-  useCodeExecution: mockUseCodeExecution,
+vi.mock('@/features/question/use-code-runner.hook', () => ({
+  useCodeRunner: mockUseCodeRunner,
 }));
 
 vi.mock('@/features/coaching/coaching.hook', () => ({
@@ -153,15 +155,16 @@ describe('MainWorkspace', () => {
       selectQuestion: mockSelectQuestion,
       clearError: mockClearError,
     }));
-    mockUseCodeExecution.mockImplementation(() => ({
+    mockUseCodeRunner.mockImplementation(() => ({
+      userProgress: {},
+      setUserProgress: vi.fn(),
+      handleRunCode: mockValidateCode,
+      handleSubmitCode: mockSubmitCode,
       isRunning: false,
       output: '',
-      error: null,
-      validateCode: mockValidateCode,
-      submitCode: mockSubmitCode,
-      runLocalJavaScript: mockRunLocalJavaScript,
+      executionError: null,
       clearOutput: mockClearOutput,
-      clearError: mockClearExecutionError,
+      clearExecutionError: mockClearExecutionError,
     }));
     mockUseCoaching.mockImplementation(() => ({
       messages: [],

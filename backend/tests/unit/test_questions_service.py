@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
 
-from app.models.schemas import Question, Difficulty, StarterCode, Example, TestCase
+from app.models.schemas import Question, QuestionSummary, Difficulty, StarterCode, Example, TestCase
 
 
 @pytest.fixture
@@ -14,33 +14,27 @@ def mock_repo():
     repo.get_categories = AsyncMock(return_value=[])
     repo.get_company_tags = AsyncMock(return_value=[])
     repo.add = AsyncMock()
+    repo.get_summaries = AsyncMock(return_value=[])
+    repo.search_summaries = AsyncMock(return_value=[])
+    repo.save_validation_status = AsyncMock()
     return repo
 
+
+def _qs(id_, title, difficulty, category):
+    return QuestionSummary(id=id_, title=title, difficulty=difficulty, category=category)
 
 @pytest.fixture
 def sample_questions():
     return [
-        Question(
-            id="two-sum", title="Two Sum", difficulty=Difficulty.EASY,
-            category="arrays", description="Find two numbers",
-            starter=StarterCode(python="def f(): pass", javascript="function f(){}", java="class S{public static void f(){}}"),
-            examples=[Example(input="1", output="2")],
-            test_cases=[TestCase(input="1", expected_output="2")],
-        ),
-        Question(
-            id="rev-list", title="Reverse List", difficulty=Difficulty.MEDIUM,
-            category="linked-lists", description="Reverse",
-            starter=StarterCode(python="def f(): pass", javascript="function f(){}", java="class S{public static void f(){}}"),
-            examples=[Example(input="1", output="2")],
-            test_cases=[TestCase(input="1", expected_output="2")],
-        ),
+        _qs("two-sum", "Two Sum", Difficulty.EASY, "arrays"),
+        _qs("rev-list", "Reverse List", Difficulty.MEDIUM, "linked-lists"),
     ]
 
 
 class TestQuestionsServiceGetAll:
     @pytest.mark.asyncio
     async def test_get_all_questions(self, mock_repo, sample_questions):
-        mock_repo.get_all = AsyncMock(return_value=sample_questions)
+        mock_repo.get_summaries = AsyncMock(return_value=sample_questions)
         from app.services.questions_service import QuestionsService
         service = QuestionsService(repository=mock_repo)
 
@@ -52,7 +46,7 @@ class TestQuestionsServiceGetAll:
 
     @pytest.mark.asyncio
     async def test_get_all_with_pagination(self, mock_repo, sample_questions):
-        mock_repo.get_all = AsyncMock(return_value=sample_questions)
+        mock_repo.get_summaries = AsyncMock(return_value=sample_questions)
         from app.services.questions_service import QuestionsService
         service = QuestionsService(repository=mock_repo)
 
@@ -67,7 +61,7 @@ class TestQuestionsServiceGetAll:
     @pytest.mark.asyncio
     async def test_get_all_with_difficulty_filter(self, mock_repo, sample_questions):
         easy_only = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
-        mock_repo.get_all = AsyncMock(return_value=easy_only)
+        mock_repo.get_summaries = AsyncMock(return_value=easy_only)
         from app.services.questions_service import QuestionsService
         service = QuestionsService(repository=mock_repo)
 
@@ -101,7 +95,7 @@ class TestQuestionsServiceGetById:
 class TestQuestionsServiceSearch:
     @pytest.mark.asyncio
     async def test_search_questions(self, mock_repo, sample_questions):
-        mock_repo.search = AsyncMock(return_value=[sample_questions[0]])
+        mock_repo.search_summaries = AsyncMock(return_value=[sample_questions[0]])
         from app.services.questions_service import QuestionsService
         service = QuestionsService(repository=mock_repo)
 
@@ -164,7 +158,7 @@ class TestQuestionsServiceByCategory:
     @pytest.mark.asyncio
     async def test_get_by_category(self, mock_repo, sample_questions):
         arrays = [q for q in sample_questions if q.category == "arrays"]
-        mock_repo.get_all = AsyncMock(return_value=arrays)
+        mock_repo.get_summaries = AsyncMock(return_value=arrays)
         from app.services.questions_service import QuestionsService
         service = QuestionsService(repository=mock_repo)
 
@@ -175,7 +169,7 @@ class TestQuestionsServiceByCategory:
     @pytest.mark.asyncio
     async def test_get_by_difficulty(self, mock_repo, sample_questions):
         easy = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
-        mock_repo.get_all = AsyncMock(return_value=easy)
+        mock_repo.get_summaries = AsyncMock(return_value=easy)
         from app.services.questions_service import QuestionsService
         service = QuestionsService(repository=mock_repo)
 

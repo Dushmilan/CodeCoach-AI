@@ -308,19 +308,20 @@ for i in range(10):
         assert "Hello, World!" in data["stdout"]
     
     def test_dependency_override_injects_mock(self, test_client: TestClient):
-        """Test that piston_service dependency can be overridden via app.dependency_overrides."""
+        """Test that executor dependency can be overridden via app.dependency_overrides."""
 
         class MockPiston:
-            async def execute_code(self, language, code, stdin="", version=None):
-                return {"stdout": "mock-output", "stderr": "", "exit_code": 0, "language": language}
+            async def execute(self, language, code, stdin="", version=None):
+                from app.ports.code_executor import ExecutionResult
+                return ExecutionResult(stdout="mock-output", language=language)
             def validate_code(self, language, code):
                 return {"valid": True, "warnings": [], "errors": []}
             async def get_runtimes(self):
                 return [{"language": "python", "version": "99.0", "aliases": ["py"], "runtime": "mock"}]
 
-        from app.api.run import get_piston_service
+        from app.api.run import get_executor
 
-        app.dependency_overrides[get_piston_service] = lambda: MockPiston()
+        app.dependency_overrides[get_executor] = lambda: MockPiston()
         try:
             response = test_client.get("/api/run/languages")
             assert response.status_code == 200

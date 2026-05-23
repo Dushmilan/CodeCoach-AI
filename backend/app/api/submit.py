@@ -5,7 +5,7 @@ from app.models.schemas import SubmitRequest, SubmitResponse, SubmitResult
 from app.ports.code_executor import CodeExecutor, ExecutionResult
 from app.ports.question_repository import QuestionRepository
 from app.repositories.file_question_repository import FileQuestionRepository
-from app.adapters.piston_executor import PistonExecutor
+from app.services.piston_service import PistonService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def get_repository() -> QuestionRepository:
 
 @lru_cache()
 def get_executor() -> CodeExecutor:
-    return PistonExecutor()
+    return PistonService()
 
 
 @router.post("/", response_model=SubmitResponse)

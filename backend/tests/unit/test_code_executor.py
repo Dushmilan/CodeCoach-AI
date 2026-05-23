@@ -1,68 +1,57 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch, MagicMock
 
 from app.ports.code_executor import CodeExecutor, ExecutionResult
+from app.services.piston_service import PistonService
 
 
-class MockPistonService:
-    def __init__(self):
-        self.execute_code = AsyncMock(return_value={
-            "stdout": "hello\n", "stderr": "", "exit_code": 0,
-            "language": "python", "version": "3.11.0"
-        })
-        self.get_runtimes = AsyncMock(return_value=[
-            {"language": "python", "version": "3.11.0"}
-        ])
-
-    def validate_code(self, language, code):
-        return {"valid": True, "warnings": [], "errors": []}
-
-
-class TestPistonExecutor:
-    @pytest.fixture
-    def mock_piston(self):
-        return MockPistonService()
+class TestPistonServiceImplementsCodeExecutor:
+    def test_conforms_to_port(self):
+        assert isinstance(PistonService(), CodeExecutor)
 
     @pytest.mark.asyncio
-    async def test_execute_returns_execution_result(self, mock_piston):
-        from app.adapters.piston_executor import PistonExecutor
+    async def test_execute_returns_execution_result(self):
+        service = PistonService()
 
-        executor = PistonExecutor(piston_service=mock_piston)
-        result = await executor.execute("python", "print(1)")
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json = MagicMock(return_value={
+            "run": {"stdout": "hello\n", "stderr": "", "code": 0, "wall_time": 0.01},
+            "language": "python", "version": "3.10.0",
+        })
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
+            result = await service.execute("python", "print(1)")
 
         assert isinstance(result, ExecutionResult)
         assert result.stdout == "hello\n"
         assert result.exit_code == 0
+        assert result.execution_time == 0.01
 
     @pytest.mark.asyncio
-    async def test_execute_passes_stdin(self, mock_piston):
-        from app.adapters.piston_executor import PistonExecutor
+    async def test_execute_unknown_language_raises(self):
+        service = PistonService()
 
-        executor = PistonExecutor(piston_service=mock_piston)
-        await executor.execute("python", "input()", stdin="world")
-
-        mock_piston.execute_code.assert_called_with(
-            "python", "input()", stdin="world", version=None
-        )
+        with pytest.raises(Exception):
+            await service.execute("brainfuck", "+++")
 
     @pytest.mark.asyncio
-    async def test_get_runtimes_delegates(self, mock_piston):
-        from app.adapters.piston_executor import PistonExecutor
+    async def test_get_runtimes_returns_list(self):
+        service = PistonService()
 
-        executor = PistonExecutor(piston_service=mock_piston)
-        runtimes = await executor.get_runtimes()
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json = MagicMock(return_value=[{"language": "python", "version": "3.11.0"}])
 
-        assert runtimes == [{"language": "python", "version": "3.11.0"}]
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            runtimes = await service.get_runtimes()
 
-    def test_validate_code_delegates(self, mock_piston):
-        from app.adapters.piston_executor import PistonExecutor
+        assert isinstance(runtimes, list)
+        assert runtimes[0]["language"] == "python"
 
-        executor = PistonExecutor(piston_service=mock_piston)
-        result = executor.validate_code("python", "code")
-
+    def test_validate_code_returns_dict(self):
+        service = PistonService()
+        result = service.validate_code("python", "print(1)")
         assert result["valid"] is True
-
-    def test_conforms_to_port(self):
-        from app.adapters.piston_executor import PistonExecutor
-
-        assert isinstance(PistonExecutor(piston_service=MockPistonService()), CodeExecutor)

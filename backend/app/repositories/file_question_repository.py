@@ -1,16 +1,20 @@
 import json
 import os
-from typing import Optional
+from typing import Dict, Optional
 
 from app.models.schemas import Question, Difficulty
+from app.models.question_validation_schemas import QuestionValidationStatus
 from app.ports.question_repository import QuestionRepository
 
 
 class FileQuestionRepository(QuestionRepository):
     def __init__(self, file_path: str):
         self.file_path = file_path
-        self._questions: dict[str, Question] = {}
+        self._questions: Dict[str, Question] = {}
+        self._validation_file = os.path.splitext(file_path)[0] + "_validations.json"
+        self._validation_statuses: Dict[str, dict] = {}
         self._load()
+        self._load_validation_statuses()
 
     def _load(self):
         if not os.path.exists(self.file_path):
@@ -23,9 +27,19 @@ class FileQuestionRepository(QuestionRepository):
             q = Question(**item)
             self._questions[q.id] = q
 
+    def _load_validation_statuses(self):
+        if not os.path.exists(self._validation_file):
+            return
+        with open(self._validation_file, "r", encoding="utf-8") as f:
+            self._validation_statuses = json.load(f)
+
+    def _save_validation_statuses(self):
+        with open(self._validation_file, "w", encoding="utf-8") as f:
+            json.dump(self._validation_statuses, f, indent=2)
+
     async def get_all(
         self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None
-    ) -> list[Question]:
+    ) -> list:
         result = list(self._questions.values())
         if difficulty:
             result = [q for q in result if q.difficulty == difficulty]
@@ -41,7 +55,7 @@ class FileQuestionRepository(QuestionRepository):
         query: str,
         difficulty: Optional[Difficulty] = None,
         category: Optional[str] = None,
-    ) -> list[Question]:
+    ) -> list:
         query = query.lower()
         result = [
             q
@@ -54,13 +68,13 @@ class FileQuestionRepository(QuestionRepository):
             result = [q for q in result if q.category.lower() == category.lower()]
         return result
 
-    async def get_categories(self) -> list[str]:
+    async def get_categories(self) -> list:
         cats = set()
         for q in self._questions.values():
             cats.add(q.category)
         return sorted(cats)
 
-    async def get_company_tags(self) -> list[str]:
+    async def get_company_tags(self) -> list:
         tags = set()
         for q in self._questions.values():
             for tag in q.company_tags:
@@ -69,3 +83,18 @@ class FileQuestionRepository(QuestionRepository):
 
     async def add(self, question: Question) -> None:
         self._questions[question.id] = question
+
+    async def save_validation_status(
+        self, question_id: str, status: QuestionValidationStatus
+    ) -> None:
+        self._validation_statuses[question_id] = {
+            "is_validated": status.is_validated,
+            "last_validated": status.last_validated.isoformat() if status.last_validated else None,
+            "validation_passed": status.validation_passed,
+            "validation_errors": status.validation_errors,
+            "validation_warnings": status.validation_warnings,
+        }
+        self._save_validation_statuses()
+
+    async def get_validation_statuses(self) -> Dict[str, dict]:
+        return dict(self._validation_statuses)
