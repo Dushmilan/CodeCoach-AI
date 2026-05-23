@@ -51,6 +51,7 @@ services:
     restart: unless-stopped
     ports:
       - "2000:2000"
+    privileged: true
     volumes:
       - piston-data:/piston
     networks:
