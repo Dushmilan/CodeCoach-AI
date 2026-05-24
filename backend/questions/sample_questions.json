@@ -85,7 +85,11 @@
           "description": "Domain starts with dot"
         }
       ],
-      "company_tags": ["Google", "Microsoft", "Amazon"],
+      "company_tags": [
+        "Google",
+        "Microsoft",
+        "Amazon"
+      ],
       "hints": [
         "Check for exactly one '@' symbol in the email",
         "Split the email at '@' and validate both parts separately",
@@ -182,7 +186,11 @@
           "description": "Multiple empty fields"
         }
       ],
-      "company_tags": ["Amazon", "Google", "Netflix"],
+      "company_tags": [
+        "Amazon",
+        "Google",
+        "Netflix"
+      ],
       "hints": [
         "Track whether you're inside a quoted field with a boolean flag",
         "Handle escaped quotes (\"\") by checking for consecutive quotes",
@@ -278,7 +286,11 @@
           "description": "Number with letters (letters ignored)"
         }
       ],
-      "company_tags": ["Salesforce", "HubSpot", "Microsoft"],
+      "company_tags": [
+        "Salesforce",
+        "HubSpot",
+        "Microsoft"
+      ],
       "hints": [
         "First extract only the digits from the input string",
         "Check if the number has a country code (more than 10 digits)",
@@ -364,7 +376,11 @@
           "description": "Three different priced items"
         }
       ],
-      "company_tags": ["Amazon", "Shopify", "Stripe"],
+      "company_tags": [
+        "Amazon",
+        "Shopify",
+        "Stripe"
+      ],
       "hints": [
         "Calculate subtotal by summing price * quantity for each item",
         "Apply discount before calculating tax",
@@ -456,7 +472,11 @@
           "description": "Multiple duplicate groups"
         }
       ],
-      "company_tags": ["PayPal", "Stripe", "Visa"],
+      "company_tags": [
+        "PayPal",
+        "Stripe",
+        "Visa"
+      ],
       "hints": [
         "Parse timestamps to compare time differences",
         "Use case-insensitive comparison for merchant names",
@@ -543,7 +563,11 @@
           "description": "Handle null values"
         }
       ],
-      "company_tags": ["Salesforce", "HubSpot", "Segment"],
+      "company_tags": [
+        "Salesforce",
+        "HubSpot",
+        "Segment"
+      ],
       "hints": [
         "Sort profiles by updated_at timestamp before merging",
         "Use a recursive merge function for nested objects",
@@ -645,7 +669,11 @@
           "description": "Valid with @ symbol"
         }
       ],
-      "company_tags": ["Google", "Microsoft", "Okta"],
+      "company_tags": [
+        "Google",
+        "Microsoft",
+        "Okta"
+      ],
       "hints": [
         "Check each requirement separately and collect all errors",
         "Use regex or character class checks for uppercase, lowercase, digit, special",
@@ -732,7 +760,11 @@
           "description": "Meetings at search range boundaries"
         }
       ],
-      "company_tags": ["Google", "Microsoft", "Calendly"],
+      "company_tags": [
+        "Google",
+        "Microsoft",
+        "Calendly"
+      ],
       "hints": [
         "Convert time strings to minutes for easier calculation",
         "Merge all meetings from all participants into a single timeline",
@@ -819,7 +851,11 @@
           "description": "Filter by specific source"
         }
       ],
-      "company_tags": ["Datadog", "Splunk", "New Relic"],
+      "company_tags": [
+        "Datadog",
+        "Splunk",
+        "New Relic"
+      ],
       "hints": [
         "Use regex to parse the log format: \\[(.*?)\\] \\[(.*?)\\] \\[(.*?)\\] - (.*)",
         "Create a level hierarchy: DEBUG < INFO < WARN < ERROR < FATAL",
@@ -921,7 +957,11 @@
           "description": "Spaces are valid characters"
         }
       ],
-      "company_tags": ["Google", "Amazon", "Dropbox"],
+      "company_tags": [
+        "Google",
+        "Amazon",
+        "Dropbox"
+      ],
       "hints": [
         "Iterate through string, counting consecutive identical characters",
         "Only add count if run length >= 2",
@@ -937,6 +977,206 @@
         "Compression only applied if result is shorter",
         "Run length can be any positive integer"
       ]
+    },
+    {
+      "title": "First Duplicate in Array",
+      "difficulty": "easy",
+      "category": "Arrays & Hashing",
+      "company_tags": [
+        "Amazon",
+        "Microsoft"
+      ],
+      "description": "Given an array of integers, find and return the first duplicate element in the array. If no duplicate element is found, return -1. You can assume that the array is not empty and contains only unique integers initially.",
+      "examples": [
+        {
+          "input": "[2, 3, 4, 5, 2]",
+          "output": "2",
+          "explanation": "The first duplicate element in the array is 2."
+        },
+        {
+          "input": "[1, 2, 3, 4, 5]",
+          "output": "-1",
+          "explanation": "No duplicate element is found in the array."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[2, 3, 4, 5, 2]",
+          "expected_output": "2",
+          "description": "Test case for finding the first duplicate element.",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5]",
+          "expected_output": "-1",
+          "description": "Test case for when no duplicate element is found.",
+          "hidden": false
+        },
+        {
+          "input": "[5, 5, 5, 5, 5]",
+          "expected_output": "5",
+          "description": "Test case for when all elements are duplicates.",
+          "hidden": true
+        },
+        {
+          "input": "[10, 20, 30, 40, 50]",
+          "expected_output": "-1",
+          "description": "Test case for when all elements are unique.",
+          "hidden": true
+        }
+      ],
+      "starter": {
+        "python": "def first_duplicate(arr):",
+        "javascript": "function firstDuplicate(arr) {",
+        "java": "public int firstDuplicate(int[] arr) {"
+      },
+      "hints": [
+        "Use a hash set to keep track of the elements you have seen so far.",
+        "Iterate through the array and check if each element is already in the hash set."
+      ],
+      "solution": "The optimal solution is to use a hash set to keep track of the elements you have seen so far. Iterate through the array and check if each element is already in the hash set. If it is, return the element as the first duplicate. If not, add the element to the hash set.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(n)",
+      "constraints": [
+        "The array is not empty and contains only unique integers initially.",
+        "The array may contain duplicate elements."
+      ],
+      "id": "first-duplicate-in-array"
+    },
+    {
+      "title": "Minimum Window Substring",
+      "difficulty": "medium",
+      "category": "Sliding Window",
+      "company_tags": [
+        "Amazon",
+        "Microsoft",
+        "Google"
+      ],
+      "description": "Given two strings `s` and `t`, find the minimum window substring of `s` that contains all the characters of `t`. Return the minimum window substring if exists, otherwise return an empty string.",
+      "examples": [
+        {
+          "input": "ADOBECODEBANC",
+          "t": "ABC",
+          "output": "BANC",
+          "explanation": "The minimum window substring of 'ADOBECODEBANC' that contains all the characters of 'ABC' is 'BANC'."
+        },
+        {
+          "input": "a",
+          "t": "a",
+          "output": "a",
+          "explanation": "The minimum window substring of 'a' that contains all the characters of 'a' is 'a'."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "ADOBECODEBANC",
+          "t": "ABC",
+          "expected_output": "BANC",
+          "description": "Minimum window substring",
+          "hidden": false
+        },
+        {
+          "input": "ADOBECODEBANC",
+          "t": "ABC",
+          "expected_output": "BANC",
+          "description": "Minimum window substring (hidden)",
+          "hidden": true
+        },
+        {
+          "input": "a",
+          "t": "a",
+          "expected_output": "a",
+          "description": "Minimum window substring",
+          "hidden": false
+        },
+        {
+          "input": "a",
+          "t": "a",
+          "expected_output": "a",
+          "description": "Minimum window substring (hidden)",
+          "hidden": true
+        }
+      ],
+      "starter": {
+        "python": "def min_window(s, t):",
+        "javascript": "function minWindow(s, t) {",
+        "java": "public String minWindow(String s, String t) {"
+      },
+      "hints": [
+        "Use a sliding window approach to keep track of the minimum window substring.",
+        "Use a data structure like a HashMap to efficiently keep track of the frequency of each character.",
+        "Consider using a dynamic programming approach to solve this problem."
+      ],
+      "solution": "The optimal solution uses a HashMap to keep track of the frequency of each character in the current window. The window is updated whenever a character is added or removed.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(1)",
+      "constraints": [
+        "1 <= s.length, t.length <= 10^5",
+        "s and t consist of English letters"
+      ],
+      "id": "minimum-window-substring"
+    },
+    {
+      "title": "Find First Greater Element",
+      "difficulty": "easy",
+      "category": "Binary Search",
+      "company_tags": [
+        "Google",
+        "Amazon",
+        "Microsoft"
+      ],
+      "description": "Given a sorted array of integers, write a function that finds the first element that is greater than a given target. If no such element exists, return -1. For example, if the input array is [1, 2, 3, 4, 5] and the target is 3, the function should return 4. If the target is 5, the function should return -1.",
+      "examples": [
+        {
+          "input": "[1, 2, 3, 4, 5]",
+          "output": "4",
+          "explanation": "The first element greater than 3 in the array [1, 2, 3, 4, 5] is 4."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[1, 2, 3, 4, 5]",
+          "expected_output": "4",
+          "description": "First element greater than 3",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5]",
+          "expected_output": "-1",
+          "description": "No element greater than 5",
+          "hidden": false
+        },
+        {
+          "input": "[1, 1, 1, 1, 1]",
+          "expected_output": "-1",
+          "description": "No element greater than 1",
+          "hidden": true
+        },
+        {
+          "input": "[5, 5, 5, 5, 5]",
+          "expected_output": "-1",
+          "description": "No element greater than 5",
+          "hidden": true
+        }
+      ],
+      "starter": {
+        "python": "def find_first_greater(nums, target):",
+        "javascript": "function findFirstGreater(nums, target) {",
+        "java": "public int findFirstGreater(int[] nums, int target) {"
+      },
+      "hints": [
+        "Use a binary search algorithm to find the first element greater than the target.",
+        "Keep track of the current search range.",
+        "Adjust the search range based on the comparison with the middle element."
+      ],
+      "solution": "The optimal solution is to use a binary search algorithm to find the first element greater than the target. Start with the entire array as the search range and repeatedly divide the range in half. Compare the middle element with the target. If the middle element is greater than the target, adjust the search range to the left half. If the middle element is not greater than the target, adjust the search range to the right half. Repeat the comparison and adjustment until the search range is empty or the first element greater than the target is found.",
+      "time_complexity": "O(log n)",
+      "space_complexity": "O(1)",
+      "constraints": [
+        "The input array is sorted in ascending order.",
+        "The input array is not empty."
+      ],
+      "id": "find-first-greater-element"
     }
   ]
 }

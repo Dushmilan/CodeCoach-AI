@@ -300,13 +300,14 @@ def main():
 
     if args.generate:
         logger.info("Generating questions...")
-        from scripts.generate_questions import main as gen_main
+        from scripts.generate_questions import generate_questions as gen_core
 
-        gen_main()
-        questions = load_existing_questions(QUESTIONS_FILE)
-        existing_count = len(questions)
-        logger.info(f"Loaded {existing_count} questions from {QUESTIONS_FILE}")
-        new_questions = questions
+        generated = gen_core(api_key, args.model)
+        if not generated:
+            logger.error("No questions generated!")
+            sys.exit(1)
+        logger.info(f"Generated {len(generated)} new questions")
+        new_questions = generated
     elif args.input:
         questions = load_existing_questions(args.input)
         logger.info(f"Loaded {len(questions)} questions from {args.input}")

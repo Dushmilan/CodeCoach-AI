@@ -182,34 +182,11 @@ def save_questions(questions: List[dict]):
     logger.info(f"Saved {len(questions)} questions to {QUESTIONS_FILE}")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Generate coding questions using NVIDIA NIM"
-    )
-    parser.add_argument(
-        "--api-key", help="NVIDIA API key (default: NVIDIA_API_KEY env var)"
-    )
-    parser.add_argument(
-        "--model", default="meta/llama-3.1-8b-instruct", help="NVIDIA model"
-    )
-    parser.add_argument(
-        "--questions-per-topic", type=int, default=6, help="Questions per topic"
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Print questions without saving"
-    )
-    args = parser.parse_args()
-
-    api_key = args.api_key or os.getenv("NVIDIA_API_KEY")
-    if not api_key:
-        logger.error("NVIDIA_API_KEY not set. Use --api-key or set env var.")
-        sys.exit(1)
-
+def generate_questions(api_key: str, model: str = "meta/llama-3.1-8b-instruct", target: int = 90, questions_per_topic: int = 6) -> List[dict]:
     load_existing_ids()
 
     all_questions = []
     total = 0
-    target = 90
 
     for topic in TOPICS:
         for difficulty in ["easy", "medium", "hard"]:
@@ -217,13 +194,13 @@ def main():
                 break
 
             remaining = target - total
-            per_diff = min(args.questions_per_topic, remaining)
+            per_diff = min(questions_per_topic, remaining)
 
             logger.info(
                 f"\n=== Generating {per_diff} {difficulty} questions: {topic} ==="
             )
             prompt = build_prompt(topic, difficulty, per_diff)
-            raw = call_nvidia(prompt, api_key, args.model)
+            raw = call_nvidia(prompt, api_key, model)
             if not raw:
                 logger.warning(f"Failed to generate for {topic}/{difficulty}, skipping")
                 continue
@@ -241,6 +218,34 @@ def main():
 
         if total >= target:
             break
+
+    return all_questions
+
+
+def main(args_list: Optional[List[str]] = None):
+    parser = argparse.ArgumentParser(
+        description="Generate coding questions using NVIDIA NIM"
+    )
+    parser.add_argument(
+        "--api-key", help="NVIDIA API key (default: NVIDIA_API_KEY env var)"
+    )
+    parser.add_argument(
+        "--model", default="meta/llama-3.1-8b-instruct", help="NVIDIA model"
+    )
+    parser.add_argument(
+        "--questions-per-topic", type=int, default=6, help="Questions per topic"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print questions without saving"
+    )
+    args = parser.parse_args(args_list)
+
+    api_key = args.api_key or os.getenv("NVIDIA_API_KEY")
+    if not api_key:
+        logger.error("NVIDIA_API_KEY not set. Use --api-key or set env var.")
+        sys.exit(1)
+
+    all_questions = generate_questions(api_key, args.model, questions_per_topic=args.questions_per_topic)
 
     if not all_questions:
         logger.error("No questions generated!")
