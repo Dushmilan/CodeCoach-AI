@@ -1,5 +1,5 @@
 import pytest
-from app.services.execution_result_formatter import ExecutionResultFormatter
+from app.services.piston_service import ExecutionResultFormatter
 
 
 @pytest.fixture

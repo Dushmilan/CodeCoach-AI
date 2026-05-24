@@ -1,6 +1,6 @@
 import pytest
-from app.adapters.code_wrappers import get_wrapper, WRAPPERS
-from app.adapters.code_wrappers.base import CodeWrapper
+from app.services.piston_service import get_wrapper
+from app.services.piston_service import CodeWrapper
 
 
 class TestCodeWrapperABC:
@@ -193,22 +193,23 @@ class TestJavaCodeWrapper:
 class TestGetWrapper:
     def test_returns_python_wrapper(self):
         wrapper = get_wrapper("python")
-        from app.adapters.code_wrappers.python_wrapper import PythonCodeWrapper
+        from app.services.piston_service import PythonCodeWrapper
         assert isinstance(wrapper, PythonCodeWrapper)
 
     def test_returns_javascript_wrapper(self):
         wrapper = get_wrapper("javascript")
-        from app.adapters.code_wrappers.javascript_wrapper import JavaScriptCodeWrapper
+        from app.services.piston_service import JavaScriptCodeWrapper
         assert isinstance(wrapper, JavaScriptCodeWrapper)
 
     def test_returns_java_wrapper(self):
         wrapper = get_wrapper("java")
-        from app.adapters.code_wrappers.java_wrapper import JavaCodeWrapper
+        from app.services.piston_service import JavaCodeWrapper
         assert isinstance(wrapper, JavaCodeWrapper)
 
     def test_returns_none_for_unknown_language(self):
         wrapper = get_wrapper("brainfuck")
         assert wrapper is None
 
-    def test_wrappers_registry_contains_three_languages(self):
-        assert set(WRAPPERS.keys()) == {"python", "javascript", "java"}
+    def test_get_wrapper_handles_three_languages(self):
+        for lang in ["python", "javascript", "java"]:
+            assert get_wrapper(lang) is not None

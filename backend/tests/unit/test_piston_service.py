@@ -159,12 +159,11 @@ class TestPistonServiceRuntimes:
             assert runtimes[0]["language"] == "python"
 
 
-class TestPistonServiceFileExtension:
+class TestFileExtension:
     def test_file_extensions(self):
-        from app.services.piston_service import PistonService
-        service = PistonService()
-        assert service._get_file_extension("python") == "py"
-        assert service._get_file_extension("javascript") == "js"
-        assert service._get_file_extension("java") == "java"
-        assert service._get_file_extension("cpp") == "cpp"
-        assert service._get_file_extension("unknown") == "txt"
+        from app.services.piston_service import _get_file_extension
+        assert _get_file_extension("python") == "py"
+        assert _get_file_extension("javascript") == "js"
+        assert _get_file_extension("java") == "java"
+        assert _get_file_extension("cpp") == "cpp"
+        assert _get_file_extension("unknown") == "txt"

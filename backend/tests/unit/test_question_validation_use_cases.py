@@ -165,7 +165,7 @@ class TestStructureValidationUseCase:
     @pytest.mark.asyncio
     async def test_valid_question_passes_structure_validation(self, valid_question):
         """Test that a valid question passes structure validation."""
-        from app.use_cases.validate_structure import StructureValidationUseCase
+        from app.services.question_validator import StructureValidationUseCase
         
         use_case = StructureValidationUseCase()
         result = await use_case.execute(valid_question)
@@ -177,7 +177,7 @@ class TestStructureValidationUseCase:
     @pytest.mark.asyncio
     async def test_question_with_empty_id_fails_validation(self, invalid_question_missing_id):
         """Test that a question with empty ID fails validation."""
-        from app.use_cases.validate_structure import StructureValidationUseCase
+        from app.services.question_validator import StructureValidationUseCase
         
         use_case = StructureValidationUseCase()
         result = await use_case.execute(invalid_question_missing_id)
@@ -191,7 +191,7 @@ class TestStructureValidationUseCase:
         valid_question_data["title"] = "Hi"  # Too short
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_structure import StructureValidationUseCase
+        from app.services.question_validator import StructureValidationUseCase
         
         use_case = StructureValidationUseCase()
         result = await use_case.execute(question)
@@ -205,7 +205,7 @@ class TestStructureValidationUseCase:
         valid_question_data["description"] = "Too short"  # Less than 50 chars
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_structure import StructureValidationUseCase
+        from app.services.question_validator import StructureValidationUseCase
         
         use_case = StructureValidationUseCase()
         result = await use_case.execute(question)
@@ -219,7 +219,7 @@ class TestStructureValidationUseCase:
         valid_question_data["starter"]["python"] = ""  # Empty Python starter
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_structure import StructureValidationUseCase
+        from app.services.question_validator import StructureValidationUseCase
         
         use_case = StructureValidationUseCase()
         result = await use_case.execute(question)
@@ -238,7 +238,7 @@ class TestTestCaseValidationUseCase:
     @pytest.mark.asyncio
     async def test_question_with_no_test_cases_fails_validation(self, question_with_invalid_test_cases):
         """Test that a question with no test cases fails validation."""
-        from app.use_cases.validate_test_cases import TestCaseValidationUseCase
+        from app.services.question_validator import TestCaseValidationUseCase
         
         use_case = TestCaseValidationUseCase()
         result = await use_case.execute(question_with_invalid_test_cases)
@@ -254,7 +254,7 @@ class TestTestCaseValidationUseCase:
         ]
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_test_cases import TestCaseValidationUseCase
+        from app.services.question_validator import TestCaseValidationUseCase
         
         use_case = TestCaseValidationUseCase()
         result = await use_case.execute(question)
@@ -264,7 +264,7 @@ class TestTestCaseValidationUseCase:
     @pytest.mark.asyncio
     async def test_test_case_executability_validated_with_piston(self, valid_question, mock_piston_service):
         """Test that test case executability is validated using Piston."""
-        from app.use_cases.validate_test_cases import TestCaseValidationUseCase
+        from app.services.question_validator import TestCaseValidationUseCase
         from app.ports.code_executor import ExecutionResult
 
         # Mock executor response for successful execution
@@ -286,7 +286,7 @@ class TestTestCaseValidationUseCase:
         ]
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_test_cases import TestCaseValidationUseCase
+        from app.services.question_validator import TestCaseValidationUseCase
         
         use_case = TestCaseValidationUseCase()
         result = await use_case.execute(question)
@@ -305,7 +305,7 @@ class TestStarterCodeValidationUseCase:
     @pytest.mark.asyncio
     async def test_valid_starter_code_passes_validation(self, valid_question, mock_piston_service):
         """Test that valid starter code passes validation."""
-        from app.use_cases.validate_starter_code import StarterCodeValidationUseCase
+        from app.services.question_validator import StarterCodeValidationUseCase
         from app.ports.code_executor import ExecutionResult
 
         # Mock executor to return success for syntax check
@@ -319,7 +319,7 @@ class TestStarterCodeValidationUseCase:
     @pytest.mark.asyncio
     async def test_invalid_python_starter_code_fails_validation(self, question_with_bad_starter_code):
         """Test that invalid Python starter code fails validation."""
-        from app.use_cases.validate_starter_code import StarterCodeValidationUseCase
+        from app.services.question_validator import StarterCodeValidationUseCase
         from unittest.mock import AsyncMock
         from app.ports.code_executor import CodeExecutor, ExecutionResult
 
@@ -335,7 +335,7 @@ class TestStarterCodeValidationUseCase:
     @pytest.mark.asyncio
     async def test_all_languages_validated(self, valid_question):
         """Test that all three languages are validated."""
-        from app.use_cases.validate_starter_code import StarterCodeValidationUseCase
+        from app.services.question_validator import StarterCodeValidationUseCase
         from unittest.mock import AsyncMock
         from app.ports.code_executor import CodeExecutor, ExecutionResult
 
@@ -359,7 +359,7 @@ class TestSolutionValidationUseCase:
     @pytest.mark.asyncio
     async def test_solution_passes_all_test_cases(self, valid_question_data, mock_piston_service):
         """Test that the reference solution passes all test cases."""
-        from app.use_cases.validate_solution import SolutionValidationUseCase
+        from app.services.question_validator import SolutionValidationUseCase
         from app.ports.code_executor import ExecutionResult
 
         # Create a question with actual solution code
@@ -402,7 +402,7 @@ print(json.dumps(result))
         valid_question_data["solution"] = "def solve(nums): return []"  # Wrong solution
         question = Question(**valid_question_data)
 
-        from app.use_cases.validate_solution import SolutionValidationUseCase
+        from app.services.question_validator import SolutionValidationUseCase
         from app.ports.code_executor import ExecutionResult
 
         # Mock executor to return wrong output
@@ -420,7 +420,7 @@ print(json.dumps(result))
         valid_question_data["solution"] = None
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_solution import SolutionValidationUseCase
+        from app.services.question_validator import SolutionValidationUseCase
         
         use_case = SolutionValidationUseCase(executor=mock_piston_service)
         result = await use_case.execute(question)
@@ -439,7 +439,7 @@ class TestTimeLimitValidationUseCase:
     @pytest.mark.asyncio
     async def test_default_time_limits_are_valid(self, valid_question):
         """Test that default time limits are valid."""
-        from app.use_cases.validate_time_limits import TimeLimitValidationUseCase
+        from app.services.question_validator import TimeLimitValidationUseCase
         
         use_case = TimeLimitValidationUseCase()
         result = await use_case.execute(valid_question)
@@ -453,7 +453,7 @@ class TestTimeLimitValidationUseCase:
         valid_question_data["time_complexity"] = "O(n)"
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_time_limits import TimeLimitValidationUseCase
+        from app.services.question_validator import TimeLimitValidationUseCase
         
         use_case = TimeLimitValidationUseCase()
         result = await use_case.execute(question)
@@ -466,7 +466,7 @@ class TestTimeLimitValidationUseCase:
         valid_question_data["time_complexity"] = "O(n^3)"
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_time_limits import TimeLimitValidationUseCase
+        from app.services.question_validator import TimeLimitValidationUseCase
         
         use_case = TimeLimitValidationUseCase()
         result = await use_case.execute(question)
@@ -485,7 +485,7 @@ class TestFunctionSignatureValidationUseCase:
     @pytest.mark.asyncio
     async def test_valid_function_signature_passes(self, valid_question_data):
         """Test that valid function signature passes validation."""
-        from app.use_cases.validate_function_signature import FunctionSignatureValidationUseCase
+        from app.services.question_validator import FunctionSignatureValidationUseCase
         
         # Create question with valid Java method signature and Python type hints
         valid_question_data["starter"]["java"] = '''
@@ -517,7 +517,7 @@ def solve(nums: List[int]) -> List[int]:
         valid_question_data["starter"]["python"] = "def solve(nums):\n    pass"
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_function_signature import FunctionSignatureValidationUseCase
+        from app.services.question_validator import FunctionSignatureValidationUseCase
         
         use_case = FunctionSignatureValidationUseCase(require_type_hints=True)
         result = await use_case.execute(question)
@@ -531,7 +531,7 @@ def solve(nums: List[int]) -> List[int]:
         valid_question_data["starter"]["python"] = "def solve(nums) -> InvalidType:\n    pass"
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_function_signature import FunctionSignatureValidationUseCase
+        from app.services.question_validator import FunctionSignatureValidationUseCase
         
         use_case = FunctionSignatureValidationUseCase()
         result = await use_case.execute(question)
@@ -550,7 +550,7 @@ class TestOutputFormatValidationUseCase:
     @pytest.mark.asyncio
     async def test_valid_output_format_passes(self, valid_question):
         """Test that valid output format passes validation."""
-        from app.use_cases.validate_output_format import OutputFormatValidationUseCase
+        from app.services.question_validator import OutputFormatValidationUseCase
         
         use_case = OutputFormatValidationUseCase()
         result = await use_case.execute(valid_question)
@@ -567,7 +567,7 @@ class TestOutputFormatValidationUseCase:
         ]
         question = Question(**valid_question_data)
         
-        from app.use_cases.validate_output_format import OutputFormatValidationUseCase
+        from app.services.question_validator import OutputFormatValidationUseCase
         
         use_case = OutputFormatValidationUseCase()
         result = await use_case.execute(question)

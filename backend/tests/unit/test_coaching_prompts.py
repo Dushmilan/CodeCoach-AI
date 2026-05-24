@@ -4,8 +4,11 @@ from app.adapters.coaching_prompts import (
     build_structured_system_prompt,
     build_user_prompt,
     build_structured_user_prompt,
+    MODE_SECTIONS,
+    PERSONA,
+    STRUCTURED_PERSONA,
+    GENERAL_GUIDELINES,
 )
-from app.adapters.coaching_prompts.base import MODE_MAP, PERSONA, STRUCTURED_PERSONA, GENERAL_GUIDELINES
 
 
 class TestBuildSystemPrompt:
@@ -122,16 +125,16 @@ class TestBuildStructuredUserPrompt:
         assert "valid JSON object" in prompt
 
 
-class TestModeMap:
+class TestModeSections:
     def test_maps_all_five_modes(self):
-        assert set(MODE_MAP.keys()) == {"hint", "review", "explain", "debug", "freeform"}
+        assert set(MODE_SECTIONS.keys()) == {"hint", "review", "explain", "debug", "freeform"}
 
-    def test_each_mode_has_mode_section(self):
-        for name, module in MODE_MAP.items():
-            assert hasattr(module, "MODE_SECTION"), f"{name} missing MODE_SECTION"
-            assert isinstance(module.MODE_SECTION, str)
+    def test_each_mode_has_unstructured_section(self):
+        for name, entry in MODE_SECTIONS.items():
+            assert "unstructured" in entry, f"{name} missing unstructured section"
+            assert isinstance(entry["unstructured"], str)
 
-    def test_each_mode_has_structured_mode_section(self):
-        for name, module in MODE_MAP.items():
-            assert hasattr(module, "STRUCTURED_MODE_SECTION"), f"{name} missing STRUCTURED_MODE_SECTION"
-            assert isinstance(module.STRUCTURED_MODE_SECTION, str)
+    def test_each_mode_has_structured_section(self):
+        for name, entry in MODE_SECTIONS.items():
+            assert "structured" in entry, f"{name} missing structured section"
+            assert isinstance(entry["structured"], str)

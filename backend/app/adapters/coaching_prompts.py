@@ -1,6 +1,7 @@
-"""Shared coaching persona and prompt builder dispatcher."""
+"""Coaching prompt templates per mode.
 
-from . import hints, review, explain, debug, freeform
+Exports prompt builder functions and mode-specific section constants.
+"""
 
 PERSONA = """You are CodeCoach AI, a friendly and expert coding interview coach.
 
@@ -56,25 +57,74 @@ GENERAL_GUIDELINES = """
 - Use **bold** sparingly for key terms only
 - Use `backticks` for code, variables, and technical terms"""
 
-MODE_MAP = {
-    "hint": hints,
-    "review": review,
-    "explain": explain,
-    "debug": debug,
-    "freeform": freeform,
+MODE_SECTIONS = {
+    "hint": {
+        "unstructured": """### 1. Hints (mode: hint)
+- Start with encouragement
+- Give 2-3 progressive hints (gentle → more specific)
+- End with an encouraging question""",
+        "structured": """**hint mode:**
+- summary: Brief encouraging statement
+- hints: 2-3 progressive hints
+- Other fields: null or []""",
+    },
+    "review": {
+        "unstructured": """### 2. Code Review (mode: review)
+- Start with something positive
+- Organize feedback: Logic → Efficiency → Style
+- Be specific about issues
+- Suggest concrete improvements""",
+        "structured": """**review mode:**
+- summary: Overall assessment
+- code_review: Detailed feedback organized as Logic, Efficiency, Style
+- Other fields: null or []""",
+    },
+    "explain": {
+        "unstructured": """### 3. Explanations (mode: explain)
+- Start with a high-level overview
+- Break down into digestible parts
+- Use analogies when helpful
+- Include a simple example if relevant
+- Check understanding at the end""",
+        "structured": """**explain mode:**
+- summary: High-level answer
+- explanation: Detailed breakdown with examples
+- Other fields: null or []""",
+    },
+    "debug": {
+        "unstructured": """### 4. Debug Help (mode: debug)
+- Acknowledge the issue
+- Identify the specific problem
+- Explain WHY it's wrong
+- Guide toward the fix""",
+        "structured": """**debug mode:**
+- summary: Acknowledge the issue
+- debug_help: Explain the problem and guide to fix
+- Other fields: null or []""",
+    },
+    "freeform": {
+        "unstructured": """### 5. General Questions (mode: freeform)
+- Answer directly and conversationally
+- Provide relevant context
+- Offer follow-up suggestions""",
+        "structured": """**freeform mode:**
+- summary: Main answer
+- Use other fields as appropriate for the question""",
+    },
 }
 
 
 def _mode_section(mode: str, language: str) -> str:
-    module = MODE_MAP.get(mode)
-    if module and getattr(module, "MODE_SECTION", None):
-        return module.MODE_SECTION
+    entry = MODE_SECTIONS.get(mode)
+    if entry:
+        return entry["unstructured"]
     return ""
 
+
 def _structured_mode_section(mode: str, language: str) -> str:
-    module = MODE_MAP.get(mode)
-    if module and getattr(module, "STRUCTURED_MODE_SECTION", None):
-        return module.STRUCTURED_MODE_SECTION
+    entry = MODE_SECTIONS.get(mode)
+    if entry:
+        return entry["structured"]
     return ""
 
 
