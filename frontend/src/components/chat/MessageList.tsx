@@ -1,7 +1,9 @@
 'use client';
 
+import { MessageSquare } from 'lucide-react';
 import { ChatMessage } from '@/types';
 import { StructuredResponse } from './StructuredResponse';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -9,6 +11,18 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages, isTyping }: MessageListProps) {
+  if (messages.length === 0 && !isTyping) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <EmptyState
+          icon={MessageSquare}
+          title="Ask the AI Coach for help"
+          description="Get hints, code reviews, explanations, or debugging help for any problem."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((message) => (

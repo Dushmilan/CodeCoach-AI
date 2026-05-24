@@ -4,11 +4,23 @@ declare const process: { env: { NEXT_PUBLIC_API_URL?: string } };
 
 const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('auth_token');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
 export class FetchClient implements HttpClient {
   private baseUrl: string;
+  private getToken: () => string | null;
 
-  constructor(baseUrl: string = DEFAULT_BASE_URL) {
+  constructor(baseUrl: string = DEFAULT_BASE_URL, getToken?: () => string | null) {
     this.baseUrl = baseUrl;
+    this.getToken = getToken ?? getAuthToken;
   }
 
   async get<T>(path: string, options?: HttpRequestOptions): Promise<T> {
@@ -42,8 +54,10 @@ export class FetchClient implements HttpClient {
       : controller.signal;
 
     try {
+      const token = this.getToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options?.headers,
       };
 

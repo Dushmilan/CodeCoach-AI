@@ -5,9 +5,16 @@ import userEvent from '@testing-library/user-event';
 const mockSetTheme = vi.fn();
 const mockSetApiKey = vi.fn();
 const mockUseTheme = vi.hoisted(() => vi.fn());
+const mockUseAuth = vi.hoisted(() => vi.fn(() => ({
+  user: null, isAuthenticated: false, isLoading: false, logout: vi.fn(),
+})));
 
 vi.mock('@/hooks', () => ({
   useTheme: mockUseTheme,
+}));
+
+vi.mock('@/providers', () => ({
+  useAuth: mockUseAuth,
 }));
 
 vi.mock('@/hooks/use-settings', () => ({
@@ -30,6 +37,7 @@ import { Header } from './Header';
 describe('Header', () => {
   beforeEach(() => {
     mockUseTheme.mockReturnValue({ theme: 'dark', setTheme: mockSetTheme });
+    mockUseAuth.mockReturnValue({ user: null, isAuthenticated: false, isLoading: false, logout: vi.fn() });
     vi.clearAllMocks();
   });
 
@@ -52,7 +60,7 @@ describe('Header', () => {
     const user = userEvent.setup();
     render(<Header />);
     const buttons = screen.getAllByRole('button');
-    const themeButton = buttons[1];
+    const themeButton = buttons.find(b => b.querySelector('.lucide-sun, .lucide-moon'))!;
     await user.click(themeButton);
     expect(mockSetTheme).toHaveBeenCalledWith('light');
   });

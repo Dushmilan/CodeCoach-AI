@@ -15,4 +15,9 @@ class UserRepository(ABC):
     async def get_by_id(self, user_id: str) -> Optional[UserInDB]: ...
 
     @abstractmethod
+    async def get_by_oauth(
+        self, provider: str, oauth_id: str
+    ) -> Optional[UserInDB]: ...
+
+    @abstractmethod
     async def add(self, user: UserInDB) -> None: ...

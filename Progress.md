@@ -102,8 +102,8 @@
 
 | Area | Missing | Plan |
 |---|---|---|
-| **Questions** | 90 of 100 | AI-assisted generation across 14 standard DSA topics |
-| **Auth** | Google OAuth | Add Passport/next-auth or custom OAuth flow |
-| **Polish** | Empty states, error handling, onboarding | UX pass before launch |
-| **Educator materials** | No professor-facing content | EDUCATORS.md + For Educators page |
-| **Privacy** | No policy page | `/privacy` route with plain-language policy |
+| ~~**Questions**~~ | 90 of 100 ✅ | AI-assisted generation script (`backend/scripts/generate_questions.py`) |
+| ~~**Auth**~~ | Google OAuth ✅ | Supabase-based Google OAuth + `/api/auth/supabase` endpoint + login/register pages + AuthProvider + auth-gated actions |
+| ~~**Polish**~~ | Empty states, error handling, onboarding ✅ | EmptyState component, Toast system, OnboardingTour, login page with redirect hints, output panel placeholder |
+| ~~**Educator materials**~~ | No professor-facing content ✅ | EDUCATORS.md + For Educators page (existing) |
+| ~~**Privacy**~~ | No policy page ✅ | `/privacy` route with plain-language policy (existing) |

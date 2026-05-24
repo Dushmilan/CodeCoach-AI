@@ -1,4 +1,6 @@
+import os
 import pytest
+import httpx
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone, timedelta
 
@@ -8,7 +10,7 @@ from app.models.auth_schemas import (
 )
 from app.services.auth_service import (
     AuthService, hash_password, verify_password,
-    create_access_token, decode_access_token,
+    create_access_token, decode_access_token, _user_to_response,
 )
 
 
@@ -36,6 +38,7 @@ def mock_repo():
     repo.get_by_username = AsyncMock(return_value=None)
     repo.get_by_email = AsyncMock(return_value=None)
     repo.get_by_id = AsyncMock(return_value=None)
+    repo.get_by_oauth = AsyncMock(return_value=None)
     repo.add = AsyncMock()
     return repo
 
@@ -232,3 +235,93 @@ class TestAuthServiceGetCurrentUser:
 
         with pytest.raises(ValueError, match="deactivated"):
             await service.get_current_user(token)
+
+
+class TestAuthServiceSupabaseLogin:
+    @pytest.fixture(autouse=True)
+    def setup_env(self):
+        with patch.dict(os.environ, {
+            "SUPABASE_URL": "https://test.supabase.co",
+            "SUPABASE_ANON_KEY": "test-anon-key",
+        }):
+            yield
+
+    @pytest.mark.asyncio
+    async def test_login_with_supabase_creates_new_user(self, mock_repo):
+        supabase_user = {"id": "google-123", "email": "newuser@gmail.com"}
+
+        async def mock_get(url, headers=None):
+            mock_resp = MagicMock()
+            mock_resp.status_code = 200
+            mock_resp.json.return_value = supabase_user
+            return mock_resp
+
+        with patch.object(httpx, "AsyncClient") as mock_client_cls:
+            mock_client = MagicMock()
+            mock_client.__aenter__.return_value.get = mock_get
+            mock_client_cls.return_value = mock_client
+
+            service = AuthService(repository=mock_repo)
+            result = await service.login_with_supabase("valid_token")
+
+        assert result.user.username == "newuser"
+        assert result.user.email == "newuser@gmail.com"
+        assert result.access_token is not None
+        mock_repo.add.assert_called_once()
+        added_user = mock_repo.add.call_args[0][0]
+        assert added_user.oauth_provider == "google"
+        assert added_user.oauth_id == "google-123"
+
+    @pytest.mark.asyncio
+    async def test_login_with_supabase_returns_existing_user(self, mock_repo):
+        existing_user = UserInDB(
+            id="user-1", username="existing", email="existing@gmail.com",
+            hashed_password="", created_at=datetime.now(timezone.utc),
+            is_active=True, oauth_provider="google", oauth_id="google-123",
+        )
+        mock_repo.get_by_oauth = AsyncMock(return_value=existing_user)
+
+        supabase_user = {"id": "google-123", "email": "existing@gmail.com"}
+
+        async def mock_get(url, headers=None):
+            mock_resp = MagicMock()
+            mock_resp.status_code = 200
+            mock_resp.json.return_value = supabase_user
+            return mock_resp
+
+        with patch.object(httpx, "AsyncClient") as mock_client_cls:
+            mock_client = MagicMock()
+            mock_client.__aenter__.return_value.get = mock_get
+            mock_client_cls.return_value = mock_client
+
+            service = AuthService(repository=mock_repo)
+            result = await service.login_with_supabase("valid_token")
+
+        assert result.user.username == "existing"
+        assert result.user.email == "existing@gmail.com"
+        mock_repo.add.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_login_with_supabase_invalid_token(self, mock_repo):
+        async def mock_get(url, headers=None):
+            mock_resp = MagicMock()
+            mock_resp.status_code = 401
+            return mock_resp
+
+        with patch.object(httpx, "AsyncClient") as mock_client_cls:
+            mock_client = MagicMock()
+            mock_client.__aenter__.return_value.get = mock_get
+            mock_client_cls.return_value = mock_client
+
+            service = AuthService(repository=mock_repo)
+            with pytest.raises(ValueError, match="Invalid Supabase token"):
+                await service.login_with_supabase("bad_token")
+
+        mock_repo.add.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_login_with_supabase_no_config(self, mock_repo):
+        with patch.dict(os.environ, {}, clear=True):
+            service = AuthService(repository=mock_repo)
+            with pytest.raises(ValueError, match="Supabase not configured"):
+                await service.login_with_supabase("token")

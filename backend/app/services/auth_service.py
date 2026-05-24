@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
+import httpx
 from jose import JWTError, jwt
 
 from app.models.auth_schemas import (
@@ -122,6 +123,70 @@ class AuthService:
 
         if not user.is_active:
             raise ValueError("Account is deactivated")
+
+        token, expires_in = create_access_token(
+            TokenData(user_id=user.id, username=user.username)
+        )
+        return TokenResponse(
+            access_token=token,
+            expires_in=expires_in,
+            user=_user_to_response(user),
+        )
+
+    async def login_with_supabase(self, access_token: str) -> TokenResponse:
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_anon_key = os.getenv("SUPABASE_ANON_KEY")
+        if not supabase_url or not supabase_anon_key:
+            logger.error("SUPABASE_URL or SUPABASE_ANON_KEY not set")
+            raise ValueError("Supabase not configured")
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{supabase_url}/auth/v1/user",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "apikey": supabase_anon_key,
+                },
+            )
+
+        if response.status_code != 200:
+            raise ValueError("Invalid Supabase token")
+
+        supabase_user = response.json()
+        oauth_id = supabase_user.get("id")
+        email = supabase_user.get("email", "")
+        if not oauth_id:
+            raise ValueError("Invalid Supabase token")
+
+        existing = await self.repository.get_by_oauth("google", oauth_id)
+        if existing:
+            token, expires_in = create_access_token(
+                TokenData(user_id=existing.id, username=existing.username)
+            )
+            return TokenResponse(
+                access_token=token,
+                expires_in=expires_in,
+                user=_user_to_response(existing),
+            )
+
+        username = email.split("@")[0] if email else f"user_{oauth_id[:8]}"
+        base_username = username
+        counter = 1
+        while await self.repository.get_by_username(username):
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        user = UserInDB(
+            id=str(uuid.uuid4()),
+            username=username,
+            email=email,
+            hashed_password="",
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
+            oauth_provider="google",
+            oauth_id=oauth_id,
+        )
+        await self.repository.add(user)
 
         token, expires_in = create_access_token(
             TokenData(user_id=user.id, username=user.username)

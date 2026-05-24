@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.auth_schemas import (
     UserRegisterRequest,
     UserLoginRequest,
+    SupabaseAuthRequest,
     TokenResponse,
     UserResponse,
 )
@@ -28,6 +29,19 @@ async def login(request: UserLoginRequest):
     auth_service = AuthService()
     try:
         return await auth_service.login(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+@router.post("/supabase", response_model=TokenResponse)
+async def login_with_supabase(request: SupabaseAuthRequest):
+    auth_service = AuthService()
+    try:
+        return await auth_service.login_with_supabase(request.access_token)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

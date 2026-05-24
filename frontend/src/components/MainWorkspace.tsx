@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Header } from '@/components/header/Header';
 import { Sidebar } from '@/components/sidebar/Sidebar';
+import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { Question, QuestionSummary, Language } from '@/types';
 import { useQuestion } from '@/features/question/question.hook';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
@@ -81,6 +82,7 @@ export function MainWorkspace() {
 
   return (
     <MainLayoutContainer>
+      <OnboardingTour />
       <Sidebar
         questions={questions}
         selectedQuestion={selectedQuestion}

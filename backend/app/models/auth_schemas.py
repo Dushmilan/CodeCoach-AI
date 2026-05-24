@@ -34,6 +34,10 @@ class TokenData(BaseModel):
     user_id: Optional[str] = None
 
 
+class SupabaseAuthRequest(BaseModel):
+    access_token: str
+
+
 class UserInDB(BaseModel):
     id: str
     username: str
@@ -41,3 +45,5 @@ class UserInDB(BaseModel):
     hashed_password: str
     created_at: datetime
     is_active: bool = True
+    oauth_provider: Optional[str] = None
+    oauth_id: Optional[str] = None

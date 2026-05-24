@@ -3,8 +3,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeEditor } from '@/components/editor/CodeEditor';
 import { Language } from '@/types';
-import { ChevronDown, ChevronUp, GripHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronUp, GripHorizontal, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface CodeEditorContainerProps {
   language: Language;
@@ -87,59 +88,67 @@ export function CodeEditorContainer({
       </div>
 
       {/* Output Panel Section */}
-      {hasOutput && (
-        <>
-          {/* Resize Handle */}
-          {!outputCollapsed && (
-            <div
-              className={cn(
-                "h-2 bg-border cursor-row-resize hover:bg-primary/50 transition-colors flex items-center justify-center",
-                isResizing && "bg-primary/50"
-              )}
-              onMouseDown={handleResizeStart}
-            >
-              <GripHorizontal className="h-4 w-4 text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Output Panel */}
-          <div
-            className={cn(
-              "border-t border-border bg-secondary/30 overflow-hidden flex flex-col",
-              outputCollapsed && "h-auto"
-            )}
-            style={!outputCollapsed ? { height: `${outputHeight}px` } : undefined}
-          >
-            {/* Output Header with Collapse Button */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-secondary/50">
-              <span className="text-sm font-medium">Output</span>
-              <button
-                onClick={() => setOutputCollapsed(!outputCollapsed)}
-                className="p-1 hover:bg-secondary rounded transition-colors"
-                aria-label={outputCollapsed ? "Expand output" : "Collapse output"}
-              >
-                {outputCollapsed ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-
-            {/* Output Content */}
+      <div className={cn(
+        "border-t border-border bg-secondary/30 overflow-hidden flex flex-col",
+        !hasOutput && "h-auto border-0 bg-transparent"
+      )}>
+        {hasOutput ? (
+          <>
+            {/* Resize Handle */}
             {!outputCollapsed && (
-              <div className="flex-1 overflow-auto p-3">
-                <pre className={cn(
-                  "text-sm whitespace-pre-wrap",
-                  error ? "text-red-400" : "text-foreground"
-                )}>
-                  {error || output}
-                </pre>
+              <div
+                className={cn(
+                  "h-2 bg-border cursor-row-resize hover:bg-primary/50 transition-colors flex items-center justify-center",
+                  isResizing && "bg-primary/50"
+                )}
+                onMouseDown={handleResizeStart}
+              >
+                <GripHorizontal className="h-4 w-4 text-muted-foreground" />
               </div>
             )}
-          </div>
-        </>
-      )}
+
+            <div
+              className={cn(
+                "flex flex-col",
+                outputCollapsed && "h-auto"
+              )}
+              style={!outputCollapsed ? { height: `${outputHeight}px` } : undefined}
+            >
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-secondary/50">
+                <span className="text-sm font-medium">Output</span>
+                <button
+                  onClick={() => setOutputCollapsed(!outputCollapsed)}
+                  className="p-1 hover:bg-secondary rounded transition-colors"
+                  aria-label={outputCollapsed ? "Expand output" : "Collapse output"}
+                >
+                  {outputCollapsed ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+
+              {!outputCollapsed && (
+                <div className="flex-1 overflow-auto p-3">
+                  <pre className={cn(
+                    "text-sm whitespace-pre-wrap",
+                    error ? "text-red-400" : "text-foreground"
+                  )}>
+                    {error || output}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <EmptyState
+            icon={Play}
+            title="Write code and hit Run"
+            description="Your output will appear here when you run your code."
+          />
+        )}
+      </div>
     </div>
   );
 }

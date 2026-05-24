@@ -1,0 +1,38 @@
+# Never read secrets
+.env
+.env.local
+.env.*.local
+
+# Unignore env example so AI knows expected vars
+!.env.example
+
+# AI-irrelevant generated/build outputs
+.next/
+dist/
+build/
+node_modules/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Piston runtime & user data
+piston/
+data/
+
+# Git internals
+.git/
+
+# OS metadata
+.DS_Store
+Thumbs.db
