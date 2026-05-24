@@ -218,3 +218,9 @@ data/
 
 # Pre-commit
 .pre-commit-config.local.yaml
+
+# Generated evaluation prompts
+eval_prompts.json
+
+# Graphify cache
+graphify-out/cache/

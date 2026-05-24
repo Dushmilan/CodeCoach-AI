@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 VERIFICATION_CRITERIA = [
     "test_cases",
+    "test_case_coverage",
     "description",
     "difficulty",
     "category",
@@ -34,6 +35,7 @@ REJECTED_FILE = os.path.join(
 def build_verification_prompt(question: dict) -> str:
     criteria_descriptions = {
         "test_cases": "Do the test case expected outputs match the problem description? Are there any contradictions or incorrect expected outputs?",
+        "test_case_coverage": "Does the question have at least 20 test cases covering edge cases, normal cases, boundary conditions, and hidden validation cases?",
         "description": "Is the problem statement clear, unambiguous, and complete? Does it include all necessary context?",
         "difficulty": "Is the difficulty rating (easy/medium/hard) appropriate given the problem complexity?",
         "category": "Does this problem belong in the stated DSA category? Is the categorization correct?",
@@ -75,6 +77,7 @@ Return ONLY a JSON object with no other text:
 {{
   "criteria_scores": {{
     "test_cases": <int 0-100>,
+    "test_case_coverage": <int 0-100>,
     "description": <int 0-100>,
     "difficulty": <int 0-100>,
     "category": <int 0-100>,
@@ -255,6 +258,101 @@ def call_nvidia(prompt: str, api_key: str, model: str) -> Optional[str]:
         return None
 
 
+def export_prompts(questions: List[dict], output_path: str, rounds: int = 4):
+    entries = []
+    for i, q in enumerate(questions, 1):
+        prompt = build_verification_prompt(q)
+        entry = {
+            "index": i,
+            "title": q.get("title", "unknown"),
+            "difficulty": q.get("difficulty", ""),
+            "category": q.get("category", ""),
+            "prompt": prompt,
+            "score": None,
+            "round_scores": [None] * rounds,
+            "issues": None,
+            "question_data": q,
+        }
+        entries.append(entry)
+
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(entries, f, indent=2)
+    logger.info(f"Exported {len(entries)} prompts to {output_path}")
+
+
+def import_scores(
+    input_path: str, threshold: float = 90
+) -> Tuple[List[dict], List[dict]]:
+    with open(input_path, "r", encoding="utf-8") as f:
+        entries = json.load(f)
+
+    passed = []
+    rejected = []
+
+    for entry in entries:
+        score = entry.get("score")
+        question_data = entry.get("question_data")
+        if not question_data:
+            rejected.append(
+                {
+                    "title": entry.get("title", "unknown"),
+                    "_score": 0,
+                    "_issues": ["Missing question_data in export"],
+                }
+            )
+            continue
+
+        q = dict(question_data)
+        q["_score"] = score if score is not None else 0
+        q["_rounds"] = entry.get("round_scores", [])
+        q["_issues"] = entry.get("issues", [])
+
+        if score is not None and score > threshold:
+            passed.append(q)
+        else:
+            rejected.append(q)
+
+    return passed, rejected
+
+
+def export_prompts_only(args):
+    questions = (
+        load_existing_questions(args.input)
+        if args.input
+        else load_existing_questions(QUESTIONS_FILE)
+    )
+    if not questions:
+        logger.error("No questions to export!")
+        sys.exit(1)
+    output = args.export_prompts
+    export_prompts(questions, output, rounds=args.rounds)
+
+
+def import_scores_only(args):
+    passed, rejected = import_scores(args.import_scores, threshold=args.threshold)
+    logger.info(f"Imported: {len(passed)} passed, {len(rejected)} rejected")
+
+    existing = load_existing_questions(QUESTIONS_FILE)
+    logger.info(f"Existing questions in bank: {len(existing)}")
+
+    for q in passed:
+        q.pop("_score", None)
+        q.pop("_rounds", None)
+        q.pop("_issues", None)
+
+    merged = merge_with_existing(existing, passed)
+    save_questions(QUESTIONS_FILE, merged)
+    logger.info(f"Saved {len(merged)} questions to {QUESTIONS_FILE}")
+
+    if rejected:
+        rejected_dir = os.path.dirname(REJECTED_FILE)
+        os.makedirs(rejected_dir, exist_ok=True)
+        with open(REJECTED_FILE, "w", encoding="utf-8") as f:
+            json.dump({"rejected": rejected, "threshold": args.threshold}, f, indent=2)
+        logger.info(f"Saved {len(rejected)} rejected questions to {REJECTED_FILE}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Verify and populate coding questions with AI quality gate"
@@ -289,7 +387,23 @@ def main():
     parser.add_argument(
         "--dry-run", action="store_true", help="Print results without saving"
     )
+    parser.add_argument(
+        "--export-prompts",
+        help="Export verification prompts to a JSON file (no API calls) and exit",
+    )
+    parser.add_argument(
+        "--import-scores",
+        help="Import scored prompts JSON file, filter by threshold, and populate",
+    )
     args = parser.parse_args()
+
+    if args.export_prompts:
+        export_prompts_only(args)
+        return
+
+    if args.import_scores:
+        import_scores_only(args)
+        return
 
     api_key = args.api_key or os.getenv("NVIDIA_API_KEY")
     if not api_key:

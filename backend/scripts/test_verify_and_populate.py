@@ -12,6 +12,8 @@ from scripts.verify_and_populate import (
     merge_with_existing,
     load_existing_questions,
     evaluate_question_quality,
+    export_prompts,
+    import_scores,
     VERIFICATION_CRITERIA,
 )
 
@@ -77,10 +79,16 @@ class TestBuildVerificationPrompt:
         assert "hash map" in prompt
         assert "O(n)" in prompt
 
-    def test_contains_all_eight_criteria(self):
+    def test_contains_all_criteria(self):
         prompt = build_verification_prompt(SAMPLE_QUESTION)
         for criterion in VERIFICATION_CRITERIA:
             assert criterion in prompt, f"Missing criterion: {criterion}"
+        assert len(VERIFICATION_CRITERIA) == 9
+
+    def test_contains_test_case_coverage_criterion(self):
+        prompt = build_verification_prompt(SAMPLE_QUESTION)
+        assert "test_case_coverage" in prompt
+        assert "at least 20 test cases" in prompt
 
     def test_requests_json_response(self):
         prompt = build_verification_prompt(SAMPLE_QUESTION)
@@ -99,6 +107,7 @@ class TestParseVerificationResponse:
             {
                 "criteria_scores": {
                     "test_cases": 95,
+                    "test_case_coverage": 90,
                     "description": 90,
                     "difficulty": 85,
                     "category": 100,
@@ -115,9 +124,10 @@ class TestParseVerificationResponse:
         assert result["overall"] == 90
         assert result["issues"] == ["Hint 3 is too revealing"]
         assert result["criteria_scores"]["test_cases"] == 95
+        assert result["criteria_scores"]["test_case_coverage"] == 90
 
     def test_handles_code_fence(self):
-        raw = '```json\n{"overall": 92, "criteria_scores": {"test_cases": 90, "description": 85, "difficulty": 80, "category": 95, "starter_code": 90, "solution": 95, "hints": 85, "constraints": 90}, "issues": []}\n```'
+        raw = '```json\n{"overall": 92, "criteria_scores": {"test_cases": 90, "test_case_coverage": 85, "description": 85, "difficulty": 80, "category": 95, "starter_code": 90, "solution": 95, "hints": 85, "constraints": 90}, "issues": []}\n```'
         result = parse_verification_response(raw)
         assert result["overall"] == 92
 
@@ -126,6 +136,7 @@ class TestParseVerificationResponse:
             {
                 "criteria_scores": {
                     "test_cases": 90,
+                    "test_case_coverage": 90,
                     "description": 90,
                     "difficulty": 90,
                     "category": 90,
@@ -157,7 +168,7 @@ class TestParseVerificationResponse:
         assert result["criteria_scores"]["description"] == 0
 
     def test_extracts_json_from_freeform_text(self):
-        raw = 'Here is my evaluation:\n\n{"overall": 88, "criteria_scores": {"test_cases": 90, "description": 85, "difficulty": 80, "category": 95, "starter_code": 90, "solution": 95, "hints": 85, "constraints": 90}, "issues": ["Minor hint issue"]}'
+        raw = 'Here is my evaluation:\n\n{"overall": 88, "criteria_scores": {"test_cases": 90, "test_case_coverage": 85, "description": 85, "difficulty": 80, "category": 95, "starter_code": 90, "solution": 95, "hints": 85, "constraints": 90}, "issues": ["Minor hint issue"]}'
         result = parse_verification_response(raw)
         assert result["overall"] == 88
 
@@ -276,6 +287,7 @@ class TestEvaluateQuestionQuality:
                     "overall": 92,
                     "criteria_scores": {
                         "test_cases": 90,
+                        "test_case_coverage": 88,
                         "description": 95,
                         "difficulty": 85,
                         "category": 95,
@@ -309,6 +321,7 @@ class TestEvaluateQuestionQuality:
                     "overall": 90,
                     "criteria_scores": {
                         "test_cases": 90,
+                        "test_case_coverage": 90,
                         "description": 90,
                         "difficulty": 90,
                         "category": 90,
@@ -336,3 +349,89 @@ class TestEvaluateQuestionQuality:
         )
         assert score == 0.0
         assert rounds == []
+
+
+class TestExportPrompts:
+    def test_exports_expected_structure(self, tmp_path):
+        questions = [
+            {"id": "q1", "title": "Q One", "difficulty": "easy", "category": "Arrays"},
+            {"id": "q2", "title": "Q Two", "difficulty": "medium", "category": "Trees"},
+        ]
+        output = tmp_path / "prompts.json"
+        export_prompts(questions, str(output))
+
+        data = json.loads(output.read_text())
+        assert len(data) == 2
+        for entry in data:
+            assert "index" in entry
+            assert "title" in entry
+            assert "prompt" in entry
+            assert entry["score"] is None
+            assert entry["round_scores"] == [None, None, None, None]
+            assert "question_data" in entry
+
+    def test_prompt_is_build_verification_prompt_output(self, tmp_path):
+        questions = [
+            {"id": "q1", "title": "Q One", "difficulty": "easy", "category": "Arrays"}
+        ]
+        output = tmp_path / "prompts.json"
+        export_prompts(questions, str(output))
+
+        data = json.loads(output.read_text())
+        expected_prompt = build_verification_prompt(questions[0])
+        assert data[0]["prompt"] == expected_prompt
+
+
+class TestImportScores:
+    def test_imports_scores_and_applies_threshold(self, tmp_path):
+        prompts = [
+            {
+                "index": 1,
+                "title": "Q One",
+                "difficulty": "easy",
+                "category": "Arrays",
+                "prompt": "...",
+                "score": 92.5,
+                "round_scores": [90, 95, 95, 90],
+                "issues": [],
+                "question_data": {"id": "q1", "title": "Q One"},
+            },
+            {
+                "index": 2,
+                "title": "Q Two",
+                "difficulty": "medium",
+                "category": "Trees",
+                "prompt": "...",
+                "score": 75.0,
+                "round_scores": [70, 80, 75, 75],
+                "issues": ["Missing edge cases"],
+                "question_data": {"id": "q2", "title": "Q Two"},
+            },
+        ]
+        input_file = tmp_path / "scores.json"
+        input_file.write_text(json.dumps(prompts))
+
+        passed, rejected = import_scores(str(input_file), threshold=90)
+        assert len(passed) == 1
+        assert passed[0]["id"] == "q1"
+        assert passed[0]["_score"] == 92.5
+        assert len(rejected) == 1
+        assert rejected[0]["id"] == "q2"
+        assert rejected[0]["_score"] == 75.0
+        assert rejected[0]["_issues"] == ["Missing edge cases"]
+
+    def test_import_without_question_data_raises(self, tmp_path):
+        prompts = [
+            {
+                "index": 1,
+                "title": "Bad",
+                "score": 95,
+                "round_scores": [95, 95, 95, 95],
+            },
+        ]
+        input_file = tmp_path / "bad.json"
+        input_file.write_text(json.dumps(prompts))
+        passed, rejected = import_scores(str(input_file))
+        assert len(passed) == 0
+        assert len(rejected) == 1
+        assert "Missing question_data" in str(rejected[0])

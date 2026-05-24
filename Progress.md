@@ -4,8 +4,9 @@
 
 **Status:** Pre-launch (development complete, not yet deployed)
 **Commits:** 61+
-**Questions:** 10 hand-authored of 100 target (4 Easy, 6 Medium) — AI generation script ready for 90 more
+**Questions:** 13 in question bank (10 hand-authored + 3 AI-verified) of 100 target; 87 AI-generated questions in review
 **Starter Code:** Python, JavaScript, Java
+**AI Quality Gate:** 4-round verification against 9 criteria (min avg > 90) before populating new questions
 
 ---
 
@@ -28,8 +29,12 @@
 
 ## 3. Question Bank
 
-- 10 hand-authored questions with real-world themes
-- AI-assisted generation script (`backend/scripts/generate_questions.py`) produces 90 validated questions across 14 DSA topics via NVIDIA NIM — ready to populate the bank
+- 13 questions in bank (10 hand-authored + 3 AI-generated that passed quality gate)
+- AI-assisted generation script (`backend/scripts/generate_questions.py`) produces questions across 14 DSA topics via NVIDIA NIM
+- **AI Quality Gate** (`backend/scripts/verify_and_populate.py`): 4 independent rounds of AI evaluation against 9 criteria — topic relevance, difficulty match, correctness, clarity, starter code quality, test case quality, solution correctness, edge cases, test_case_coverage (≥20 test cases required)
+- Questions populate bank only if average score > 90 across all 4 rounds; rejected questions saved to `rejected_questions.json` for review
+- `--export-prompts` mode exports all questions as self-contained evaluation prompts for manual AI eval; `--import-scores` mode ingests scored results
+- **Evaluation using NVIDIA API key** — pending: run `verify_and_populate.py` with NVIDIA NIM to auto-evaluate the 87 rejected questions and promote qualifying ones
 - Full CRUD via REST API
 - Search by title/category/difficulty
 - Filter by difficulty, category, company
@@ -91,9 +96,10 @@
 - 85% coverage threshold
 - Mocked NVIDIA and Piston services
 - Performance/load tests (concurrent requests, memory, locust)
-- 248 unit tests passing (2 pre-existing failures from starlette/httpx version incompatibility)
+- 288 tests passing (274 unit + 14 script tests)
 - Auth: 4 supabase login tests (creates new user, returns existing, invalid token, no config)
 - Question generation: 10 tests (slugify, prompt building, JSON parsing, topic extraction)
+- AI Verification Script: 33 tests (prompt building, response parsing, scoring, filtering, merging, export, import)
 
 ### Frontend (Vitest)
 - 29 test files covering hooks, services, components
@@ -124,13 +130,19 @@
 
 | Area | Status | Details |
 |---|---|---|
-| Questions | ✅ Ready | 10 hand-authored + 90-question AI generation script (needs to be run to populate) |
+| Questions | ✅ Ready | 13 in bank (10 hand-authored + 3 AI-verified). 87 more AI-generated awaiting evaluation via NVIDIA API key |
 | Auth | ✅ Complete | JWT email/password + Google OAuth via Supabase with full frontend integration |
 | UX Polish | ✅ Complete | EmptyState, Toast, OnboardingTour, auth-aware header, output panel placeholder |
 | Educator materials | ✅ Existing | EDUCATORS.md + For Educators page |
 | Privacy | ✅ Existing | `/privacy` route with plain-language policy |
 
 ---
+
+## Immediate Next Step — AI Evaluation of Pending Questions
+
+- Run `verify_and_populate.py` with NVIDIA API key to auto-evaluate 87 rejected questions across 4 rounds
+- Promote any that pass > 90 threshold to the question bank
+- Target: close to 100 questions before starting Phase 2
 
 ## What's Next (Phase 2 — Programming Language Curricula)
 

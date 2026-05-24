@@ -182,7 +182,12 @@ def save_questions(questions: List[dict]):
     logger.info(f"Saved {len(questions)} questions to {QUESTIONS_FILE}")
 
 
-def generate_questions(api_key: str, model: str = "meta/llama-3.1-8b-instruct", target: int = 90, questions_per_topic: int = 6) -> List[dict]:
+def generate_questions(
+    api_key: str,
+    model: str = "meta/llama-3.1-8b-instruct",
+    target: int = 90,
+    questions_per_topic: int = 6,
+) -> List[dict]:
     load_existing_ids()
 
     all_questions = []
@@ -245,7 +250,9 @@ def main(args_list: Optional[List[str]] = None):
         logger.error("NVIDIA_API_KEY not set. Use --api-key or set env var.")
         sys.exit(1)
 
-    all_questions = generate_questions(api_key, args.model, questions_per_topic=args.questions_per_topic)
+    all_questions = generate_questions(
+        api_key, args.model, questions_per_topic=args.questions_per_topic
+    )
 
     if not all_questions:
         logger.error("No questions generated!")
