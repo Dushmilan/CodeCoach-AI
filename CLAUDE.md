@@ -121,6 +121,7 @@ See `PythonCodeWrapper`, `JavaScriptCodeWrapper`, and `JavaCodeWrapper` as refer
 8. **Every new language must add a wrapper class** in `adapters/code_wrappers/` and register it in the `WRAPPERS` dict — without a wrapper, the Piston submit/validate flow will send bare function definitions that produce no output
 9. **Always update Progress.md on feature completion** — after any feature, fix, or significant change, update `Progress.md` to reflect the new state (test counts, questions count, new capabilities) and `Goal.md` if scope changed. This keeps the project compass accurate for all agents.
 10. **Update knowledge graph on task completion** — after every feature, fix, or debugging task finishes, run `graphify update .` to refresh the code knowledge graph, then `git add graphify-out/` and commit it alongside the feature changes. This keeps the graph in sync for all agents and tools.
+11. **Use graphify for codebase questions** — when you need to understand the codebase structure, find relationships between files, or scan for relevant code, use `graphify query "<question>"` or `graphify explain "<concept>"` instead of raw grep/glob. This returns a focused subgraph faster and with more context than ad-hoc searches.
 
 ## AI Agent Permissions
 
