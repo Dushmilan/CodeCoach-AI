@@ -114,11 +114,12 @@ See `PythonCodeWrapper`, `JavaScriptCodeWrapper`, and `JavaCodeWrapper` as refer
 1. **Never edit** `__pycache__/`, `node_modules/`, `venv/`, `.next/`, `*.db`, `*.sqlite`
 2. **Never commit** `.env`, `.env.local`, API keys, secrets
 3. **Never use `Any` in TypeScript** — prefer specific types or `unknown`
-4. **Never use `print()` in backend** — use `logging` module
+4. **Never use `print()` in backend`** — use `logging` module
 5. **Never mutate state directly** — use `useCallback`, `useMemo` for derived values
 6. **Always add tests** for new endpoints, services, or use cases
 7. **Always run lint + typecheck + tests** before claiming work is done
 8. **Every new language must add a wrapper class** in `adapters/code_wrappers/` and register it in the `WRAPPERS` dict — without a wrapper, the Piston submit/validate flow will send bare function definitions that produce no output
+9. **Always update Progress.md on feature completion** — after any feature, fix, or significant change, update `Progress.md` to reflect the new state (test counts, questions count, new capabilities) and `Goal.md` if scope changed. This keeps the project compass accurate for all agents.
 
 ## AI Agent Permissions
 

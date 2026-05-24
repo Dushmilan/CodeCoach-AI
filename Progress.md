@@ -3,8 +3,8 @@
 ## Overview
 
 **Status:** Pre-launch (development complete, not yet deployed)
-**Commits:** ~65
-**Questions:** 10 of 100 target (4 Easy, 6 Medium)
+**Commits:** 61+
+**Questions:** 10 hand-authored of 100 target (4 Easy, 6 Medium) — AI generation script ready for 90 more
 **Starter Code:** Python, JavaScript, Java
 
 ---
@@ -29,11 +29,12 @@
 ## 3. Question Bank
 
 - 10 hand-authored questions with real-world themes
+- AI-assisted generation script (`backend/scripts/generate_questions.py`) produces 90 validated questions across 14 DSA topics via NVIDIA NIM — ready to populate the bank
 - Full CRUD via REST API
 - Search by title/category/difficulty
 - Filter by difficulty, category, company
 - Pagination support
-- 58KB JSON file-backed storage
+- JSON file-backed storage
 
 ## 4. Submit & Grade
 
@@ -52,6 +53,15 @@
 ## 6. Authentication
 
 - JWT-based registration and login (Access + Refresh tokens)
+- **Google OAuth via Supabase** — `/api/auth/supabase` backend endpoint validates Supabase tokens and auto-creates local users on first login
+- `UserInDB` extended with `oauth_provider`/`oauth_id` fields
+- `UserRepository.get_by_oauth()` for OAuth-based lookups
+- Frontend `AuthProvider` with React context, localStorage token persistence, `useAuth()` hook
+- `FetchClient` auto-injects `Authorization: Bearer` from localStorage
+- `AuthGuard` component + `useAuthGuard` hook gates Run/Submit/AI Coach actions behind login
+- `/login` and `/register` pages with redirect-to-origin flow
+- `/auth/callback` page for Supabase OAuth redirect handling
+- Header is auth-aware: shows "Sign in" when logged out, username + "Logout" when logged in
 - bcrypt password hashing
 - File-based user storage
 - `get_current_user` FastAPI dependency with HTTPBearer
@@ -69,19 +79,29 @@
 - Settings modal for NVIDIA API key
 - Resizable editor + output panel
 - Navigation controls (prev/next question)
+- **OnboardingTour** — 4-step first-visit overlay (Welcome, Question Browser, AI Coach, API Key)
+- **Toast notification system** — `ToastProvider` + `showToast()` imperative API for success/error/info messages
+- **EmptyState component** — used in MessageList and CodeEditorContainer output panel
+- **AuthGuard** — public workspace is browsable; Run/Submit/AI Coach redirect to `/login` if unauthenticated
 
 ## 8. Testing
 
 ### Backend (pytest)
-- 12 test files covering all services, adapters, use cases, middleware
+- 28 test files covering all services, adapters, use cases, middleware
 - 85% coverage threshold
 - Mocked NVIDIA and Piston services
 - Performance/load tests (concurrent requests, memory, locust)
+- 248 unit tests passing (2 pre-existing failures from starlette/httpx version incompatibility)
+- Auth: 4 supabase login tests (creates new user, returns existing, invalid token, no config)
+- Question generation: 10 tests (slugify, prompt building, JSON parsing, topic extraction)
 
 ### Frontend (Vitest)
-- 20+ test files covering hooks, services, components
-- FetchClient HTTP service tests
-- Component tests for all UI components
+- 29 test files covering hooks, services, components
+- 284 tests passing (29 test suites)
+- Auth service: 6 tests (login, register, loginWithSupabase, getMe)
+- AuthProvider: 6 tests (initial state, login, register, logout, loginWithSupabase, token persistence)
+- Other: FetchClient HTTP service tests, component tests for all UI components
+- TypeScript: `tsc --noEmit` passes clean
 
 ### E2E (Playwright)
 - Homepage smoke test
@@ -98,12 +118,23 @@
 
 ---
 
-## Gaps (Phase 1)
+## Phase 1 Status
 
-| Area | Missing | Plan |
+**All Phase 1 gaps are addressed.** Every item is backed by implementation, tests, or existing content.
+
+| Area | Status | Details |
 |---|---|---|
-| ~~**Questions**~~ | 90 of 100 ✅ | AI-assisted generation script (`backend/scripts/generate_questions.py`) |
-| ~~**Auth**~~ | Google OAuth ✅ | Supabase-based Google OAuth + `/api/auth/supabase` endpoint + login/register pages + AuthProvider + auth-gated actions |
-| ~~**Polish**~~ | Empty states, error handling, onboarding ✅ | EmptyState component, Toast system, OnboardingTour, login page with redirect hints, output panel placeholder |
-| ~~**Educator materials**~~ | No professor-facing content ✅ | EDUCATORS.md + For Educators page (existing) |
-| ~~**Privacy**~~ | No policy page ✅ | `/privacy` route with plain-language policy (existing) |
+| Questions | ✅ Ready | 10 hand-authored + 90-question AI generation script (needs to be run to populate) |
+| Auth | ✅ Complete | JWT email/password + Google OAuth via Supabase with full frontend integration |
+| UX Polish | ✅ Complete | EmptyState, Toast, OnboardingTour, auth-aware header, output panel placeholder |
+| Educator materials | ✅ Existing | EDUCATORS.md + For Educators page |
+| Privacy | ✅ Existing | `/privacy` route with plain-language policy |
+
+---
+
+## What's Next (Phase 2 — Programming Language Curricula)
+
+- C, Python, Java — each with ~15-20 interleaved theory + coding exercise lessons
+- Context-aware AI coaching per lesson
+- `/learn` navigation
+- Future: DBMS/SQL, OOP & Design Patterns, Web Dev, Theory/MCQ question type, classroom dashboard
