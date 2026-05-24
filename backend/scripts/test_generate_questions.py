@@ -17,6 +17,7 @@ class TestSlugify:
 
     def test_handles_duplicates(self):
         from scripts.generate_questions import EXISTING_IDS
+
         EXISTING_IDS.add("test")
         result = slugify("test")
         assert result == "test-2"
@@ -36,16 +37,27 @@ class TestBuildPrompt:
 
 class TestParseQuestions:
     def test_parses_valid_json_array(self):
-        raw = json.dumps([
-            {
-                "title": "Find Max in Array",
-                "description": "Given an array, find the maximum element.",
-                "difficulty": "easy",
-                "category": "Arrays",
-                "examples": [{"input": "[1,2,3]", "output": "3", "explanation": "3 is max"}],
-                "test_cases": [{"input": "[1,2,3]", "expected_output": "3", "description": "basic", "hidden": False}],
-            }
-        ])
+        raw = json.dumps(
+            [
+                {
+                    "title": "Find Max in Array",
+                    "description": "Given an array, find the maximum element.",
+                    "difficulty": "easy",
+                    "category": "Arrays",
+                    "examples": [
+                        {"input": "[1,2,3]", "output": "3", "explanation": "3 is max"}
+                    ],
+                    "test_cases": [
+                        {
+                            "input": "[1,2,3]",
+                            "expected_output": "3",
+                            "description": "basic",
+                            "hidden": False,
+                        }
+                    ],
+                }
+            ]
+        )
         result = parse_questions(raw)
         assert len(result) == 1
         assert result[0]["id"] == "find-max-in-array"
@@ -53,7 +65,7 @@ class TestParseQuestions:
         assert result[0]["company_tags"] == []
 
     def test_parses_code_block(self):
-        raw = "```json\n[{\"title\": \"Test\", \"description\": \"Desc\", \"difficulty\": \"medium\", \"category\": \"Test\"}]\n```"
+        raw = '```json\n[{"title": "Test", "description": "Desc", "difficulty": "medium", "category": "Test"}]\n```'
         result = parse_questions(raw)
         assert len(result) == 1
 
@@ -64,7 +76,7 @@ class TestParseQuestions:
         assert result[0]["title"] == "Good"
 
     def test_extracts_json_from_freeform_text(self):
-        raw = "Here are the questions:\n\n[{\"title\": \"Found\", \"description\": \"Desc\", \"difficulty\": \"hard\", \"category\": \"Test\"}]\n\nHope that helps!"
+        raw = 'Here are the questions:\n\n[{"title": "Found", "description": "Desc", "difficulty": "hard", "category": "Test"}]\n\nHope that helps!'
         result = parse_questions(raw)
         assert len(result) == 1
         assert result[0]["title"] == "Found"

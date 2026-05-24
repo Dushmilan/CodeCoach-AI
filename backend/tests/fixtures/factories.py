@@ -80,7 +80,9 @@ class QuestionFactory(factory.Factory):
     company_tags = factory.LazyFunction(lambda: random.sample(["Google", "Amazon", "Microsoft", "Facebook", "Apple"], k=random.randint(1, 3)))
     description = factory.Faker('text', max_nb_chars=300)
     starter = factory.LazyAttribute(lambda obj: {
-        "python": f"def solution({obj.category}):\n    # TODO: Implement solution\n    pass"
+        "python": f"def solution({obj.category}):\n    # TODO: Implement solution\n    pass",
+        "javascript": f"function solution() {{\n  // TODO: Implement solution\n}}",
+        "java": "public class Solution {\n    public static void main(String[] args) {\n        // TODO: Implement solution\n    }\n}"
     })
     examples = factory.LazyFunction(lambda: [
             {
@@ -94,12 +96,12 @@ class QuestionFactory(factory.Factory):
         {
             "input": str(random.randint(1, 100)),
             "expected_output": str(random.randint(1, 100)),
-            "description": factory.Faker('text', max_nb_chars=50),
+            "description": "Test case description",
             "hidden": random.choice([True, False])
         }
         for _ in range(random.randint(2, 5))
     ])
-    hints = factory.LazyFunction(lambda: [factory.Faker('text', max_nb_chars=50) for _ in range(random.randint(1, 3))])
+    hints = factory.LazyFunction(lambda: ["Hint " + str(i) for i in range(random.randint(1, 3))])
     solution = factory.Faker('text', max_nb_chars=200)
     time_complexity = factory.Iterator(["O(1)", "O(n)", "O(n log n)", "O(n²)"])
     space_complexity = factory.Iterator(["O(1)", "O(n)", "O(log n)"])

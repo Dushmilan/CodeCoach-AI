@@ -12,10 +12,20 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 TOPICS = [
-    "Arrays & Hashing", "Two Pointers", "Sliding Window", "Stack",
-    "Binary Search", "Linked List", "Trees", "Tries",
-    "Heap / Priority Queue", "Backtracking", "Graphs",
-    "Dynamic Programming", "Greedy", "Intervals",
+    "Arrays & Hashing",
+    "Two Pointers",
+    "Sliding Window",
+    "Stack",
+    "Binary Search",
+    "Linked List",
+    "Trees",
+    "Tries",
+    "Heap / Priority Queue",
+    "Backtracking",
+    "Graphs",
+    "Dynamic Programming",
+    "Greedy",
+    "Intervals",
 ]
 
 QUESTIONS_FILE = os.path.join(
@@ -78,7 +88,10 @@ def call_nvidia(prompt: str, api_key: str, model: str) -> Optional[str]:
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are a coding question generator. Return ONLY valid JSON."},
+            {
+                "role": "system",
+                "content": "You are a coding question generator. Return ONLY valid JSON.",
+            },
             {"role": "user", "content": prompt},
         ],
         "max_tokens": 4000,
@@ -170,11 +183,21 @@ def save_questions(questions: List[dict]):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate coding questions using NVIDIA NIM")
-    parser.add_argument("--api-key", help="NVIDIA API key (default: NVIDIA_API_KEY env var)")
-    parser.add_argument("--model", default="meta/llama-3.1-8b-instruct", help="NVIDIA model")
-    parser.add_argument("--questions-per-topic", type=int, default=6, help="Questions per topic")
-    parser.add_argument("--dry-run", action="store_true", help="Print questions without saving")
+    parser = argparse.ArgumentParser(
+        description="Generate coding questions using NVIDIA NIM"
+    )
+    parser.add_argument(
+        "--api-key", help="NVIDIA API key (default: NVIDIA_API_KEY env var)"
+    )
+    parser.add_argument(
+        "--model", default="meta/llama-3.1-8b-instruct", help="NVIDIA model"
+    )
+    parser.add_argument(
+        "--questions-per-topic", type=int, default=6, help="Questions per topic"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print questions without saving"
+    )
     args = parser.parse_args()
 
     api_key = args.api_key or os.getenv("NVIDIA_API_KEY")
@@ -196,7 +219,9 @@ def main():
             remaining = target - total
             per_diff = min(args.questions_per_topic, remaining)
 
-            logger.info(f"\n=== Generating {per_diff} {difficulty} questions: {topic} ===")
+            logger.info(
+                f"\n=== Generating {per_diff} {difficulty} questions: {topic} ==="
+            )
             prompt = build_prompt(topic, difficulty, per_diff)
             raw = call_nvidia(prompt, api_key, args.model)
             if not raw:
@@ -210,7 +235,9 @@ def main():
 
             all_questions.extend(questions)
             total += len(questions)
-            logger.info(f"Generated {len(questions)} valid questions (total: {total}/{target})")
+            logger.info(
+                f"Generated {len(questions)} valid questions (total: {total}/{target})"
+            )
 
         if total >= target:
             break
