@@ -15,8 +15,8 @@ describe('AIChatPanel', () => {
 
   it('renders AI Coach header', () => {
     render(<AIChatPanel {...defaultProps} />);
-    expect(screen.getByText('AI Coach')).toBeInTheDocument();
-    expect(screen.getByText('Get real-time coding assistance')).toBeInTheDocument();
+    expect(screen.getByText('AI COACH')).toBeInTheDocument();
+    expect(screen.getByText('Real-time coding assistance')).toBeInTheDocument();
   });
 
   it('renders MessageList with messages', () => {

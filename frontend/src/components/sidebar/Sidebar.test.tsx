@@ -74,7 +74,7 @@ describe('Sidebar', () => {
 
   it('renders Problems header', async () => {
     render(<Sidebar {...defaultProps} />);
-    expect(await screen.findByText('Problems')).toBeInTheDocument();
+    expect(await screen.findByText('PROBLEMS')).toBeInTheDocument();
   });
 
   it('renders collapse toggle button', async () => {

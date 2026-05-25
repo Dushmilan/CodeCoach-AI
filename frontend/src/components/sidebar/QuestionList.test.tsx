@@ -34,8 +34,8 @@ describe('QuestionList', () => {
       <QuestionList {...defaultProps} selectedQuestion={questions[0]} />
     );
     const items = screen.getAllByText('Two Sum');
-    const container = items[0].closest('[class*="p-3"]');
-    expect(container?.className).toContain('bg-secondary');
+    const container = items[0].closest('[class*="border-b"]');
+    expect(container?.className).toContain('border-l-primary/60');
   });
 
   it('calls onSelectQuestion with question and index when clicked', async () => {

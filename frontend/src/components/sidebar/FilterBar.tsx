@@ -21,72 +21,58 @@ export function FilterBar({
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'easy':
-        return 'text-green-500 bg-green-500/10 border-green-500/20';
+        return 'text-green-400 bg-green-500/10';
       case 'medium':
-        return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+        return 'text-yellow-400 bg-yellow-500/10';
       case 'hard':
-        return 'text-red-500 bg-red-500/10 border-red-500/20';
+        return 'text-red-400 bg-red-500/10';
       default:
-        return 'text-gray-500 bg-gray-500/10 border-gray-500/20';
-    }
-  };
-
-  const getDifficultyIcon = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy':
-        return '🟢';
-      case 'medium':
-        return '🟡';
-      case 'hard':
-        return '🔴';
-      default:
-        return '⚪';
+        return 'text-gray-400 bg-gray-500/10';
     }
   };
 
   return (
     <div
       className={cn(
-        'p-3 border-b border-border transition-all duration-300',
-        isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'
+        'px-3 py-3 border-b border-white/5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
+        isCollapsed ? 'opacity-0 h-0 overflow-hidden py-0' : 'opacity-100 h-auto'
       )}
     >
-      <div className="grid grid-cols-2 gap-2 mb-3">
+      <div className="grid grid-cols-2 gap-2 mb-2">
         <button
           onClick={onAll}
           className={cn(
-            'flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md transition-colors',
+            'flex items-center justify-center px-2 py-1.5 text-[10px] font-medium rounded-full tracking-wide transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]',
             currentFilter === 'all'
               ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary hover:bg-secondary/80'
+              : 'bg-white/5 hover:bg-white/10 text-muted-foreground'
           )}
         >
-          <List className="h-3 w-3 mr-1" />
+          <List className="h-3 w-3 mr-1.5" strokeWidth={1} />
           All
         </button>
         <button
           onClick={onRandom}
-          className="flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded-md bg-secondary hover:bg-secondary/80 transition-colors"
+          className="flex items-center justify-center px-2 py-1.5 text-[10px] font-medium rounded-full tracking-wide bg-white/5 hover:bg-white/10 text-muted-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
         >
-          <Shuffle className="h-3 w-3 mr-1" />
+          <Shuffle className="h-3 w-3 mr-1.5" strokeWidth={1} />
           Random
         </button>
       </div>
 
-      <div className="flex gap-1">
+      <div className="flex gap-1.5">
         {(['easy', 'medium', 'hard'] as const).map((diff) => (
           <button
             key={diff}
             onClick={() => onFilterChange(diff)}
             className={cn(
-              'flex-1 px-2 py-1 text-xs font-medium rounded-md transition-colors',
+              'flex-1 px-2 py-1 text-[10px] font-medium rounded-full tracking-wide uppercase transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]',
               currentFilter === diff
                 ? getDifficultyColor(diff)
-                : 'bg-secondary hover:bg-secondary/80'
+                : 'bg-white/5 hover:bg-white/10 text-muted-foreground/60'
             )}
           >
-            <span className="mr-1">{getDifficultyIcon(diff)}</span>
-            {diff.charAt(0).toUpperCase() + diff.slice(1)}
+            {diff}
           </button>
         ))}
       </div>

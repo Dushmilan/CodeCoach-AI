@@ -33,19 +33,19 @@ describe('FilterBar', () => {
   it('applies green color to easy button when currentFilter is easy', () => {
     render(<FilterBar {...defaultProps} currentFilter="easy" />);
     const btn = screen.getByRole('button', { name: /easy/i });
-    expect(btn.className).toContain('text-green-500');
+    expect(btn.className).toContain('text-green-400');
   });
 
   it('applies yellow color to medium button when currentFilter is medium', () => {
     render(<FilterBar {...defaultProps} currentFilter="medium" />);
     const btn = screen.getByRole('button', { name: /medium/i });
-    expect(btn.className).toContain('text-yellow-500');
+    expect(btn.className).toContain('text-yellow-400');
   });
 
   it('applies red color to hard button when currentFilter is hard', () => {
     render(<FilterBar {...defaultProps} currentFilter="hard" />);
     const btn = screen.getByRole('button', { name: /hard/i });
-    expect(btn.className).toContain('text-red-500');
+    expect(btn.className).toContain('text-red-400');
   });
 
   it('calls onAll when All is clicked', async () => {

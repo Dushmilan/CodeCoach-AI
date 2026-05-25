@@ -8,105 +8,116 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+    <div className="min-h-[100dvh] bg-background text-foreground">
+      {/* Fluid Island Nav */}
+      <div className="flex items-center justify-center pt-6">
+        <div className="inline-flex items-center gap-4 px-5 py-2 rounded-full bg-card/70 backdrop-blur-2xl ring-1 ring-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+          <Link href="/" className="text-sm font-semibold tracking-tight text-foreground/90">
             CodeCoach AI
           </Link>
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link href="/" className="text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 px-3 py-1 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
             Back to editor
           </Link>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto max-w-4xl px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
-        <p className="text-muted-foreground mb-8">Last updated: May 2026</p>
+      <main className="mx-auto max-w-4xl px-4 py-16">
+        <div className="text-center mb-16">
+          <span className="inline-block text-[10px] uppercase tracking-[0.25em] font-medium text-muted-foreground/60 mb-4 px-3 py-1 rounded-full bg-white/[0.03] ring-1 ring-white/5">Legal</span>
+          <h1 className="text-4xl font-semibold tracking-tight text-foreground/90 mb-3">Privacy Policy</h1>
+          <p className="text-sm text-muted-foreground/40">Last updated: May 2026</p>
+        </div>
 
-        <section className="space-y-8">
-          <div>
-            <h2 className="text-xl font-semibold mb-3">What data we collect</h2>
-            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-              <li><strong>Account information:</strong> email address and hashed password (bcrypt) when you register</li>
-              <li><strong>Code submissions:</strong> code you write and submit for execution is stored to show your submission history</li>
-              <li><strong>AI coaching messages:</strong> messages sent to the AI coach are stored temporarily for conversation context</li>
-              <li><strong>NVIDIA API key:</strong> stored in your browser&apos;s local storage — never sent to our server</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-3">What we do NOT collect</h2>
-            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-              <li>No tracking cookies or analytics scripts</li>
-              <li>No advertising identifiers</li>
-              <li>No location data</li>
-              <li>No course grades or academic records</li>
-              <li>No third-party data sharing</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-3">How we use your data</h2>
-            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-              <li>To authenticate you and maintain your session</li>
-              <li>To display your submission history and progress</li>
-              <li>To send code to Piston (code execution engine) and NVIDIA NIM (AI coach)</li>
-              <li>To improve the platform (anonymized usage patterns only)</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-3">Data storage & retention</h2>
-            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-              <li>Account data and submissions are stored in JSON files on the server</li>
-              <li>Data is retained until you delete your account</li>
-              <li>No data is sold, licensed, or shared with third parties</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-3">Your rights</h2>
-            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-              <li><strong>Access:</strong> request a copy of your data at any time</li>
-              <li><strong>Deletion:</strong> request permanent deletion of your account and all associated data</li>
-              <li><strong>Export:</strong> download your submission history in JSON format</li>
-            </ul>
-            <p className="mt-4 text-muted-foreground">
-              To exercise these rights, contact us through the project&apos;s GitHub repository.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-3">FERPA & GDPR compliance</h2>
-            <p className="text-muted-foreground">
-              We are committed to aligning with FERPA (US educational privacy law) and GDPR (EU data protection) 
-              standards. As an open-source, non-commercial platform with no advertising and no data monetization, 
-              we already exceed many baseline requirements. Formal compliance documentation is on the roadmap.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-3">Third-party services</h2>
-            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-              <li><strong>Piston</strong> (self-hosted) — executes submitted code in isolated containers</li>
-              <li><strong>NVIDIA NIM</strong> — powers AI coaching; only code context and messages are sent, never personal data</li>
-              <li>Both services receive only what is necessary to function. No personal identifiers are shared.</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-3">Changes to this policy</h2>
-            <p className="text-muted-foreground">
-              We will update this policy as the platform grows. Significant changes will be announced via 
-              the project repository. Continued use after changes constitutes acceptance of the updated policy.
-            </p>
-          </div>
-        </section>
+        <div className="space-y-8">
+          {[
+            {
+              title: 'What data we collect',
+              items: [
+                '<strong>Account information:</strong> email address and hashed password (bcrypt) when you register',
+                '<strong>Code submissions:</strong> code you write and submit for execution is stored to show your submission history',
+                '<strong>AI coaching messages:</strong> messages sent to the AI coach are stored temporarily for conversation context',
+                '<strong>NVIDIA API key:</strong> stored in your browser\'s local storage — never sent to our server',
+              ],
+            },
+            {
+              title: 'What we do NOT collect',
+              items: [
+                'No tracking cookies or analytics scripts',
+                'No advertising identifiers',
+                'No location data',
+                'No course grades or academic records',
+                'No third-party data sharing',
+              ],
+            },
+            {
+              title: 'How we use your data',
+              items: [
+                'To authenticate you and maintain your session',
+                'To display your submission history and progress',
+                'To send code to Piston (code execution engine) and NVIDIA NIM (AI coach)',
+                'To improve the platform (anonymized usage patterns only)',
+              ],
+            },
+            {
+              title: 'Data storage & retention',
+              items: [
+                'Account data and submissions are stored in JSON files on the server',
+                'Data is retained until you delete your account',
+                'No data is sold, licensed, or shared with third parties',
+              ],
+            },
+            {
+              title: 'Your rights',
+              items: [
+                '<strong>Access:</strong> request a copy of your data at any time',
+                '<strong>Deletion:</strong> request permanent deletion of your account and all associated data',
+                '<strong>Export:</strong> download your submission history in JSON format',
+              ],
+              extra: 'To exercise these rights, contact us through the project\'s GitHub repository.',
+            },
+            {
+              title: 'FERPA & GDPR compliance',
+              paragraph: 'We are committed to aligning with FERPA (US educational privacy law) and GDPR (EU data protection) standards. As an open-source, non-commercial platform with no advertising and no data monetization, we already exceed many baseline requirements. Formal compliance documentation is on the roadmap.',
+            },
+            {
+              title: 'Third-party services',
+              items: [
+                '<strong>Piston</strong> (self-hosted) — executes submitted code in isolated containers',
+                '<strong>NVIDIA NIM</strong> — powers AI coaching; only code context and messages are sent, never personal data',
+                'Both services receive only what is necessary to function. No personal identifiers are shared.',
+              ],
+            },
+            {
+              title: 'Changes to this policy',
+              paragraph: 'We will update this policy as the platform grows. Significant changes will be announced via the project repository. Continued use after changes constitutes acceptance of the updated policy.',
+            },
+          ].map((section, i) => (
+            <div key={i} className="p-1.5 rounded-[2rem] bg-white/[0.03] ring-1 ring-white/5">
+              <div className="rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] p-6">
+                <h2 className="text-sm font-semibold text-foreground/80 mb-3 tracking-wide">{section.title}</h2>
+                {section.items && (
+                  <ul className="space-y-1.5">
+                    {section.items.map((item, j) => (
+                      <li key={j} className="text-sm text-muted-foreground/60 leading-relaxed pl-4 relative before:content-[''] before:absolute before:left-0 before:top-[0.6em] before:w-1 before:h-1 before:rounded-full before:bg-white/10">
+                        <span dangerouslySetInnerHTML={{ __html: item }} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {section.paragraph && (
+                  <p className="text-sm text-muted-foreground/60 leading-relaxed">{section.paragraph}</p>
+                )}
+                {section.extra && (
+                  <p className="mt-3 text-sm text-muted-foreground/60 leading-relaxed">{section.extra}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </main>
 
-      <footer className="border-t border-border mt-16">
-        <div className="mx-auto max-w-4xl px-4 py-6 text-center text-sm text-muted-foreground">
+      <footer className="mt-20 pb-8">
+        <div className="mx-auto max-w-4xl px-4 text-center text-xs text-muted-foreground/40">
           <p>CodeCoach AI — Open source. Free for students. Built for education.</p>
         </div>
       </footer>

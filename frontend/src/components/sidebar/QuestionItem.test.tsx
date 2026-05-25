@@ -103,7 +103,8 @@ describe('QuestionItem', () => {
       />
     );
     const outerDiv = container.firstChild as HTMLElement;
-    expect(outerDiv.className).toContain('bg-secondary');
+    expect(outerDiv.className).toContain('bg-white/[0.05]');
+    expect(outerDiv.className).toContain('border-l-primary/60');
   });
 
   it('applies current index styles', () => {
@@ -116,7 +117,7 @@ describe('QuestionItem', () => {
       />
     );
     const outerDiv = container.firstChild as HTMLElement;
-    expect(outerDiv.className).toContain('bg-secondary/30');
+    expect(outerDiv.className).toContain('bg-white/[0.02]');
   });
 
   it.each([

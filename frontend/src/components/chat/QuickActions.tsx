@@ -24,19 +24,17 @@ interface QuickActionsProps {
 
 export function QuickActions({ onActionClick, disabled = false }: QuickActionsProps) {
   return (
-    <div className="flex flex-wrap gap-2 mb-3">
+    <div className="flex flex-wrap gap-1.5 mb-2">
       {QUICK_ACTIONS.map((action) => (
-        <Button
+        <button
           key={action.id}
-          variant="outline"
-          size="sm"
           onClick={() => onActionClick(action.mode)}
           disabled={disabled}
-          className="text-xs"
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-medium tracking-wide text-muted-foreground/70 bg-white/[0.03] hover:bg-white/[0.07] rounded-full ring-1 ring-white/5 disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
         >
-          <action.icon className="h-3 w-3 mr-1" />
+          <action.icon className="h-3 w-3" strokeWidth={1} />
           {action.label}
-        </Button>
+        </button>
       ))}
     </div>
   );

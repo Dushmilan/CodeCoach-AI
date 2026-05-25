@@ -1,88 +1,204 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Moon, Sun, Settings, LogOut, User } from 'lucide-react';
+import { Moon, Sun, Settings, LogOut, User, X } from 'lucide-react';
 import { useTheme } from '@/hooks';
 import { useAuth } from '@/providers';
 import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/settings/SettingsModal';
 import { useSettings } from '@/hooks/use-settings';
+import { cn } from '@/lib/utils';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const { apiKey, setApiKey } = useSettings();
   const { user, isAuthenticated, logout } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
 
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center space-x-4">
-          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+    <>
+      {/* Fluid Island Nav */}
+      <header
+        className={cn(
+          "relative z-30 mx-auto mt-4 w-max rounded-full bg-card/70 backdrop-blur-2xl ring-1 ring-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          menuOpen && "scale-95 opacity-0 pointer-events-none"
+        )}
+      >
+        <div className="flex items-center gap-1 px-2 py-1.5">
+          <Link
+            href="/"
+            className="px-4 py-2 text-sm font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          >
             CodeCoach AI
           </Link>
-          <nav className="hidden sm:flex items-center space-x-1 ml-6">
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-0.5 ml-2">
             <Link
               href="/privacy"
-              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md hover:bg-secondary transition-colors"
+              className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               Privacy
             </Link>
             <Link
               href="/educators"
-              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md hover:bg-secondary transition-colors"
+              className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               For Educators
             </Link>
           </nav>
-        </div>
 
-        <div className="flex items-center space-x-2">
-          {isAuthenticated ? (
-            <>
-              <span className="text-sm text-muted-foreground hidden sm:inline-flex items-center gap-1">
-                <User className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-0.5 ml-2">
+            {isAuthenticated ? (
+              <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground">
+                <User className="h-3 w-3" strokeWidth={1} />
                 {user?.username}
               </span>
-              <Button
-                variant="ghost"
-                size="icon"
+            ) : (
+              <Link href="/login">
+                <button className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+                  Sign in
+                </button>
+              </Link>
+            )}
+
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
+              ) : (
+                <Moon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
+              )}
+            </button>
+
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+              title="Settings"
+            >
+              <Settings className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
+            </button>
+
+            {isAuthenticated && (
+              <button
                 onClick={logout}
-                className="hover:bg-secondary"
+                className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 title="Sign out"
               >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </>
-          ) : (
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="hover:bg-secondary">
-                Sign in
-              </Button>
-            </Link>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowSettings(true)}
-            className="hover:bg-secondary"
-            title="Settings"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="hover:bg-secondary"
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
+                <LogOut className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
+              </button>
             )}
-          </Button>
+
+            {/* Hamburger */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden relative w-9 h-9 flex items-center justify-center hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+              aria-label="Toggle menu"
+            >
+              <div className="relative w-4 h-3.5">
+                <span
+                  className={cn(
+                    "absolute left-0 top-0 block h-[1.5px] w-full bg-foreground/60 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    menuOpen && "top-1/2 -translate-y-1/2 rotate-45"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 top-1/2 -translate-y-1/2 block h-[1.5px] w-full bg-foreground/60 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    menuOpen && "opacity-0 scale-x-0"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 bottom-0 block h-[1.5px] w-full bg-foreground/60 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    menuOpen && "bottom-1/2 translate-y-1/2 -rotate-45"
+                  )}
+                />
+              </div>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Menu Overlay */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-3xl bg-black/90 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          menuOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        )}
+      >
+        <button
+          onClick={() => setMenuOpen(false)}
+          className="absolute top-6 right-6 p-3 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          aria-label="Close menu"
+        >
+          <X className="h-5 w-5 text-white/70" strokeWidth={1} />
+        </button>
+
+        <nav className="flex flex-col items-center gap-6">
+          {[
+            { href: '/', label: 'Home', delay: 'delay-100' },
+            { href: '/privacy', label: 'Privacy', delay: 'delay-150' },
+            { href: '/educators', label: 'For Educators', delay: 'delay-200' },
+          ].map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMenuOpen(false)}
+              className={cn(
+                "text-4xl font-light tracking-tight text-white/80 hover:text-white transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                menuOpen
+                  ? `translate-y-0 opacity-100 ${link.delay}`
+                  : "translate-y-12 opacity-0"
+              )}
+              style={{
+                transitionProperty: 'transform, opacity',
+              }}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div
+          className={cn(
+            "absolute bottom-12 flex items-center gap-4 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] delay-300",
+            menuOpen
+              ? "translate-y-0 opacity-100"
+              : "translate-y-8 opacity-0"
+          )}
+        >
+          {isAuthenticated && (
+            <span className="text-sm text-white/40 flex items-center gap-2">
+              <User className="h-3.5 w-3.5" strokeWidth={1} />
+              {user?.username}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              setTheme(theme === 'dark' ? 'light' : 'dark');
+              setMenuOpen(false);
+            }}
+            className="px-5 py-2 text-sm text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          >
+            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </button>
         </div>
       </div>
 
@@ -92,6 +208,6 @@ export function Header() {
         apiKey={apiKey}
         onSave={setApiKey}
       />
-    </header>
+    </>
   );
 }

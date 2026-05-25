@@ -24,19 +24,20 @@ export function MessageList({ messages, isTyping }: MessageListProps) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 space-y-3">
       {messages.map((message) => (
         <div
           key={message.id}
           className={`flex ${
             message.role === 'user' ? 'justify-end' : 'justify-start'
-          }`}
+          } animate-fade-up`}
+          style={{ animationDelay: '0ms' }}
         >
           <div
-            className={`max-w-[80%] rounded-lg px-4 py-2 ${
+            className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
               message.role === 'user'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground'
+                ? 'bg-primary/20 text-foreground ring-1 ring-primary/30'
+                : 'bg-white/[0.03] text-foreground/80 ring-1 ring-white/5'
             }`}
           >
             {message.role === 'assistant' && message.structured ? (
@@ -45,26 +46,26 @@ export function MessageList({ messages, isTyping }: MessageListProps) {
                 rawContent={message.content}
               />
             ) : (
-              <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+              <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
             )}
-            <div className="text-xs opacity-70 mt-1">
-              {new Date(message.timestamp).toLocaleTimeString()}
+            <div className="text-[10px] text-muted-foreground/40 mt-1.5 tracking-wide">
+              {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         </div>
       ))}
 
       {isTyping && (
-        <div className="flex justify-start">
-          <div className="bg-secondary text-secondary-foreground rounded-lg px-4 py-2">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+        <div className="flex justify-start animate-fade-up">
+          <div className="rounded-2xl px-4 py-3 bg-white/[0.03] ring-1 ring-white/5">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" />
               <div
-                className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
                 style={{ animationDelay: '0.1s' }}
               />
               <div
-                className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
                 style={{ animationDelay: '0.2s' }}
               />
             </div>

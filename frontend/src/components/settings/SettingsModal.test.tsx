@@ -22,7 +22,7 @@ describe('SettingsModal', () => {
 
   it('renders modal when open is true', () => {
     render(<SettingsModal {...defaultProps} />);
-    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByText('SETTINGS')).toBeInTheDocument();
   });
 
   it('shows API key input', () => {
