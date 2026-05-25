@@ -31,9 +31,14 @@
 
 - 13 questions in bank (10 hand-authored + 3 AI-generated that passed quality gate)
 - AI-assisted generation script (`backend/scripts/generate_questions.py`) produces questions across 14 DSA topics via NVIDIA NIM
-- **AI Quality Gate** (`backend/scripts/verify_and_populate.py`): 4 independent rounds of AI evaluation against 9 criteria — topic relevance, difficulty match, correctness, clarity, starter code quality, test case quality, solution correctness, edge cases, test_case_coverage (≥20 test cases required)
+- **Dual Archetype System**: Two prompt archetypes — "Classic Grind" (traditional algorithm puzzles) and "Creative 2026" (real-world scenarios like LLM context windows, drone routing, GPU scheduling, smart grid DP, CRDT reconciliation)
+- **14 2026 Scenario Seeds**: Each DSA topic has a hand-authored real-world framing (e.g., Sliding Window → LLM token budget optimization, Graphs → drone no-fly zone routing, Heap → GPU cluster job scheduling)
+- **Auto-Retry on JSON Parse Failure**: Generator retries up to 3 times, feeding the JSON error back to the LLM so it self-corrects
+- **Strict 20 Test Case Enforcement**: Generator prompt demands exactly 20 test cases (5 edge + 5 standard + 10 hidden); parser warns if fewer are produced
+- **AI Quality Gate** (`backend/scripts/verify_and_populate.py`): 4 independent rounds of AI evaluation against **11 criteria** — topic relevance, difficulty match, correctness, clarity, starter code quality, test case quality, solution correctness, edge cases, test_case_coverage (≥20 test cases required), **thematic_coherence** (scenario logic/accuracy check), **boundary_edge_cases** (max-constraint stress testing)
 - Questions populate bank only if average score > 90 across all 4 rounds; rejected questions saved to `rejected_questions.json` for review
 - `--export-prompts` mode exports all questions as self-contained evaluation prompts for manual AI eval; `--import-scores` mode ingests scored results
+- `--archetype` CLI flag supports `classic`, `creative_2026`, or `mixed` (default: mixed, 50/50 split per topic/difficulty)
 - **Evaluation using NVIDIA API key** — pending: run `verify_and_populate.py` with NVIDIA NIM to auto-evaluate the 87 rejected questions and promote qualifying ones
 - Full CRUD via REST API
 - Search by title/category/difficulty
@@ -99,7 +104,7 @@
 - 288 tests passing (274 unit + 14 script tests)
 - Auth: 4 supabase login tests (creates new user, returns existing, invalid token, no config)
 - Question generation: 10 tests (slugify, prompt building, JSON parsing, topic extraction)
-- AI Verification Script: 33 tests (prompt building, response parsing, scoring, filtering, merging, export, import)
+- AI Verification Script: 48 tests (prompt building, response parsing, scoring, filtering, merging, export, import, archetype detection, thematic coherence, boundary edge cases, auto-retry logic)
 
 ### Frontend (Vitest)
 - 29 test files covering hooks, services, components

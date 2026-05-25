@@ -21,6 +21,8 @@ VERIFICATION_CRITERIA = [
     "solution",
     "hints",
     "constraints",
+    "thematic_coherence",
+    "boundary_edge_cases",
 ]
 
 QUESTIONS_FILE = os.path.join(
@@ -43,6 +45,8 @@ def build_verification_prompt(question: dict) -> str:
         "solution": "Does the provided solution approach correctly solve the problem? Is the algorithm sound?",
         "hints": "Are the hints helpful and progressive without revealing the full solution? Do they guide rather than give away?",
         "constraints": "Are the input constraints realistic, reasonable, and useful for bounding the solution space?",
+        "thematic_coherence": "If the question uses a real-world scenario (e.g. LLM context windows, drone routing, GPU scheduling), does the scenario make logical sense? Are the technical details accurate and consistent with the algorithmic requirements? Do the examples and test cases align with the scenario framing?",
+        "boundary_edge_cases": "Do the test cases thoroughly cover maximum constraint boundaries (e.g. n=10^5, extreme values, overflow conditions)? Are there tests for empty input, single-element input, and worst-case scenarios? Do the hidden test cases stress-test time/space complexity assumptions?",
     }
 
     test_cases_str = json.dumps(question.get("test_cases", []), indent=2)
@@ -84,7 +88,9 @@ Return ONLY a JSON object with no other text:
     "starter_code": <int 0-100>,
     "solution": <int 0-100>,
     "hints": <int 0-100>,
-    "constraints": <int 0-100>
+    "constraints": <int 0-100>,
+    "thematic_coherence": <int 0-100>,
+    "boundary_edge_cases": <int 0-100>
   }},
   "overall": <int 0-100>,
   "issues": <list of strings describing any problems found>

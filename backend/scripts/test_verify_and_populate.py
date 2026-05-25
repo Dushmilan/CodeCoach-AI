@@ -83,7 +83,17 @@ class TestBuildVerificationPrompt:
         prompt = build_verification_prompt(SAMPLE_QUESTION)
         for criterion in VERIFICATION_CRITERIA:
             assert criterion in prompt, f"Missing criterion: {criterion}"
-        assert len(VERIFICATION_CRITERIA) == 9
+        assert len(VERIFICATION_CRITERIA) == 11
+
+    def test_contains_thematic_coherence_criterion(self):
+        prompt = build_verification_prompt(SAMPLE_QUESTION)
+        assert "thematic_coherence" in prompt
+        assert "real-world scenario" in prompt
+
+    def test_contains_boundary_edge_cases_criterion(self):
+        prompt = build_verification_prompt(SAMPLE_QUESTION)
+        assert "boundary_edge_cases" in prompt
+        assert "maximum constraint boundaries" in prompt
 
     def test_contains_test_case_coverage_criterion(self):
         prompt = build_verification_prompt(SAMPLE_QUESTION)
@@ -115,6 +125,8 @@ class TestParseVerificationResponse:
                     "solution": 92,
                     "hints": 80,
                     "constraints": 90,
+                    "thematic_coherence": 95,
+                    "boundary_edge_cases": 85,
                 },
                 "overall": 90,
                 "issues": ["Hint 3 is too revealing"],
@@ -127,7 +139,7 @@ class TestParseVerificationResponse:
         assert result["criteria_scores"]["test_case_coverage"] == 90
 
     def test_handles_code_fence(self):
-        raw = '```json\n{"overall": 92, "criteria_scores": {"test_cases": 90, "test_case_coverage": 85, "description": 85, "difficulty": 80, "category": 95, "starter_code": 90, "solution": 95, "hints": 85, "constraints": 90}, "issues": []}\n```'
+        raw = '```json\n{"overall": 92, "criteria_scores": {"test_cases": 90, "test_case_coverage": 85, "description": 85, "difficulty": 80, "category": 95, "starter_code": 90, "solution": 95, "hints": 85, "constraints": 90, "thematic_coherence": 90, "boundary_edge_cases": 85}, "issues": []}\n```'
         result = parse_verification_response(raw)
         assert result["overall"] == 92
 
@@ -144,6 +156,8 @@ class TestParseVerificationResponse:
                     "solution": 90,
                     "hints": 90,
                     "constraints": 90,
+                    "thematic_coherence": 90,
+                    "boundary_edge_cases": 90,
                 },
                 "issues": [],
             }
@@ -168,7 +182,7 @@ class TestParseVerificationResponse:
         assert result["criteria_scores"]["description"] == 0
 
     def test_extracts_json_from_freeform_text(self):
-        raw = 'Here is my evaluation:\n\n{"overall": 88, "criteria_scores": {"test_cases": 90, "test_case_coverage": 85, "description": 85, "difficulty": 80, "category": 95, "starter_code": 90, "solution": 95, "hints": 85, "constraints": 90}, "issues": ["Minor hint issue"]}'
+        raw = 'Here is my evaluation:\n\n{"overall": 88, "criteria_scores": {"test_cases": 90, "test_case_coverage": 85, "description": 85, "difficulty": 80, "category": 95, "starter_code": 90, "solution": 95, "hints": 85, "constraints": 90, "thematic_coherence": 88, "boundary_edge_cases": 82}, "issues": ["Minor hint issue"]}'
         result = parse_verification_response(raw)
         assert result["overall"] == 88
 
@@ -295,6 +309,8 @@ class TestEvaluateQuestionQuality:
                         "solution": 95,
                         "hints": 88,
                         "constraints": 92,
+                        "thematic_coherence": 93,
+                        "boundary_edge_cases": 87,
                     },
                     "issues": [],
                 }
@@ -329,6 +345,8 @@ class TestEvaluateQuestionQuality:
                         "solution": 90,
                         "hints": 90,
                         "constraints": 90,
+                        "thematic_coherence": 90,
+                        "boundary_edge_cases": 90,
                     },
                     "issues": [],
                 }

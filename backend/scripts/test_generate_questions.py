@@ -34,6 +34,21 @@ class TestBuildPrompt:
         prompt = build_prompt("Graphs", "hard", 2)
         assert "JSON array" in prompt
 
+    def test_classic_archetype_has_traditional_framing(self):
+        prompt = build_prompt("Arrays", "easy", 1, archetype="classic")
+        assert "classic coding interview" in prompt
+        assert "Return ONLY the JSON array" in prompt
+        assert "EXACTLY 20" in prompt or "20 test" in prompt
+
+    def test_creative_archetype_has_scenario_seed(self):
+        prompt = build_prompt("Sliding Window", "medium", 1, archetype="creative_2026")
+        assert "LLM context window" in prompt or "real-world" in prompt
+        assert "FRAME THE PROBLEM" in prompt
+
+    def test_creative_archetype_falls_back_for_unknown_topic(self):
+        prompt = build_prompt("Unknown Topic", "easy", 1, archetype="creative_2026")
+        assert "modern real-world" in prompt
+
 
 class TestParseQuestions:
     def test_parses_valid_json_array(self):
