@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { User, AuthState } from '@/types';
 import { authService } from '@/features/auth/auth.service';
+import { showToast } from '@/components/ui/Toast';
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<void>;
@@ -80,11 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     const response = await authService.login({ username, password });
     setAuth(response.user, response.access_token);
+    showToast('Signed in successfully', 'success');
   }, [setAuth]);
 
   const register = useCallback(async (username: string, email: string, password: string) => {
     const response = await authService.register({ username, email, password });
     setAuth(response.user, response.access_token);
+    showToast('Account created successfully', 'success');
   }, [setAuth]);
 
   const loginWithSupabase = useCallback(async (accessToken: string) => {
@@ -94,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setAuth(null, null);
+    showToast('Signed out', 'info');
   }, [setAuth]);
 
   return (

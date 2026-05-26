@@ -5,6 +5,7 @@ import { Question } from '@/types';
 import { codeExecutionService } from './code-execution.service';
 import { CodeExecutionFeature, SubmitResponse, TestCase, ValidationResponse } from './code-execution.types';
 import { executeClientJS, formatClientJsOutput } from '@/lib/client-js-executor';
+import { showToast } from '@/components/ui/Toast';
 
 export function useCodeExecution(): CodeExecutionFeature {
   const [isRunning, setIsRunning] = useState(false);
@@ -24,6 +25,7 @@ export function useCodeExecution(): CodeExecutionFeature {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to run code';
         setError(errorMessage);
+        showToast(errorMessage, 'error');
         throw err;
       } finally {
         setIsRunning(false);
@@ -59,6 +61,7 @@ export function useCodeExecution(): CodeExecutionFeature {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to validate code';
         setError(errorMessage);
+        showToast(errorMessage, 'error');
         throw err;
       } finally {
         setIsRunning(false);
@@ -99,6 +102,7 @@ export function useCodeExecution(): CodeExecutionFeature {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to submit code';
         setError(errorMessage);
+        showToast(errorMessage, 'error');
         throw err;
       } finally {
         setIsRunning(false);
@@ -120,6 +124,7 @@ export function useCodeExecution(): CodeExecutionFeature {
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'An error occurred during execution';
         setError(errorMessage);
+        showToast(errorMessage, 'error');
         throw err;
       } finally {
         setIsRunning(false);

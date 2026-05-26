@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { Question, QuestionSummary } from '@/types';
 import { questionService } from './question.service';
 import { QuestionFilters } from './question.types';
+import { showToast } from '@/components/ui/Toast';
 
 interface UseQuestionOptions {
   initialFilters?: QuestionFilters;
@@ -44,6 +45,7 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load questions';
       setError(errorMessage);
+      showToast(errorMessage, 'error');
       console.error('Failed to load questions:', err);
     } finally {
       setIsLoading(false);
@@ -60,6 +62,7 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load question details';
       setError(errorMessage);
+      showToast(errorMessage, 'error');
       console.error('Failed to load question details:', err);
     } finally {
       setIsLoadingQuestion(false);

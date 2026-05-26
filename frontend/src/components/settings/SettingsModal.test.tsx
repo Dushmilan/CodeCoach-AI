@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsModal } from './SettingsModal';
+import { ToastContainer } from '@/components/ui/Toast';
 
 describe('SettingsModal', () => {
   const defaultProps = {
@@ -49,9 +50,14 @@ describe('SettingsModal', () => {
     expect(onSave).toHaveBeenCalledWith('nvapi-key-123');
   });
 
-  it('shows saved confirmation after save', async () => {
+  it('shows toast confirmation after save', async () => {
     const user = userEvent.setup();
-    render(<SettingsModal {...defaultProps} />);
+    render(
+      <>
+        <SettingsModal {...defaultProps} />
+        <ToastContainer />
+      </>
+    );
 
     const input = screen.getByPlaceholderText('nvapi-...');
     await user.type(input, 'nvapi-abc');
@@ -104,15 +110,14 @@ describe('SettingsModal', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('resets saved state when input changes after save', async () => {
-    const user = userEvent.setup();
-    render(<SettingsModal {...defaultProps} />);
+  it('does not show toast before save', () => {
+    render(
+      <>
+        <SettingsModal {...defaultProps} />
+        <ToastContainer />
+      </>
+    );
 
-    await user.type(screen.getByPlaceholderText('nvapi-...'), 'k');
-    await user.click(screen.getByRole('button', { name: /save/i }));
-    expect(screen.getByText(/api key saved/i)).toBeInTheDocument();
-
-    await user.type(screen.getByPlaceholderText('nvapi-...'), 'y');
     expect(screen.queryByText(/api key saved/i)).not.toBeInTheDocument();
   });
 });

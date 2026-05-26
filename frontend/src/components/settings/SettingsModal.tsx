@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { showToast } from '@/components/ui/Toast';
 
 interface SettingsModalProps {
   open: boolean;
@@ -14,13 +15,11 @@ interface SettingsModalProps {
 export function SettingsModal({ open, onClose, apiKey, onSave }: SettingsModalProps) {
   const [inputValue, setInputValue] = useState(apiKey);
   const [showKey, setShowKey] = useState(false);
-  const [saved, setSaved] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setInputValue(apiKey);
-      setSaved(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open, apiKey]);
@@ -37,7 +36,7 @@ export function SettingsModal({ open, onClose, apiKey, onSave }: SettingsModalPr
 
   const handleSave = () => {
     onSave(inputValue.trim());
-    setSaved(true);
+    showToast('API key saved', 'success');
   };
 
   return (
@@ -66,7 +65,7 @@ export function SettingsModal({ open, onClose, apiKey, onSave }: SettingsModalPr
                 ref={inputRef}
                 type={showKey ? 'text' : 'password'}
                 value={inputValue}
-                onChange={(e) => { setInputValue(e.target.value); setSaved(false); }}
+                onChange={(e) => setInputValue(e.target.value)}
                 placeholder="nvapi-..."
                 className="w-full px-3 py-2 pr-10 text-sm bg-transparent text-foreground/80 placeholder:text-muted-foreground/40 focus:outline-none font-mono"
               />
@@ -79,10 +78,6 @@ export function SettingsModal({ open, onClose, apiKey, onSave }: SettingsModalPr
                 </div>
               </div>
             </div>
-
-            {saved && (
-              <p className="text-xs text-green-400/80">API key saved.</p>
-            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={onClose}>

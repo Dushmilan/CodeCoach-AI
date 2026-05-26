@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { ChatMessage } from '@/types';
 import { coachingService } from './coaching.service';
 import { CoachingFeature, CoachingMode } from './coaching.types';
+import { showToast } from '@/components/ui/Toast';
 
 export function useCoaching(): CoachingFeature {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -50,6 +51,7 @@ export function useCoaching(): CoachingFeature {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to get coaching response';
         setError(errorMessage);
+        showToast(errorMessage, 'error');
         console.error('Error getting coach response:', err);
 
         const errorAssistantMessage: ChatMessage = {

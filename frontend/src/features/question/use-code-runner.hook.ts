@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { Question, Language } from '@/types';
 import { useCodeExecution } from '@/features/code-execution/code-execution.hook';
 import { useLocalStorage } from '@/hooks';
+import { showToast } from '@/components/ui/Toast';
 
 interface UseCodeRunnerOptions {
   fullQuestion: Question | null;
@@ -75,8 +76,10 @@ export function useCodeRunner({
 
       if (result.passed_count === result.total) {
         setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'solved' }));
+        showToast('All tests passed!', 'success');
       } else {
         setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'attempted' }));
+        showToast(`${result.passed_count}/${result.total} tests passed`, 'info');
       }
     } catch (err) {
       console.error('Submit error:', err);
