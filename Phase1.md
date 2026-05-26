@@ -84,4 +84,8 @@ Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coach
 | AI-generated passing quality gate | 3 |
 | AI-generated pending evaluation | 87 |
 
-**Next action:** Run `verify_and_populate.py` with NVIDIA NIM to auto-evaluate the 87 pending questions and promote qualifying ones.
+**Next action:** Run `verify_and_populate.py` with NVIDIA NIM to auto-evaluate the 87 pending questions and promote qualifying ones. (Deferred to after Phase 2 ships.)
+
+## Phase 2 Migration Note
+
+Phase 2 (programming language curricula) is now live with its own quality-gate pipeline. The `verify_and_populate.py` script for Phase 1 remains unrun — the 87 DSA questions still need evaluation.

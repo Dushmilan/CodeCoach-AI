@@ -21,3 +21,30 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Session Context — May 26, 2026
+
+### Phase 2 Complete (Steps 1–9)
+Programming language curricula (C, Python, Java) for CodeCoach AI:
+
+**Backend:**
+- Course/Module/Lesson schemas (`course_schemas.py`), ports, file repos, service layer
+- REST APIs: courses list/detail, lesson detail, progress tracking
+- Seed data: 3 courses, 9 modules, 27 lessons (18 theory + 9 exercises with test cases)
+- AI coaching: `lesson_context` injected into NIM system prompts (6 new tests)
+
+**Frontend:**
+- `/learn` dashboard, `/[courseId]` module tree, `/lesson/[lessonId]` viewer
+- Monaco editor for exercises, AI Coach panel with lesson-aware prompts
+- Header "Learn" nav link (desktop + mobile)
+- Hooks: `useCurriculum`, `useCourse`, `useLesson`
+
+**Content Pipeline:**
+- `generate_curriculum.py` — NIM-powered generation (tested)
+- `verify_curriculum.py` — 3-round AI quality gate (8 tests)
+
+**Testing:** 40 tests total across coaching prompts, generator, verifier.
+
+### Remaining
+1. **Phase 2 Step 10:** E2E testing and polish
+2. **Phase 1 cleanup:** Run `verify_and_populate.py` to evaluate 87 pending DSA questions

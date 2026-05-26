@@ -1,8 +1,10 @@
-# Phase 2 — Programming Language Curricula (Plan)
+# Phase 2 — Programming Language Curricula (Implemented)
 
 ## Overview
 
-Phase 2 adds structured language learning paths for C, Python, and Java — each with ~15–20 interleaved theory lessons and coding exercises. Context-aware AI coaching adapts hints/reviews to the current lesson topic.
+Phase 2 adds structured language learning paths for C, Python, and Java — each with 9 interleaved theory lessons and coding exercises (27 total). Context-aware AI coaching adapts hints/reviews to the current lesson topic.
+
+**Status:** Steps 1–9 complete. Step 10 (E2E testing + polish) pending. 3 seed courses populated with 27 lessons (9 per language). 40 tests passing.
 
 ---
 
@@ -80,25 +82,38 @@ Phase 2 adds structured language learning paths for C, Python, and Java — each
 
 ## 5. Implementation Order
 
-| Step | Description | Dependencies |
-|---|---|---|
-| 1 | Create data models and JSON storage backends | None |
-| 2 | Build Course/Module/Lesson CRUD APIs | Step 1 |
-| 3 | Build progress tracking APIs | Step 1 |
-| 4 | Create `/learn` frontend dashboard | Step 2 |
-| 5 | Build lesson viewer (theory + exercise views) | Steps 2, 4 |
-| 6 | Wire exercise submission into existing Run/Submit pipeline | Steps 3, 5 |
-| 7 | Inject lesson context into AI coaching prompts | Step 6 |
-| 8 | Build and run curriculum generation script | Step 1 |
-| 9 | Quality-gate and populate generated lessons | Step 8 |
-| 10 | End-to-end testing and polish | All above |
+| Step | Description | Status |
+|---|---|---|---|
+| 1 | Create data models and JSON storage backends | ✅ Done |
+| 2 | Build Course/Module/Lesson CRUD APIs | ✅ Done |
+| 3 | Build progress tracking APIs | ✅ Done |
+| 4 | Create `/learn` frontend dashboard | ✅ Done |
+| 5 | Build lesson viewer (theory + exercise views) | ✅ Done |
+| 6 | Wire exercise submission into existing Run/Submit pipeline | ✅ Done |
+| 7 | Inject lesson context into AI coaching prompts | ✅ Done |
+| 8 | Build and run curriculum generation script | ✅ Done |
+| 9 | Quality-gate and populate generated lessons | ✅ Done |
+| 10 | End-to-end testing and polish | ⏳ Pending |
 
 ---
 
 ## 6. Success Criteria
 
-- All 3 courses (C, Python, Java) fully populated with ~20 lessons each
-- Users can navigate from course listing → module → lesson without dead ends
-- AI coaching respects lesson context (no off-topic hints)
-- Exercise code submissions grade correctly against lesson test cases
-- Progress persists across sessions and reflects accurately on dashboard
+| Criterion | Status |
+|---|---|
+| All 3 courses (C, Python, Java) fully populated with ~20 lessons each | ⏳ 9 lessons each (seed data), generation script ready to scale to 20 |
+| Users can navigate from course listing → module → lesson without dead ends | ✅ |
+| AI coaching respects lesson context (no off-topic hints) | ✅ (6 tests covering prompt injection) |
+| Exercise code submissions grade correctly against lesson test cases | ✅ (via existing `/api/run` pipeline) |
+| Progress persists across sessions and reflects accurately on dashboard | ✅ |
+
+## 7. Remaining Work
+
+### Phase 2 — Step 10
+- End-to-end Playwright or manual walkthrough of all user flows
+- Responsive polish for `/learn` pages on mobile
+- Edge case handling: empty progress, unauthenticated user on `/learn`
+
+### Phase 1 Cleanup
+- Run `verify_and_populate.py` to evaluate 87 pending DSA questions (requires NVIDIA API key)
+- Target: promote qualifying questions to the bank via quality gate (3+ rounds, avg > 90)
