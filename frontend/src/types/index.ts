@@ -68,6 +68,60 @@ export interface UserProgress {
 
 export type Language = 'python' | 'javascript' | 'java';
 
+export interface CourseSummary {
+  id: string;
+  title: string;
+  description: string;
+  language: string;
+  icon: string;
+  order: number;
+  progress: number;
+}
+
+export interface CourseDetail {
+  id: string;
+  title: string;
+  description: string;
+  language: string;
+  icon: string;
+  order: number;
+  modules: ModuleDetail[];
+}
+
+export interface ModuleDetail {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string;
+  order: number;
+  lessons: LessonSummary[];
+}
+
+export interface LessonSummary {
+  id: string;
+  course_id: string;
+  module_id: string;
+  title: string;
+  type: 'theory' | 'exercise';
+  content: string;
+  order: number;
+  starter_code: string | null;
+  test_cases: Array<{
+    input: string;
+    expected_output: string;
+    description: string;
+  }> | null;
+  language: string;
+}
+
+export interface CourseProgress {
+  user_id: string;
+  course_id: string;
+  completed_lessons: string[];
+  started_at: string;
+  last_accessed_at: string;
+}
+
 export interface User {
   id: string;
   username: string;

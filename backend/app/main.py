@@ -21,6 +21,8 @@ from app.api import (  # noqa: E402
     debug,
     question_validation,
     auth,
+    courses,
+    progress,
 )
 
 app = FastAPI(
@@ -71,6 +73,8 @@ app.include_router(
     tags=["question-validation"],
 )
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
+app.include_router(progress.router, prefix="/api/progress", tags=["progress"])
 
 
 @app.get("/")

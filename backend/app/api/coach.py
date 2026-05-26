@@ -71,6 +71,7 @@ def get_nim_service(
                 message: str,
                 mode: str,
                 difficulty: str,
+                lesson_context: str = None,
             ):
                 yield self.responses.get(mode, "Here's some guidance for your problem.")
 
@@ -82,6 +83,7 @@ def get_nim_service(
                 message: str,
                 mode: str,
                 difficulty: str,
+                lesson_context: str = None,
             ):
                 return {
                     "summary": self.responses.get(mode, "Here's some guidance for your problem."),
@@ -164,6 +166,7 @@ async def get_coaching(
             message=request.message,
             mode=request.mode.value,
             difficulty=request.difficulty.value,
+            lesson_context=request.lesson_context,
         )
 
         # Create raw text response from structured data for backward compatibility
@@ -288,6 +291,7 @@ async def get_coaching_stream(
                 message=request.message,
                 mode=request.mode.value,
                 difficulty=request.difficulty.value,
+                lesson_context=request.lesson_context,
             ):
                 chunk_count += 1
                 # Format as SSE

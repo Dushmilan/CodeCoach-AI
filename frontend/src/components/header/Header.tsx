@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Moon, Sun, Settings, LogOut, User, X } from 'lucide-react';
+import { Moon, Sun, Settings, LogOut, User, X, GraduationCap } from 'lucide-react';
 import { useTheme } from '@/hooks';
 import { useAuth } from '@/providers';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,13 @@ export function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-0.5 ml-2">
+            <Link
+              href="/learn"
+              className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+            >
+              <GraduationCap className="h-3 w-3" strokeWidth={1.5} />
+              Learn
+            </Link>
             <Link
               href="/privacy"
               className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
@@ -154,6 +161,7 @@ export function Header() {
         <nav className="flex flex-col items-center gap-6">
           {[
             { href: '/', label: 'Home', delay: 'delay-100' },
+            { href: '/learn', label: 'Learn', delay: 'delay-125' },
             { href: '/privacy', label: 'Privacy', delay: 'delay-150' },
             { href: '/educators', label: 'For Educators', delay: 'delay-200' },
           ].map((link) => (

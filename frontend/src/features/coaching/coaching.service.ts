@@ -9,6 +9,7 @@ export interface CoachingRequest {
   mode: string;
   language: string;
   difficulty?: string;
+  lesson_context?: string;
 }
 
 export interface CoachingResponse {
@@ -31,19 +32,24 @@ export class CoachingService {
     code: string,
     message: string,
     mode: string,
-    difficulty: string = 'medium'
+    difficulty: string = 'medium',
+    lessonContext?: string
   ): Promise<CoachingResponse> {
     const headers = this.getApiKeyHeader();
+    const body: CoachingRequest = {
+      problem,
+      code,
+      message,
+      mode: mode.toLowerCase(),
+      language: language.toLowerCase(),
+      difficulty,
+    };
+    if (lessonContext) {
+      body.lesson_context = lessonContext;
+    }
     const data = await this.http.post<{ response: string; structured: StructuredCoachingResponse | null }>(
       '/api/coach/',
-      {
-        problem,
-        code,
-        message,
-        mode: mode.toLowerCase(),
-        language: language.toLowerCase(),
-        difficulty,
-      },
+      body,
       { headers }
     );
 

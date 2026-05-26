@@ -37,6 +37,7 @@ class CoachingRequest(BaseModel):
     difficulty: Difficulty = Field(
         default=Difficulty.MEDIUM, description="Problem difficulty"
     )
+    lesson_context: Optional[str] = Field(None, description="Lesson context for scoped coaching")
 
 
 class StructuredCoachingResponse(BaseModel):

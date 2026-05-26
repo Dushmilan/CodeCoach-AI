@@ -34,7 +34,27 @@ class TestCoachEndpoints:
         assert data["mode"] == "review"
         assert data["language"] == "python"
         assert len(data["response"]) > 0
-    
+
+    @pytest.mark.usefixtures("test_env_vars")
+    def test_get_coaching_with_lesson_context(self, test_client: TestClient, test_env_vars):
+        """Coaching endpoint accepts optional lesson_context field."""
+        coaching_request = {
+            "problem": "Write a for loop that prints 1 to 5",
+            "code": "for i in range(5):\n    print(i)",
+            "language": "python",
+            "message": "How can I modify this to only print even numbers?",
+            "mode": "hint",
+            "difficulty": "easy",
+            "lesson_context": "Python Lesson 4: For Loops"
+        }
+
+        response = test_client.post("/api/coach/", json=coaching_request)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "response" in data
+        assert data["mode"] == "hint"
+
     def test_get_coaching_streaming(self, test_client: TestClient):
         """Test streaming coaching endpoint."""
         coaching_request = {
@@ -55,7 +75,28 @@ class TestCoachEndpoints:
         content = response.text
         assert "data:" in content
         assert "done" in content
-    
+
+    @pytest.mark.usefixtures("test_env_vars")
+    def test_get_coaching_streaming_with_lesson_context(self, test_client: TestClient, test_env_vars):
+        """Streaming coaching endpoint accepts optional lesson_context."""
+        coaching_request = {
+            "problem": "Print numbers 1 to 10",
+            "code": "for i in range(10):\n    print(i)",
+            "language": "python",
+            "message": "How do I print only odd numbers?",
+            "mode": "hint",
+            "difficulty": "easy",
+            "lesson_context": "Python Lesson 4: For Loops"
+        }
+
+        response = test_client.post("/api/coach/stream", json=coaching_request)
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
+        content = response.text
+        assert "data:" in content
+        assert "done" in content
+
     def test_get_coaching_modes(self, test_client: TestClient):
         """Test getting available coaching modes."""
         response = test_client.get("/api/coach/modes")

@@ -2,6 +2,7 @@
 
 Exports prompt builder functions and mode-specific section constants.
 """
+from typing import Optional
 
 PERSONA = """You are CodeCoach AI, a friendly and expert coding interview coach.
 
@@ -56,6 +57,17 @@ GENERAL_GUIDELINES = """
 - Never give complete solutions - guide discovery
 - Use **bold** sparingly for key terms only
 - Use `backticks` for code, variables, and technical terms"""
+
+
+def _lesson_context_block(lesson_context: Optional[str]) -> str:
+    if not lesson_context:
+        return ""
+    return f"""
+## Lesson Context
+You are currently coaching a student through "{lesson_context}".
+All hints, explanations, and code examples MUST stay within the scope of this lesson.
+Do not introduce concepts outside this lesson unless the student explicitly asks."""
+
 
 MODE_SECTIONS = {
     "hint": {
@@ -128,22 +140,28 @@ def _structured_mode_section(mode: str, language: str) -> str:
     return ""
 
 
-def build_system_prompt(mode: str, language: str) -> str:
+def build_system_prompt(mode: str, language: str, lesson_context: Optional[str] = None) -> str:
     parts = [PERSONA]
     section = _mode_section(mode, language)
     if section:
         parts.append(section)
     parts.append(f"\n## Language\nRespond in: {language}")
+    ctx = _lesson_context_block(lesson_context)
+    if ctx:
+        parts.append(ctx)
     parts.append(GENERAL_GUIDELINES)
     return "\n\n".join(parts)
 
 
-def build_structured_system_prompt(mode: str, language: str) -> str:
+def build_structured_system_prompt(mode: str, language: str, lesson_context: Optional[str] = None) -> str:
     parts = [STRUCTURED_PERSONA]
     section = _structured_mode_section(mode, language)
     if section:
         parts.append(section)
     parts.append(f"\nLanguage: {language}")
+    ctx = _lesson_context_block(lesson_context)
+    if ctx:
+        parts.append(ctx)
     return "\n\n".join(parts)
 
 

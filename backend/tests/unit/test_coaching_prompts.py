@@ -50,6 +50,15 @@ class TestBuildSystemPrompt:
         assert "Respond in: python" in prompt
         assert "General Guidelines" in prompt
 
+    def test_includes_lesson_context_when_provided(self):
+        prompt = build_system_prompt("hint", "python", lesson_context="Python Lesson 4: For Loops")
+        assert "Python Lesson 4: For Loops" in prompt
+        assert "lesson" in prompt.lower()
+
+    def test_omits_lesson_context_when_not_provided(self):
+        prompt = build_system_prompt("hint", "python")
+        assert "lesson_context" not in prompt
+
 
 class TestBuildStructuredSystemPrompt:
     def test_includes_structured_persona(self):
@@ -89,6 +98,14 @@ class TestBuildStructuredSystemPrompt:
         prompt = build_structured_system_prompt("unknown", "python")
         assert "You MUST respond with ONLY a valid JSON object" in prompt
         assert "Language: python" in prompt
+
+    def test_structured_includes_lesson_context_when_provided(self):
+        prompt = build_structured_system_prompt("hint", "python", lesson_context="Python Lesson 4: For Loops")
+        assert "Python Lesson 4: For Loops" in prompt
+
+    def test_structured_omits_lesson_context_when_not_provided(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "lesson_context" not in prompt
 
 
 class TestBuildUserPrompt:

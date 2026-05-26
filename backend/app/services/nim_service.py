@@ -50,12 +50,13 @@ class NIMService:
         message: str,
         mode: str = "hint",
         difficulty: str = "medium",
+        lesson_context: str = None,
     ) -> Dict[str, Any]:
         from app.models.schemas import StructuredCoachingResponse
 
         model = self.models.get(difficulty, self.models["medium"])
 
-        system_prompt = build_structured_system_prompt(mode, language)
+        system_prompt = build_structured_system_prompt(mode, language, lesson_context=lesson_context)
         user_prompt = build_structured_user_prompt(problem, code, message, mode)
 
         payload = {
@@ -111,11 +112,12 @@ class NIMService:
         message: str,
         mode: str = "hint",
         difficulty: str = "medium",
+        lesson_context: str = None,
         structured: bool = False,
     ) -> AsyncIterator[str]:
         model = self.models.get(difficulty, self.models["medium"])
 
-        system_prompt = build_system_prompt(mode, language)
+        system_prompt = build_system_prompt(mode, language, lesson_context=lesson_context)
         user_prompt = build_user_prompt(problem, code, message, mode)
 
         payload = {
