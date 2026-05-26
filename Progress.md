@@ -3,7 +3,7 @@
 ## Overview
 
 **Status:** Pre-launch (development complete, not yet deployed)
-**Commits:** 61+
+**Commits:** 62+
 **Questions:** 13 in question bank (10 hand-authored + 3 AI-verified) of 100 target; 87 AI-generated questions in review
 **Starter Code:** Python, JavaScript, Java
 **AI Quality Gate:** 4-round verification against 9 criteria (min avg > 90) before populating new questions
@@ -90,7 +90,7 @@
 - Resizable editor + output panel
 - Navigation controls (prev/next question)
 - **OnboardingTour** — 4-step first-visit overlay (Welcome, Question Browser, AI Coach, API Key)
-- **Toast notification system** — `ToastProvider` + `showToast()` imperative API for success/error/info messages
+- **Toast notification system** — `ToastProvider` + `showToast()` imperative API for success/error/info messages. Frosted glass design, lucide icons per variant, vanguard easing. Wired into auth (login/register/logout), code execution (run/submit errors + success), coaching (errors), question loading errors, settings save, and auth guard redirects. 13 unit tests.
 - **EmptyState component** — used in MessageList and CodeEditorContainer output panel
 - **AuthGuard** — public workspace is browsable; Run/Submit/AI Coach redirect to `/login` if unauthenticated
 
@@ -107,8 +107,8 @@
 - AI Verification Script: 48 tests (prompt building, response parsing, scoring, filtering, merging, export, import, archetype detection, thematic coherence, boundary edge cases, auto-retry logic)
 
 ### Frontend (Vitest)
-- 29 test files covering hooks, services, components
-- 284 tests passing (29 test suites)
+- 30 test files covering hooks, services, components
+- 297 tests passing (30 test suites)
 - Auth service: 6 tests (login, register, loginWithSupabase, getMe)
 - AuthProvider: 6 tests (initial state, login, register, logout, loginWithSupabase, token persistence)
 - Other: FetchClient HTTP service tests, component tests for all UI components
