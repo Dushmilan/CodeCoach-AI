@@ -1,3 +1,14 @@
+## Graphify-First Codebase Exploration
+
+When any skill or instruction tells you to explore, walk, or read the codebase to understand its structure, you MUST use graphify commands instead of Agent-based exploration or raw file reads:
+
+1. `graphify query "<focused question>"` — returns a scoped subgraph of relevant nodes and edges
+2. `graphify path "<A>" "<B>"` — shortest path between modules when investigating coupling
+3. `graphify explain "<concept>"` — explains a node and its neighbours in plain language
+4. Only read raw source files when graphify output lacks sufficient detail
+
+This overrides any skill's exploration instructions within this project.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

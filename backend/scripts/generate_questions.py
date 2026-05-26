@@ -159,10 +159,10 @@ Return a JSON array. Each question must have these exact fields:
   - company_tags: array of strings (real companies that ask this)
   - description: detailed problem description (2-3 paragraphs with input/output format, constraints, and edge cases)
   - examples: array of {{"input": string, "output": string, "explanation": string}} (2-3 examples covering edge cases)
-  - test_cases: array of EXACTLY 20 objects with {{"input": string, "expected_output": string, "description": string, "hidden": bool}}
-    - 5 edge cases (empty input, single element, max bounds, negative values, duplicates)
-    - 5 standard cases (typical inputs)
-    - 10 hidden validation cases (marked "hidden": true)
+  - test_cases: array of EXACTLY 12 objects with {{"input": string, "expected_output": string, "description": string, "hidden": bool}}
+    - 3 edge cases (empty input, single element, max bounds, negative values, or duplicates)
+    - 3 standard cases (typical inputs)
+    - 6 hidden validation cases (marked "hidden": true, stress edge and boundary conditions)
   - starter: {{"python": string, "javascript": string, "java": string}} (function signature with correct types, no body)
     Use "def <function_name>(<args>):\\n    pass" for Python
     Use "function <functionName>(<args>) {{\\n    \\n}}" for JavaScript
@@ -173,7 +173,7 @@ Return a JSON array. Each question must have these exact fields:
   - space_complexity: string like "O(1)"
   - constraints: array of 4-6 constraint strings covering input bounds
 
-IMPORTANT: You MUST include EXACTLY 20 test cases (5 edge + 5 standard + 10 hidden) with correct expected_output values matching the problem description. The test case descriptions must be detailed strings like "Large input — 10^5 elements with negative values".
+IMPORTANT: You MUST include EXACTLY 12 test cases (3 edge + 3 standard + 6 hidden) with correct expected_output values matching the problem description. Each test case must be structurally distinct — do NOT repeat the same input format with trivial changes. The test case descriptions must be detailed strings like "Large input — 10^5 elements with negative values".
 
 Return ONLY the JSON array, no other text."""
 
@@ -197,10 +197,10 @@ Return a JSON array. Each question must have these exact fields:
   - company_tags: array of strings (real companies or startup sectors relevant to this scenario)
   - description: detailed problem description (3-4 paragraphs — first paragraph sets up the real-world scenario, second explains the technical challenge, third specifies the exact function signature and I/O format, fourth notes edge cases)
   - examples: array of {{"input": string, "output": string, "explanation": string}} (2-3 examples that both explain the scenario context and the algorithm)
-  - test_cases: array of EXACTLY 20 objects with {{"input": string, "expected_output": string, "description": string, "hidden": bool}}
-    - 5 edge cases (empty, single, max bounds, extreme values, error conditions)
-    - 5 standard cases (typical real-world inputs)
-    - 10 hidden validation cases (marked "hidden": true) that test boundary conditions and large-scale inputs
+  - test_cases: array of EXACTLY 12 objects with {{"input": string, "expected_output": string, "description": string, "hidden": bool}}
+    - 3 edge cases (empty, single, max bounds, extreme values, or error conditions)
+    - 3 standard cases (typical real-world inputs)
+    - 6 hidden validation cases (marked "hidden": true, stress boundary and large-scale inputs)
   - starter: {{"python": string, "javascript": string, "java": string}} (function signature with scenario-appropriate naming, no body)
     Use "def <function_name>(<args>):\\n    pass" for Python
     Use "function <functionName>(<args>) {{\\n    \\n}}" for JavaScript
@@ -211,7 +211,7 @@ Return a JSON array. Each question must have these exact fields:
   - space_complexity: string like "O(n)"
   - constraints: array of 4-6 strings describing realistic bounds
 
-IMPORTANT: You MUST include EXACTLY 20 test cases (5 edge + 5 standard + 10 hidden) with correct expected_output values matching the problem description. The test case descriptions must reference the scenario context.
+IMPORTANT: You MUST include EXACTLY 12 test cases (3 edge + 3 standard + 6 hidden) with correct expected_output values matching the problem description. Each test case must be structurally distinct — do NOT repeat the same input format with trivial changes. The test case descriptions must reference the scenario context.
 
 Return ONLY the JSON array, no other text."""
 
@@ -242,7 +242,7 @@ def call_nvidia_with_retry(
                 },
                 {"role": "user", "content": prompt},
             ],
-            "max_tokens": 4000,
+            "max_tokens": 8192,
             "temperature": 0.7,
             "top_p": 0.9,
             "stream": False,
@@ -290,6 +290,14 @@ def call_nvidia_with_retry(
     return None
 
 
+def _json_loads_lenient(text: str):
+    decoder = json.JSONDecoder(strict=False)
+    try:
+        return decoder.decode(text)
+    except json.JSONDecodeError:
+        return None
+
+
 def parse_questions(raw: str) -> List[dict]:
     text = raw.strip()
     if text.startswith("```"):
@@ -297,18 +305,13 @@ def parse_questions(raw: str) -> List[dict]:
         text = re.sub(r"\s*```$", "", text)
     text = text.strip()
 
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
+    data = _json_loads_lenient(text)
+    if data is None:
         match = re.search(r"\[.*\]", text, re.DOTALL)
         if match:
-            try:
-                data = json.loads(match.group(0))
-            except json.JSONDecodeError:
-                logger.error("Could not parse JSON from response")
-                return []
-        else:
-            logger.error("No JSON array found in response")
+            data = _json_loads_lenient(match.group(0))
+        if data is None:
+            logger.error("Could not parse JSON from response")
             return []
 
     if not isinstance(data, list):
@@ -331,9 +334,9 @@ def parse_questions(raw: str) -> List[dict]:
         q.setdefault("space_complexity", None)
 
         tc_count = len(q.get("test_cases", []))
-        if tc_count < 20:
+        if tc_count < 12:
             logger.warning(
-                f"  Question '{q['title']}' has only {tc_count} test cases (want 20)"
+                f"  Question '{q['title']}' has only {tc_count} test cases (want 12)"
             )
 
         if "starter" not in q or not isinstance(q["starter"], dict):

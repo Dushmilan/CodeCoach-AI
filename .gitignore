@@ -222,5 +222,11 @@ data/
 # Generated evaluation prompts
 eval_prompts.json
 
+# Script dry-run / debug outputs
+dry_run_output.json
+backend/dry_run_output.json
+batch_classic_dry.json
+debug_creative_raw.txt
+
 # Graphify cache
 graphify-out/cache/

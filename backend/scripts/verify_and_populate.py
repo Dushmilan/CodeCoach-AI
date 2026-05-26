@@ -37,7 +37,7 @@ REJECTED_FILE = os.path.join(
 def build_verification_prompt(question: dict) -> str:
     criteria_descriptions = {
         "test_cases": "Do the test case expected outputs match the problem description? Are there any contradictions or incorrect expected outputs?",
-        "test_case_coverage": "Does the question have at least 20 test cases covering edge cases, normal cases, boundary conditions, and hidden validation cases?",
+        "test_case_coverage": "Does the question have at least 12 test cases covering edge cases, normal cases, boundary conditions, and hidden validation cases? Are the test cases structurally diverse rather than repeated with trivial differences?",
         "description": "Is the problem statement clear, unambiguous, and complete? Does it include all necessary context?",
         "difficulty": "Is the difficulty rating (easy/medium/hard) appropriate given the problem complexity?",
         "category": "Does this problem belong in the stated DSA category? Is the categorization correct?",
@@ -97,6 +97,14 @@ Return ONLY a JSON object with no other text:
 }}"""
 
 
+def _json_loads_lenient(text: str):
+    decoder = json.JSONDecoder(strict=False)
+    try:
+        return decoder.decode(text)
+    except json.JSONDecodeError:
+        return None
+
+
 def parse_verification_response(raw: str) -> dict:
     text = raw.strip()
     if text.startswith("```"):
@@ -104,20 +112,12 @@ def parse_verification_response(raw: str) -> dict:
         text = re.sub(r"\s*```$", "", text)
     text = text.strip()
 
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
+    data = _json_loads_lenient(text)
+    if data is None:
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:
-            try:
-                data = json.loads(match.group(0))
-            except json.JSONDecodeError:
-                return {
-                    "overall": 0,
-                    "criteria_scores": {},
-                    "issues": ["Failed to parse AI response"],
-                }
-        else:
+            data = _json_loads_lenient(match.group(0))
+        if data is None:
             return {
                 "overall": 0,
                 "criteria_scores": {},

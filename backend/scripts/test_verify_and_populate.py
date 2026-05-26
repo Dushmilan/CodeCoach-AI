@@ -98,7 +98,7 @@ class TestBuildVerificationPrompt:
     def test_contains_test_case_coverage_criterion(self):
         prompt = build_verification_prompt(SAMPLE_QUESTION)
         assert "test_case_coverage" in prompt
-        assert "at least 20 test cases" in prompt
+        assert "at least 12 test cases" in prompt
 
     def test_requests_json_response(self):
         prompt = build_verification_prompt(SAMPLE_QUESTION)
