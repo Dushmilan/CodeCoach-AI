@@ -335,6 +335,11 @@ class PistonService(CodeExecutor):
     """Executes code via Piston (Docker) sandbox. This is the deep module
     — wrapping, formatting, and validation are internal details."""
 
+    # Piston API uses different language names than our internal names
+    _PISTON_LANGUAGE_MAP = {
+        "c": "gcc",
+    }
+
     def __init__(self):
         self.base_url = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
         self.timeout = 30.0
@@ -362,8 +367,10 @@ class PistonService(CodeExecutor):
         wrapper = get_wrapper(language)
         code_to_run = wrapper.wrap(code) if wrapper else code
 
+        piston_language = self._PISTON_LANGUAGE_MAP.get(language, language)
+
         payload = {
-            "language": language,
+            "language": piston_language,
             "version": version_to_use,
             "files": [{"name": f"main.{_get_file_extension(language)}", "content": code_to_run}],
             "stdin": stdin, "args": [],

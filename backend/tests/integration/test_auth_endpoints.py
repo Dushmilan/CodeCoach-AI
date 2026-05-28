@@ -208,7 +208,7 @@ class TestAuthMe:
 
     def test_get_me_no_auth(self, test_client: TestClient):
         response = test_client.get("/api/auth/me")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_get_me_invalid_token(self, test_client: TestClient):
         response = test_client.get(

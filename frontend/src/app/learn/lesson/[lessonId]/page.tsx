@@ -314,7 +314,7 @@ export default function LessonPage() {
             </div>
 
             <div className="flex-[2] flex min-w-0 divide-x divide-white/[0.04]">
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 flex flex-col">
                 <CodeEditorContainer
                   language={language}
                   currentCode={currentCode}
