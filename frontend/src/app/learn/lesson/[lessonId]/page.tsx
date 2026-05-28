@@ -318,6 +318,7 @@ export default function LessonPage() {
                 <CodeEditorContainer
                   language={language}
                   currentCode={currentCode}
+                  initialCode={lesson.starter_code || ''}
                   isRunning={isRunning}
                   output={output}
                   error={runError}

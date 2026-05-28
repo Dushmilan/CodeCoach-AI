@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 interface CodeEditorProps {
   language: Language;
   code: string;
+  initialCode: string;
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: Language) => void;
   onRunCode: () => void;
@@ -21,6 +22,7 @@ interface CodeEditorProps {
 export function CodeEditor({
   language,
   code,
+  initialCode,
   onCodeChange,
   onLanguageChange,
   onRunCode,
@@ -39,7 +41,7 @@ export function CodeEditor({
   };
 
   const resetCode = () => {
-    onCodeChange('');
+    onCodeChange(initialCode);
   };
 
   return (

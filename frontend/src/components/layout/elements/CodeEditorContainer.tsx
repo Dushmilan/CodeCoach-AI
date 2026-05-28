@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 interface CodeEditorContainerProps {
   language: Language;
   currentCode: string;
+  initialCode: string;
   isRunning: boolean;
   output: string;
   error: string;
@@ -22,6 +23,7 @@ interface CodeEditorContainerProps {
 export function CodeEditorContainer({
   language,
   currentCode,
+  initialCode,
   isRunning,
   output,
   error,
@@ -82,6 +84,7 @@ export function CodeEditorContainer({
         <CodeEditor
           language={language}
           code={currentCode}
+          initialCode={initialCode}
           onCodeChange={onCodeChange}
           onLanguageChange={onLanguageChange}
             onRunCode={onRunCode}
