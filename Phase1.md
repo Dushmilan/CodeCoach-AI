@@ -4,7 +4,7 @@
 
 Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coaching. Users practice DSA coding questions with instant hints, reviews, and debugging — no LeetCode Premium or Hackerrank license required.
 
-**Status:** Feature-complete. 13/100 target questions in bank; 87 AI-generated questions pending population via quality gate.
+**Status:** Feature-complete. 13/100 target questions in bank; 87 AI-generated questions re-evaluated — 0 passed quality gate.
 
 ---
 
@@ -31,7 +31,7 @@ Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coach
 - **Dual Archetype System**: "Classic Grind" (traditional algorithm puzzles) and "Creative 2026" (real-world scenarios like LLM context windows, drone routing, GPU scheduling)
 - **14 2026 Scenario Seeds**: Each DSA topic has a hand-authored real-world framing
 - **Auto-Retry on JSON Parse Failure**: Generator retries up to 3 times
-- **Strict 20 Test Case Enforcement**: 5 edge + 5 standard + 10 hidden
+- **Strict 12 Test Case Enforcement**: 3 edge + 3 standard + 6 hidden
 - **AI Quality Gate** (`backend/scripts/verify_and_populate.py`): 4 independent rounds of AI evaluation against 11 criteria (avg > 90 to populate)
 - Full CRUD via REST API, search/filter/pagination, JSON file-backed storage
 
@@ -69,8 +69,9 @@ Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coach
 - **EmptyState component** for empty panels
 
 ### 8. Testing
-- Backend: 28 pytest test files covering all services, adapters, use cases, middleware
-- Frontend: 13 toast notification unit tests
+- Backend: 20 unit test files + 9 integration test files + 2 standalone script test files
+- Frontend: 30 test files (hooks, services, components)
+- E2E: 19 Playwright tests across 4 spec files (auth, homepage, user-flow, curriculum)
 - AI quality gate with 4-round evaluation
 
 ---
@@ -80,12 +81,26 @@ Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coach
 | Step | Count |
 |---|---|
 | Target question count | 100 |
-| Hand-authored in bank | 10 |
-| AI-generated passing quality gate | 3 |
-| AI-generated pending evaluation | 87 |
+| In bank | 13 |
+| Rejected (re-evaluated) | 87 (0 passed >90 threshold) |
 
-**Next action:** Run `verify_and_populate.py` with NVIDIA NIM to auto-evaluate the 87 pending questions and promote qualifying ones. (Deferred to after Phase 2 ships.)
+**Next action:** Run `generate_questions.py` as overnight batch job to fill gaps.
 
 ## Phase 2 Migration Note
 
-Phase 2 (programming language curricula) is now live with its own quality-gate pipeline. The `verify_and_populate.py` script for Phase 1 remains unrun — the 87 DSA questions still need evaluation.
+Phase 2 (programming language curricula) is now live with its own quality-gate pipeline.
+
+## Phase 1 Cleanup (May 26, 2026)
+
+**Completed:**
+1. Patched `verify_and_populate.py` with `--rejected` flag to load from `rejected_questions.json` format
+2. Set up NVIDIA API key in `.env`
+3. Re-evaluated all 87 rejected questions through 4-round quality gate
+4. Result: **0 passed** the >90 threshold — questions remain rejected
+5. Fixed Python 3.14 bytes serialization bug in `app/main.py:47`
+6. Fixed outdated test assertion in `test_generate_questions.py` ("EXACTLY 20" → "EXACTLY 12")
+7. Added 2 new tests for `load_existing_questions` rejected_key support (48→50 script tests)
+8. Expanded E2E tests from 10 to **19 tests** across 4 Playwright spec files
+9. Full test suite: 264 backend unit tests ✅, 50 script tests ✅, 297 frontend tests ✅, 19 E2E tests ✅, TypeScript ✅
+
+**Question generation deferred:** `generate_questions.py` works but the pipeline is API-bound (~2-3s/call, ~2 retries/batch). Best run as an overnight batch job: `--questions-per-topic 6 --archetype mixed` to fill gaps.

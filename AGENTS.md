@@ -45,6 +45,14 @@ Programming language curricula (C, Python, Java) for CodeCoach AI:
 
 **Testing:** 40 tests total across coaching prompts, generator, verifier.
 
-### Remaining
-1. **Phase 2 Step 10:** E2E testing and polish
-2. **Phase 1 cleanup:** Run `verify_and_populate.py` to evaluate 87 pending DSA questions
+### Phase 1 Cleanup Complete (May 26, 2026)
+1. Patched `verify_and_populate.py` with `--rejected` flag for `rejected_questions.json` format
+2. Re-evaluated 87 rejected questions through 4-round AI quality gate — **0 passed** >90 threshold
+3. Fixed Python 3.14 bytes serialization bug in `app/main.py:47`
+4. Fixed outdated test assertion in `test_generate_questions.py` ("EXACTLY 20" → "EXACTLY 12")
+5. Added 2 new tests for `load_existing_questions` rejected_key support (48→50 script tests)
+6. Expanded E2E tests from 10 to **19 tests** across 4 Playwright spec files
+
+### Phase 2 Step 10 Complete
+- E2E testing: 19 Playwright tests (auth-flow, homepage, user-flow, curriculum-flow)
+- All suites passing: 264 backend unit, 50 script, 297 frontend, 19 E2E, TypeScript clean

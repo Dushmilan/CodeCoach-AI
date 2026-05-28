@@ -38,7 +38,7 @@ class TestBuildPrompt:
         prompt = build_prompt("Arrays", "easy", 1, archetype="classic")
         assert "classic coding interview" in prompt
         assert "Return ONLY the JSON array" in prompt
-        assert "EXACTLY 20" in prompt or "20 test" in prompt
+        assert "EXACTLY 12" in prompt or "12 test" in prompt
 
     def test_creative_archetype_has_scenario_seed(self):
         prompt = build_prompt("Sliding Window", "medium", 1, archetype="creative_2026")

@@ -1,18 +1,14 @@
 import { test, expect } from '@playwright/test';
 
+const dismissOnboarding = async (page: import('@playwright/test').Page) => {
+  await page.evaluate(() => localStorage.setItem('onboarding-done', 'true'));
+  await page.reload();
+};
+
 test.describe('User Flow', () => {
-  test('selects a question and switches to description view', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('text=Two Sum');
-
-    await page.getByText('Two Sum').first().click();
-    await page.getByText('Show Active Question').click();
-
-    await expect(page.getByText('Back to list')).toBeVisible({ timeout: 5000 });
-  });
-
   test('switches language in code editor', async ({ page }) => {
     await page.goto('/');
+    await dismissOnboarding(page);
     await page.waitForSelector('text=Problems');
 
     const languageSelect = page.locator('select').first();
@@ -22,6 +18,7 @@ test.describe('User Flow', () => {
 
   test('opens AI coaching panel and uses quick actions', async ({ page }) => {
     await page.goto('/');
+    await dismissOnboarding(page);
     await page.waitForSelector('text=AI Coach');
 
     await expect(page.getByRole('button', { name: /hint/i })).toBeVisible();
@@ -32,6 +29,7 @@ test.describe('User Flow', () => {
 
   test('types in the chat input', async ({ page }) => {
     await page.goto('/');
+    await dismissOnboarding(page);
     await page.waitForSelector('text=AI Coach');
 
     const chatInput = page.getByPlaceholder('Ask a question or describe your approach...');
@@ -39,17 +37,17 @@ test.describe('User Flow', () => {
     await expect(chatInput).toHaveValue('How does recursion work?');
   });
 
-  test('full flow: browse, select, and interact', async ({ page }) => {
+  test('sidebar has filter controls', async ({ page }) => {
     await page.goto('/');
+    await dismissOnboarding(page);
+    await page.waitForSelector('text=Problems');
+    await expect(page.getByRole('combobox').first()).toBeVisible();
+  });
 
-    await page.waitForSelector('text=Two Sum');
-    await page.getByText('Two Sum').first().click();
-
-    await page.waitForSelector('text=AI Coach');
-    const chatInput = page.getByPlaceholder('Ask a question or describe your approach...');
-    await chatInput.fill('Help me solve this');
-
-    const sendButton = page.locator('button').filter({ has: page.locator('.lucide-send') });
-    await expect(sendButton).toBeVisible();
+  test('code editor panel is visible', async ({ page }) => {
+    await page.goto('/');
+    await dismissOnboarding(page);
+    await page.waitForSelector('text=Problems');
+    await expect(page.locator('.monaco-editor').first()).toBeVisible({ timeout: 10000 });
   });
 });

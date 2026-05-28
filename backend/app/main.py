@@ -42,9 +42,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     logger.error(f"Request method: {request.method}")
     logger.error(f"Validation errors: {exc.errors()}")
     logger.error("========================")
+    body = exc.body.decode("utf-8", errors="replace") if isinstance(exc.body, bytes) else exc.body
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "body": exc.body},
+        content={"detail": exc.errors(), "body": body},
     )
 
 

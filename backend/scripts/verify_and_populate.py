@@ -185,13 +185,15 @@ def merge_with_existing(existing: List[dict], new: List[dict]) -> List[dict]:
     return merged
 
 
-def load_existing_questions(filepath: str) -> List[dict]:
+def load_existing_questions(filepath: str, rejected_key: bool = False) -> List[dict]:
     if not os.path.exists(filepath):
         return []
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, dict):
+            if rejected_key:
+                return data.get("rejected", [])
             return data.get("questions", [])
         if isinstance(data, list):
             return data
@@ -386,6 +388,11 @@ def main():
         help="Input JSON file with generated questions (if not provided, uses generate_questions.py)",
     )
     parser.add_argument(
+        "--rejected",
+        action="store_true",
+        help="Load questions from the 'rejected' key in the input file (rejected_questions.json format)",
+    )
+    parser.add_argument(
         "--generate",
         action="store_true",
         help="Generate questions first using generate_questions.py",
@@ -429,7 +436,7 @@ def main():
         logger.info(f"Generated {len(generated)} new questions")
         new_questions = generated
     elif args.input:
-        questions = load_existing_questions(args.input)
+        questions = load_existing_questions(args.input, rejected_key=args.rejected)
         logger.info(f"Loaded {len(questions)} questions from {args.input}")
         new_questions = questions
     else:

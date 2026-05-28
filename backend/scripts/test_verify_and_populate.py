@@ -292,6 +292,19 @@ class TestLoadExistingQuestions:
         questions = load_existing_questions(str(f))
         assert questions == []
 
+    def test_loads_rejected_key_format(self, tmp_path):
+        f = tmp_path / "rejected.json"
+        f.write_text(json.dumps({"rejected": [{"id": "r1", "title": "R1"}], "threshold": 90.0}))
+        questions = load_existing_questions(str(f), rejected_key=True)
+        assert len(questions) == 1
+        assert questions[0]["id"] == "r1"
+
+    def test_rejected_key_fallback_to_empty(self, tmp_path):
+        f = tmp_path / "normal.json"
+        f.write_text(json.dumps({"questions": [{"id": "q1", "title": "Q1"}]}))
+        questions = load_existing_questions(str(f), rejected_key=True)
+        assert questions == []
+
 
 class TestEvaluateQuestionQuality:
     def test_returns_score_and_rounds(self):

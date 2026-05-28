@@ -4,9 +4,9 @@
 
 **Status:** Pre-launch (development complete, not yet deployed)
 **Commits:** 62+
-**Questions:** 13 in question bank (10 hand-authored + 3 AI-verified) of 100 target; 87 AI-generated questions in review
+**Questions:** 13 in question bank (10 hand-authored + 3 AI-verified) of 100 target; 87 AI-generated questions re-evaluated — 0 passed quality gate
 **Starter Code:** Python, JavaScript, Java
-**AI Quality Gate:** 4-round verification against 9 criteria (min avg > 90) before populating new questions
+**AI Quality Gate:** 4-round verification against 11 criteria (min avg > 90) before populating new questions
 
 ---
 
@@ -34,12 +34,12 @@
 - **Dual Archetype System**: Two prompt archetypes — "Classic Grind" (traditional algorithm puzzles) and "Creative 2026" (real-world scenarios like LLM context windows, drone routing, GPU scheduling, smart grid DP, CRDT reconciliation)
 - **14 2026 Scenario Seeds**: Each DSA topic has a hand-authored real-world framing (e.g., Sliding Window → LLM token budget optimization, Graphs → drone no-fly zone routing, Heap → GPU cluster job scheduling)
 - **Auto-Retry on JSON Parse Failure**: Generator retries up to 3 times, feeding the JSON error back to the LLM so it self-corrects
-- **Strict 20 Test Case Enforcement**: Generator prompt demands exactly 20 test cases (5 edge + 5 standard + 10 hidden); parser warns if fewer are produced
+- **Strict 12 Test Case Enforcement**: 3 edge + 3 standard + 6 hidden
 - **AI Quality Gate** (`backend/scripts/verify_and_populate.py`): 4 independent rounds of AI evaluation against **11 criteria** — topic relevance, difficulty match, correctness, clarity, starter code quality, test case quality, solution correctness, edge cases, test_case_coverage (≥20 test cases required), **thematic_coherence** (scenario logic/accuracy check), **boundary_edge_cases** (max-constraint stress testing)
 - Questions populate bank only if average score > 90 across all 4 rounds; rejected questions saved to `rejected_questions.json` for review
 - `--export-prompts` mode exports all questions as self-contained evaluation prompts for manual AI eval; `--import-scores` mode ingests scored results
 - `--archetype` CLI flag supports `classic`, `creative_2026`, or `mixed` (default: mixed, 50/50 split per topic/difficulty)
-- **Evaluation using NVIDIA API key** — pending: run `verify_and_populate.py` with NVIDIA NIM to auto-evaluate the 87 rejected questions and promote qualifying ones
+- **Evaluation using NVIDIA API key** — completed: ran `verify_and_populate.py` on 87 rejected questions, 0 passed >90 threshold
 - Full CRUD via REST API
 - Search by title/category/difficulty
 - Filter by difficulty, category, company
@@ -97,14 +97,14 @@
 ## 8. Testing
 
 ### Backend (pytest)
-- 28 test files covering all services, adapters, use cases, middleware
+- 20 unit test files + 9 integration test files + 2 standalone script test files
 - 85% coverage threshold
 - Mocked NVIDIA and Piston services
 - Performance/load tests (concurrent requests, memory, locust)
-- 288 tests passing (274 unit + 14 script tests)
+- 314 tests passing (264 unit + 50 script tests)
 - Auth: 4 supabase login tests (creates new user, returns existing, invalid token, no config)
-- Question generation: 10 tests (slugify, prompt building, JSON parsing, topic extraction)
-- AI Verification Script: 48 tests (prompt building, response parsing, scoring, filtering, merging, export, import, archetype detection, thematic coherence, boundary edge cases, auto-retry logic)
+- Question generation: 13 tests (slugify, prompt building, JSON parsing, topic extraction)
+- AI Verification Script: 50 tests (prompt building, response parsing, scoring, filtering, merging, export, import, archetype detection, thematic coherence, boundary edge cases, auto-retry logic, rejected_key loading)
 
 ### Frontend (Vitest)
 - 30 test files covering hooks, services, components
@@ -115,8 +115,11 @@
 - TypeScript: `tsc --noEmit` passes clean
 
 ### E2E (Playwright)
-- Homepage smoke test
-- User flow test (question selection → code execution → AI coaching)
+- 19 tests across 4 spec files
+- `auth-flow.spec.ts` — 5 tests (login page, register page, sign-in visibility, register flow, learn page)
+- `homepage.spec.ts` — 5 tests (shell, sidebar questions, settings modal, collapse, view toggle)
+- `user-flow.spec.ts` — 5 tests (language switch, AI coaching, chat input, filters, code editor)
+- `curriculum-flow.spec.ts` — 4 tests (learn nav, page load, auth state, cross-page header)
 
 ## 9. Infrastructure
 
@@ -135,9 +138,10 @@
 
 | Area | Status | Details |
 |---|---|---|
-| Questions | ✅ Ready | 13 in bank (10 hand-authored + 3 AI-verified). 87 more AI-generated awaiting evaluation via NVIDIA API key |
+| Questions | ✅ Ready | 13 in bank. 87 AI-generated re-evaluated — 0 passed >90 threshold. Generation pipeline working but API-bound. |
 | Auth | ✅ Complete | JWT email/password + Google OAuth via Supabase with full frontend integration |
 | UX Polish | ✅ Complete | EmptyState, Toast, OnboardingTour, auth-aware header, output panel placeholder |
+| E2E Testing | ✅ Complete | 19 Playwright tests across auth, homepage, user-flow, curriculum specs |
 | Educator materials | ✅ Existing | EDUCATORS.md + For Educators page |
 | Privacy | ✅ Existing | `/privacy` route with plain-language policy |
 
@@ -145,9 +149,11 @@
 
 ## Immediate Next Step — AI Evaluation of Pending Questions
 
-- Run `verify_and_populate.py` with NVIDIA API key to auto-evaluate 87 rejected questions across 4 rounds
-- Promote any that pass > 90 threshold to the question bank
-- Target: close to 100 questions before starting Phase 2
+**Completed (May 26, 2026):**
+- Ran `verify_and_populate.py` with NVIDIA API key to evaluate 87 rejected questions across 4 rounds
+- Result: 0 passed the >90 threshold — questions remain rejected
+- Fixed Python 3.14 bytes serialization bug and outdated test assertion
+- Expanded E2E tests from 10 to 19 across 4 Playwright spec files
 
 ## What's Next (Phase 2 — Programming Language Curricula)
 
