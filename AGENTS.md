@@ -1,13 +1,14 @@
-## Graphify-First Codebase Exploration
+## MANDATORY: Graphify-First Codebase Exploration
 
-When any skill or instruction tells you to explore, walk, or read the codebase to understand its structure, you MUST use graphify commands instead of Agent-based exploration or raw file reads:
+**Hard rule — Do NOT skip.** Before ANY grep, read, glob, or file search for codebase exploration, you MUST first run a graphify command. Only fall back to raw file tools if graphify returns nothing useful.
 
-1. `graphify query "<focused question>"` — returns a scoped subgraph of relevant nodes and edges
+**Execution order:**
+1. `graphify query "<focused question>"` — scoped subgraph of relevant nodes/edges
 2. `graphify path "<A>" "<B>"` — shortest path between modules when investigating coupling
 3. `graphify explain "<concept>"` — explains a node and its neighbours in plain language
-4. Only read raw source files when graphify output lacks sufficient detail
+4. **Only then** read raw source files if graphify output lacks sufficient detail
 
-This overrides any skill's exploration instructions within this project.
+**This overrides any skill's exploration instructions within this project.**
 
 ## graphify
 
@@ -82,3 +83,26 @@ Programming language curricula (C, Python, Java) for CodeCoach AI:
 **Created:** `Issues.md` documenting all 5 issues (I1-I5).
 
 **Key lesson:** NIM generator and Pydantic schemas were developed independently — need schema validation tests for generated output to catch drift early.
+
+### Session Context — May 28, 2026 (Google Gemini Question Generation)
+
+**Problem:** NVIDIA NIM API kept timing out (120s+ for 70B model), limiting generation to 18 questions.
+
+**Solution:** Switched to Google Gemini as primary provider with model fallback chain.
+
+**Changes to `backend/scripts/generate_questions.py`:**
+- Added `call_google_async()` with JSON mode (`responseMimeType: application/json`)
+- Added `RateLimiter` class (15 RPM default for free tier)
+- Refactored into single clean async function (removed duplicate `generate_questions`, fixed `completed_labels` tracking, added provider dispatch)
+- Made `httpx` import module-level (was local in sync function)
+- Added model fallback chain on 429/errors: `gemini-2.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.5-flash`
+- Relaxed pre-validation thresholds: 8 test cases / 3 hidden / 2 constraints (was 12/4/3) — lite models output slightly fewer
+
+**Results:**
+- Generated 18 new questions (6 easy + 7 medium + 5 hard) across 14 topics — 36 total in bank
+- Generation time: ~5-10s per batch (vs 120s+ for NVIDIA NIM)
+- Fallback chain works: `gemini-2.5-flash-lite` exhausted → auto-falls to `gemini-3.1-flash-lite`
+
+**Key insight:** Different models have separate quota buckets. Using a fallback chain (comma-separated `--model`) maximises free tier throughput. Threshold: 90 questions (currently 36).
+
+**Usage:** `python generate_questions.py --provider google --concurrency 2 --questions-per-topic 6`

@@ -4,7 +4,7 @@
 
 **Status:** Pre-launch (development complete, not yet deployed)
 **Commits:** 62+
-**Questions:** 18 in question bank across 12/14 DSA topics of 100 target; 87 AI-generated questions re-evaluated — 0 passed quality gate
+**Questions:** 36 in question bank (18 original + 18 AI-generated via Google Gemini) across 14/14 DSA topics of 90 target; 87 AI-generated questions re-evaluated — 0 passed quality gate
 **Starter Code:** Python, JavaScript, Java
 **AI Quality Gate:** 4-round verification against 11 criteria (min avg > 90) before populating new questions
 
@@ -29,12 +29,14 @@
 
 ## 3. Question Bank
 
-- 18 questions in bank across 12/14 DSA topics (AI-generated via NVIDIA NIM)
-- AI-assisted generation script (`backend/scripts/generate_questions.py`) produces questions across 14 DSA topics via NVIDIA NIM
+- 36 questions in bank across 14/14 DSA topics (18 original + 18 AI-generated via Google Gemini)
+- AI-assisted generation script (`backend/scripts/generate_questions.py`) produces questions across 14 DSA topics via **Google Gemini** (primary) or **NVIDIA NIM** (fallback)
 - **Dual Archetype System**: Two prompt archetypes — "Classic Grind" (traditional algorithm puzzles) and "Creative 2026" (real-world scenarios like LLM context windows, drone routing, GPU scheduling, smart grid DP, CRDT reconciliation)
 - **14 2026 Scenario Seeds**: Each DSA topic has a hand-authored real-world framing (e.g., Sliding Window → LLM token budget optimization, Graphs → drone no-fly zone routing, Heap → GPU cluster job scheduling)
 - **Auto-Retry on JSON Parse Failure**: Generator retries up to 3 times, feeding the JSON error back to the LLM so it self-corrects
-- **Strict 12 Test Case Enforcement**: 3 edge + 3 standard + 6 hidden
+- **Model Fallback Chain**: `gemini-2.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.5-flash` — auto-falls on 429 quota errors. Pass with `--model` flag, e.g. `--model "gemini-2.5-flash-lite,gemini-3.1-flash-lite"`
+- **Rate Limiter**: Built-in `RateLimiter` class (15 RPM default) keeps under Google free-tier limits
+- **8 Test Case Enforcement**: 3 visible + 5 hidden (was 12/4/3 — relaxed for lite model output)
 - **AI Quality Gate** (`backend/scripts/verify_and_populate.py`): 4 independent rounds of AI evaluation against **11 criteria** — topic relevance, difficulty match, correctness, clarity, starter code quality, test case quality, solution correctness, edge cases, test_case_coverage (≥20 test cases required), **thematic_coherence** (scenario logic/accuracy check), **boundary_edge_cases** (max-constraint stress testing)
 - Questions populate bank only if average score > 90 across all 4 rounds; rejected questions saved to `rejected_questions.json` for review
 - `--export-prompts` mode exports all questions as self-contained evaluation prompts for manual AI eval; `--import-scores` mode ingests scored results
@@ -138,7 +140,7 @@
 
 | Area | Status | Details |
 |---|---|---|
-| Questions | 🟡 In Progress | 18 in bank across 12/14 DSA topics. 87 AI-generated re-evaluated — 0 passed >90 threshold. Generation pipeline working but API-bound. |
+| Questions | 🟡 In Progress | 36 in bank across 14/14 DSA topics (target: 90). 18 original + 18 AI-generated via Google Gemini. 87 AI-generated re-evaluated — 0 passed >90 threshold. Generation pipeline working with Google Gemini fallback chain. |
 | Auth | ✅ Complete | JWT email/password + Google OAuth via Supabase with full frontend integration |
 | UX Polish | ✅ Complete | EmptyState, Toast, OnboardingTour, auth-aware header, output panel placeholder |
 | E2E Testing | ✅ Complete | 19 Playwright tests across auth, homepage, user-flow, curriculum specs |
@@ -161,3 +163,11 @@
 - Context-aware AI coaching per lesson
 - `/learn` navigation
 - Future: DBMS/SQL, OOP & Design Patterns, Web Dev, Theory/MCQ question type, classroom dashboard
+
+## Immediate Next Step — Finish Question Generation
+
+**Status (May 28, 2026):**
+- 36 questions in bank (18 original + 18 via Google Gemini); target is 90
+- Google Gemini Flash Lite works great (~5-10s per batch) but daily quota limited
+- Fallback chain: `gemini-2.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.5-flash`
+- Run: `python generate_questions.py --provider google --concurrency 2 --questions-per-topic 6`

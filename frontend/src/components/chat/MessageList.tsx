@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare } from 'lucide-react';
+import { ChatBubbleIcon } from '@radix-ui/react-icons';
 import { ChatMessage } from '@/types';
 import { StructuredResponse } from './StructuredResponse';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -15,7 +15,7 @@ export function MessageList({ messages, isTyping }: MessageListProps) {
     return (
       <div className="flex-1 overflow-y-auto">
         <EmptyState
-          icon={MessageSquare}
+          icon={ChatBubbleIcon}
           title="Ask the AI Coach for help"
           description="Get hints, code reviews, explanations, or debugging help for any problem."
         />
@@ -34,10 +34,10 @@ export function MessageList({ messages, isTyping }: MessageListProps) {
           style={{ animationDelay: '0ms' }}
         >
           <div
-            className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
+            className={`max-w-[85%] px-4 py-2.5 ${
               message.role === 'user'
-                ? 'bg-primary/20 text-foreground ring-1 ring-primary/30'
-                : 'bg-white/[0.03] text-foreground/80 ring-1 ring-white/5'
+                ? 'bg-white/[0.06] text-foreground rounded-lg'
+                : 'bg-white/[0.03] text-foreground/80 rounded-lg'
             }`}
           >
             {message.role === 'assistant' && message.structured ? (

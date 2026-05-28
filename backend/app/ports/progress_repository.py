@@ -15,3 +15,6 @@ class ProgressRepository(ABC):
     async def mark_lesson_complete(
         self, user_id: str, course_id: str, lesson_id: str
     ) -> CourseProgress: ...
+
+    @abstractmethod
+    async def save(self, progress: CourseProgress) -> None: ...

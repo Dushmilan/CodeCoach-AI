@@ -1,6 +1,6 @@
 'use client';
 
-import { Send } from 'lucide-react';
+import { PaperPlaneIcon } from '@radix-ui/react-icons';
 import { Button } from '@/components/ui/button';
 
 interface ChatInputProps {
@@ -26,23 +26,21 @@ export function ChatInput({
   };
 
   return (
-    <div className="flex items-end gap-2">
-      <div className="flex-1 rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-0.5">
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="w-full min-h-[38px] max-h-[100px] px-3 py-2 text-sm bg-transparent rounded-[calc(1rem-0.125rem)] focus:outline-none text-foreground/80 placeholder:text-muted-foreground/40 resize-none"
-          disabled={disabled}
-        />
-      </div>
+    <div className="flex items-end gap-1.5">
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="flex-1 min-h-[38px] max-h-[100px] px-3 py-2 text-sm bg-white/[0.03] ring-1 ring-white/5 rounded-lg focus:outline-none focus:ring-white/[0.08] text-foreground/80 placeholder:text-muted-foreground/40 resize-none transition-all"
+        disabled={disabled}
+      />
       <button
         onClick={onSend}
         disabled={disabled || !value.trim()}
-        className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.93]"
+        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-[0.93]"
       >
-        <Send className="h-3.5 w-3.5" strokeWidth={1.5} />
+        <PaperPlaneIcon className="h-3.5 w-3.5 text-muted-foreground/60" />
       </button>
     </div>
   );

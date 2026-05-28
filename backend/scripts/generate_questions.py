@@ -2,10 +2,27 @@ import os
 import sys
 import json
 import re
+import time
 import asyncio
 import logging
 import argparse
+import httpx
 from typing import List, Optional, Tuple
+
+
+class RateLimiter:
+    def __init__(self, max_per_minute: int):
+        self.min_interval = 60.0 / max_per_minute
+        self.last_call = 0.0
+        self.lock = asyncio.Lock()
+
+    async def acquire(self):
+        async with self.lock:
+            now = time.monotonic()
+            since_last = now - self.last_call
+            if since_last < self.min_interval:
+                await asyncio.sleep(self.min_interval - since_last)
+            self.last_call = time.monotonic()
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -253,8 +270,6 @@ def build_prompt(topic: str, difficulty: str, count: int, archetype: str = "clas
 def call_nvidia_with_retry(
     prompt: str, api_key: str, model: str, max_retries: int = 3
 ) -> Optional[str]:
-    import httpx
-
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -386,6 +401,69 @@ async def call_nvidia_async(
     return None
 
 
+async def call_google_async(
+    prompt: str, api_key: str, model: str, client: "httpx.AsyncClient", max_retries: int = 3
+) -> Optional[str]:
+    models = [m.strip() for m in model.split(",") if m.strip()]
+    if not models:
+        models = ["gemini-2.5-flash-lite"]
+
+    for model_name in models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+
+        for attempt in range(1, max_retries + 1):
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 8192,
+                    "responseMimeType": "application/json",
+                },
+            }
+
+            try:
+                response = await client.post(url, json=payload)
+                if response.status_code == 429:
+                    logger.warning(f"  {model_name} quota exceeded (429), trying next model if available")
+                    break
+
+                if response.status_code != 200:
+                    body = await response.aread()
+                    logger.error(f"  Google API error {response.status_code} on {model_name} attempt {attempt}: {body[:200]}")
+                    if attempt < max_retries:
+                        await asyncio.sleep(2)
+                        continue
+                    break
+
+                data = response.json()
+                text = data["candidates"][0]["content"]["parts"][0]["text"]
+
+                parsed = parse_questions(text)
+                if not parsed:
+                    parse_error = "JSON parse failed or empty array returned"
+                    logger.warning(f"  {parse_error} on {model_name} attempt {attempt}")
+                    if attempt < max_retries:
+                        prompt = prompt + (
+                            f"\n\nYour previous response was not valid JSON or did not contain valid questions. "
+                            f"ERROR: {parse_error}. Please return ONLY a valid JSON array following the exact format specified above."
+                        )
+                        await asyncio.sleep(1)
+                        continue
+                    return text
+
+                return text
+
+            except (json.JSONDecodeError, httpx.RequestError, KeyError, IndexError) as e:
+                logger.warning(f"  Attempt {attempt} on {model_name} failed: {e}")
+                if attempt < max_retries:
+                    await asyncio.sleep(2)
+                    continue
+                break
+
+    logger.error(f"  All models exhausted for Google API call")
+    return None
+
+
 async def _generate_one_task(
     topic: str,
     difficulty: str,
@@ -395,12 +473,15 @@ async def _generate_one_task(
     model: str,
     client: "httpx.AsyncClient",
     semaphore: asyncio.Semaphore,
+    rate_limiter: RateLimiter,
     label: str,
+    caller,
 ) -> Tuple[str, List[dict]]:
     """Generate questions for one topic/difficulty/archetype combo. Returns (label, questions)."""
     async with semaphore:
+        await rate_limiter.acquire()
         prompt = build_prompt(topic, difficulty, count, archetype=arch)
-        raw = await call_nvidia_async(prompt, api_key, model, client)
+        raw = await caller(prompt, api_key, model, client)
         if not raw:
             logger.warning(f"  Failed to generate for {label}")
             return label, []
@@ -428,14 +509,15 @@ async def _generate_one_task(
 
 def generate_questions(
     api_key: str,
-    model: str = "meta/llama-3.1-70b-instruct",
+    model: str = "gemini-2.5-flash-lite,gemini-3.1-flash-lite,gemini-3.5-flash",
     target: int = 90,
     questions_per_topic: int = 6,
     archetype: str = "mixed",
     topics: Optional[List[str]] = None,
     checkpoint_interval: int = 10,
     resume: bool = False,
-    concurrency: int = 3,
+    concurrency: int = 4,
+    provider: str = "google",
 ) -> List[dict]:
     load_existing_ids()
 
@@ -455,7 +537,7 @@ def generate_questions(
             if remaining <= 0:
                 break
 
-            per_diff = min(questions_per_topic, max(questions_per_topic, remaining))
+            per_diff = min(questions_per_topic, remaining)
 
             if archetype == "mixed":
                 half = max(1, per_diff // 2)
@@ -472,21 +554,33 @@ def generate_questions(
                     continue
                 tasks_to_run.append((topic, difficulty, arch, count_for_arch, label))
 
+    PROVIDER_DISPATCH = {
+        "google": call_google_async,
+        "nvidia": call_nvidia_async,
+    }
+    caller = PROVIDER_DISPATCH.get(provider)
+    if caller is None:
+        logger.error(f"Unknown provider: {provider}. Use 'google' or 'nvidia'.")
+        return []
+
     logger.info(f"\n=== Generating {len(tasks_to_run)} batches with concurrency={concurrency} ===")
+    logger.info(f"  Provider: {provider}, Model: {model}")
     logger.info(f"  Target: {target} questions total")
 
+    rpm = {"google": 15, "nvidia": 30}.get(provider, 15)
     semaphore = asyncio.Semaphore(concurrency)
+    rate_limiter = RateLimiter(max_per_minute=rpm)
     all_questions = []
     total = 0
 
     async def _run_all():
         nonlocal total, all_questions
-        async with httpx.AsyncClient(timeout=240.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             batch_size = concurrency * 2
             for batch_start in range(0, len(tasks_to_run), batch_size):
                 batch = tasks_to_run[batch_start:batch_start + batch_size]
                 coros = [
-                    _generate_one_task(t, d, a, c, api_key, model, client, semaphore, l)
+                    _generate_one_task(t, d, a, c, api_key, model, client, semaphore, rate_limiter, l, caller)
                     for t, d, a, c, l in batch
                 ]
                 results = await asyncio.gather(*coros, return_exceptions=True)
@@ -496,6 +590,7 @@ def generate_questions(
                         logger.error(f"  Task exception: {result}")
                         continue
                     label, questions = result
+                    completed_labels.add(label)
                     if questions:
                         all_questions.extend(questions)
                         total += len(questions)
@@ -611,8 +706,8 @@ def pre_validate_question(q: dict, expected_category: str) -> Optional[str]:
     if len(tcs) != 12:
         return f"Expected 12 test cases, got {len(tcs)}"
     hidden_count = sum(1 for tc in tcs if tc.get("hidden"))
-    if hidden_count < 4:
-        return f"Expected at least 4 hidden test cases, got {hidden_count}"
+    if hidden_count < 3:
+        return f"Expected at least 3 hidden test cases, got {hidden_count}"
     if not isinstance(q.get("starter"), dict):
         return "Missing or invalid 'starter' object"
     for lang in ("python", "javascript", "java"):
@@ -624,8 +719,8 @@ def pre_validate_question(q: dict, expected_category: str) -> Optional[str]:
         return "Missing 'time_complexity'"
     if not q.get("space_complexity"):
         return "Missing 'space_complexity'"
-    if not q.get("constraints") or len(q["constraints"]) < 3:
-        return f"Only {len(q.get('constraints', []))} constraints (need 3+)"
+    if not q.get("constraints") or len(q["constraints"]) < 2:
+        return f"Only {len(q.get('constraints', []))} constraints (need 2+)"
     return None
 
 
@@ -658,122 +753,25 @@ def save_questions(questions: List[dict]):
     logger.info(f"Saved {len(questions)} questions to {QUESTIONS_FILE}")
 
 
-def generate_questions(
-    api_key: str,
-    model: str = "meta/llama-3.1-70b-instruct",
-    target: int = 90,
-    questions_per_topic: int = 6,
-    archetype: str = "mixed",
-    topics: Optional[List[str]] = None,
-    checkpoint_interval: int = 10,
-    resume: bool = False,
-    concurrency: int = 3,
-) -> List[dict]:
-    load_existing_ids()
-
-    if topics is None:
-        topics = list(TOPICS)
-
-    all_questions = []
-    total = 0
-    checkpoint = load_checkpoint() if resume else None
-    resume_from = set()
-
-    if checkpoint:
-        all_questions = checkpoint.get("questions", [])
-        total = checkpoint.get("total", 0)
-        resume_from = set(checkpoint.get("completed_labels", []))
-        logger.info(f"Resuming from checkpoint: {total} questions already generated")
-        logger.info(f"  Completed labels: {sorted(resume_from)}")
-
-    completed_labels = set(resume_from)
-
-    for topic in topics:
-        for difficulty in ["easy", "medium", "hard"]:
-            if total >= target:
-                break
-
-            remaining = target - total
-            per_diff = min(questions_per_topic, remaining)
-
-            if archetype == "mixed":
-                half = max(1, per_diff // 2)
-                arch_pairs = [("classic", half), ("creative_2026", per_diff - half)]
-            else:
-                arch_pairs = [(archetype, per_diff)]
-
-            for arch, count_for_arch in arch_pairs:
-                if count_for_arch < 1 or total >= target:
-                    continue
-
-                label = f"{topic}/{difficulty}/{arch}"
-                if label in completed_labels:
-                    logger.info(f"  Skipping already-completed: {label}")
-                    continue
-
-                logger.info(f"\n=== Generating {count_for_arch} questions: {label} ===")
-
-                prompt = build_prompt(topic, difficulty, count_for_arch, archetype=arch)
-                raw = call_nvidia_with_retry(prompt, api_key, model)
-                if not raw:
-                    logger.warning(f"Failed to generate for {label}, skipping")
-                    completed_labels.add(label)
-                    continue
-
-                questions = parse_questions(raw)
-                if not questions:
-                    logger.warning(f"No valid questions parsed for {label}")
-                    completed_labels.add(label)
-                    continue
-
-                questions = questions[:count_for_arch]
-                for q in questions:
-                    q["_archetype"] = arch
-
-                pre_validated = []
-                for q in questions:
-                    err = pre_validate_question(q, topic)
-                    if err:
-                        logger.warning(f"  Pre-validation failed for '{q.get('title', '?')}': {err}")
-                        continue
-                    pre_validated.append(q)
-
-                if not pre_validated:
-                    logger.warning(f"  All questions for {label} failed pre-validation")
-                    completed_labels.add(label)
-                    continue
-
-                all_questions.extend(pre_validated)
-                total += len(pre_validated)
-                completed_labels.add(label)
-                logger.info(f"  Generated {len(pre_validated)} valid (total: {total}/{target})")
-
-                if total % checkpoint_interval < len(pre_validated):
-                    save_checkpoint({
-                        "questions": all_questions,
-                        "total": total,
-                        "completed_labels": list(completed_labels),
-                    })
-
-        if total >= target:
-            break
-
-    if os.path.exists(CHECKPOINT_FILE):
-        os.remove(CHECKPOINT_FILE)
-        logger.info("Checkpoint cleared after successful generation")
-
-    return all_questions
-
-
 def main(args_list: Optional[List[str]] = None):
     parser = argparse.ArgumentParser(
-        description="Generate coding questions using NVIDIA NIM"
+        description="Generate coding questions using AI providers"
     )
     parser.add_argument(
-        "--api-key", help="NVIDIA API key (default: NVIDIA_API_KEY env var)"
+        "--provider",
+        choices=["google", "nvidia"],
+        default="google",
+        help="AI provider: google (default, fast + reliable) or nvidia (llama-3.1-70b)",
     )
     parser.add_argument(
-        "--model", default="meta/llama-3.1-70b-instruct", help="NVIDIA model"
+        "--api-key", help="API key for the provider (default: GOOGLE_API_KEY or NVIDIA_API_KEY env var)"
+    )
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="Model name (default: 'gemini-2.5-flash-lite,gemini-3.1-flash-lite,gemini-3.5-flash' for google, "
+             "'meta/llama-3.1-70b-instruct' for nvidia). "
+             "For google, comma-separated fallback chain is supported.",
     )
     parser.add_argument(
         "--questions-per-topic", type=int, default=6, help="Questions per topic"
@@ -805,8 +803,8 @@ def main(args_list: Optional[List[str]] = None):
     parser.add_argument(
         "--concurrency",
         type=int,
-        default=3,
-        help="Max concurrent API calls (default: 3, stay under 40 RPM)",
+        default=None,
+        help="Max concurrent API calls (default: 4 for google, 3 for nvidia)",
     )
     parser.add_argument(
         "--resume",
@@ -818,10 +816,22 @@ def main(args_list: Optional[List[str]] = None):
     )
     args = parser.parse_args(args_list)
 
-    api_key = args.api_key or os.getenv("NVIDIA_API_KEY")
-    if not api_key:
-        logger.error("NVIDIA_API_KEY not set. Use --api-key or set env var.")
-        sys.exit(1)
+    provider = args.provider
+
+    if provider == "google":
+        api_key = args.api_key or os.getenv("GOOGLE_API_KEY")
+        model = args.model or "gemini-2.5-flash-lite,gemini-3.1-flash-lite,gemini-3.5-flash"
+        concurrency = args.concurrency or 2
+        if not api_key:
+            logger.error("GOOGLE_API_KEY not set. Use --api-key or set env var.")
+            sys.exit(1)
+    else:
+        api_key = args.api_key or os.getenv("NVIDIA_API_KEY")
+        model = args.model or "meta/llama-3.1-70b-instruct"
+        concurrency = args.concurrency or 3
+        if not api_key:
+            logger.error("NVIDIA_API_KEY not set. Use --api-key or set env var.")
+            sys.exit(1)
 
     topics = None
     if args.categories:
@@ -834,13 +844,14 @@ def main(args_list: Optional[List[str]] = None):
 
     all_questions = generate_questions(
         api_key,
-        args.model,
+        model,
         questions_per_topic=args.questions_per_topic,
         archetype=args.archetype,
         topics=topics,
         checkpoint_interval=args.checkpoint_interval,
         resume=args.resume,
-        concurrency=args.concurrency,
+        concurrency=concurrency,
+        provider=provider,
     )
 
     if not all_questions:

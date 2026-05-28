@@ -1,26 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException
-from functools import lru_cache
+from typing import Optional
 
 from app.models.course_schemas import Course, Lesson
 from app.services.course_service import CourseService
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, get_optional_current_user
 from app.models.auth_schemas import UserResponse
 
 router = APIRouter()
 
 
-@lru_cache()
 def get_course_service() -> CourseService:
     return CourseService()
 
 
 @router.get("/")
 async def list_courses(
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: Optional[UserResponse] = Depends(get_optional_current_user),
     course_service: CourseService = Depends(get_course_service),
 ):
     try:
-        courses = await course_service.list_courses(user_id=current_user.id)
+        courses = await course_service.list_courses(user_id=current_user.id if current_user else None)
         return {"courses": courses}
     except Exception as e:
         raise HTTPException(

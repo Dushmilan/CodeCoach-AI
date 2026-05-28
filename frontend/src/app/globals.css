@@ -9,7 +9,7 @@
   --card-foreground: 240 10% 3.9%;
   --popover: 0 0% 100%;
   --popover-foreground: 240 10% 3.9%;
-  --primary: 252 94% 67%;
+  --primary: 160 84% 39%;
   --primary-foreground: 0 0% 100%;
   --secondary: 240 4.8% 95.9%;
   --secondary-foreground: 240 5.9% 10%;
@@ -21,18 +21,18 @@
   --destructive-foreground: 0 0% 98%;
   --border: 240 5.9% 90%;
   --input: 240 5.9% 90%;
-  --ring: 252 94% 67%;
+  --ring: 160 84% 39%;
   --radius: 0.5rem;
 }
 
 .dark {
-  --background: 0 0% 2%;
+  --background: 0 0% 4%;
   --foreground: 0 0% 98%;
-  --card: 0 0% 4%;
+  --card: 0 0% 6%;
   --card-foreground: 0 0% 98%;
-  --popover: 0 0% 4%;
+  --popover: 0 0% 6%;
   --popover-foreground: 0 0% 98%;
-  --primary: 252 94% 67%;
+  --primary: 160 84% 50%;
   --primary-foreground: 0 0% 100%;
   --secondary: 0 0% 9%;
   --secondary-foreground: 0 0% 98%;
@@ -42,9 +42,9 @@
   --accent-foreground: 0 0% 98%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 12%;
-  --input: 0 0% 12%;
-  --ring: 252 94% 67%;
+  --border: 0 0% 14%;
+  --input: 0 0% 14%;
+  --ring: 160 84% 50%;
 }
 
 @layer base {
@@ -84,9 +84,8 @@
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(120, 80, 255, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% 70%, rgba(0, 200, 180, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(120, 80, 255, 0.03) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(255, 255, 255, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 70%, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
 }
 
 body::after {

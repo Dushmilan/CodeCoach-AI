@@ -61,5 +61,6 @@ class CourseProgress(BaseModel):
     user_id: str = Field(..., description="User ID")
     course_id: str = Field(..., description="Course ID")
     completed_lessons: List[str] = Field(default=[], description="Completed lesson IDs")
+    last_accessed_lesson_id: Optional[str] = Field(None, description="Last accessed lesson ID")
     started_at: datetime = Field(default_factory=datetime.utcnow)
     last_accessed_at: datetime = Field(default_factory=datetime.utcnow)

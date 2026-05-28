@@ -57,17 +57,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">
-      {/* Fluid Island Nav */}
-      <div className="flex items-center justify-center pt-6">
-        <div className="inline-flex items-center gap-4 px-5 py-2 rounded-full bg-card/70 backdrop-blur-2xl ring-1 ring-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-          <Link href="/" className="text-sm font-semibold tracking-tight text-foreground/90">
-            CodeCoach AI
-          </Link>
-          <Link href="/register" className="text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 px-3 py-1 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
-            Create account
-          </Link>
-        </div>
-      </div>
+
 
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-sm p-1.5 rounded-[2rem] bg-white/[0.03] ring-1 ring-white/5">

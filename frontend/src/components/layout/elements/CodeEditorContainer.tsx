@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeEditor } from '@/components/editor/CodeEditor';
 import { Language } from '@/types';
-import { ChevronDown, ChevronUp, GripHorizontal, Play } from 'lucide-react';
+import { ChevronDownIcon, ChevronUpIcon, DragHandleDots2Icon, PlayIcon } from '@radix-ui/react-icons';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -74,7 +74,7 @@ export function CodeEditorContainer({
       {/* Code Editor Section */}
       <div 
         className="flex-1 min-h-0 overflow-hidden"
-        style={{ height: outputCollapsed || !hasOutput ? '100%' : `calc(100% - ${outputHeight}px - 32px)` }}
+        style={{ height: outputCollapsed || !hasOutput ? '100%' : `calc(100% - ${outputHeight}px)` }}
       >
         <CodeEditor
           language={language}
@@ -87,69 +87,62 @@ export function CodeEditorContainer({
         />
       </div>
 
-      {/* Output Panel - Double-Bezel */}
-      <div className="mx-2 mb-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-1">
-        <div className={cn(
-          "rounded-[calc(1rem-0.25rem)] bg-secondary/30 overflow-hidden flex flex-col shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]",
-          !hasOutput && "h-auto bg-transparent"
-        )}>
-          {hasOutput ? (
-            <>
-              {/* Resize Handle */}
-              {!outputCollapsed && (
-                <div
-                  className={cn(
-                    "h-2 bg-border/50 cursor-row-resize hover:bg-primary/50 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center justify-center",
-                    isResizing && "bg-primary/50"
-                  )}
-                  onMouseDown={handleResizeStart}
-                >
-                  <GripHorizontal className="h-4 w-4 text-muted-foreground/50" strokeWidth={1} />
-                </div>
-              )}
-
+      {/* Output Panel - Flush 1px border */}
+      <div className="border-t border-white/[0.04] flex-shrink-0">
+        {hasOutput ? (
+          <div className="flex flex-col">
+            {/* Resize Handle */}
+            {!outputCollapsed && (
               <div
                 className={cn(
-                  "flex flex-col",
-                  outputCollapsed && "h-auto"
+                  "h-2 bg-transparent hover:bg-white/[0.03] cursor-row-resize transition-colors flex items-center justify-center relative",
+                  isResizing && "bg-white/[0.04]"
                 )}
-                style={!outputCollapsed ? { height: `${outputHeight}px` } : undefined}
+                onMouseDown={handleResizeStart}
               >
-                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
-                  <span className="text-xs font-medium tracking-wide text-muted-foreground">OUTPUT</span>
-                  <button
-                    onClick={() => setOutputCollapsed(!outputCollapsed)}
-                    className="p-1 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
-                    aria-label={outputCollapsed ? "Expand output" : "Collapse output"}
-                  >
-                    {outputCollapsed ? (
-                      <ChevronUp className="h-3.5 w-3.5" strokeWidth={1} />
-                    ) : (
-                      <ChevronDown className="h-3.5 w-3.5" strokeWidth={1} />
-                    )}
-                  </button>
-                </div>
-
-                {!outputCollapsed && (
-                  <div className="flex-1 overflow-auto p-3">
-                    <pre className={cn(
-                      "text-sm whitespace-pre-wrap font-mono",
-                      error ? "text-red-400" : "text-foreground/80"
-                    )}>
-                      {error || output}
-                    </pre>
-                  </div>
-                )}
+                <div className="absolute inset-x-4 top-1/2 h-px bg-white/[0.06]" />
+                <DragHandleDots2Icon className="relative h-3 w-3 text-muted-foreground/30" />
               </div>
-            </>
-          ) : (
-            <EmptyState
-              icon={Play}
-              title="Write code and hit Run"
-              description="Your output will appear here when you run your code."
-            />
-          )}
-        </div>
+            )}
+
+            <div
+              className={cn("flex flex-col", outputCollapsed && "h-auto")}
+              style={!outputCollapsed ? { height: `${outputHeight}px` } : undefined}
+            >
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-xs font-medium tracking-wide text-muted-foreground/60">OUTPUT</span>
+                <button
+                  onClick={() => setOutputCollapsed(!outputCollapsed)}
+                  className="p-1 hover:bg-white/[0.04] rounded transition-colors"
+                  aria-label={outputCollapsed ? "Expand output" : "Collapse output"}
+                >
+                  {outputCollapsed ? (
+                    <ChevronUpIcon className="h-3.5 w-3.5 text-muted-foreground/40" />
+                  ) : (
+                    <ChevronDownIcon className="h-3.5 w-3.5 text-muted-foreground/40" />
+                  )}
+                </button>
+              </div>
+
+              {!outputCollapsed && (
+                <div className="flex-1 overflow-auto px-3 pb-3">
+                  <pre className={cn(
+                    "text-sm whitespace-pre-wrap font-mono",
+                    error ? "text-red-400" : "text-foreground/80"
+                  )}>
+                    {error || output}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <EmptyState
+            icon={PlayIcon}
+            title="Write code and hit Run"
+            description="Your output will appear here when you run your code."
+          />
+        )}
       </div>
     </div>
   );

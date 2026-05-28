@@ -90,7 +90,7 @@ describe('CodeEditorContainer', () => {
 
   it('renders resize handle when output is visible', () => {
     render(<CodeEditorContainer {...defaultProps} output="Hello" />);
-    expect(document.querySelector('.lucide-grip-horizontal')).toBeTruthy();
+    expect(document.querySelector('[class*="cursor-row-resize"]')).toBeTruthy();
   });
 
   it('forwards isRunning to CodeEditor', () => {

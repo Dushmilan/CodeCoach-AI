@@ -56,6 +56,12 @@ class FileProgressRepository(ProgressRepository):
             self._progress[key] = progress
         if lesson_id not in progress.completed_lessons:
             progress.completed_lessons.append(lesson_id)
+        progress.last_accessed_lesson_id = lesson_id
         progress.last_accessed_at = datetime.utcnow()
         self._save()
         return progress
+
+    async def save(self, progress: CourseProgress) -> None:
+        key = self._key(progress.user_id, progress.course_id)
+        self._progress[key] = progress
+        self._save()

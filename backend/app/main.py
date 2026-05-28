@@ -43,10 +43,22 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     logger.error(f"Validation errors: {exc.errors()}")
     logger.error("========================")
     body = exc.body.decode("utf-8", errors="replace") if isinstance(exc.body, bytes) else exc.body
+    errors = _sanitize_errors(exc.errors())
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "body": body},
+        content={"detail": errors, "body": body},
     )
+
+
+def _sanitize_errors(errors):
+    """Recursively convert bytes to strings in error structures."""
+    if isinstance(errors, bytes):
+        return errors.decode("utf-8", errors="replace")
+    if isinstance(errors, list):
+        return [_sanitize_errors(e) for e in errors]
+    if isinstance(errors, dict):
+        return {k: _sanitize_errors(v) for k, v in errors.items()}
+    return errors
 
 
 # Configure CORS

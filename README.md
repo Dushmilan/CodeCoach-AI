@@ -26,9 +26,9 @@ Practice DSA problems and learn programming languages with structured lessons an
 
 CodeCoach AI is an open-source LeetCode alternative with integrated AI coaching. It helps university students:
 
-- **Practice coding interview questions** — 18 DSA problems (target: 100) across 14 standard topics with Python, JavaScript, and Java starter code
+- **Practice coding interview questions** — 36 DSA problems (target: 90) across 14 standard topics with Python, JavaScript, and Java starter code
 - **Learn programming languages** — structured C, Python, and Java curricula with interleaved theory and coding exercises (coming soon)
-- **Get instant AI coaching** — hints, code reviews, explanations, and debugging help powered by NVIDIA NIM (LLaMA 3.1 8B)
+- **Get instant AI coaching** — hints, code reviews, explanations, and debugging help powered by NVIDIA NIM or Google Gemini (BYO API key)
 - **Submit and grade** — code runs against test cases in an isolated Piston container with pass/fail results
 
 No ads, no data selling, no subscriptions. Students bring their own free NVIDIA API key for AI coaching.
@@ -49,10 +49,10 @@ Multi-institution, drop-in, voluntary — students sign up on their own time, ze
 ### Built
 
 | Feature | Description |
-|---|---|
-| **AI Coaching** | 5 modes (Hint, Review, Explain, Debug, Freeform) via NVIDIA NIM — structured JSON responses + SSE streaming |
+|---|---|---|
+| **AI Coaching** | 5 modes (Hint, Review, Explain, Debug, Freeform) via NVIDIA NIM or Google Gemini — structured JSON responses + SSE streaming |
 | **Code Execution** | Piston container — Python, JavaScript, Java with smart code wrapping for test harness generation |
-| **Question Bank** | 18 DSA questions across 12/14 topics with full CRUD, search, filter by difficulty/category/company |
+| **Question Bank** | 36 DSA questions across 14/14 topics with full CRUD, search, filter by difficulty/category |
 | **Submit & Grade** | Run code against visible + hidden test cases, pass/fail reporting |
 | **Question Validation** | 7 validation use cases — structure, test cases, starter code, solution, time limits, function signature, output format |
 | **Authentication** | JWT-based email/password registration + login, bcrypt hashing |
@@ -64,7 +64,7 @@ Multi-institution, drop-in, voluntary — students sign up on their own time, ze
 
 | Phase | Scope |
 |---|---|
-| **Phase 1 — DSA Ship** | 90 more questions → 100 total (30 Easy / 50 Medium / 20 Hard) across 14 standard topics. Google OAuth. Privacy policy page. Polish pass. |
+| **Phase 1 — DSA Ship** | 54 more questions → 90 total (24 Easy / 10 Medium / 2 Hard existing) across 14 standard topics. Google OAuth. Privacy policy page. Polish pass. |
 | **Phase 2 — Curricula** | C, Python, Java language curricula with interleaved theory + coding exercises. `/learn` navigation. Context-aware AI coaching. |
 | **Phase 3 — Expand** | DBMS/SQL module, OOP/Design Patterns, Web Dev (React, Node), theory/MCQ question type. Classroom dashboard. |
 
@@ -100,7 +100,7 @@ Phase 3 ─── Future Modules
 | **Editor** | Monaco Editor (`@monaco-editor/react`) |
 | **Styling** | Tailwind CSS 3, `tailwind-merge`, `clsx` |
 | **Code Execution** | Piston (self-hosted Docker container) |
-| **AI Coach** | NVIDIA NIM (LLaMA 3.1 8B) via `integrate.api.nvidia.com/v1` |
+| **AI Coach** | NVIDIA NIM (LLaMA 3.1 8B) via `integrate.api.nvidia.com/v1` or Google Gemini via `generativelanguage.googleapis.com` |
 | **Auth** | JWT (python-jose), bcrypt |
 | **Testing** | pytest (backend), Vitest + Playwright (frontend) |
 | **Infra** | Docker Compose, SQLite (file-based) |
@@ -188,11 +188,12 @@ docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston
 
 ```
 NVIDIA_API_KEY=your_nvidia_nim_api_key
+GOOGLE_API_KEY=your_google_gemini_api_key
 JWT_SECRET_KEY=your_jwt_secret_key
 PISTON_API_URL=http://localhost:2000/api/v2/piston
 ```
 
-Get a free NVIDIA API key from [NVIDIA NIM](https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct).
+Get a free API key from [NVIDIA NIM](https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct) or [Google Gemini](https://aistudio.google.com/apikey).
 
 #### Frontend (`.env.local`)
 

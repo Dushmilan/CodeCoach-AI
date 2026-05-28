@@ -1,16 +1,16 @@
 # Graph Report - CodeCoach-AI  (2026-05-28)
 
 ## Corpus Check
-- 243 files · ~185,428 words
+- 247 files · ~226,024 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2689 nodes · 4558 edges · 265 communities (178 shown, 87 thin omitted)
-- Extraction: 71% EXTRACTED · 29% INFERRED · 0% AMBIGUOUS · INFERRED: 1326 edges (avg confidence: 0.61)
+- 2804 nodes · 4737 edges · 285 communities (172 shown, 113 thin omitted)
+- Extraction: 72% EXTRACTED · 28% INFERRED · 0% AMBIGUOUS · INFERRED: 1346 edges (avg confidence: 0.61)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `56dc342d`
+- Built from commit: `39dc4f8a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -118,12 +118,14 @@
 - [[_COMMUNITY_Community 101|Community 101]]
 - [[_COMMUNITY_Community 102|Community 102]]
 - [[_COMMUNITY_Community 103|Community 103]]
+- [[_COMMUNITY_Community 104|Community 104]]
 - [[_COMMUNITY_Community 105|Community 105]]
 - [[_COMMUNITY_Community 106|Community 106]]
 - [[_COMMUNITY_Community 107|Community 107]]
 - [[_COMMUNITY_Community 108|Community 108]]
 - [[_COMMUNITY_Community 109|Community 109]]
 - [[_COMMUNITY_Community 110|Community 110]]
+- [[_COMMUNITY_Community 111|Community 111]]
 - [[_COMMUNITY_Community 112|Community 112]]
 - [[_COMMUNITY_Community 113|Community 113]]
 - [[_COMMUNITY_Community 114|Community 114]]
@@ -232,6 +234,28 @@
 - [[_COMMUNITY_Community 254|Community 254]]
 - [[_COMMUNITY_Community 255|Community 255]]
 - [[_COMMUNITY_Community 258|Community 258]]
+- [[_COMMUNITY_Community 259|Community 259]]
+- [[_COMMUNITY_Community 260|Community 260]]
+- [[_COMMUNITY_Community 265|Community 265]]
+- [[_COMMUNITY_Community 266|Community 266]]
+- [[_COMMUNITY_Community 267|Community 267]]
+- [[_COMMUNITY_Community 268|Community 268]]
+- [[_COMMUNITY_Community 269|Community 269]]
+- [[_COMMUNITY_Community 270|Community 270]]
+- [[_COMMUNITY_Community 271|Community 271]]
+- [[_COMMUNITY_Community 272|Community 272]]
+- [[_COMMUNITY_Community 273|Community 273]]
+- [[_COMMUNITY_Community 274|Community 274]]
+- [[_COMMUNITY_Community 275|Community 275]]
+- [[_COMMUNITY_Community 276|Community 276]]
+- [[_COMMUNITY_Community 277|Community 277]]
+- [[_COMMUNITY_Community 278|Community 278]]
+- [[_COMMUNITY_Community 279|Community 279]]
+- [[_COMMUNITY_Community 280|Community 280]]
+- [[_COMMUNITY_Community 281|Community 281]]
+- [[_COMMUNITY_Community 282|Community 282]]
+- [[_COMMUNITY_Community 283|Community 283]]
+- [[_COMMUNITY_Community 284|Community 284]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `QuestionValidatorService` - 57 edges
@@ -248,32 +272,32 @@
 ## Surprising Connections (you probably didn't know these)
 - `parser()` --calls--> `CoachingResponseParser`  [INFERRED]
   backend/tests/unit/test_coaching_response_parser.py → backend/app/adapters/coaching_response_parser.py
+- `get_course_service()` --calls--> `CourseService`  [INFERRED]
+  backend/app/api/courses.py → backend/app/services/course_service.py
+- `get_course_service()` --calls--> `CourseService`  [INFERRED]
+  backend/app/api/progress.py → backend/app/services/course_service.py
 - `get_repository()` --calls--> `FileQuestionRepository`  [INFERRED]
   backend/app/api/submit.py → backend/app/repositories/file_question_repository.py
 - `get_executor()` --calls--> `PistonService`  [INFERRED]
   backend/app/api/submit.py → backend/app/services/piston_service.py
-- `sample_user()` --calls--> `UserInDB`  [INFERRED]
-  backend/tests/unit/test_user_repository.py → backend/app/models/auth_schemas.py
-- `test_execute_returns_execution_result()` --calls--> `PistonService`  [INFERRED]
-  backend/tests/unit/test_code_executor.py → backend/app/services/piston_service.py
 
-## Communities (265 total, 87 thin omitted)
+## Communities (285 total, 113 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.18
+Cohesion: 0.16
 Nodes (5): get_wrapper(), get_wrapper(), TestJavaCodeWrapper, TestJavaScriptCodeWrapper, TestPythonCodeWrapper
 
 ### Community 1 - "Community 1"
-Cohesion: 0.06
-Nodes (28): Example, StarterCode, Unit tests for boundary condition validation., Test question with maximum string lengths., Test cases for boundary conditions., Test question with empty arrays., Test coaching request with maximum string lengths., Test question with large arrays. (+20 more)
+Cohesion: 0.07
+Nodes (31): TestSubmitEndpoint, Example, Question, StarterCode, TestCase, Unit tests for boundary condition validation., Test question with maximum string lengths., Test cases for boundary conditions. (+23 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.04
 Nodes (48): 1. Functional Accuracy Tests, 2. Boundary Condition Tests, 3. Load Testing, 4. Security Testing, 5. OpenAPI Contract Validation, Basic Test Execution, CI/CD Integration, code:block1 (tests/) (+40 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.04
-Nodes (25): Integration tests for questions endpoints., Test filtering questions with multiple parameters., Test getting a specific question by ID., Test cases for questions endpoints., Test getting a question with invalid ID., Test getting all available categories., Test getting all company tags., Test that questions_service dependency can be overridden. (+17 more)
+Cohesion: 0.17
+Nodes (7): Test getting a specific question by ID., Test cases for questions endpoints., Test getting all available categories., Test getting all company tags., Test that questions_service dependency can be overridden., Test filtering questions by category., TestQuestionsEndpoints
 
 ### Community 4 - "Community 4"
 Cohesion: 0.04
@@ -284,8 +308,8 @@ Cohesion: 0.24
 Nodes (4): TestBuildVerificationPrompt, TestExportPrompts, build_verification_prompt(), export_prompts()
 
 ### Community 6 - "Community 6"
-Cohesion: 0.10
-Nodes (28): make_mock_result(), TestQuestionValidationBatch, TestQuestionValidationInfo, TestQuestionValidationQuick, TestQuestionValidationSummary, TestQuestionValidationUseCases, TestQuestionValidationValidate, QuestionValidationResult (+20 more)
+Cohesion: 0.11
+Nodes (26): make_mock_result(), TestQuestionValidationBatch, TestQuestionValidationInfo, TestQuestionValidationQuick, TestQuestionValidationSummary, TestQuestionValidationUseCases, TestQuestionValidationValidate, QuestionValidationResult (+18 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.05
@@ -296,12 +320,12 @@ Cohesion: 0.07
 Nodes (22): build_structured_system_prompt(), build_structured_user_prompt(), build_system_prompt(), build_user_prompt(), _lesson_context_block(), _mode_section(), Coaching prompt templates per mode.  Exports prompt builder functions and mode-s, _structured_mode_section() (+14 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.05
-Nodes (42): dependencies, clsx, lucide-react, @monaco-editor/react, next, @radix-ui/react-dropdown-menu, react, react-dom (+34 more)
+Cohesion: 0.04
+Nodes (45): dependencies, clsx, framer-motion, geist, lucide-react, @monaco-editor/react, next, @radix-ui/react-dropdown-menu (+37 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.23
-Nodes (6): CodeWrapper, JavaCodeWrapper, JavaScriptCodeWrapper, PythonCodeWrapper, Piston code execution — single deep module.  Encapsulates code wrapping per lang, TestCodeWrapperABC
+Cohesion: 0.19
+Nodes (7): CodeWrapper, JavaCodeWrapper, JavaScriptCodeWrapper, PythonCodeWrapper, Piston code execution — single deep module.  Encapsulates code wrapping per lang, TestCodeWrapperABC, TestGetWrapper
 
 ### Community 11 - "Community 11"
 Cohesion: 0.05
@@ -313,11 +337,11 @@ Nodes (20): Security vulnerability tests for API endpoints., Test cases for secu
 
 ### Community 13 - "Community 13"
 Cohesion: 0.08
-Nodes (10): TestAuthErrorHandling, TestAuthLogin, TestAuthMe, TestAuthRegister, TestAuthSupabase, SupabaseAuthRequest, TokenResponse, UserResponse (+2 more)
+Nodes (9): TestAuthErrorHandling, TestAuthLogin, TestAuthMe, TestAuthRegister, TestAuthSupabase, TokenResponse, UserResponse, test_valid_token_returns_user() (+1 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.12
-Nodes (19): FileQuestionRepository, test_get_all_filters_by_category(), test_get_all_filters_by_difficulty(), test_get_all_returns_all_questions(), test_get_by_id_found(), test_get_by_id_not_found(), test_get_categories(), test_get_company_tags() (+11 more)
+Cohesion: 0.10
+Nodes (18): FileQuestionRepository, test_get_all_filters_by_category(), test_get_all_filters_by_difficulty(), test_get_all_returns_all_questions(), test_get_by_id_found(), test_get_by_id_not_found(), test_get_categories(), test_get_company_tags() (+10 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.11
@@ -332,40 +356,40 @@ Cohesion: 0.05
 Nodes (27): Integration tests for coach endpoints., Test getting available coaching modes., Test coaching with invalid mode., Test getting supported programming languages., Test coaching with missing required fields., Test coaching with invalid language., Test coaching with invalid mode., Test cases for coach endpoints. (+19 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.09
-Nodes (21): QuestionValidationConfig, Complete configuration for question validation., Question, QuestionValidatorService, Validate multiple questions in parallel.          Args:             questions, Get the recommended order for running use cases.          Use cases are ordere, Run a quick validation with only fast use cases.          This is useful for i, Run full validation including all use cases.          This includes slow valid (+13 more)
+Cohesion: 0.10
+Nodes (18): QuestionValidationConfig, Complete configuration for question validation., QuestionValidatorService, Validate multiple questions in parallel.          Args:             questions, Get the recommended order for running use cases.          Use cases are ordere, Run a quick validation with only fast use cases.          This is useful for i, Run full validation including all use cases.          This includes slow valid, Get a summary of validation results.          Args:             result: The v (+10 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.19
-Nodes (34): Enum, CoachingRequestFactory, CoachingResponseFactory, CodeExecutionRequestFactory, CodeExecutionResultFactory, generate_valid_test_questions(), HealthResponseFactory, Meta (+26 more)
+Cohesion: 0.21
+Nodes (31): CoachingRequestFactory, CoachingResponseFactory, CodeExecutionRequestFactory, CodeExecutionResultFactory, generate_valid_test_questions(), HealthResponseFactory, Meta, QuestionFactory (+23 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.20
-Nodes (11): ContentLayoutContainer(), ContentLayoutContainerProps, { container }, skeletonElements, LoadingSkeleton(), MainContentContainer(), MainContentContainerProps, MainLayoutContainer() (+3 more)
+Cohesion: 0.13
+Nodes (16): AIChatPanelContainer(), AIChatPanelContainerProps, aside, defaultProps, messages, ContentLayoutContainer(), ContentLayoutContainerProps, { container } (+8 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.15
-Nodes (11): LoginRequest, RegisterRequest, SupabaseAuthRequest, mockResponse, TokenResponse, HttpClient, HttpMethod, HttpRequestOptions (+3 more)
+Cohesion: 0.13
+Nodes (13): LoginRequest, RegisterRequest, SupabaseAuthRequest, mockResponse, TokenResponse, CoachingRequest, CoachingResponse, HttpClient (+5 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.07
 Nodes (27): Architecture, Backend Can't Connect to Piston, code:bash (ssh -i your_key.pem ubuntu@your-vm-ip), code:bash (# Check what's using the port), code:bash (# Clean rebuild), code:bash (curl -fsSL https://get.docker.com -o get-docker.sh), code:bash (git clone https://github.com/your-username/CodeCoach-AI.git), code:bash (gcloud services enable run.googleapis.com) (+19 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.12
-Nodes (25): cn(), FilterBar(), FilterBarProps, NavigationControls(), NavigationControlsProps, QuestionDescriptionPanel(), QuestionDescriptionPanelProps, { container } (+17 more)
+Cohesion: 0.07
+Nodes (41): cn(), FilterBar(), FilterBarProps, NavigationControls(), NavigationControlsProps, { container }, onNext, onPrevious (+33 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.07
-Nodes (36): CodeExecutor, ExecutionResult, invalid_question_missing_id(), mock_piston_service(), question_with_bad_starter_code(), question_with_invalid_test_cases(), Unit tests for question validation use cases.  This module contains test-drive, Create a question with invalid test cases. (+28 more)
+Nodes (48): CodeExecutor, ExecutionResult, invalid_question_missing_id(), mock_piston_service(), question_with_bad_starter_code(), question_with_invalid_test_cases(), Unit tests for question validation use cases.  This module contains test-drive, Create a question with invalid test cases. (+40 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.15
 Nodes (14): PistonService, Service for executing code via Piston API., Executes code via Piston (Docker) sandbox. This is the deep module     — wrappin, test_execute_code_piston_error(), test_execute_code_success(), test_execute_code_timeout(), test_execute_code_unsupported_language(), test_execute_code_with_stdin() (+6 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.10
-Nodes (15): test_question_missing_starter_language_fails_validation(), test_question_with_empty_id_fails_validation(), test_question_with_short_description_fails_validation(), test_question_with_short_title_fails_validation(), test_valid_question_passes_structure_validation(), Structure validation use case.  Validates that a question has all required fie, Validate question title., Validate question description. (+7 more)
+Cohesion: 0.12
+Nodes (14): test_question_missing_starter_language_fails_validation(), test_question_with_empty_id_fails_validation(), test_question_with_short_description_fails_validation(), test_question_with_short_title_fails_validation(), test_valid_question_passes_structure_validation(), Validate question title., Validate question description., Validate question category. (+6 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.12
@@ -380,8 +404,8 @@ Cohesion: 0.14
 Nodes (7): Validate a single test case., Check if expected output is deterministic., Check for duplicate test cases., Check distribution of hidden vs visible test cases., Validate that test cases can be executed using Piston.          This runs a si, Execute test case validation., Validate the number of test cases.
 
 ### Community 30 - "Community 30"
-Cohesion: 0.11
-Nodes (4): UserRepository, FileUserRepository, sample_user(), TestFileUserRepository
+Cohesion: 0.12
+Nodes (3): FileUserRepository, sample_user(), TestFileUserRepository
 
 ### Community 31 - "Community 31"
 Cohesion: 0.11
@@ -392,12 +416,12 @@ Cohesion: 0.08
 Nodes (23): async_client(), event_loop(), mock_nim_service(), mock_piston_service(), mock_questions_service(), Test configuration and fixtures for CodeCoach AI API testing., Mock questions service for testing., Set up test environment variables. (+15 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.18
-Nodes (16): UserInDB, UserLoginRequest, UserRegisterRequest, test_login_by_email(), test_login_inactive_user(), test_login_success(), test_login_user_not_found(), test_login_with_supabase_returns_existing_user() (+8 more)
+Cohesion: 0.17
+Nodes (19): UserInDB, UserLoginRequest, UserRegisterRequest, UserRepository, AuthService, hash_password(), test_login_by_email(), test_login_inactive_user() (+11 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.07
-Nodes (23): build_classic_prompt(), build_creative_prompt(), build_prompt(), call_nvidia(), call_nvidia_with_retry(), _default_starter(), _difficulty_calibration_examples(), generate_questions() (+15 more)
+Cohesion: 0.06
+Nodes (29): build_classic_prompt(), build_creative_prompt(), build_prompt(), call_google_async(), call_nvidia(), call_nvidia_async(), call_nvidia_with_retry(), _default_starter() (+21 more)
 
 ### Community 35 - "Community 35"
 Cohesion: 0.10
@@ -420,16 +444,16 @@ Cohesion: 0.10
 Nodes (20): chatPanel, fullQuestion, mockClearCoachingError, mockClearError, mockClearExecutionError, mockClearMessages, mockClearOutput, mockLoadQuestions (+12 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.11
-Nodes (18): get_categories(), get_companies(), get_question(), get_question_stats(), get_questions(), get_questions_by_category(), get_questions_by_difficulty(), get_questions_service() (+10 more)
+Cohesion: 0.09
+Nodes (23): get_categories(), get_companies(), get_question(), get_question_stats(), get_questions(), get_questions_by_category(), get_questions_by_difficulty(), get_questions_service() (+15 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.27
-Nodes (10): TokenData, AuthService, create_access_token(), decode_access_token(), _get_secret_key(), _user_to_response(), test_get_current_user_inactive(), test_get_current_user_not_found() (+2 more)
+Cohesion: 0.28
+Nodes (9): TokenData, create_access_token(), decode_access_token(), _get_secret_key(), _user_to_response(), test_get_current_user_inactive(), test_get_current_user_not_found(), test_get_current_user_success() (+1 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.24
-Nodes (6): inter, jakarta, metadata, Theme, ThemeProvider(), ThemeProviderProps
+Cohesion: 0.12
+Nodes (13): CourseService, sample_course(), test_get_all_progress(), test_get_course_by_id(), test_get_course_not_found(), test_get_course_with_modules(), test_get_lesson(), test_get_lesson_not_found() (+5 more)
 
 ### Community 43 - "Community 43"
 Cohesion: 0.11
@@ -439,17 +463,13 @@ Nodes (18): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModu
 Cohesion: 0.11
 Nodes (10): Integration tests for health check endpoints., Test cases for health check endpoints., Test health check caching headers., Test health check response time is within acceptable limits., Test detailed health check response time., Test basic health check endpoint., Test detailed health check endpoint., Test health check response format consistency. (+2 more)
 
-### Community 45 - "Community 45"
-Cohesion: 0.13
-Nodes (7): AuthService, AuthContext, AuthContextType, AuthProvider(), storage, TestComponent(), AuthState
-
 ### Community 46 - "Community 46"
 Cohesion: 0.11
-Nodes (17): AI Agent Permissions, Architecture, Backend, code:block1 (backend/app/), code:block2 (frontend/src/), code:bash (uvicorn app.main:app --reload         # Dev server (port 800), code:bash (pnpm dev              # Dev server (port 3000)), code:bash (docker compose up --build   # Full stack) (+9 more)
+Nodes (18): AI Agent Permissions, Architecture, Backend, code:block1 (backend/app/), code:block2 (frontend/src/), code:bash (uvicorn app.main:app --reload         # Dev server (port 800), code:bash (pnpm dev              # Dev server (port 3000)), code:bash (docker compose up --build   # Full stack) (+10 more)
 
 ### Community 47 - "Community 47"
 Cohesion: 0.11
-Nodes (17): 1. AI Coaching, 2. Code Execution, 3. Question Bank, 4. Submit & Grade, 5. Question Validation, 6. Authentication, 7. Frontend Workspace, 8. Testing (+9 more)
+Nodes (18): 1. AI Coaching, 2. Code Execution, 3. Question Bank, 4. Submit & Grade, 5. Question Validation, 6. Authentication, 7. Frontend Workspace, 8. Testing (+10 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.12
@@ -460,8 +480,8 @@ Cohesion: 0.06
 Nodes (36): AIChatPanel(), AIChatPanelProps, buttons, defaultProps, messages, onSendMessage, textarea, user (+28 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.19
-Nodes (8): test_solution_missing_fails_validation(), Create an executable Python solution from the question.          This combines, Create a complete runner that reads input and calls the solution function., Validates that the reference solution passes all test cases.      This is the, Compare actual and expected outputs.          Handles different formats (JSON,, Execute solution validation., Validate solution by executing it against test cases.          For Python, we, SolutionValidationUseCase
+Cohesion: 0.20
+Nodes (5): Create an executable Python solution from the question.          This combines, Create a complete runner that reads input and calls the solution function., Compare actual and expected outputs.          Handles different formats (JSON,, Execute solution validation., Validate solution by executing it against test cases.          For Python, we
 
 ### Community 51 - "Community 51"
 Cohesion: 0.12
@@ -480,8 +500,8 @@ Cohesion: 0.15
 Nodes (4): ExecutionResultFormatter, ExecutionResultFormatter, formatter(), TestFormat
 
 ### Community 55 - "Community 55"
-Cohesion: 0.12
-Nodes (17): CoursePage(), iconMap, useCourse(), useCurriculum(), Header(), buttons, mockSetApiKey, mockSetTheme (+9 more)
+Cohesion: 0.09
+Nodes (21): api, CoursePage(), iconMap, languageIcon, StaggeredProgressBar, staggerItem, useCourse(), Header() (+13 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.09
@@ -492,16 +512,16 @@ Cohesion: 0.22
 Nodes (11): expected, testCases, CodeExecutionActions, CodeExecutionFeature, CodeExecutionResult, CodeExecutionState, SubmitResponse, SubmitResult (+3 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.15
-Nodes (12): SettingsModal(), SettingsModalProps, backdrop, buttons, { container }, defaultProps, input, onClose (+4 more)
+Cohesion: 0.08
+Nodes (24): MessageListProps, LoginPage(), SettingsModal(), SettingsModalProps, backdrop, buttons, { container }, defaultProps (+16 more)
 
 ### Community 59 - "Community 59"
 Cohesion: 0.14
 Nodes (13): 1. Home / Workspace (the main screen), 2. Question Browser, 3. Landing / Marketing Page, 4. Auth Pages, CodeCoach AI — Design Prompt for OpenDesign, Constraints, Deliverables, Existing Design Tokens (keep or evolve) (+5 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.09
-Nodes (21): BaseModel, Course, CourseProgress, CourseSummary, Lesson, Module, TestCase, CodeValidationRequest (+13 more)
+Cohesion: 0.10
+Nodes (20): CodeValidationRequest, normalize_description(), normalize_field_to_string(), normalize_solution(), normalize_to_string(), Request for code validation against test cases., Request for code validation against test cases., Result of code validation. (+12 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.15
@@ -511,10 +531,6 @@ Nodes (12): mockClearExecutionError, mockClearOutput, mockLocalStorage, mockLoca
 Cohesion: 0.13
 Nodes (14): 1. AI Coaching, 2. Code Execution, 3. Question Bank, 4. Submit & Grade, 5. Question Validation, 6. Authentication, 7. Frontend Workspace, 8. Testing (+6 more)
 
-### Community 63 - "Community 63"
-Cohesion: 0.23
-Nodes (9): useAuthGuard(), AuthCallbackPage(), LoginPage(), useAuth(), RegisterPage(), Button, ButtonProps, sizeStyles (+1 more)
-
 ### Community 64 - "Community 64"
 Cohesion: 0.15
 Nodes (12): ADR-1: Ports/Adapters (Hexagonal) Backend, ADR-2: Feature-Based Frontend, ADR-3: HTTP Client Port on Frontend, ADR-4: No Required Auth, ADR-5: Two-Button Workflow (Run / Submit), Architecture Decisions, code:block1 (User Code → FastAPI → PistonService → CodeWrapper (wrap code), CodeCoach AI — Context (+4 more)
@@ -522,6 +538,10 @@ Nodes (12): ADR-1: Ports/Adapters (Hexagonal) Backend, ADR-2: Feature-Based Fron
 ### Community 65 - "Community 65"
 Cohesion: 0.15
 Nodes (10): HttpError, abortError, badResponse, body, callArgs, callHeaders, controller, headers (+2 more)
+
+### Community 66 - "Community 66"
+Cohesion: 0.11
+Nodes (7): Configuration for time limit validation., TimeLimitConfig, Question validation — single deep module.  Validates question quality across str, StarterCodeValidationUseCase, StructureValidationUseCase, TimeLimitValidationUseCase, Initialize time limit validation use case.          Args:             config:
 
 ### Community 67 - "Community 67"
 Cohesion: 0.12
@@ -540,16 +560,16 @@ Cohesion: 0.17
 Nodes (3): TestDebugApiKeyStatus, TestDebugEnvironment, TestDebugTestConnection
 
 ### Community 71 - "Community 71"
-Cohesion: 0.13
-Nodes (10): FunctionSignatureConfig, Configuration for function signature validation., FunctionSignatureValidationUseCase, test_invalid_return_type_fails(), test_missing_type_hints_warning(), test_valid_function_signature_passes(), FunctionSignatureValidationUseCase, Function signature validation use case.  Validates that function signatures in (+2 more)
+Cohesion: 0.16
+Nodes (9): FunctionSignatureConfig, Configuration for function signature validation., FunctionSignatureValidationUseCase, test_invalid_return_type_fails(), test_missing_type_hints_warning(), test_valid_function_signature_passes(), FunctionSignatureValidationUseCase, Validates function signatures in starter code.      Checks:     - Function ha (+1 more)
 
 ### Community 72 - "Community 72"
 Cohesion: 0.20
 Nodes (10): execute_code(), get_executor(), get_runtimes(), get_supported_languages(), Get all available runtimes from Piston API., Get or create Piston service instance (cached)., Execute code using Piston API.      Supports multiple programming languages with, Validate code before execution.      Provides syntax checking and basic validati (+2 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.18
-Nodes (10): OutputFormatConfig, Configuration for output format validation., OutputFormatValidationUseCase, Tests for time limit validation use case., test_inconsistent_output_format_fails(), test_valid_output_format_passes(), TestTimeLimitValidationUseCase, OutputFormatValidationUseCase (+2 more)
+Cohesion: 0.20
+Nodes (8): OutputFormatConfig, Configuration for output format validation., OutputFormatValidationUseCase, test_inconsistent_output_format_fails(), test_valid_output_format_passes(), OutputFormatValidationUseCase, Validates output format consistency across test cases.      Checks:     - All, Initialize output format validation use case.          Args:             conf
 
 ### Community 74 - "Community 74"
 Cohesion: 0.18
@@ -571,6 +591,10 @@ Nodes (9): allBtn, btn, { container }, defaultProps, onAll, onFilterChange, onRa
 Cohesion: 0.20
 Nodes (9): DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut(), DropdownMenuSubContent (+1 more)
 
+### Community 79 - "Community 79"
+Cohesion: 0.27
+Nodes (13): BaseModel, Enum, SupabaseAuthRequest, Course, CourseProgress, CourseSummary, Lesson, LessonType (+5 more)
+
 ### Community 80 - "Community 80"
 Cohesion: 0.22
 Nodes (9): code:bash (# Find what's using port 8000), code:bash (# Check logs), code:bash (# Check they're on same network), code:bash (# Remove unused data), Container Won't Start, Out of Disk Space, Port Already in Use, Services Can't Communicate (+1 more)
@@ -591,13 +615,13 @@ Nodes (8): Backend (Python), code:bash (# Temporary installation (lost on rebuil
 Cohesion: 0.25
 Nodes (8): 6.1 Endpoints, 6.2 POST /api/coach, 6.3 POST /api/run, 6. API Design (Phase 2), code:json ({), code:python (# Use Mixtral for review/complexity, Llama for everything el), code:json ({), code:json ({)
 
-### Community 87 - "Community 87"
-Cohesion: 0.25
-Nodes (7): container, defaultProps, items, onSelectQuestion, questions, twoSum, user
+### Community 88 - "Community 88"
+Cohesion: 0.06
+Nodes (7): Function signature validation use case.  Validates that function signatures in, Output format validation use case.  Validates that expected outputs across tes, Solution validation use case.  Validates that the reference solution passes al, Starter code validation use case.  Validates that starter code for all languag, Structure validation use case.  Validates that a question has all required fie, Test case validation use case.  Validates that test cases are executable, have, Time limit validation use case.  Validates that time complexity and time limit
 
 ### Community 89 - "Community 89"
 Cohesion: 0.10
-Nodes (19): MessageListProps, assistantMsg, baseMessage, container, dots, msgs, structuredMsg, defaultArgs (+11 more)
+Nodes (18): assistantMsg, baseMessage, container, dots, msgs, structuredMsg, defaultArgs, mockGetCoachResponse (+10 more)
 
 ### Community 91 - "Community 91"
 Cohesion: 0.29
@@ -612,8 +636,8 @@ Cohesion: 0.29
 Nodes (7): 3.1 Interview Session Engine, 3.2 AI Evaluator (Post-Interview via NVIDIA NIM), 3.3 Company-Specific Question Sets, 3.4 Leaderboard & Social, 3.5 Analytics Dashboard, code:json ({), Phase 3 — Mock Interview Mode 🚀 (Planned)
 
 ### Community 94 - "Community 94"
-Cohesion: 0.16
-Nodes (9): Configuration for test case validation., TestCaseValidationConfig, TestCaseValidationUseCase, test_hidden_test_cases_have_different_inputs(), test_question_with_no_test_cases_fails_validation(), test_test_case_with_empty_input_fails_validation(), Test case validation use case.  Validates that test cases are executable, have, Validates test cases for executability and correctness.      Checks:     - Mi (+1 more)
+Cohesion: 0.19
+Nodes (9): Configuration for test case validation., TestCaseValidationConfig, TestCaseValidationUseCase, test_hidden_test_cases_have_different_inputs(), test_question_with_no_test_cases_fails_validation(), test_test_case_executability_validated_with_piston(), test_test_case_with_empty_input_fails_validation(), Validates test cases for executability and correctness.      Checks:     - Mi (+1 more)
 
 ### Community 95 - "Community 95"
 Cohesion: 0.29
@@ -628,20 +652,16 @@ Cohesion: 0.29
 Nodes (6): check_api_key_status(), get_environment_info(), Test the actual connection to NVIDIA NIM API., Debug endpoint to check NVIDIA API key configuration and validity.      Return, Debug endpoint to show relevant environment information., test_nvidia_connection()
 
 ### Community 99 - "Community 99"
-Cohesion: 0.16
-Nodes (7): CoachingRequest, CoachingResponse, CoachingService, defaultArgs, httpError, store, structuredData
-
-### Community 100 - "Community 100"
-Cohesion: 0.60
-Nodes (3): hash_password(), verify_password(), TestPasswordHashing
+Cohesion: 0.20
+Nodes (5): CoachingService, defaultArgs, httpError, store, structuredData
 
 ### Community 101 - "Community 101"
 Cohesion: 0.43
 Nodes (6): generate_question(), main(), parse_questions(), Validate question meets requirements. Returns error or None., slugify(), validate_question()
 
 ### Community 102 - "Community 102"
-Cohesion: 0.09
-Nodes (17): Configuration for time limit validation., TimeLimitConfig, TimeLimitValidationUseCase, Tests for the structure validation use case., test_default_time_limits_are_valid(), test_slow_algorithm_warns_about_time_limit(), test_time_limit_within_bounds(), TestStructureValidationUseCase (+9 more)
+Cohesion: 0.20
+Nodes (5): Validate that constraints allow for the specified time complexity., Get the complexity level for comparison.          Higher level = worse complex, Estimate number of operations for given complexity and input size., Execute time limit validation., Validate time complexity specification.
 
 ### Community 103 - "Community 103"
 Cohesion: 0.33
@@ -667,6 +687,10 @@ Nodes (5): _call_nvidia_with_retry(), generate_lessons(), Generate lessons for a
 Cohesion: 0.40
 Nodes (4): compilerOptions, jsx, types, extends
 
+### Community 111 - "Community 111"
+Cohesion: 0.40
+Nodes (3): Recursively convert bytes to strings in error structures., _sanitize_errors(), validation_exception_handler()
+
 ### Community 112 - "Community 112"
 Cohesion: 0.50
 Nodes (4): code:bash (# All services (combined)), code:bash (# Watch backend errors in real-time), Log Examples, 📜 View Logs
@@ -679,37 +703,29 @@ Nodes (4): 1.1 Purpose, 1.2 Project Summary, 1.3 Goals, 1. Overview
 Cohesion: 0.40
 Nodes (3): chatInput, languageSelect, sendButton
 
-### Community 203 - "Community 203"
-Cohesion: 0.08
-Nodes (4): get_course_service(), get_course_service(), FileProgressRepository, CourseService
-
 ### Community 204 - "Community 204"
 Cohesion: 0.10
-Nodes (23): CodeEditor(), CodeEditorProps, buttons, defaultProps, editor, onCodeChange, onLanguageChange, onRunCode (+15 more)
+Nodes (22): CodeEditor(), CodeEditorProps, buttons, defaultProps, editor, onCodeChange, onLanguageChange, onRunCode (+14 more)
 
 ### Community 206 - "Community 206"
 Cohesion: 0.19
 Nodes (11): ClientJsOutput, ClientJsTestResult, executeClientJS(), formatClientJsOutput(), formatted, noFnQuestion, output, question (+3 more)
 
 ### Community 207 - "Community 207"
-Cohesion: 0.33
-Nodes (5): { container }, onNext, onPrevious, outerDiv, user
+Cohesion: 0.29
+Nodes (3): get_course_service(), Track that a user accessed a lesson (for 'Continue where you left off')., track_lesson_access()
 
 ### Community 208 - "Community 208"
-Cohesion: 0.28
-Nodes (9): TestMergeWithExisting, call_nvidia(), export_prompts_only(), import_scores_only(), main(), merge_with_existing(), pre_validate_question(), Programmatic pre-validation before AI gate. Returns None if valid, error string (+1 more)
+Cohesion: 0.31
+Nodes (10): call_nvidia(), call_nvidia_async(), evaluate_question_quality_async(), export_prompts_only(), import_scores_only(), main(), pre_validate_question(), Programmatic pre-validation before AI gate. Returns None if valid, error string (+2 more)
 
 ### Community 209 - "Community 209"
-Cohesion: 0.18
-Nodes (7): TestCase, BaseValidationUseCase, Question validation — single deep module.  Validates question quality across str, Abstract base for a single validation strategy., SolutionValidationUseCase, Tests for test case validation use case., TestTestCaseValidationUseCase
+Cohesion: 0.33
+Nodes (3): SolutionValidationUseCase, Tests for function signature validation use case., TestFunctionSignatureValidationUseCase
 
 ### Community 210 - "Community 210"
-Cohesion: 0.40
-Nodes (4): button, onClick, ref, user
-
-### Community 211 - "Community 211"
-Cohesion: 0.19
-Nodes (11): useCoaching(), useCodeExecution(), MainWorkspace(), useDebounce(), useLocalStorage(), OnboardingTour(), STEPS, useQuestion() (+3 more)
+Cohesion: 0.29
+Nodes (6): I1 — `@lru_cache()` prevents question reload from disk, I2 — No error handling in repository load — one bad question kills all, I3 — Pydantic schema too strict for NIM-generated data (root cause of formatting failures), I4 — `HTTPException` swallowed by generic handler in search endpoint, I5 — Integration test assumes companies exist in real data, Issues
 
 ### Community 212 - "Community 212"
 Cohesion: 0.83
@@ -728,24 +744,24 @@ Cohesion: 0.50
 Nodes (3): archived_to, rejected, threshold
 
 ### Community 216 - "Community 216"
-Cohesion: 0.29
-Nodes (6): graphify, Graphify-First Codebase Exploration, Phase 1 Cleanup Complete (May 26, 2026), Phase 2 Complete (Steps 1–9), Phase 2 Step 10 Complete, Session Context — May 26, 2026
+Cohesion: 0.18
+Nodes (10): Bug Fix Session — Questions Not Loading (May 28, 2026), graphify, Graphify-First Codebase Exploration, MANDATORY: Graphify-First Codebase Exploration, Phase 1 Cleanup Complete (May 26, 2026), Phase 2 Complete (Steps 1–9), Phase 2 Step 10 Complete, Session Context — May 26, 2026 (+2 more)
 
 ### Community 224 - "Community 224"
-Cohesion: 0.14
-Nodes (16): ACTION_LABELS, AuthGuardAction, ToastProvider(), showToast(), buttons, closeButton, { container }, { result } (+8 more)
+Cohesion: 0.07
+Nodes (32): inter, jakarta, metadata, ACTION_LABELS, AuthGuardAction, useAuthGuard(), AuthCallbackPage(), AuthContext (+24 more)
 
 ### Community 226 - "Community 226"
-Cohesion: 0.29
-Nodes (6): badge, baseQuestion, { container }, onClick, outerDiv, user
+Cohesion: 0.50
+Nodes (3): completed_labels, questions, total
 
 ### Community 227 - "Community 227"
-Cohesion: 0.12
-Nodes (14): mockGetQuestion, mockGetQuestions, promise, { result }, sampleFullQuestion, sampleQuestions, UseQuestionOptions, UseQuestionReturn (+6 more)
+Cohesion: 0.09
+Nodes (25): useCodeExecution(), MainWorkspace(), mockGetQuestion, mockGetQuestions, promise, { result }, sampleFullQuestion, sampleQuestions (+17 more)
 
 ### Community 228 - "Community 228"
-Cohesion: 0.11
-Nodes (20): api, useLesson(), AIChatPanelContainer(), AIChatPanelContainerProps, aside, defaultProps, messages, escapeHtml() (+12 more)
+Cohesion: 0.09
+Nodes (25): useCoaching(), api, useCurriculum(), useLesson(), escapeHtml(), MarkdownRenderer(), MarkdownRendererProps, renderMarkdown() (+17 more)
 
 ### Community 230 - "Community 230"
 Cohesion: 0.83
@@ -760,12 +776,12 @@ Cohesion: 0.50
 Nodes (3): dependencies, @kilocode/plugin, @opencode-ai/plugin
 
 ### Community 245 - "Community 245"
-Cohesion: 0.47
-Nodes (3): QuestionValidationStatus, Validation status for a question (stored with the question)., test_save_and_get_validation_status()
+Cohesion: 0.38
+Nodes (4): QuestionValidationStatus, Validation status for a question (stored with the question)., test_save_and_get_validation_status(), TestFileQuestionRepository
 
 ### Community 248 - "Community 248"
 Cohesion: 0.20
-Nodes (3): TestBuildRejectFixPrompt, TestPreValidateQuestion, _build_reject_fix_prompt()
+Nodes (3): TestImportScores, TestPreValidateQuestion, import_scores()
 
 ### Community 250 - "Community 250"
 Cohesion: 0.83
@@ -780,19 +796,19 @@ Cohesion: 0.67
 Nodes (3): 8.1 Free Tier Summary, 8.2 Scale Triggers, 8. Infrastructure & Cost Plan
 
 ## Knowledge Gaps
-- **592 isolated node(s):** `start.sh script`, `$schema`, `plugin`, `@kilocode/plugin`, `@opencode-ai/plugin` (+587 more)
+- **620 isolated node(s):** `start.sh script`, `$schema`, `plugin`, `@kilocode/plugin`, `@opencode-ai/plugin` (+615 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **87 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **113 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `NIMService` connect `Community 53` to `Community 96`, `Community 98`, `Community 67`, `Community 8`, `Community 60`?**
-  _High betweenness centrality (0.067) - this node is a cross-community bridge._
-- **Why does `StructuredCoachingResponse` connect `Community 60` to `Community 19`, `Community 53`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
-- **Why does `Question` connect `Community 18` to `Community 1`, `Community 66`, `Community 37`, `Community 102`, `Community 71`, `Community 6`, `Community 73`, `Community 14`, `Community 16`, `Community 209`, `Community 50`, `Community 19`, `Community 88`, `Community 24`, `Community 26`, `Community 60`, `Community 94`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Why does `StructuredCoachingResponse` connect `Community 60` to `Community 53`, `Community 79`?**
+  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+- **Why does `ExecutionResult` connect `Community 24` to `Community 1`, `Community 97`, `Community 225`, `Community 36`, `Community 10`, `Community 11`, `Community 209`, `Community 18`, `Community 51`, `Community 54`, `Community 25`, `Community 94`?**
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **Are the 46 inferred relationships involving `QuestionValidatorService` (e.g. with `QuestionsService` and `Question`) actually correct?**
   _`QuestionValidatorService` has 46 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 40 inferred relationships involving `QuestionsService` (e.g. with `Question` and `QuestionSummary`) actually correct?**

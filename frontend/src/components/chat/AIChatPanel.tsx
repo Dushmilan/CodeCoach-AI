@@ -44,14 +44,14 @@ export function AIChatPanel({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-white/5">
+      <div className="px-4 py-3 border-b border-white/[0.04]">
         <h3 className="text-sm font-semibold tracking-wide text-foreground/80">AI COACH</h3>
         <p className="text-[11px] text-muted-foreground/60 mt-0.5 tracking-wide">Real-time coding assistance</p>
       </div>
 
       <MessageList messages={messages} isTyping={isTyping} />
 
-      <div className="border-t border-white/5 p-3">
+      <div className="border-t border-white/[0.04] p-3">
         <QuickActions onActionClick={handleQuickAction} disabled={isTyping} />
         <ChatInput
           value={inputValue}

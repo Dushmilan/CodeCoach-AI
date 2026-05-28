@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.models.auth_schemas import (
@@ -10,12 +10,18 @@ from app.models.auth_schemas import (
 )
 from app.services.auth_service import AuthService
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> UserResponse:
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     auth_service = AuthService()
     try:
         user = await auth_service.get_current_user(credentials.credentials)
@@ -26,6 +32,18 @@ async def get_current_user(
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+async def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> UserResponse | None:
+    if credentials is None:
+        return None
+    auth_service = AuthService()
+    try:
+        return await auth_service.get_current_user(credentials.credentials)
+    except ValueError:
+        return None
 
 router = APIRouter()
 

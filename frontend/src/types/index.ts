@@ -118,6 +118,7 @@ export interface CourseProgress {
   user_id: string;
   course_id: string;
   completed_lessons: string[];
+  last_accessed_lesson_id: string | null;
   started_at: string;
   last_accessed_at: string;
 }
