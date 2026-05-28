@@ -123,6 +123,24 @@ See `PythonCodeWrapper`, `JavaScriptCodeWrapper`, and `JavaCodeWrapper` as refer
 10. **Update knowledge graph on task completion** — after every feature, fix, or debugging task finishes, run `graphify update .` to refresh the code knowledge graph, then `git add graphify-out/` and commit it alongside the feature changes. This keeps the graph in sync for all agents and tools.
 11. **Use graphify for codebase questions** — when you need to understand the codebase structure, find relationships between files, or scan for relevant code, use `graphify query "<question>"` or `graphify explain "<concept>"` instead of raw grep/glob. This returns a focused subgraph faster and with more context than ad-hoc searches.
 
+## Session Context — Bug Fix (May 28, 2026)
+
+**Problem:** 18 AI-generated questions not loading in frontend — 3 interacting bugs:
+1. `@lru_cache()` on questions API cached stale data (`backend/app/api/questions.py:10-12`)
+2. No error handling in `FileQuestionRepository._load()` (`backend/app/repositories/file_question_repository.py:26-32`)
+3. Pydantic schemas too strict for NIM generator's flexible output format (`backend/app/models/schemas.py`)
+
+**Schema flexibility pattern** (for NIM-generated data):
+- TestCase/Example input/output fields: `Union[str, Dict, list, int, float, None]` with `field_validator` → JSON string
+- Question description: `Union[str, Dict, List]` → normalized to string
+- Question starter: `Union[StarterCode, str, List, Dict]` → normalized via `model_validator`
+- Question solution: `Union[str, Dict]` → converted to string
+- Example: `model_validator` maps `expected_output` → `output` when missing
+
+**Result:** All 18 questions load. 296 backend tests pass. See `Issues.md` for full details.
+
+**Lesson:** NIM generator output and Pydantic schemas must be validated together. Add schema-level tests for generated data to catch format drift.
+
 ## AI Agent Permissions
 
 - ✅ Read/write any source file under `backend/` and `frontend/src/`

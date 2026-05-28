@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import re
+import asyncio
 import logging
 import argparse
 from typing import List, Optional, Tuple
@@ -317,6 +318,208 @@ def call_nvidia_with_retry(
     return None
 
 
+async def call_nvidia_async(
+    prompt: str, api_key: str, model: str, client: "httpx.AsyncClient", max_retries: int = 3
+) -> Optional[str]:
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    for attempt in range(1, max_retries + 1):
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a coding question generator. Return ONLY valid JSON.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": 8192,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "stream": False,
+        }
+
+        try:
+            response = await client.post(
+                "https://integrate.api.nvidia.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            if response.status_code != 200:
+                logger.error(f"  API error {response.status_code} on attempt {attempt}")
+                if attempt < max_retries:
+                    await asyncio.sleep(1)
+                    continue
+                return None
+
+            raw = response.json()["choices"][0]["message"]["content"]
+
+            parsed = parse_questions(raw)
+            if not parsed:
+                parse_error = "JSON parse failed or empty array returned"
+                logger.warning(f"  {parse_error} on attempt {attempt}")
+                if attempt < max_retries:
+                    prompt = prompt + (
+                        f"\n\nYour previous response was not valid JSON or did not contain valid questions. "
+                        f"ERROR: {parse_error}. Please return ONLY a valid JSON array following the exact format specified above."
+                    )
+                    await asyncio.sleep(1)
+                    continue
+                return raw
+
+            return raw
+
+        except (json.JSONDecodeError, httpx.RequestError, KeyError) as e:
+            logger.warning(f"  Attempt {attempt} failed: {e}")
+            if attempt < max_retries:
+                prompt = prompt + (
+                    f"\n\nYour previous response caused an error: {e}. "
+                    f"Please return ONLY a valid JSON array. No markdown, no code fences, no extra text."
+                )
+                await asyncio.sleep(1)
+                continue
+            return None
+
+    return None
+
+
+async def _generate_one_task(
+    topic: str,
+    difficulty: str,
+    arch: str,
+    count: int,
+    api_key: str,
+    model: str,
+    client: "httpx.AsyncClient",
+    semaphore: asyncio.Semaphore,
+    label: str,
+) -> Tuple[str, List[dict]]:
+    """Generate questions for one topic/difficulty/archetype combo. Returns (label, questions)."""
+    async with semaphore:
+        prompt = build_prompt(topic, difficulty, count, archetype=arch)
+        raw = await call_nvidia_async(prompt, api_key, model, client)
+        if not raw:
+            logger.warning(f"  Failed to generate for {label}")
+            return label, []
+
+        questions = parse_questions(raw)
+        if not questions:
+            logger.warning(f"  No valid questions parsed for {label}")
+            return label, []
+
+        questions = questions[:count]
+        for q in questions:
+            q["_archetype"] = arch
+
+        pre_validated = []
+        for q in questions:
+            err = pre_validate_question(q, topic)
+            if err:
+                logger.warning(f"  Pre-validation failed for '{q.get('title', '?')}': {err}")
+                continue
+            pre_validated.append(q)
+
+        logger.info(f"  [{label}] Generated {len(pre_validated)} valid questions")
+        return label, pre_validated
+
+
+def generate_questions(
+    api_key: str,
+    model: str = "meta/llama-3.1-70b-instruct",
+    target: int = 90,
+    questions_per_topic: int = 6,
+    archetype: str = "mixed",
+    topics: Optional[List[str]] = None,
+    checkpoint_interval: int = 10,
+    resume: bool = False,
+    concurrency: int = 3,
+) -> List[dict]:
+    load_existing_ids()
+
+    if topics is None:
+        topics = list(TOPICS)
+
+    completed_labels = set()
+    checkpoint = load_checkpoint() if resume else None
+    if checkpoint:
+        completed_labels = set(checkpoint.get("completed_labels", []))
+        logger.info(f"Resuming from checkpoint: {checkpoint.get('total', 0)} questions already generated")
+
+    tasks_to_run = []
+    for topic in topics:
+        for difficulty in ["easy", "medium", "hard"]:
+            remaining = target - len(tasks_to_run) * (questions_per_topic // 2)
+            if remaining <= 0:
+                break
+
+            per_diff = min(questions_per_topic, max(questions_per_topic, remaining))
+
+            if archetype == "mixed":
+                half = max(1, per_diff // 2)
+                arch_pairs = [("classic", half), ("creative_2026", per_diff - half)]
+            else:
+                arch_pairs = [(archetype, per_diff)]
+
+            for arch, count_for_arch in arch_pairs:
+                if count_for_arch < 1:
+                    continue
+                label = f"{topic}/{difficulty}/{arch}"
+                if label in completed_labels:
+                    logger.info(f"  Skipping already-completed: {label}")
+                    continue
+                tasks_to_run.append((topic, difficulty, arch, count_for_arch, label))
+
+    logger.info(f"\n=== Generating {len(tasks_to_run)} batches with concurrency={concurrency} ===")
+    logger.info(f"  Target: {target} questions total")
+
+    semaphore = asyncio.Semaphore(concurrency)
+    all_questions = []
+    total = 0
+
+    async def _run_all():
+        nonlocal total, all_questions
+        async with httpx.AsyncClient(timeout=240.0) as client:
+            batch_size = concurrency * 2
+            for batch_start in range(0, len(tasks_to_run), batch_size):
+                batch = tasks_to_run[batch_start:batch_start + batch_size]
+                coros = [
+                    _generate_one_task(t, d, a, c, api_key, model, client, semaphore, l)
+                    for t, d, a, c, l in batch
+                ]
+                results = await asyncio.gather(*coros, return_exceptions=True)
+
+                for result in results:
+                    if isinstance(result, Exception):
+                        logger.error(f"  Task exception: {result}")
+                        continue
+                    label, questions = result
+                    if questions:
+                        all_questions.extend(questions)
+                        total += len(questions)
+                        logger.info(f"  [{label}] {len(questions)} valid (total: {total}/{target})")
+
+                if total >= target:
+                    break
+
+                if total % checkpoint_interval < len(batch) * (questions_per_topic // 2):
+                    save_checkpoint({
+                        "questions": all_questions,
+                        "total": total,
+                        "completed_labels": list(completed_labels),
+                    })
+
+    asyncio.run(_run_all())
+
+    if os.path.exists(CHECKPOINT_FILE):
+        os.remove(CHECKPOINT_FILE)
+        logger.info("Checkpoint cleared after successful generation")
+
+    return all_questions[:target]
+
+
 def _json_loads_lenient(text: str):
     decoder = json.JSONDecoder(strict=False)
     try:
@@ -464,6 +667,7 @@ def generate_questions(
     topics: Optional[List[str]] = None,
     checkpoint_interval: int = 10,
     resume: bool = False,
+    concurrency: int = 3,
 ) -> List[dict]:
     load_existing_ids()
 
@@ -599,6 +803,12 @@ def main(args_list: Optional[List[str]] = None):
         help="Save checkpoint every N questions (default: 10)",
     )
     parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=3,
+        help="Max concurrent API calls (default: 3, stay under 40 RPM)",
+    )
+    parser.add_argument(
         "--resume",
         action="store_true",
         help="Resume from last checkpoint",
@@ -630,6 +840,7 @@ def main(args_list: Optional[List[str]] = None):
         topics=topics,
         checkpoint_interval=args.checkpoint_interval,
         resume=args.resume,
+        concurrency=args.concurrency,
     )
 
     if not all_questions:

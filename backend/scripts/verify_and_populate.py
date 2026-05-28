@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import re
+import asyncio
 import logging
 import argparse
 from typing import List, Optional, Callable, Tuple
@@ -273,6 +274,69 @@ def call_nvidia(prompt: str, api_key: str, model: str) -> Optional[str]:
         return None
 
 
+async def call_nvidia_async(prompt: str, api_key: str, model: str) -> Optional[str]:
+    import httpx
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a strict QA reviewer for coding interview questions. Return ONLY valid JSON.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        "max_tokens": 2000,
+        "temperature": 0.3,
+        "top_p": 0.9,
+        "stream": False,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                "https://integrate.api.nvidia.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+        if response.status_code != 200:
+            logger.error(f"API error {response.status_code}: {response.text[:200]}")
+            return None
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        logger.error(f"Request failed: {e}")
+        return None
+
+
+async def evaluate_question_quality_async(
+    question: dict,
+    api_key: str,
+    model: str,
+    rounds: int = 2,
+    semaphore: asyncio.Semaphore = None,
+) -> Tuple[float, List[dict]]:
+    if semaphore is None:
+        semaphore = asyncio.Semaphore(1)
+
+    round_results = []
+    async with semaphore:
+        for r in range(rounds):
+            prompt = build_verification_prompt(question)
+            raw = await call_nvidia_async(prompt, api_key, model)
+            if not raw:
+                logger.warning(f"  Round {r + 1}/{rounds}: API call failed, skipping")
+                continue
+            result = parse_verification_response(raw)
+            round_results.append(result)
+
+    score = compute_average_score(round_results)
+    return score, round_results
+
+
 def pre_validate_question(q: dict) -> Optional[str]:
     """Programmatic pre-validation before AI gate. Returns None if valid, error string if invalid."""
     if not q.get("title"):
@@ -447,8 +511,8 @@ def main():
     parser.add_argument(
         "--rounds",
         type=int,
-        default=4,
-        help="Number of verification rounds per question (default: 4)",
+        default=2,
+        help="Number of verification rounds per question (default: 2)",
     )
     parser.add_argument(
         "--input",
@@ -502,6 +566,12 @@ def main():
         action="store_false",
         dest="pre_validate",
         help="Skip programmatic pre-validation",
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=3,
+        help="Max concurrent API calls (default: 3)",
     )
     args = parser.parse_args()
 
@@ -610,29 +680,39 @@ def main():
         new_questions = fixed
 
     logger.info(
-        f"\n=== Verifying {len(new_questions)} questions ({args.rounds} rounds each) ==="
+        f"\n=== Verifying {len(new_questions)} questions ({args.rounds} rounds each, concurrency={args.concurrency}) ==="
     )
     logger.info(f"Threshold: > {args.threshold}")
 
-    verified = []
     total = len(new_questions)
+    semaphore = asyncio.Semaphore(args.concurrency)
 
-    for i, q in enumerate(new_questions, 1):
-        title = q.get("title", "unknown")
-        logger.info(f"\n[{i}/{total}] Evaluating: {title}")
+    async def _verify_all():
+        results = []
+        batch_size = args.concurrency * 2
+        for batch_start in range(0, len(new_questions), batch_size):
+            batch = new_questions[batch_start:batch_start + batch_size]
+            coros = [
+                evaluate_question_quality_async(q, api_key, args.model, args.rounds, semaphore)
+                for q in batch
+            ]
+            batch_results = await asyncio.gather(*coros, return_exceptions=True)
+            for i, result in enumerate(batch_results):
+                q = batch[i]
+                if isinstance(result, Exception):
+                    logger.error(f"  Exception for '{q.get('title', '?')}': {result}")
+                    q["_score"] = 0
+                    q["_rounds"] = []
+                else:
+                    score, rounds = result
+                    q["_score"] = score
+                    q["_rounds"] = rounds
+                    scores_str = ", ".join(str(r.get("overall", 0)) for r in rounds)
+                    logger.info(f"  [{batch_start + i + 1}/{total}] {q.get('title', '?')}: [{scores_str}] avg={score:.1f}")
+                results.append(q)
+        return results
 
-        score, rounds = evaluate_question_quality(
-            q, call_nvidia, api_key, args.model, rounds=args.rounds
-        )
-        q["_score"] = score
-        q["_rounds"] = rounds
-
-        scores_str = ", ".join(str(r.get("overall", 0)) for r in rounds)
-        logger.info(f"  Scores: [{scores_str}] | Average: {score:.1f}")
-        verified.append(q)
-
-        if i % 10 == 0:
-            logger.info(f"\n--- Checkpoint: {i}/{total} evaluated ---")
+    verified = asyncio.run(_verify_all())
 
     passed, rejected = filter_questions_by_score(verified, threshold=args.threshold)
 

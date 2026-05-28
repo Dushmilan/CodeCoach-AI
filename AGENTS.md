@@ -57,8 +57,28 @@ Programming language curricula (C, Python, Java) for CodeCoach AI:
 - E2E testing: 19 Playwright tests (auth-flow, homepage, user-flow, curriculum-flow)
 - All suites passing: 264 backend unit, 50 script, 297 frontend, 19 E2E, TypeScript clean
 
-### Session Context — May 28, 2026
+### Session Context — May 28, 2026 (Afternoon)
 - **Question Generation:** 18 questions across 12/14 DSA topics (API timeouts limited generation)
 - **Graphify Updated:** 2689 nodes, 4558 edges, 265 communities
 - **Documentation:** Updated Progress.md, README.md, Phase1.md with current question counts
 - **Status:** Generation pipeline working but API-bound (~20-30s per question with 70B model)
+
+### Bug Fix Session — Questions Not Loading (May 28, 2026)
+**Problem:** Newly AI-generated questions weren't appearing in the frontend. Backend returned empty list.
+
+**Root cause:** 3 interacting bugs:
+1. `@lru_cache()` on `get_questions_service()` cached stale data — never re-read from disk
+2. No try/except in `FileQuestionRepository._load()` — one malformed question crashed all 18
+3. Pydantic schemas too strict for NIM generator output (dict values where strings expected)
+
+**Fixes:**
+- Removed `@lru_cache()` from questions API — fresh service per request
+- Added try/except per question in `_load()` — malformed questions skipped, valid ones load
+- Made `TestCase`, `Example`, `StarterCode`, `Question` schemas accept `Union[str, Dict, List, int, None]` with auto-conversion to string
+- Fixed pre-existing bugs: HTTPException swallowed by generic handler (400→500), test asserting non-existent company names
+
+**Result:** All 18 questions load successfully. Backend: 296 tests pass (1 pre-existing async client error). Frontend now displays all questions.
+
+**Created:** `Issues.md` documenting all 5 issues (I1-I5).
+
+**Key lesson:** NIM generator and Pydantic schemas were developed independently — need schema validation tests for generated output to catch drift early.

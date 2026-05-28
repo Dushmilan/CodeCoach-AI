@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from functools import lru_cache
 from typing import Optional
 
 from app.models.schemas import Question, QuestionsListResponse, Difficulty
@@ -8,9 +7,8 @@ from app.services.questions_service import QuestionsService
 router = APIRouter()
 
 
-@lru_cache()
 def get_questions_service() -> QuestionsService:
-    """Get or create QuestionsService instance (cached)."""
+    """Create a new QuestionsService instance (reads from disk each call)."""
     return QuestionsService()
 
 
@@ -125,6 +123,8 @@ async def search_questions(
             per_page=per_page,
         )
 
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error searching questions: {str(e)}"

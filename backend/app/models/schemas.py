@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+import json
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import List, Dict, Any, Optional, Union
 from enum import Enum
 
 
@@ -92,12 +93,23 @@ class CodeExecutionResult(BaseModel):
 
 
 class TestCase(BaseModel):
-    input: str = Field(..., description="Test input")
-    expected_output: str = Field(..., description="Expected output")
+    input: Union[str, Dict[str, Any]] = Field(..., description="Test input")
+    expected_output: Union[str, Dict[str, Any]] = Field(..., description="Expected output")
     description: Optional[str] = Field(None, description="Test case description")
     hidden: bool = Field(
         default=False, description="Whether this is a hidden test case"
     )
+
+    @field_validator("input", "expected_output", mode="before")
+    @classmethod
+    def normalize_to_string(cls, v):
+        if isinstance(v, dict):
+            return json.dumps(v)
+        if isinstance(v, (list, int, float, bool)):
+            return json.dumps(v) if not isinstance(v, bool) else str(v).lower()
+        if v is None:
+            return ""
+        return v
 
 
 class CodeValidationRequest(BaseModel):
@@ -123,15 +135,34 @@ class ValidationResult(BaseModel):
 
 
 class Example(BaseModel):
-    input: str = Field(..., description="Example input")
-    output: str = Field(..., description="Example output")
+    input: Union[str, Dict[str, Any]] = Field(..., description="Example input")
+    output: Union[str, Dict[str, Any]] = Field(default="", description="Example output")
     explanation: Optional[str] = Field(None, description="Explanation of the example")
+
+    @field_validator("input", "output", mode="before")
+    @classmethod
+    def normalize_field_to_string(cls, v):
+        if isinstance(v, dict):
+            return json.dumps(v)
+        if isinstance(v, (list, int, float, bool)):
+            return json.dumps(v) if not isinstance(v, bool) else str(v).lower()
+        if v is None:
+            return ""
+        return v
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_example(cls, data):
+        if isinstance(data, dict):
+            if "expected_output" in data and "output" not in data:
+                data["output"] = data.pop("expected_output")
+        return data
 
 
 class StarterCode(BaseModel):
-    python: str = Field(..., description="Python starter code")
-    javascript: str = Field(..., description="JavaScript starter code")
-    java: str = Field(..., description="Java starter code")
+    python: str = Field(default="", description="Python starter code")
+    javascript: str = Field(default="", description="JavaScript starter code")
+    java: str = Field(default="", description="Java starter code")
 
 
 class Question(BaseModel):
@@ -142,12 +173,18 @@ class Question(BaseModel):
     company_tags: List[str] = Field(
         default=[], description="Companies that ask this question"
     )
-    description: str = Field(..., description="Detailed problem description")
-    starter: StarterCode = Field(..., description="Starter code for each language")
+    description: Union[str, Dict[str, Any], List] = Field(
+        ..., description="Detailed problem description"
+    )
+    starter: Union[StarterCode, str, List, Dict[str, Any]] = Field(
+        ..., description="Starter code for each language"
+    )
     examples: List[Example] = Field(..., description="Example test cases")
     test_cases: List[TestCase] = Field(..., description="Test cases for validation")
     hints: List[str] = Field(default=[], description="Hints for solving the problem")
-    solution: Optional[str] = Field(None, description="Optimal solution explanation")
+    solution: Optional[Union[str, Dict[str, Any]]] = Field(
+        None, description="Optimal solution explanation"
+    )
     time_complexity: Optional[str] = Field(
         None, description="Time complexity of optimal solution"
     )
@@ -155,6 +192,57 @@ class Question(BaseModel):
         None, description="Space complexity of optimal solution"
     )
     constraints: List[str] = Field(default=[], description="Problem constraints")
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def normalize_description(cls, v):
+        if isinstance(v, dict):
+            parts = []
+            for key in sorted(v.keys()):
+                val = v[key]
+                if isinstance(val, str):
+                    parts.append(val)
+            return "\n\n".join(parts) if parts else json.dumps(v)
+        if isinstance(v, list):
+            return "\n\n".join(str(x) for x in v)
+        return v
+
+    @field_validator("solution", mode="before")
+    @classmethod
+    def normalize_solution(cls, v):
+        if isinstance(v, dict):
+            return json.dumps(v)
+        if isinstance(v, (list, int, float, bool)):
+            return json.dumps(v) if not isinstance(v, bool) else str(v).lower()
+        return v
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_starter(cls, data):
+        if not isinstance(data, dict):
+            return data
+        starter = data.get("starter")
+        if starter is None:
+            return data
+        if isinstance(starter, str):
+            lang = starter.lower()
+            if lang in ("python", "javascript", "java", "typescript", "c", "cpp", "go", "rust"):
+                data["starter"] = {"python": "", "javascript": "", "java": ""}
+        elif isinstance(starter, list):
+            mapped = {}
+            for entry in starter:
+                if isinstance(entry, dict):
+                    lang = entry.get("language", "")
+                    code = entry.get("code", "")
+                    if lang:
+                        mapped[lang] = code
+            for lang in ("python", "javascript", "java"):
+                mapped.setdefault(lang, "")
+            data["starter"] = mapped
+        elif isinstance(starter, dict):
+            for lang in ("python", "javascript", "java"):
+                starter.setdefault(lang, "")
+        return data
 
 
 class QuestionSummary(BaseModel):

@@ -24,8 +24,12 @@ class FileQuestionRepository(QuestionRepository):
         if isinstance(data, dict):
             data = data.get("questions", [])
         for item in data:
-            q = Question(**item)
-            self._questions[q.id] = q
+            try:
+                q = Question(**item)
+                self._questions[q.id] = q
+            except Exception as e:
+                title = item.get("title", "unknown")
+                print(f"Warning: Skipping malformed question '{title}': {e}")
 
     def _load_validation_statuses(self):
         if not os.path.exists(self._validation_file):
