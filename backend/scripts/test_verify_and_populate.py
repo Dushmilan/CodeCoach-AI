@@ -14,6 +14,8 @@ from scripts.verify_and_populate import (
     evaluate_question_quality,
     export_prompts,
     import_scores,
+    pre_validate_question,
+    _build_reject_fix_prompt,
     VERIFICATION_CRITERIA,
 )
 
@@ -466,3 +468,95 @@ class TestImportScores:
         assert len(passed) == 0
         assert len(rejected) == 1
         assert "Missing question_data" in str(rejected[0])
+
+
+class TestPreValidateQuestion:
+    def test_valid_question_passes(self):
+        q = {
+            "title": "Two Sum",
+            "description": "Given an array of integers nums and an integer target, return indices of the two numbers that add up to target. You may assume that each input would have exactly one solution.",
+            "difficulty": "easy",
+            "category": "Arrays & Hashing",
+            "starter": {"python": "x", "javascript": "x", "java": "x"},
+            "test_cases": [{"input": "x", "expected_output": "y", "description": "t", "hidden": True} for _ in range(12)],
+            "solution": "Use a hash map",
+            "time_complexity": "O(n)",
+            "space_complexity": "O(n)",
+            "constraints": ["a", "b", "c"],
+        }
+        assert pre_validate_question(q) is None
+
+    def test_rejects_invalid_category(self):
+        q = {
+            "title": "Test",
+            "description": "x" * 101,
+            "difficulty": "easy",
+            "category": "Invalid Category",
+            "starter": {"python": "x", "javascript": "x", "java": "x"},
+            "test_cases": [{"input": "x", "expected_output": "y", "description": "t", "hidden": True} for _ in range(12)],
+            "solution": "x", "time_complexity": "O(1)", "space_complexity": "O(1)",
+            "constraints": ["a", "b", "c"],
+        }
+        err = pre_validate_question(q)
+        assert err is not None
+        assert "Invalid category" in err
+
+    def test_rejects_too_few_test_cases(self):
+        q = {
+            "title": "Test", "description": "x" * 101, "difficulty": "easy",
+            "category": "Graphs", "starter": {"python": "x", "javascript": "x", "java": "x"},
+            "test_cases": [{"input": "x", "expected_output": "y", "description": "t", "hidden": True} for _ in range(5)],
+            "solution": "x", "time_complexity": "O(1)", "space_complexity": "O(1)",
+            "constraints": ["a", "b", "c"],
+        }
+        err = pre_validate_question(q)
+        assert err is not None
+        assert "12" in err
+
+    def test_rejects_missing_solution(self):
+        q = {
+            "title": "Test", "description": "x" * 101, "difficulty": "medium",
+            "category": "Dynamic Programming",
+            "starter": {"python": "x", "javascript": "x", "java": "x"},
+            "test_cases": [{"input": "x", "expected_output": "y", "description": "t", "hidden": True} for _ in range(12)],
+            "time_complexity": "O(1)", "space_complexity": "O(1)",
+            "constraints": ["a", "b", "c"],
+        }
+        err = pre_validate_question(q)
+        assert err is not None
+        assert "solution" in err.lower()
+
+    def test_accepts_all_valid_categories(self):
+        valid_cats = [
+            "Arrays & Hashing", "Two Pointers", "Sliding Window", "Stack",
+            "Binary Search", "Linked List", "Trees", "Tries",
+            "Heap / Priority Queue", "Backtracking", "Graphs",
+            "Dynamic Programming", "Greedy", "Intervals",
+        ]
+        for cat in valid_cats:
+            q = {
+                "title": "Test", "description": "x" * 101, "difficulty": "easy",
+                "category": cat,
+                "starter": {"python": "x", "javascript": "x", "java": "x"},
+                "test_cases": [{"input": "x", "expected_output": "y", "description": "t", "hidden": True} for _ in range(12)],
+                "solution": "x", "time_complexity": "O(1)", "space_complexity": "O(1)",
+                "constraints": ["a", "b", "c"],
+            }
+            assert pre_validate_question(q) is None, f"Failed for category: {cat}"
+
+
+class TestBuildRejectFixPrompt:
+    def test_prompt_contains_original_question_data(self):
+        q = {"title": "Bad Q", "difficulty": "easy", "category": "Arrays & Hashing", "description": "test"}
+        prompt = _build_reject_fix_prompt(q, ["Missing test cases", "Bad hints"])
+        assert "Bad Q" in prompt
+        assert "Missing test cases" in prompt
+        assert "Bad hints" in prompt
+        assert "Arrays & Hashing" in prompt
+        assert "easy" in prompt
+
+    def test_prompt_requests_json_only(self):
+        q = {"title": "Q", "difficulty": "medium", "category": "Trees", "description": "x"}
+        prompt = _build_reject_fix_prompt(q, ["Poor description"])
+        assert "Return ONLY the JSON object" in prompt
+        assert "EXACTLY 12 test cases" in prompt

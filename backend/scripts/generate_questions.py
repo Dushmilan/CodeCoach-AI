@@ -34,6 +34,12 @@ QUESTIONS_FILE = os.path.join(
     os.path.dirname(__file__), "..", "questions", "sample_questions.json"
 )
 
+CHECKPOINT_FILE = os.path.join(
+    os.path.dirname(__file__), "..", "questions", ".generation_checkpoint.json"
+)
+
+VALID_TOPICS_SET = frozenset(TOPICS)
+
 EXISTING_IDS: set = set()
 
 SCENARIO_SEEDS = {
@@ -147,15 +153,30 @@ def slugify(title: str) -> str:
     return s
 
 
+def _difficulty_calibration_examples(difficulty: str) -> str:
+    examples = {
+        "easy": '''Easy example: "Two Sum" — given array [2,7,11,15] and target 9, return [0,1]. Simple O(n) hash map solution. 1-2 data structure concepts. Straightforward input/output mapping.''',
+        "medium": '''Medium example: "Longest Substring Without Repeating Characters" — given "abcabcbb", return 3 ("abc"). Requires sliding window with hash set. Multiple edge cases (empty string, all repeats, all unique). Non-trivial but common pattern.''',
+        "hard": '''Hard example: "Median of Two Sorted Arrays" — given [1,3] and [2], return 2.0. Requires O(log(min(n,m))) binary search partition. Complex edge cases — different sized arrays, negative values, duplicates. Multiple advanced concepts needed.''',
+    }
+    return examples.get(difficulty, examples["medium"])
+
+
 def build_classic_prompt(topic: str, difficulty: str, count: int) -> str:
+    calibration = _difficulty_calibration_examples(difficulty)
     return f"""Generate {count} classic coding interview questions about "{topic}" at "{difficulty}" difficulty.
 
 Each question must be a pure algorithmic problem framed as a traditional technical interview question (like LeetCode or HackerRank). Focus on the data structure and algorithm — no elaborate story, just the problem.
 
+CRITICAL RULE — category field MUST be exactly "{topic}". Do NOT use any other category name.
+
+Calibration for "{difficulty}" difficulty:
+{calibration}
+
 Return a JSON array. Each question must have these exact fields:
   - title: string (concise, like "Two Sum" or "Maximum Subarray")
   - difficulty: "{difficulty}"
-  - category: "{topic}"
+  - category: "{topic}"  (MUST be exactly this value)
   - company_tags: array of strings (real companies that ask this)
   - description: detailed problem description (2-3 paragraphs with input/output format, constraints, and edge cases)
   - examples: array of {{"input": string, "output": string, "explanation": string}} (2-3 examples covering edge cases)
@@ -180,6 +201,7 @@ Return ONLY the JSON array, no other text."""
 
 def build_creative_prompt(topic: str, difficulty: str, count: int) -> str:
     scenario = SCENARIO_SEEDS.get(topic, "Frame this as a modern real-world software engineering problem.")
+    calibration = _difficulty_calibration_examples(difficulty)
 
     return f"""Generate {count} creative real-world coding interview questions about "{topic}" at "{difficulty}" difficulty.
 
@@ -188,12 +210,17 @@ Each question must wrap the DSA concept in a believable 2025/2026 real-world sce
 SCENARIO FRAMING INSTRUCTION:
 {scenario}
 
+CRITICAL RULE — category field MUST be exactly "{topic}". Do NOT use any other category name.
+
+Calibration for "{difficulty}" difficulty:
+{calibration}
+
 The problem should still be solvable with standard DSA techniques — the scenario is the packaging, not the core algorithm.
 
 Return a JSON array. Each question must have these exact fields:
   - title: string (descriptive, reflecting the real-world context, e.g. "LLM Context Window Optimizer")
   - difficulty: "{difficulty}"
-  - category: "{topic}"
+  - category: "{topic}"  (MUST be exactly this value)
   - company_tags: array of strings (real companies or startup sectors relevant to this scenario)
   - description: detailed problem description (3-4 paragraphs — first paragraph sets up the real-world scenario, second explains the technical challenge, third specifies the exact function signature and I/O format, fourth notes edge cases)
   - examples: array of {{"input": string, "output": string, "explanation": string}} (2-3 examples that both explain the scenario context and the algorithm)
@@ -367,6 +394,51 @@ def _default_starter(qid: str, lang: str) -> str:
         return f"class Solution {{\n    public void {camel}() {{}}\n}}"
 
 
+def pre_validate_question(q: dict, expected_category: str) -> Optional[str]:
+    """Programmatic pre-validation. Returns None if valid, error string if invalid."""
+    if not q.get("title"):
+        return "Missing 'title'"
+    if not q.get("description") or len(q["description"]) < 100:
+        return f"Description too short ({len(q.get('description', ''))} chars, need 100+)"
+    if q.get("difficulty") not in ("easy", "medium", "hard"):
+        return f"Invalid difficulty: {q.get('difficulty')}"
+    if q.get("category") != expected_category:
+        return f"Category mismatch: got '{q.get('category')}', expected '{expected_category}'"
+    tcs = q.get("test_cases", [])
+    if len(tcs) != 12:
+        return f"Expected 12 test cases, got {len(tcs)}"
+    hidden_count = sum(1 for tc in tcs if tc.get("hidden"))
+    if hidden_count < 4:
+        return f"Expected at least 4 hidden test cases, got {hidden_count}"
+    if not isinstance(q.get("starter"), dict):
+        return "Missing or invalid 'starter' object"
+    for lang in ("python", "javascript", "java"):
+        if lang not in q["starter"]:
+            return f"Missing starter code for '{lang}'"
+    if not q.get("solution"):
+        return "Missing 'solution'"
+    if not q.get("time_complexity"):
+        return "Missing 'time_complexity'"
+    if not q.get("space_complexity"):
+        return "Missing 'space_complexity'"
+    if not q.get("constraints") or len(q["constraints"]) < 3:
+        return f"Only {len(q.get('constraints', []))} constraints (need 3+)"
+    return None
+
+
+def save_checkpoint(state: dict):
+    with open(CHECKPOINT_FILE, "w") as f:
+        json.dump(state, f, indent=2)
+    logger.info(f"Checkpoint saved ({state.get('total', 0)} questions so far)")
+
+
+def load_checkpoint() -> Optional[dict]:
+    if os.path.exists(CHECKPOINT_FILE):
+        with open(CHECKPOINT_FILE, "r") as f:
+            return json.load(f)
+    return None
+
+
 def save_questions(questions: List[dict]):
     if not os.path.exists(QUESTIONS_FILE):
         existing = []
@@ -385,17 +457,34 @@ def save_questions(questions: List[dict]):
 
 def generate_questions(
     api_key: str,
-    model: str = "meta/llama-3.1-8b-instruct",
+    model: str = "meta/llama-3.1-70b-instruct",
     target: int = 90,
     questions_per_topic: int = 6,
     archetype: str = "mixed",
+    topics: Optional[List[str]] = None,
+    checkpoint_interval: int = 10,
+    resume: bool = False,
 ) -> List[dict]:
     load_existing_ids()
 
+    if topics is None:
+        topics = list(TOPICS)
+
     all_questions = []
     total = 0
+    checkpoint = load_checkpoint() if resume else None
+    resume_from = set()
 
-    for topic in TOPICS:
+    if checkpoint:
+        all_questions = checkpoint.get("questions", [])
+        total = checkpoint.get("total", 0)
+        resume_from = set(checkpoint.get("completed_labels", []))
+        logger.info(f"Resuming from checkpoint: {total} questions already generated")
+        logger.info(f"  Completed labels: {sorted(resume_from)}")
+
+    completed_labels = set(resume_from)
+
+    for topic in topics:
         for difficulty in ["easy", "medium", "hard"]:
             if total >= target:
                 break
@@ -414,29 +503,60 @@ def generate_questions(
                     continue
 
                 label = f"{topic}/{difficulty}/{arch}"
+                if label in completed_labels:
+                    logger.info(f"  Skipping already-completed: {label}")
+                    continue
+
                 logger.info(f"\n=== Generating {count_for_arch} questions: {label} ===")
 
                 prompt = build_prompt(topic, difficulty, count_for_arch, archetype=arch)
                 raw = call_nvidia_with_retry(prompt, api_key, model)
                 if not raw:
                     logger.warning(f"Failed to generate for {label}, skipping")
+                    completed_labels.add(label)
                     continue
 
                 questions = parse_questions(raw)
                 if not questions:
                     logger.warning(f"No valid questions parsed for {label}")
+                    completed_labels.add(label)
                     continue
 
                 questions = questions[:count_for_arch]
                 for q in questions:
                     q["_archetype"] = arch
 
-                all_questions.extend(questions)
-                total += len(questions)
-                logger.info(f"  Generated {len(questions)} valid (total: {total}/{target})")
+                pre_validated = []
+                for q in questions:
+                    err = pre_validate_question(q, topic)
+                    if err:
+                        logger.warning(f"  Pre-validation failed for '{q.get('title', '?')}': {err}")
+                        continue
+                    pre_validated.append(q)
+
+                if not pre_validated:
+                    logger.warning(f"  All questions for {label} failed pre-validation")
+                    completed_labels.add(label)
+                    continue
+
+                all_questions.extend(pre_validated)
+                total += len(pre_validated)
+                completed_labels.add(label)
+                logger.info(f"  Generated {len(pre_validated)} valid (total: {total}/{target})")
+
+                if total % checkpoint_interval < len(pre_validated):
+                    save_checkpoint({
+                        "questions": all_questions,
+                        "total": total,
+                        "completed_labels": list(completed_labels),
+                    })
 
         if total >= target:
             break
+
+    if os.path.exists(CHECKPOINT_FILE):
+        os.remove(CHECKPOINT_FILE)
+        logger.info("Checkpoint cleared after successful generation")
 
     return all_questions
 
@@ -449,7 +569,7 @@ def main(args_list: Optional[List[str]] = None):
         "--api-key", help="NVIDIA API key (default: NVIDIA_API_KEY env var)"
     )
     parser.add_argument(
-        "--model", default="meta/llama-3.1-8b-instruct", help="NVIDIA model"
+        "--model", default="meta/llama-3.1-70b-instruct", help="NVIDIA model"
     )
     parser.add_argument(
         "--questions-per-topic", type=int, default=6, help="Questions per topic"
@@ -461,6 +581,29 @@ def main(args_list: Optional[List[str]] = None):
         help="Question archetype: classic, creative_2026, or mixed (default: mixed)",
     )
     parser.add_argument(
+        "--categories",
+        nargs="+",
+        help="Specific categories to generate for (default: all 14 DSA topics). "
+             f"Valid: {', '.join(TOPICS)}",
+    )
+    parser.add_argument(
+        "--target-per-category",
+        type=int,
+        default=0,
+        help="Generate this many questions per category regardless of --target (overrides target)",
+    )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=10,
+        help="Save checkpoint every N questions (default: 10)",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from last checkpoint",
+    )
+    parser.add_argument(
         "--dry-run", action="store_true", help="Print questions without saving"
     )
     args = parser.parse_args(args_list)
@@ -470,11 +613,23 @@ def main(args_list: Optional[List[str]] = None):
         logger.error("NVIDIA_API_KEY not set. Use --api-key or set env var.")
         sys.exit(1)
 
+    topics = None
+    if args.categories:
+        invalid = [c for c in args.categories if c not in VALID_TOPICS_SET]
+        if invalid:
+            logger.error(f"Invalid categories: {invalid}. Valid options: {TOPICS}")
+            sys.exit(1)
+        topics = args.categories
+        logger.info(f"Generating for {len(topics)} specific categories: {topics}")
+
     all_questions = generate_questions(
         api_key,
         args.model,
         questions_per_topic=args.questions_per_topic,
         archetype=args.archetype,
+        topics=topics,
+        checkpoint_interval=args.checkpoint_interval,
+        resume=args.resume,
     )
 
     if not all_questions:

@@ -25,6 +25,13 @@ VERIFICATION_CRITERIA = [
     "boundary_edge_cases",
 ]
 
+VALID_CATEGORIES = frozenset([
+    "Arrays & Hashing", "Two Pointers", "Sliding Window", "Stack",
+    "Binary Search", "Linked List", "Trees", "Tries",
+    "Heap / Priority Queue", "Backtracking", "Graphs",
+    "Dynamic Programming", "Greedy", "Intervals",
+])
+
 QUESTIONS_FILE = os.path.join(
     os.path.dirname(__file__), "..", "questions", "sample_questions.json"
 )
@@ -266,6 +273,38 @@ def call_nvidia(prompt: str, api_key: str, model: str) -> Optional[str]:
         return None
 
 
+def pre_validate_question(q: dict) -> Optional[str]:
+    """Programmatic pre-validation before AI gate. Returns None if valid, error string if invalid."""
+    if not q.get("title"):
+        return "Missing 'title'"
+    if not q.get("description") or len(q["description"]) < 100:
+        return f"Description too short ({len(q.get('description', ''))} chars, need 100+)"
+    if q.get("difficulty") not in ("easy", "medium", "hard"):
+        return f"Invalid difficulty: {q.get('difficulty')}"
+    if q.get("category") not in VALID_CATEGORIES:
+        return f"Invalid category '{q.get('category')}' — must be one of the 14 DSA topics"
+    tcs = q.get("test_cases", [])
+    if len(tcs) != 12:
+        return f"Expected 12 test cases, got {len(tcs)}"
+    hidden_count = sum(1 for tc in tcs if tc.get("hidden"))
+    if hidden_count < 4:
+        return f"Expected at least 4 hidden test cases, got {hidden_count}"
+    if not isinstance(q.get("starter"), dict):
+        return "Missing or invalid 'starter' object"
+    for lang in ("python", "javascript", "java"):
+        if lang not in q["starter"]:
+            return f"Missing starter code for '{lang}'"
+    if not q.get("solution"):
+        return "Missing 'solution'"
+    if not q.get("time_complexity"):
+        return "Missing 'time_complexity'"
+    if not q.get("space_complexity"):
+        return "Missing 'space_complexity'"
+    if not q.get("constraints") or len(q["constraints"]) < 3:
+        return f"Only {len(q.get('constraints', []))} constraints (need 3+)"
+    return None
+
+
 def export_prompts(questions: List[dict], output_path: str, rounds: int = 4):
     entries = []
     for i, q in enumerate(questions, 1):
@@ -361,6 +400,34 @@ def import_scores_only(args):
         logger.info(f"Saved {len(rejected)} rejected questions to {REJECTED_FILE}")
 
 
+def _build_reject_fix_prompt(question: dict, issues: List[str]) -> str:
+    issues_str = "\n".join(f"- {issue}" for issue in issues)
+    return f"""You are a coding question repair specialist. The following question was rejected by QA. Fix the issues listed below while preserving the core problem concept and DSA topic.
+
+Original Question:
+---
+Title: {question.get("title", "")}
+Difficulty: {question.get("difficulty", "")}
+Category: {question.get("category", "")}
+Description: {question.get("description", "")}
+Starter: {json.dumps(question.get("starter", {}), indent=2)}
+Test Cases ({len(question.get("test_cases", []))}):
+{json.dumps(question.get("test_cases", []), indent=2)}
+Hints: {json.dumps(question.get("hints", []))}
+Solution: {question.get("solution", "")}
+Time Complexity: {question.get("time_complexity", "")}
+Space Complexity: {question.get("space_complexity", "")}
+Constraints: {json.dumps(question.get("constraints", []))}
+---
+
+Issues to Fix:
+{issues_str}
+
+Return a COMPLETE question JSON object with all fields (title, difficulty, category, description, examples, test_cases, starter, hints, solution, time_complexity, space_complexity, constraints). The category MUST be "{question.get("category", "")}" and difficulty MUST be "{question.get("difficulty", "")}". Include EXACTLY 12 test cases (3 edge + 3 standard + 6 hidden).
+
+Return ONLY the JSON object, no other text."""
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Verify and populate coding questions with AI quality gate"
@@ -369,7 +436,7 @@ def main():
         "--api-key", help="NVIDIA API key (default: NVIDIA_API_KEY env var)"
     )
     parser.add_argument(
-        "--model", default="meta/llama-3.1-8b-instruct", help="NVIDIA model"
+        "--model", default="meta/llama-3.1-70b-instruct", help="NVIDIA model"
     )
     parser.add_argument(
         "--threshold",
@@ -408,6 +475,34 @@ def main():
         "--import-scores",
         help="Import scored prompts JSON file, filter by threshold, and populate",
     )
+    parser.add_argument(
+        "--re-verify",
+        action="store_true",
+        help="Re-verify existing questions in the bank against the threshold",
+    )
+    parser.add_argument(
+        "--re-verify-rejected",
+        action="store_true",
+        help="Load rejected_questions.json and attempt to fix/re-verify them",
+    )
+    parser.add_argument(
+        "--fix-retries",
+        type=int,
+        default=2,
+        help="Number of fix attempts for rejected questions in re-verify-rejected mode (default: 2)",
+    )
+    parser.add_argument(
+        "--pre-validate",
+        action="store_true",
+        default=True,
+        help="Run programmatic pre-validation before AI gate (default: True)",
+    )
+    parser.add_argument(
+        "--no-pre-validate",
+        action="store_false",
+        dest="pre_validate",
+        help="Skip programmatic pre-validation",
+    )
     args = parser.parse_args()
 
     if args.export_prompts:
@@ -435,6 +530,16 @@ def main():
             sys.exit(1)
         logger.info(f"Generated {len(generated)} new questions")
         new_questions = generated
+    elif args.re_verify:
+        logger.info("Re-verifying existing questions in the bank...")
+        questions = load_existing_questions(QUESTIONS_FILE)
+        logger.info(f"Loaded {len(questions)} existing questions")
+        new_questions = questions
+    elif args.re_verify_rejected:
+        logger.info(f"Loading rejected questions from {REJECTED_FILE} for fix-reverify...")
+        questions = load_existing_questions(REJECTED_FILE, rejected_key=True)
+        logger.info(f"Loaded {len(questions)} rejected questions")
+        new_questions = questions
     elif args.input:
         questions = load_existing_questions(args.input, rejected_key=args.rejected)
         logger.info(f"Loaded {len(questions)} questions from {args.input}")
@@ -448,6 +553,61 @@ def main():
     if not new_questions:
         logger.error("No questions to verify!")
         sys.exit(1)
+
+    # Step 1: Programmatic pre-validation
+    if args.pre_validate:
+        logger.info(f"\n=== Pre-validating {len(new_questions)} questions programmatically ===")
+        pre_validated = []
+        pre_failed = 0
+        for q in new_questions:
+            err = pre_validate_question(q)
+            if err:
+                title = q.get("title", "unknown")
+                logger.warning(f"  Pre-validation failed for '{title}': {err}")
+                pre_failed += 1
+            else:
+                pre_validated.append(q)
+        if not pre_validated:
+            logger.error("All questions failed pre-validation!")
+            sys.exit(1)
+        logger.info(f"Pre-validation: {len(pre_validated)} passed, {pre_failed} rejected")
+        new_questions = pre_validated
+
+    # Step 1.5: Fix loop for re-verify-rejected mode
+    if args.re_verify_rejected and args.fix_retries > 0:
+        logger.info(f"\n=== Attempting to fix rejected questions ({args.fix_retries} retries each) ===")
+        fixed = []
+        for q in new_questions:
+            issues = q.get("_issues", [])
+            if not issues:
+                fixed.append(q)
+                continue
+            title = q.get("title", "unknown")
+            fix_prompt = _build_reject_fix_prompt(q, issues)
+            fixed_question = None
+            for attempt in range(args.fix_retries):
+                logger.info(f"  Fix attempt {attempt + 1}/{args.fix_retries} for '{title}'")
+                raw = call_nvidia(fix_prompt, api_key, args.model)
+                if not raw:
+                    continue
+                from scripts.generate_questions import parse_questions
+                parsed = parse_questions(raw)
+                if parsed:
+                    fixed_question = parsed[0]
+                    err = pre_validate_question(fixed_question)
+                    if not err:
+                        logger.info(f"    Fixed and passed pre-validation!")
+                        break
+                    else:
+                        logger.warning(f"    Fixed but failed pre-validation: {err}")
+                        fix_prompt = fix_prompt + f"\n\nYour fix still has issues: {err}. Please fix these too."
+                        fixed_question = None
+            if fixed_question:
+                fixed.append(fixed_question)
+            else:
+                logger.warning(f"  Could not fix '{title}', keeping original")
+                fixed.append(q)
+        new_questions = fixed
 
     logger.info(
         f"\n=== Verifying {len(new_questions)} questions ({args.rounds} rounds each) ==="
@@ -504,8 +664,12 @@ def main():
     for q in passed:
         q.pop("_score", None)
         q.pop("_rounds", None)
+        q.pop("_issues", None)
 
-    merged = merge_with_existing(existing, passed)
+    if args.re_verify:
+        merged = passed
+    else:
+        merged = merge_with_existing(existing, passed)
 
     save_questions(QUESTIONS_FILE, merged)
     logger.info(f"Saved {len(merged)} questions to {QUESTIONS_FILE}")

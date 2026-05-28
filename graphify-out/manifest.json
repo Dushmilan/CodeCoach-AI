@@ -5,8 +5,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\main.py": {
-    "mtime": 1779515635.4916546,
-    "ast_hash": "a331ea30918731b09847aef0e78747d2",
+    "mtime": 1779958396.7511108,
+    "ast_hash": "edf499975c9cced8fc77569e0573871e",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\__init__.py": {
@@ -30,8 +30,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\api\\coach.py": {
-    "mtime": 1779515924.1420932,
-    "ast_hash": "88776f44c92a9ef7114df5192a942a20",
+    "mtime": 1779804612.1368043,
+    "ast_hash": "d5c5af65a9165b67c34e72c5bdacba31",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\api\\debug.py": {
@@ -85,8 +85,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\models\\schemas.py": {
-    "mtime": 1779511197.7057936,
-    "ast_hash": "95e349afd81008d3264fc3cead61f477",
+    "mtime": 1779804557.484844,
+    "ast_hash": "2d655ff115eb0c76bdc6f1329a52630e",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\models\\__init__.py": {
@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\services\\nim_service.py": {
-    "mtime": 1779545724.6152098,
-    "ast_hash": "68ec68fa35ac7bf2f34ea74b786933e5",
+    "mtime": 1779804572.5865932,
+    "ast_hash": "ce6b770ee5788199ae874af1931d308c",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\services\\piston_service.py": {
@@ -160,13 +160,13 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\questions\\sample_questions.json": {
-    "mtime": 1779616429.1767077,
+    "mtime": 1779955596.4902096,
     "ast_hash": "2b9c08c14ac18638c9f788592db73e80",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\scripts\\generate_questions.py": {
-    "mtime": 1779718066.3834825,
-    "ast_hash": "517d4bb2ad15a1090cf4717e7cbfb403",
+    "mtime": 1779970872.625189,
+    "ast_hash": "6db50cbf9b21e65ae7d691a607cd006a",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\scripts\\lint.sh": {
@@ -180,18 +180,18 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\scripts\\test_generate_questions.py": {
-    "mtime": 1779716314.4969347,
-    "ast_hash": "9c36def740dfd8cbb62c7b612f334bff",
+    "mtime": 1779970984.0133166,
+    "ast_hash": "10059ef8869edb944a0d2da7398e59e3",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\scripts\\test_verify_and_populate.py": {
-    "mtime": 1779717565.264672,
-    "ast_hash": "4304e2d412a62595fc501e86a463ce55",
+    "mtime": 1779971007.615253,
+    "ast_hash": "03a7ee20cb6638f9d77eabc506f9fac3",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\scripts\\verify_and_populate.py": {
-    "mtime": 1779718083.6877253,
-    "ast_hash": "66ed5039e49149051f1acd332f6b5717",
+    "mtime": 1779970931.8570247,
+    "ast_hash": "c0b0e2591113e02f9e5f805e6c5a3c64",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\tests\\conftest.py": {
@@ -225,8 +225,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\tests\\integration\\test_coach_endpoints.py": {
-    "mtime": 1779515946.2100232,
-    "ast_hash": "9113ff255acfa1dc30637be7fed40f7d",
+    "mtime": 1779804600.0874708,
+    "ast_hash": "23cd7eaaabf71f9e07beec0fc5a21b9c",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\tests\\integration\\test_debug_endpoints.py": {
@@ -300,8 +300,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\tests\\unit\\test_coaching_prompts.py": {
-    "mtime": 1779616942.9890232,
-    "ast_hash": "dfdda1364885663d3e937d5ee17e4e6f",
+    "mtime": 1779804500.1609683,
+    "ast_hash": "1e489da7776d536611b68b3b12170313",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\tests\\unit\\test_coaching_response_parser.py": {
@@ -425,8 +425,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\e2e\\homepage.spec.ts": {
-    "mtime": 1779531103.3254814,
-    "ast_hash": "b60df8ba2490e78acfc4886f4f5ff0b2",
+    "mtime": 1779969271.0224335,
+    "ast_hash": "0d2f31482f9c57b750b6bb6909895546",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\e2e\\playwright.config.ts": {
@@ -435,8 +435,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\e2e\\user-flow.spec.ts": {
-    "mtime": 1779531110.6422358,
-    "ast_hash": "97232daf2714e57e6de23407b75c7810",
+    "mtime": 1779969284.0022218,
+    "ast_hash": "35d1672c8d3db97caa303aa268774a23",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\test-setup.ts": {
@@ -500,8 +500,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\auth\\AuthGuard.tsx": {
-    "mtime": 1779613107.2192135,
-    "ast_hash": "61c50b5059fc8d4bc718318dea8933b6",
+    "mtime": 1779802481.7504704,
+    "ast_hash": "c9faba06fcc8ebeefe5a1317b20a18e9",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\chat\\AIChatPanel.test.tsx": {
@@ -585,8 +585,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\header\\Header.tsx": {
-    "mtime": 1779713308.4623594,
-    "ast_hash": "10f147ca524be00029225c6f8df7a8a5",
+    "mtime": 1779804367.0950055,
+    "ast_hash": "e3f5e158750d058033d7a4bd04ad8558",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\header\\index.ts": {
@@ -655,13 +655,13 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\settings\\SettingsModal.test.tsx": {
-    "mtime": 1779713997.508644,
-    "ast_hash": "731de80f841b0b5963499feb0e04869d",
+    "mtime": 1779802982.0531547,
+    "ast_hash": "c1a6e516cb7a05c8ed72c5d68dd8339e",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\settings\\SettingsModal.tsx": {
-    "mtime": 1779713434.669747,
-    "ast_hash": "6e2802906cfc66e0cade43a44bca7294",
+    "mtime": 1779802464.5507562,
+    "ast_hash": "0bc7fd7b225f9ff1e2bb774c6db3d0bb",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\sidebar\\FilterBar.test.tsx": {
@@ -750,8 +750,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\ui\\Toast.tsx": {
-    "mtime": 1779613338.3381195,
-    "ast_hash": "c8e2ba7a1411406e815fcee2400332f3",
+    "mtime": 1779802197.2679508,
+    "ast_hash": "208bd43059baa559f2da9f7f420bfc62",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\auth\\auth.service.test.ts": {
@@ -770,8 +770,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\coaching\\coaching.hook.ts": {
-    "mtime": 1779438465.8810575,
-    "ast_hash": "439dae43638a0444d7f9bd0dfb6f0bee",
+    "mtime": 1779804659.846866,
+    "ast_hash": "eed12fe791a2ab1ee9a01d9ba6b35a92",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\coaching\\coaching.service.test.ts": {
@@ -780,18 +780,18 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\coaching\\coaching.service.ts": {
-    "mtime": 1779447539.930767,
-    "ast_hash": "22ec0aa4a847f8b9308477388f97a407",
+    "mtime": 1779804653.7565603,
+    "ast_hash": "9b7a99670f6f6815a4d22ca5e6fda70a",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\coaching\\coaching.types.ts": {
-    "mtime": 1779438465.8810575,
-    "ast_hash": "4ae5ac92395bef742c6bad682c07f51d",
+    "mtime": 1779804643.5638194,
+    "ast_hash": "d9812fcefee5722b7f4519563d8a9660",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\code-execution\\code-execution.hook.ts": {
-    "mtime": 1779544839.1886647,
-    "ast_hash": "3c5c55c58b0047423b598d893a59a3dd",
+    "mtime": 1779802300.391672,
+    "ast_hash": "4ace684a5552636d479fecad18137c95",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\code-execution\\code-execution.service.test.ts": {
@@ -815,8 +815,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\question\\question.hook.ts": {
-    "mtime": 1779438465.8830514,
-    "ast_hash": "3a9813b175a0f387abc4849777c3d4af",
+    "mtime": 1779802401.3615253,
+    "ast_hash": "8be8aba73eacd509c8882367f36a105c",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\question\\question.service.test.ts": {
@@ -840,8 +840,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\question\\use-code-runner.hook.ts": {
-    "mtime": 1779545571.005874,
-    "ast_hash": "22311e2a731e1f293a2977ebe4c3cebe",
+    "mtime": 1779802332.2425153,
+    "ast_hash": "f57f1a4d9f144dd03e7d75e8a8953c32",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\hooks\\index.ts": {
@@ -905,8 +905,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\providers\\AuthProvider.tsx": {
-    "mtime": 1779612809.5223763,
-    "ast_hash": "f0a4abfd491517e6a69b5beddddd1467",
+    "mtime": 1779802245.3148143,
+    "ast_hash": "9e07467602da94b3f6464cf0eea14923",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\providers\\index.ts": {
@@ -925,8 +925,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\types\\index.ts": {
-    "mtime": 1779612742.7654107,
-    "ast_hash": "97c5f9853c4cd89ce9260b7d05ccb5e4",
+    "mtime": 1779804281.812206,
+    "ast_hash": "37891ce54fc0e1fb10c21238878577c3",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\.pre-commit-config.yaml": {
@@ -942,11 +942,6 @@
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\CONTEXT.md": {
     "mtime": 1779546634.2745004,
     "ast_hash": "d02fb26f1733f893d3edcb819c641b0b",
-    "semantic_hash": ""
-  },
-  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\design-prompt.md": {
-    "mtime": 1779514160.2824383,
-    "ast_hash": "5f236257590d31bba75b880e02b6ab99",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\docker-compose.yml": {
@@ -965,8 +960,8 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\Progress.md": {
-    "mtime": 1779716551.5235279,
-    "ast_hash": "2fe623e78ac5c397462491556bd89213",
+    "mtime": 1779970156.2300048,
+    "ast_hash": "5adec0b9dfa29a529865d4be13eb5d0e",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\README.md": {
@@ -1035,18 +1030,18 @@
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\adapters\\coaching_prompts.py": {
-    "mtime": 1779616932.7693224,
-    "ast_hash": "d2555d1ba9bb2f6f9a0d75d77e0eb313",
+    "mtime": 1779804544.1401763,
+    "ast_hash": "a3a05774a80b803bfe145a63f9426abf",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\questions\\rejected_questions.json": {
-    "mtime": 1779616429.233019,
-    "ast_hash": "28a8a97b038a9e1bcd8685aab9c3bcb9",
+    "mtime": 1779970947.9537117,
+    "ast_hash": "9d61f34c526ee43a08009ad69c66df4b",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\AGENTS.md": {
-    "mtime": 1779800009.731739,
-    "ast_hash": "39ece21161170f02485247c0f744e362",
+    "mtime": 1779970186.010111,
+    "ast_hash": "24b1034eac94f7a5fb4d32d693a5b75d",
     "semantic_hash": ""
   },
   "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\.opencode\\package.json": {
@@ -1074,9 +1069,129 @@
     "ast_hash": "5940274096f4ba1af17e645010fb04b4",
     "semantic_hash": ""
   },
-  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\debug_creative_raw.txt": {
-    "mtime": 1779718026.4225023,
-    "ast_hash": "a4b107a6728a094c7550ff2f95d1fdb3",
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\api\\courses.py": {
+    "mtime": 1779804109.5056865,
+    "ast_hash": "829505ec8a90e44009727924ff755f51",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\api\\progress.py": {
+    "mtime": 1779804126.9742873,
+    "ast_hash": "14452362fa120a6dfc6fbb0fa7262225",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\models\\course_schemas.py": {
+    "mtime": 1779804008.7504628,
+    "ast_hash": "a2c897dc01d9ab240f2ccbf7ca244908",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\ports\\course_repository.py": {
+    "mtime": 1779804043.115499,
+    "ast_hash": "e10d0f99a3f11554b20b296fb75e136c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\ports\\progress_repository.py": {
+    "mtime": 1779804046.823874,
+    "ast_hash": "fbb15314a37c98c69aab5b1dc57539bc",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\repositories\\file_course_repository.py": {
+    "mtime": 1779804053.4772913,
+    "ast_hash": "bb2f7b892f7a42d1c26641aaa3ff2bd5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\repositories\\file_progress_repository.py": {
+    "mtime": 1779804060.0275042,
+    "ast_hash": "c9e5482aeb14b1eb8b9582b8d918b344",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\app\\services\\course_service.py": {
+    "mtime": 1779804068.8185513,
+    "ast_hash": "8ca065f991e1a3136de70919c5930d12",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\scripts\\generate_curriculum.py": {
+    "mtime": 1779805049.9894679,
+    "ast_hash": "77099c8b99c95bf9946ab752edff9d71",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\scripts\\verify_curriculum.py": {
+    "mtime": 1779805176.1717165,
+    "ast_hash": "d6dcd925397c103d14026fd1b9eba20e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\tests\\unit\\test_generate_curriculum.py": {
+    "mtime": 1779805028.0760624,
+    "ast_hash": "e573f8712ab7359bc8d52624f05aabb3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\tests\\unit\\test_verify_curriculum.py": {
+    "mtime": 1779805150.51362,
+    "ast_hash": "f9b589c74aaef7dd90125e0027805f8a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\e2e\\auth-flow.spec.ts": {
+    "mtime": 1779969338.7510219,
+    "ast_hash": "acc52285404b4b027751b8af7a4ff0f7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\e2e\\curriculum-flow.spec.ts": {
+    "mtime": 1779969234.905538,
+    "ast_hash": "47eee8804b7a029e5f6321ba2552584b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\app\\learn\\page.tsx": {
+    "mtime": 1779804312.3155653,
+    "ast_hash": "5040112e0693730e4b4204d914f8229b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\app\\learn\\lesson\\[lessonId]\\page.tsx": {
+    "mtime": 1779804742.8010714,
+    "ast_hash": "56d46f2f227aa22ae90268f7b51fd588",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\app\\learn\\[courseId]\\page.tsx": {
+    "mtime": 1779804323.5199404,
+    "ast_hash": "77cb7c6db4071259b7e2a48a3fd1b163",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\learn\\MarkdownRenderer.tsx": {
+    "mtime": 1779804298.3964832,
+    "ast_hash": "f0b64ba90df9d26570397f60196725b5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\components\\ui\\Toast.test.tsx": {
+    "mtime": 1779802913.560486,
+    "ast_hash": "a14313234f5d550ad95fac68ee676e6c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\src\\features\\curriculum\\use-curriculum.hook.ts": {
+    "mtime": 1779804289.0815544,
+    "ast_hash": "8fb1261217bb4fdfec1b6a56bba67f39",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\test-results\\.last-run.json": {
+    "mtime": 1779969395.5195937,
+    "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\Phase1.md": {
+    "mtime": 1779969927.3151965,
+    "ast_hash": "00ce41518cac1ccda88621f4fed3bb96",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\Phase2.md": {
+    "mtime": 1779805334.322363,
+    "ast_hash": "d9adfd2dd2631fdf4944b9de1e271870",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\frontend\\e2e-report\\index.html": {
+    "mtime": 1779969395.5195937,
+    "ast_hash": "941867ea110cc5e46f48202463e14202",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Dushmilan\\Desktop\\CodeCoach-AI\\backend\\questions\\rejected_questions_v1.json": {
+    "mtime": 1779955596.5720313,
+    "ast_hash": "666412fbe6325c6c358531b940e0d391",
     "semantic_hash": ""
   }
 }
