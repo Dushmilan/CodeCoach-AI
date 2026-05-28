@@ -80,3 +80,22 @@ When these validation errors occurred inside `_load()` (I2), they crashed the en
 **Root cause:** `test_get_companies` asserted specific company names ("Google", "Amazon", etc.) that do not exist in `sample_questions.json` (all `company_tags` are empty).
 
 **Fix:** Relaxed assertion to verify the API returns a valid `list` without checking specific values.
+
+---
+
+## I6 — Resizing feature broken: Panel overlap and drag-resize erratic behavior
+
+**Status:** ✅ Fixed & Closed  
+**Severity:** Medium  
+**Files affected:**
+- `frontend/src/components/layout/elements/CodeEditorContainer.tsx`
+
+**Root cause:** 
+1. **Event Swallowing:** Monaco Editor captured mouse events immediately upon enter, interrupting `mousemove` drag operations.
+2. **Layout Overflow:** Hardcoded 500px `maxHeight` for the output panel caused the layout to overflow/overlap when the browser window was smaller than the panel height.
+3. **Text Selection Interference:** Missing `select-none` during drag caused browser-native text selection to interfere with resizing.
+
+**Fix:** 
+1. **Global Drag Overlay:** Added a `fixed inset-0` transparent overlay that appears only during resize, intercepting all mouse events and blocking interaction with the Monaco editor until the drag completes.
+2. **Dynamic Height Capping:** Switched from hardcoded 500px to dynamic `maxHeight` calculation (`containerHeight - 150px`) to guarantee at least 150px of breathing room for the editor regardless of screen size.
+3. **Selection Lock:** Added `select-none` to the resize overlay to ensure smooth dragging without accidental text highlighting.

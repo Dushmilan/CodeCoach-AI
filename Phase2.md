@@ -117,3 +117,10 @@ Phase 2 adds structured language learning paths for C, Python, and Java — each
 ### Phase 1 Cleanup
 - Run `verify_and_populate.py` to evaluate 87 pending DSA questions (requires NVIDIA API key)
 - Target: promote qualifying questions to the bank via quality gate (3+ rounds, avg > 90)
+
+## 8. Continuous Lesson Quality Improvement
+
+- **Schema Validation:** Implement validation tests for AI-generated lesson content to catch schema drift early.
+- **Pedagogical Refinement:** Iteratively enhance theory explanations and coding exercise clarity based on user feedback.
+- **Manual Review Integration:** Establish a "human-in-the-loop" review cycle for complex exercise-theory pairs.
+- **Modular Updates:** Refactor pipeline to support hot-swapping specific lessons without full regeneration.

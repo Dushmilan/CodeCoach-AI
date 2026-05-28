@@ -48,7 +48,9 @@ export function CodeEditorContainer({
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
       const deltaY = startYRef.current - e.clientY;
-      const newHeight = Math.max(100, Math.min(500, startHeightRef.current + deltaY));
+      const containerHeight = containerRef.current?.clientHeight || 0;
+      const maxOutputHeight = Math.max(150, containerHeight - 150); // Ensure at least 150px for editor
+      const newHeight = Math.max(100, Math.min(maxOutputHeight, startHeightRef.current + deltaY));
       setOutputHeight(newHeight);
     };
 
@@ -71,10 +73,11 @@ export function CodeEditorContainer({
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden p-0">
+      {isResizing && <div className="fixed inset-0 z-[9999] cursor-row-resize bg-transparent select-none" />}
       {/* Code Editor Section */}
       <div 
-        className="flex-1 min-h-0 overflow-hidden"
-        style={{ height: outputCollapsed || !hasOutput ? '100%' : `calc(100% - ${outputHeight}px)` }}
+        className="min-h-0 overflow-hidden flex flex-col"
+        style={{ flex: '1 1 auto' }}
       >
         <CodeEditor
           language={language}
@@ -84,65 +87,66 @@ export function CodeEditorContainer({
             onRunCode={onRunCode}
             onSubmitCode={onSubmitCode}
             isRunning={isRunning}
+            isResizing={isResizing}
         />
       </div>
 
-      {/* Output Panel - Flush 1px border */}
-      <div className="border-t border-white/[0.04] flex-shrink-0">
-        {hasOutput ? (
-          <div className="flex flex-col">
-            {/* Resize Handle */}
-            {!outputCollapsed && (
-              <div
-                className={cn(
-                  "h-2 bg-transparent hover:bg-white/[0.03] cursor-row-resize transition-colors flex items-center justify-center relative",
-                  isResizing && "bg-white/[0.04]"
-                )}
-                onMouseDown={handleResizeStart}
-              >
-                <div className="absolute inset-x-4 top-1/2 h-px bg-white/[0.06]" />
-                <DragHandleDots2Icon className="relative h-3 w-3 text-muted-foreground/30" />
-              </div>
+      {/* Resize Handle */}
+      {hasOutput && !outputCollapsed && (
+        <div
+            className={cn(
+                "h-4 bg-transparent hover:bg-white/[0.05] cursor-row-resize transition-colors flex items-center justify-center relative border-t border-white/[0.04]",
+                isResizing && "bg-white/[0.08]"
             )}
+            onMouseDown={handleResizeStart}
+        >
+            <div className="absolute inset-x-4 top-1/2 h-px bg-white/[0.1]" />
+            <DragHandleDots2Icon className="relative h-4 w-4 text-muted-foreground/40" />
+        </div>
+      )}
 
-            <div
-              className={cn("flex flex-col", outputCollapsed && "h-auto")}
-              style={!outputCollapsed ? { height: `${outputHeight}px` } : undefined}
-            >
-              <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-xs font-medium tracking-wide text-muted-foreground/60">OUTPUT</span>
+      {/* Output Panel */}
+      <div 
+        className={cn(
+            "flex flex-col bg-background/95",
+            !hasOutput && "h-auto flex-shrink-0 border-t border-white/[0.04]"
+        )}
+        style={hasOutput && !outputCollapsed ? { height: `${outputHeight}px`, flex: '0 0 auto' } : undefined}
+      >
+        {/* Output Header */}
+        <div className="flex items-center justify-between px-3 py-2 border-t border-white/[0.04]">
+            <span className="text-xs font-medium tracking-wide text-muted-foreground/60">OUTPUT</span>
+            {hasOutput && (
                 <button
-                  onClick={() => setOutputCollapsed(!outputCollapsed)}
-                  className="p-1 hover:bg-white/[0.04] rounded transition-colors"
-                  aria-label={outputCollapsed ? "Expand output" : "Collapse output"}
+                onClick={() => setOutputCollapsed(!outputCollapsed)}
+                className="p-1 hover:bg-white/[0.04] rounded transition-colors"
+                aria-label={outputCollapsed ? "Expand output" : "Collapse output"}
                 >
-                  {outputCollapsed ? (
+                {outputCollapsed ? (
                     <ChevronUpIcon className="h-3.5 w-3.5 text-muted-foreground/40" />
-                  ) : (
+                ) : (
                     <ChevronDownIcon className="h-3.5 w-3.5 text-muted-foreground/40" />
-                  )}
+                )}
                 </button>
-              </div>
+            )}
+        </div>
 
-              {!outputCollapsed && (
-                <div className="flex-1 overflow-auto px-3 pb-3">
-                  <pre className={cn(
-                    "text-sm whitespace-pre-wrap font-mono",
-                    error ? "text-red-400" : "text-foreground/80"
-                  )}>
-                    {error || output}
-                  </pre>
-                </div>
-              )}
-            </div>
+        {hasOutput && !outputCollapsed ? (
+          <div className="flex-1 overflow-auto px-3 pb-3">
+            <pre className={cn(
+                "text-sm whitespace-pre-wrap font-mono",
+                error ? "text-red-400" : "text-foreground/80"
+            )}>
+                {error || output}
+            </pre>
           </div>
-        ) : (
+        ) : !hasOutput ? (
           <EmptyState
             icon={PlayIcon}
             title="Write code and hit Run"
             description="Your output will appear here when you run your code."
           />
-        )}
+        ) : null}
       </div>
     </div>
   );

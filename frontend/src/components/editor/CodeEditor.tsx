@@ -5,6 +5,7 @@ import Editor from '@monaco-editor/react';
 import { PlayIcon, ResetIcon, CheckCircledIcon } from '@radix-ui/react-icons';
 import { Language } from '@/types';
 import { LANGUAGE_OPTIONS } from './constants';
+import { cn } from '@/lib/utils';
 
 interface CodeEditorProps {
   language: Language;
@@ -14,6 +15,7 @@ interface CodeEditorProps {
   onRunCode: () => void;
   onSubmitCode: () => void;
   isRunning?: boolean;
+  isResizing?: boolean;
 }
 
 export function CodeEditor({
@@ -24,6 +26,7 @@ export function CodeEditor({
   onRunCode,
   onSubmitCode,
   isRunning,
+  isResizing,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
 
@@ -98,7 +101,10 @@ export function CodeEditor({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 rounded-b-[calc(2rem-0.375rem)] overflow-hidden">
+      <div className={cn(
+          "flex-1 min-h-0 rounded-b-[calc(2rem-0.375rem)] overflow-hidden",
+          isResizing && "pointer-events-none"
+      )}>
         <Editor
           height="100%"
           language={language}
