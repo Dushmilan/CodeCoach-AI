@@ -4,7 +4,7 @@
 
 Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coaching. Users practice DSA coding questions with instant hints, reviews, and debugging — no LeetCode Premium or Hackerrank license required.
 
-**Status:** Feature-complete. 13/100 target questions in bank; 87 AI-generated questions re-evaluated — 0 passed quality gate.
+**Status:** Feature-complete. 18/100 target questions in bank; 87 AI-generated questions re-evaluated — 0 passed quality gate.
 
 ---
 
@@ -26,7 +26,7 @@ Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coach
 - Rate limited: 30 requests/min
 
 ### 3. Question Bank
-- 13 questions in bank (10 hand-authored + 3 AI-generated that passed quality gate)
+- 18 questions in bank across 12/14 DSA topics (AI-generated via NVIDIA NIM)
 - AI-assisted generation script (`backend/scripts/generate_questions.py`) across 14 DSA topics via NVIDIA NIM
 - **Dual Archetype System**: "Classic Grind" (traditional algorithm puzzles) and "Creative 2026" (real-world scenarios like LLM context windows, drone routing, GPU scheduling)
 - **14 2026 Scenario Seeds**: Each DSA topic has a hand-authored real-world framing
@@ -81,7 +81,7 @@ Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coach
 | Step | Count |
 |---|---|
 | Target question count | 100 |
-| In bank | 13 |
+| In bank | 18 (across 12/14 DSA topics) |
 | Rejected (re-evaluated) | 87 (0 passed >90 threshold) |
 
 **Next action:** Run `generate_questions.py` as overnight batch job to fill gaps.

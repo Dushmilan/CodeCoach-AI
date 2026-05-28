@@ -4,7 +4,7 @@
 
 **Status:** Pre-launch (development complete, not yet deployed)
 **Commits:** 62+
-**Questions:** 13 in question bank (10 hand-authored + 3 AI-verified) of 100 target; 87 AI-generated questions re-evaluated — 0 passed quality gate
+**Questions:** 18 in question bank across 12/14 DSA topics of 100 target; 87 AI-generated questions re-evaluated — 0 passed quality gate
 **Starter Code:** Python, JavaScript, Java
 **AI Quality Gate:** 4-round verification against 11 criteria (min avg > 90) before populating new questions
 
@@ -29,7 +29,7 @@
 
 ## 3. Question Bank
 
-- 13 questions in bank (10 hand-authored + 3 AI-generated that passed quality gate)
+- 18 questions in bank across 12/14 DSA topics (AI-generated via NVIDIA NIM)
 - AI-assisted generation script (`backend/scripts/generate_questions.py`) produces questions across 14 DSA topics via NVIDIA NIM
 - **Dual Archetype System**: Two prompt archetypes — "Classic Grind" (traditional algorithm puzzles) and "Creative 2026" (real-world scenarios like LLM context windows, drone routing, GPU scheduling, smart grid DP, CRDT reconciliation)
 - **14 2026 Scenario Seeds**: Each DSA topic has a hand-authored real-world framing (e.g., Sliding Window → LLM token budget optimization, Graphs → drone no-fly zone routing, Heap → GPU cluster job scheduling)
@@ -138,7 +138,7 @@
 
 | Area | Status | Details |
 |---|---|---|
-| Questions | ✅ Ready | 13 in bank. 87 AI-generated re-evaluated — 0 passed >90 threshold. Generation pipeline working but API-bound. |
+| Questions | 🟡 In Progress | 18 in bank across 12/14 DSA topics. 87 AI-generated re-evaluated — 0 passed >90 threshold. Generation pipeline working but API-bound. |
 | Auth | ✅ Complete | JWT email/password + Google OAuth via Supabase with full frontend integration |
 | UX Polish | ✅ Complete | EmptyState, Toast, OnboardingTour, auth-aware header, output panel placeholder |
 | E2E Testing | ✅ Complete | 19 Playwright tests across auth, homepage, user-flow, curriculum specs |

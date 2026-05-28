@@ -26,7 +26,7 @@ Practice DSA problems and learn programming languages with structured lessons an
 
 CodeCoach AI is an open-source LeetCode alternative with integrated AI coaching. It helps university students:
 
-- **Practice coding interview questions** — 100 DSA problems across 14 standard topics with Python, JavaScript, and Java starter code
+- **Practice coding interview questions** — 18 DSA problems (target: 100) across 14 standard topics with Python, JavaScript, and Java starter code
 - **Learn programming languages** — structured C, Python, and Java curricula with interleaved theory and coding exercises (coming soon)
 - **Get instant AI coaching** — hints, code reviews, explanations, and debugging help powered by NVIDIA NIM (LLaMA 3.1 8B)
 - **Submit and grade** — code runs against test cases in an isolated Piston container with pass/fail results
@@ -52,7 +52,7 @@ Multi-institution, drop-in, voluntary — students sign up on their own time, ze
 |---|---|
 | **AI Coaching** | 5 modes (Hint, Review, Explain, Debug, Freeform) via NVIDIA NIM — structured JSON responses + SSE streaming |
 | **Code Execution** | Piston container — Python, JavaScript, Java with smart code wrapping for test harness generation |
-| **Question Bank** | 10 real-world themed questions with full CRUD, search, filter by difficulty/category/company |
+| **Question Bank** | 18 DSA questions across 12/14 topics with full CRUD, search, filter by difficulty/category/company |
 | **Submit & Grade** | Run code against visible + hidden test cases, pass/fail reporting |
 | **Question Validation** | 7 validation use cases — structure, test cases, starter code, solution, time limits, function signature, output format |
 | **Authentication** | JWT-based email/password registration + login, bcrypt hashing |

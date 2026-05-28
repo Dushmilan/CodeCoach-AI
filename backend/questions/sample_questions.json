@@ -1,1100 +1,665 @@
 {
   "questions": [
     {
-      "id": "validate-email-format",
-      "title": "Validate Email Format for User Registration",
-      "difficulty": "easy",
-      "category": "String Manipulation",
-      "description": "You are building a user registration system for a web application. As part of the registration process, you need to validate email addresses to ensure they follow a proper format before storing them in the database. A valid email address must contain exactly one '@' symbol, have a local part before the '@' (at least 1 character, alphanumeric with allowed special characters . _ % + -), and a domain part after the '@' (at least 1 character, alphanumeric with allowed dots and hyphens, must contain at least one dot). The domain extension must be at least 2 characters long. Write a function that takes an email string and returns True if it's valid, False otherwise.",
-      "starter": {
-        "python": "def validate_email(email: str) -> bool:\n    # Your code here\n    pass",
-        "javascript": "function validateEmail(email) {\n    // Your code here\n}",
-        "java": "public class Solution {\n    public static boolean validateEmail(String email) {\n        // Your code here\n        return false;\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "user@example.com",
-          "output": "true",
-          "explanation": "Valid email with proper format: local part 'user', '@' symbol, domain 'example.com' with valid extension"
-        },
-        {
-          "input": "invalid-email",
-          "output": "false",
-          "explanation": "Missing '@' symbol - not a valid email format"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "user@example.com",
-          "expected_output": "true",
-          "description": "Standard valid email"
-        },
-        {
-          "input": "user.name@example.com",
-          "expected_output": "true",
-          "description": "Valid email with dot in local part"
-        },
-        {
-          "input": "user+tag@example.co.uk",
-          "expected_output": "true",
-          "description": "Valid email with plus sign and multi-part domain"
-        },
-        {
-          "input": "invalid-email",
-          "expected_output": "false",
-          "description": "Missing @ symbol"
-        },
-        {
-          "input": "@example.com",
-          "expected_output": "false",
-          "description": "Missing local part before @"
-        },
-        {
-          "input": "user@",
-          "expected_output": "false",
-          "description": "Missing domain part after @"
-        },
-        {
-          "input": "user@example",
-          "expected_output": "false",
-          "description": "Missing domain extension (no dot in domain)"
-        },
-        {
-          "input": "user@example.c",
-          "expected_output": "false",
-          "description": "Domain extension too short (less than 2 chars)"
-        },
-        {
-          "input": " ",
-          "expected_output": "false",
-          "description": "Empty string"
-        },
-        {
-          "input": "user@@example.com",
-          "expected_output": "false",
-          "description": "Multiple @ symbols"
-        },
-        {
-          "input": "user name@example.com",
-          "expected_output": "false",
-          "description": "Space in local part (not allowed)"
-        },
-        {
-          "input": "user@.com",
-          "expected_output": "false",
-          "description": "Domain starts with dot"
-        }
-      ],
-      "company_tags": [
-        "Google",
-        "Microsoft",
-        "Amazon"
-      ],
-      "hints": [
-        "Check for exactly one '@' symbol in the email",
-        "Split the email at '@' and validate both parts separately",
-        "The domain must contain at least one dot and have a valid extension",
-        "Consider using regex for more robust validation"
-      ],
-      "solution": "Split the email at '@' and validate both parts. Check that there's exactly one '@', the local part is non-empty with valid characters, and the domain has at least one dot with a valid extension of 2+ characters.",
-      "time_complexity": "O(n)",
-      "space_complexity": "O(1)",
-      "constraints": [
-        "Email length: 1-254 characters",
-        "Local part: alphanumeric plus . _ % + -",
-        "Domain: alphanumeric plus . -",
-        "Domain extension: minimum 2 characters"
-      ]
-    },
-    {
-      "id": "parse-csv-line",
-      "title": "Parse CSV Line for Data Import",
-      "difficulty": "easy",
-      "category": "Data Processing",
-      "description": "You are working on a data import tool that reads CSV files and processes each line. Your task is to implement a function that parses a single CSV line into a list of values. The CSV format follows standard rules: fields are separated by commas, fields containing commas should be enclosed in double quotes, double quotes within quoted fields are escaped by doubling them (e.g., \"\" becomes \"). Empty fields should be preserved as empty strings. The function should handle edge cases like trailing commas, quoted empty strings, and escaped quotes properly.",
-      "starter": {
-        "python": "def parse_csv_line(line: str) -> list:\n    # Your code here\n    return []",
-        "javascript": "function parseCsvLine(line) {\n    // Your code here\n    return [];\n}",
-        "java": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class Solution {\n    public static List<String> parseCsvLine(String line) {\n        // Your code here\n        return new ArrayList<>();\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "John,Doe,30",
-          "output": "[\"John\", \"Doe\", \"30\"]",
-          "explanation": "Simple CSV line with three fields separated by commas"
-        },
-        {
-          "input": "\"Smith, John\",25,\"New York\"",
-          "output": "[\"Smith, John\", \"25\", \"New York\"]",
-          "explanation": "Quoted field containing a comma is preserved as a single value"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "John,Doe,30",
-          "expected_output": "[\"John\", \"Doe\", \"30\"]",
-          "description": "Simple CSV line"
-        },
-        {
-          "input": "\"Smith, John\",25,\"New York\"",
-          "expected_output": "[\"Smith, John\", \"25\", \"New York\"]",
-          "description": "Quoted field with comma"
-        },
-        {
-          "input": "a,b,c,d,e",
-          "expected_output": "[\"a\", \"b\", \"c\", \"d\", \"e\"]",
-          "description": "Multiple fields"
-        },
-        {
-          "input": "single",
-          "expected_output": "[\"single\"]",
-          "description": "Single field"
-        },
-        {
-          "input": "",
-          "expected_output": "[\"\"]",
-          "description": "Empty line returns single empty field"
-        },
-        {
-          "input": "a,,b",
-          "expected_output": "[\"a\", \"\", \"b\"]",
-          "description": "Empty field in middle"
-        },
-        {
-          "input": "a,b,",
-          "expected_output": "[\"a\", \"b\", \"\"]",
-          "description": "Trailing comma creates empty field"
-        },
-        {
-          "input": "\"\"\"quoted\"\"\"",
-          "expected_output": "[\"\\\"quoted\\\"\"]",
-          "description": "Escaped quotes in quoted field"
-        },
-        {
-          "input": "\"Hello \"\"World\"\"\"",
-          "expected_output": "[\"Hello \\\"World\\\"\"]",
-          "description": "Escaped quotes within text"
-        },
-        {
-          "input": "\"\"",
-          "expected_output": "[\"\"]",
-          "description": "Quoted empty string"
-        },
-        {
-          "input": ",,",
-          "expected_output": "[\"\", \"\", \"\"]",
-          "description": "Multiple empty fields"
-        }
-      ],
-      "company_tags": [
-        "Amazon",
-        "Google",
-        "Netflix"
-      ],
-      "hints": [
-        "Track whether you're inside a quoted field with a boolean flag",
-        "Handle escaped quotes (\"\") by checking for consecutive quotes",
-        "Empty fields between commas should still be added as empty strings",
-        "Consider edge cases like empty input and trailing commas"
-      ],
-      "solution": "Iterate through each character, tracking whether you're inside quotes. When inside quotes, treat commas as regular characters. Handle escaped quotes by checking for consecutive double quotes. Build each field character by character.",
-      "time_complexity": "O(n)",
-      "space_complexity": "O(n)",
-      "constraints": [
-        "Input is a single line (no newlines)",
-        "Quotes are only used for escaping commas",
-        "Escaped quotes appear as double quotes within quoted fields"
-      ]
-    },
-    {
-      "id": "format-phone-number",
-      "title": "Format Phone Number for Contact Management",
-      "difficulty": "easy",
-      "category": "String Manipulation",
-      "description": "You are building a contact management system that needs to standardize phone numbers for storage and display. The system receives phone numbers in various formats and needs to convert them to a standard format. Write a function that takes a phone number string (which may contain digits, spaces, dashes, parentheses, and an optional leading '+' for country code) and returns it formatted as '(XXX) XXX-XXXX' for 10-digit numbers or '+X (XXX) XXX-XXXX' for numbers with a country code. If the number is invalid (less than 10 digits after stripping non-digit characters), return 'Invalid'.",
-      "starter": {
-        "python": "def format_phone_number(phone: str) -> str:\n    # Your code here\n    return \"\"",
-        "javascript": "function formatPhoneNumber(phone) {\n    // Your code here\n    return \"\";\n}",
-        "java": "public class Solution {\n    public static String formatPhoneNumber(String phone) {\n        // Your code here\n        return \"\";\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "1234567890",
-          "output": "(123) 456-7890",
-          "explanation": "10-digit number formatted with parentheses and dash"
-        },
-        {
-          "input": "+1 123-456-7890",
-          "output": "+1 (123) 456-7890",
-          "explanation": "Number with country code preserved and formatted"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "\"1234567890\"",
-          "expected_output": "(123) 456-7890",
-          "description": "Standard 10-digit number"
-        },
-        {
-          "input": "123-456-7890",
-          "expected_output": "(123) 456-7890",
-          "description": "Number with dashes"
-        },
-        {
-          "input": "(123) 456-7890",
-          "expected_output": "(123) 456-7890",
-          "description": "Already formatted number"
-        },
-        {
-          "input": "+1 123 456 7890",
-          "expected_output": "+1 (123) 456-7890",
-          "description": "Number with country code and spaces"
-        },
-        {
-          "input": "+44 20 7946 0958",
-          "expected_output": "+44 (207) 946-0958",
-          "description": "International number with 2-digit country code"
-        },
-        {
-          "input": "\"12345\"",
-          "expected_output": "Invalid",
-          "description": "Too few digits"
-        },
-        {
-          "input": "",
-          "expected_output": "Invalid",
-          "description": "Empty string"
-        },
-        {
-          "input": "  123  456  7890  ",
-          "expected_output": "(123) 456-7890",
-          "description": "Number with extra spaces"
-        },
-        {
-          "input": "1-2-3-4-5-6-7-8-9-0",
-          "expected_output": "(123) 456-7890",
-          "description": "Number with many dashes"
-        },
-        {
-          "input": "+1 (123) 456-7890",
-          "expected_output": "+1 (123) 456-7890",
-          "description": "Already formatted with country code"
-        },
-        {
-          "input": "abc123def456ghi7890",
-          "expected_output": "(123) 456-7890",
-          "description": "Number with letters (letters ignored)"
-        }
-      ],
-      "company_tags": [
-        "Salesforce",
-        "HubSpot",
-        "Microsoft"
-      ],
-      "hints": [
-        "First extract only the digits from the input string",
-        "Check if the number has a country code (more than 10 digits)",
-        "Format the last 10 digits as the main number",
-        "Any digits beyond 10 are treated as country code"
-      ],
-      "solution": "Extract all digits from the input. If less than 10 digits, return 'Invalid'. For exactly 10 digits, format as '(XXX) XXX-XXXX'. For more digits, treat the extra leading digits as country code and format accordingly.",
-      "time_complexity": "O(n)",
-      "space_complexity": "O(n)",
-      "constraints": [
-        "Input may contain digits, spaces, dashes, parentheses, and '+'",
-        "Minimum 10 digits required for valid number",
-        "Country code is optional"
-      ]
-    },
-    {
-      "id": "calculate-shopping-cart",
-      "title": "Calculate Shopping Cart Total with Tax",
-      "difficulty": "easy",
-      "category": "Data Processing",
-      "description": "You are building an e-commerce platform's checkout system. Implement a function that calculates the total cost of items in a shopping cart, including applicable taxes and discounts. The function receives a list of items (each with name, price, and quantity), a tax rate percentage, and an optional discount percentage. Calculate the subtotal, apply the discount first, then add tax to get the final total. Round the final result to 2 decimal places. Return a dictionary with subtotal, discount_amount, tax_amount, and total.",
-      "starter": {
-        "python": "def calculate_cart_total(items: list, tax_rate: float, discount: float = 0) -> dict:\n    # items = [{\"name\": str, \"price\": float, \"quantity\": int}, ...]\n    # Return {\"subtotal\": float, \"discount_amount\": float, \"tax_amount\": float, \"total\": float}\n    return {}",
-        "javascript": "function calculateCartTotal(items, taxRate, discount = 0) {\n    // items = [{name: string, price: number, quantity: number}, ...]\n    // Return {subtotal: number, discount_amount: number, tax_amount: number, total: number}\n    return {};\n}",
-        "java": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class Solution {\n    public static Map<String, Double> calculateCartTotal(List<Map<String, Object>> items, double taxRate, double discount) {\n        // Return map with subtotal, discount_amount, tax_amount, total\n        return new HashMap<>();\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "[{\"name\": \"Apple\", \"price\": 1.50, \"quantity\": 3}]\\n8.5\\n10",
-          "output": "{\"subtotal\": 4.5, \"discount_amount\": 0.45, \"tax_amount\": 0.34, \"total\": 4.39}",
-          "explanation": "Subtotal: 1.50 * 3 = 4.50, Discount: 10% of 4.50 = 0.45, After discount: 4.05, Tax: 8.5% of 4.05 = 0.34, Total: 4.39"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "[{\"name\": \"Apple\", \"price\": 1.50, \"quantity\": 3}]\\n8.5\\n10",
-          "expected_output": "{\"subtotal\": 4.5, \"discount_amount\": 0.45, \"tax_amount\": 0.34, \"total\": 4.39}",
-          "description": "Single item with tax and discount"
-        },
-        {
-          "input": "[{\"name\": \"Book\", \"price\": 20.00, \"quantity\": 1}]\\n0\\n0",
-          "expected_output": "{\"subtotal\": 20.0, \"discount_amount\": 0.0, \"tax_amount\": 0.0, \"total\": 20.0}",
-          "description": "No tax, no discount"
-        },
-        {
-          "input": "[{\"name\": \"Item1\", \"price\": 10.00, \"quantity\": 2}, {\"name\": \"Item2\", \"price\": 5.00, \"quantity\": 3}]\\n10\\n5",
-          "expected_output": "{\"subtotal\": 35.0, \"discount_amount\": 1.75, \"tax_amount\": 3.33, \"total\": 36.58}",
-          "description": "Multiple items"
-        },
-        {
-          "input": "[]\\n10\\n5",
-          "expected_output": "{\"subtotal\": 0.0, \"discount_amount\": 0.0, \"tax_amount\": 0.0, \"total\": 0.0}",
-          "description": "Empty cart"
-        },
-        {
-          "input": "[{\"name\": \"Expensive\", \"price\": 1000.00, \"quantity\": 1}]\\n20\\n50",
-          "expected_output": "{\"subtotal\": 1000.0, \"discount_amount\": 500.0, \"tax_amount\": 100.0, \"total\": 600.0}",
-          "description": "Large discount"
-        },
-        {
-          "input": "[{\"name\": \"Cheap\", \"price\": 0.01, \"quantity\": 1}]\\n10\\n0",
-          "expected_output": "{\"subtotal\": 0.01, \"discount_amount\": 0.0, \"tax_amount\": 0.0, \"total\": 0.01}",
-          "description": "Very small amount"
-        },
-        {
-          "input": "[{\"name\": \"Bulk\", \"price\": 1.00, \"quantity\": 100}]\\n5\\n0",
-          "expected_output": "{\"subtotal\": 100.0, \"discount_amount\": 0.0, \"tax_amount\": 5.0, \"total\": 105.0}",
-          "description": "Large quantity"
-        },
-        {
-          "input": "[{\"name\": \"A\", \"price\": 33.33, \"quantity\": 3}]\\n7.25\\n15",
-          "expected_output": "{\"subtotal\": 99.99, \"discount_amount\": 15.0, \"tax_amount\": 6.15, \"total\": 91.14}",
-          "description": "Rounding test"
-        },
-        {
-          "input": "[{\"name\": \"Item\", \"price\": 50.00, \"quantity\": 2}]\\n8.875\\n12.5",
-          "expected_output": "{\"subtotal\": 100.0, \"discount_amount\": 12.5, \"tax_amount\": 7.77, \"total\": 95.27}",
-          "description": "Fractional tax rate"
-        },
-        {
-          "input": "[{\"name\": \"X\", \"price\": 9.99, \"quantity\": 1}, {\"name\": \"Y\", \"price\": 19.99, \"quantity\": 1}, {\"name\": \"Z\", \"price\": 29.99, \"quantity\": 1}]\\n6\\n0",
-          "expected_output": "{\"subtotal\": 59.97, \"discount_amount\": 0.0, \"tax_amount\": 3.6, \"total\": 63.57}",
-          "description": "Three different priced items"
-        }
-      ],
-      "company_tags": [
-        "Amazon",
-        "Shopify",
-        "Stripe"
-      ],
-      "hints": [
-        "Calculate subtotal by summing price * quantity for each item",
-        "Apply discount before calculating tax",
-        "Use round(value, 2) to ensure 2 decimal places",
-        "Handle edge cases like empty cart and zero values"
-      ],
-      "solution": "1. Calculate subtotal by iterating through items and summing price * quantity. 2. Calculate discount_amount as subtotal * (discount / 100). 3. Calculate price_after_discount = subtotal - discount_amount. 4. Calculate tax_amount as price_after_discount * (tax_rate / 100). 5. Total = price_after_discount + tax_amount. Round all values to 2 decimal places.",
-      "time_complexity": "O(n)",
-      "space_complexity": "O(1)",
-      "constraints": [
-        "Prices are positive floats",
-        "Quantities are positive integers",
-        "Tax rate is 0-100 percentage",
-        "Discount is 0-100 percentage"
-      ]
-    },
-    {
-      "id": "find-duplicate-transactions",
-      "title": "Find Duplicate Transactions in Financial Data",
-      "difficulty": "medium",
-      "category": "Data Processing",
-      "description": "You are working on a fraud detection system for a financial institution. The system needs to identify potentially duplicate transactions that might indicate errors or fraudulent activity. A duplicate transaction is defined as two or more transactions with the same amount, same merchant name (case-insensitive comparison), and timestamps within 60 seconds of each other. Write a function that takes a list of transactions (each with id, amount, merchant, and timestamp in ISO format) and returns groups of duplicate transaction IDs. Each group should contain at least 2 transaction IDs that are duplicates of each other.",
-      "starter": {
-        "python": "def find_duplicate_transactions(transactions: list) -> list:\n    # transactions = [{\"id\": str, \"amount\": float, \"merchant\": str, \"timestamp\": str}, ...]\n    # Return list of lists, each containing duplicate transaction IDs\n    return []",
-        "javascript": "function findDuplicateTransactions(transactions) {\n    // transactions = [{id: string, amount: number, merchant: string, timestamp: string}, ...]\n    // Return array of arrays, each containing duplicate transaction IDs\n    return [];\n}",
-        "java": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class Solution {\n    public static List<List<String>> findDuplicateTransactions(List<Transaction> transactions) {\n        // Return list of lists, each containing duplicate transaction IDs\n        return new ArrayList<>();\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 50.00, \"merchant\": \"amazon\", \"timestamp\": \"2024-01-15T10:30:30Z\"}]",
-          "output": "[[\"t1\", \"t2\"]]",
-          "explanation": "Both transactions have same amount (50.00), same merchant (Amazon/amazon - case insensitive), and timestamps within 60 seconds"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 50.00, \"merchant\": \"amazon\", \"timestamp\": \"2024-01-15T10:30:30Z\"}]",
-          "expected_output": "[[\"t1\", \"t2\"]]",
-          "description": "Basic duplicate pair"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 100.00, \"merchant\": \"Store\", \"timestamp\": \"2024-01-15T10:00:00Z\"}, {\"id\": \"t2\", \"amount\": 100.00, \"merchant\": \"Store\", \"timestamp\": \"2024-01-15T10:02:00Z\"}]",
-          "expected_output": "[]",
-          "description": "Not duplicates - more than 60 seconds apart"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 50.01, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:30Z\"}]",
-          "expected_output": "[]",
-          "description": "Not duplicates - different amounts"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 50.00, \"merchant\": \"eBay\", \"timestamp\": \"2024-01-15T10:30:30Z\"}]",
-          "expected_output": "[]",
-          "description": "Not duplicates - different merchants"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:59Z\"}, {\"id\": \"t3\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:31:30Z\"}]",
-          "expected_output": "[[\"t1\", \"t2\", \"t3\"]]",
-          "description": "Three duplicates in chain"
-        },
-        {
-          "input": "[]",
-          "expected_output": "[]",
-          "description": "Empty transaction list"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}]",
-          "expected_output": "[]",
-          "description": "Single transaction - no duplicates"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 50.00, \"merchant\": \"AMAZON\", \"timestamp\": \"2024-01-15T10:30:00Z\"}]",
-          "expected_output": "[[\"t1\", \"t2\"]]",
-          "description": "Same timestamp, case-insensitive merchant"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:31:00Z\"}]",
-          "expected_output": "[[\"t1\", \"t2\"]]",
-          "description": "Exactly 60 seconds apart - still duplicate"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 25.00, \"merchant\": \"eBay\", \"timestamp\": \"2024-01-15T10:30:30Z\"}, {\"id\": \"t3\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:45Z\"}]",
-          "expected_output": "[[\"t1\", \"t3\"]]",
-          "description": "Mixed transactions - only some duplicates"
-        },
-        {
-          "input": "[{\"id\": \"t1\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:00Z\"}, {\"id\": \"t2\", \"amount\": 50.00, \"merchant\": \"Amazon\", \"timestamp\": \"2024-01-15T10:30:30Z\"}, {\"id\": \"t3\", \"amount\": 25.00, \"merchant\": \"eBay\", \"timestamp\": \"2024-01-15T10:30:45Z\"}, {\"id\": \"t4\", \"amount\": 25.00, \"merchant\": \"EBAY\", \"timestamp\": \"2024-01-15T10:31:00Z\"}]",
-          "expected_output": "[[\"t1\", \"t2\"], [\"t3\", \"t4\"]]",
-          "description": "Multiple duplicate groups"
-        }
-      ],
-      "company_tags": [
-        "PayPal",
-        "Stripe",
-        "Visa"
-      ],
-      "hints": [
-        "Parse timestamps to compare time differences",
-        "Use case-insensitive comparison for merchant names",
-        "Group transactions by (amount, merchant) first for efficiency",
-        "Check if timestamps are within 60 seconds for potential duplicates"
-      ],
-      "solution": "1. Parse all timestamps to datetime objects. 2. Group transactions by (amount, merchant.lower()). 3. For each group, sort by timestamp. 4. Find chains of transactions where each consecutive pair is within 60 seconds. 5. Return groups with at least 2 transactions.",
-      "time_complexity": "O(n log n)",
-      "space_complexity": "O(n)",
-      "constraints": [
-        "Timestamps are in ISO 8601 format",
-        "Merchant names are case-insensitive",
-        "Time window is exactly 60 seconds",
-        "Amount comparison is exact (floating point)"
-      ]
-    },
-    {
-      "id": "merge-user-profiles",
-      "title": "Merge User Profiles from Multiple Sources",
-      "difficulty": "medium",
-      "category": "Data Processing",
-      "description": "You are building a customer data platform that consolidates user information from multiple sources (web app, mobile app, CRM system). Each source provides partial user data, and you need to merge them into a complete user profile. When merging, follow these rules: 1) For conflicting values, prefer the most recent data (based on 'updated_at' timestamp), 2) For lists (like tags), merge and deduplicate, 3) For nested objects, merge recursively, 4) Missing values should be filled from any available source. Write a function that takes a list of user profiles and returns a single merged profile.",
-      "starter": {
-        "python": "def merge_user_profiles(profiles: list) -> dict:\n    # profiles = [{\"id\": str, \"name\": str, \"email\": str, \"tags\": list, \"metadata\": dict, \"updated_at\": str}, ...]\n    # Return merged profile dict\n    return {}",
-        "javascript": "function mergeUserProfiles(profiles) {\n    // profiles = [{id: string, name: string, email: string, tags: array, metadata: object, updated_at: string}, ...]\n    // Return merged profile object\n    return {};\n}",
-        "java": "import java.util.List;\nimport java.util.Map;\n\npublic class Solution {\n    public static Map<String, Object> mergeUserProfiles(List<Map<String, Object>> profiles) {\n        // Return merged profile map\n        return new HashMap<>();\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "[{\"id\": \"u1\", \"name\": \"John\", \"email\": \"john@old.com\", \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"name\": \"John Doe\", \"email\": \"john@new.com\", \"updated_at\": \"2024-01-15T00:00:00Z\"}]",
-          "output": "{\"id\": \"u1\", \"name\": \"John Doe\", \"email\": \"john@new.com\", \"updated_at\": \"2024-01-15T00:00:00Z\"}",
-          "explanation": "Second profile is more recent, so its values take precedence"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "[{\"id\": \"u1\", \"name\": \"John\", \"email\": \"john@old.com\", \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"name\": \"John Doe\", \"email\": \"john@new.com\", \"updated_at\": \"2024-01-15T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"name\": \"John Doe\", \"email\": \"john@new.com\", \"updated_at\": \"2024-01-15T00:00:00Z\"}",
-          "description": "Basic merge - prefer newer data"
-        },
-        {
-          "input": "[{\"id\": \"u1\", \"name\": \"Alice\", \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"email\": \"alice@example.com\", \"updated_at\": \"2024-01-02T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"name\": \"Alice\", \"email\": \"alice@example.com\", \"updated_at\": \"2024-01-02T00:00:00Z\"}",
-          "description": "Merge complementary fields"
-        },
-        {
-          "input": "[{\"id\": \"u1\", \"tags\": [\"vip\", \"early-adopter\"], \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"tags\": [\"vip\", \"premium\"], \"updated_at\": \"2024-01-02T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"tags\": [\"vip\", \"early-adopter\", \"premium\"], \"updated_at\": \"2024-01-02T00:00:00Z\"}",
-          "description": "Merge and deduplicate tags"
-        },
-        {
-          "input": "[{\"id\": \"u1\", \"metadata\": {\"location\": \"NYC\"}, \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"metadata\": {\"age\": 30}, \"updated_at\": \"2024-01-02T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"metadata\": {\"location\": \"NYC\", \"age\": 30}, \"updated_at\": \"2024-01-02T00:00:00Z\"}",
-          "description": "Merge nested objects"
-        },
-        {
-          "input": "[]",
-          "expected_output": "{}",
-          "description": "Empty profiles list"
-        },
-        {
-          "input": "[{\"id\": \"u1\", \"name\": \"Single\", \"updated_at\": \"2024-01-01T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"name\": \"Single\", \"updated_at\": \"2024-01-01T00:00:00Z\"}",
-          "description": "Single profile - no merge needed"
-        },
-        {
-          "input": "[{\"id\": \"u1\", \"name\": \"Old\", \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"name\": \"New\", \"updated_at\": \"2024-01-15T00:00:00Z\"}, {\"id\": \"u1\", \"name\": \"Middle\", \"updated_at\": \"2024-01-10T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"name\": \"New\", \"updated_at\": \"2024-01-15T00:00:00Z\"}",
-          "description": "Three profiles - pick most recent"
-        },
-        {
-          "input": "[{\"id\": \"u1\", \"tags\": [\"a\", \"b\"], \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"tags\": [\"b\", \"c\"], \"updated_at\": \"2024-01-02T00:00:00Z\"}, {\"id\": \"u1\", \"tags\": [\"c\", \"d\"], \"updated_at\": \"2024-01-03T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"tags\": [\"a\", \"b\", \"c\", \"d\"], \"updated_at\": \"2024-01-03T00:00:00Z\"}",
-          "description": "Merge tags from multiple profiles"
-        },
-        {
-          "input": "[{\"id\": \"u1\", \"metadata\": {\"a\": 1}, \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"metadata\": {\"b\": 2}, \"updated_at\": \"2024-01-02T00:00:00Z\"}, {\"id\": \"u1\", \"metadata\": {\"a\": 10}, \"updated_at\": \"2024-01-03T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"metadata\": {\"a\": 10, \"b\": 2}, \"updated_at\": \"2024-01-03T00:00:00Z\"}",
-          "description": "Deep merge with conflict resolution"
-        },
-        {
-          "input": "[{\"id\": \"u1\", \"name\": null, \"updated_at\": \"2024-01-01T00:00:00Z\"}, {\"id\": \"u1\", \"name\": \"Not Null\", \"updated_at\": \"2024-01-02T00:00:00Z\"}]",
-          "expected_output": "{\"id\": \"u1\", \"name\": \"Not Null\", \"updated_at\": \"2024-01-02T00:00:00Z\"}",
-          "description": "Handle null values"
-        }
-      ],
-      "company_tags": [
-        "Salesforce",
-        "HubSpot",
-        "Segment"
-      ],
-      "hints": [
-        "Sort profiles by updated_at timestamp before merging",
-        "Use a recursive merge function for nested objects",
-        "For lists, use set operations to deduplicate",
-        "Handle null/missing values by keeping non-null values"
-      ],
-      "solution": "1. Sort profiles by updated_at timestamp. 2. Start with the oldest profile as base. 3. For each subsequent profile, merge fields: simple values take newer, lists are merged and deduplicated, objects are recursively merged. 4. Return the final merged profile.",
-      "time_complexity": "O(n * m)",
-      "space_complexity": "O(n * m)",
-      "constraints": [
-        "All profiles have the same id",
-        "Timestamps are in ISO 8601 format",
-        "Lists contain primitive values only",
-        "Nested objects can be arbitrarily deep"
-      ]
-    },
-    {
-      "id": "validate-password-strength",
-      "title": "Validate Password Strength for Security",
-      "difficulty": "medium",
-      "category": "Security",
-      "description": "You are implementing a password validation system for a secure application. The password policy requires: minimum 8 characters, at least one uppercase letter, at least one lowercase letter, at least one digit, at least one special character from !@#$%^&*()_+-=[], and no more than 2 consecutive identical characters (e.g., 'aaa' is invalid). Write a function that validates a password and returns a dictionary with 'valid' (boolean) and 'errors' (list of error messages for failed requirements).",
-      "starter": {
-        "python": "def validate_password(password: str) -> dict:\n    # Return {\"valid\": bool, \"errors\": list}\n    return {\"valid\": False, \"errors\": []}",
-        "javascript": "function validatePassword(password) {\n    // Return {valid: boolean, errors: array}\n    return {valid: false, errors: []};\n}",
-        "java": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class Solution {\n    public static Map<String, Object> validatePassword(String password) {\n        // Return map with \"valid\" (boolean) and \"errors\" (List<String>)\n        return new HashMap<>();\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "SecurePass1!",
-          "output": "{\"valid\": true, \"errors\": []}",
-          "explanation": "Password meets all requirements: 11 chars, uppercase S, lowercase, digit 1, special char !, no consecutive identical chars"
-        },
-        {
-          "input": "weak",
-          "output": "{\"valid\": false, \"errors\": [\"Password must be at least 8 characters\", \"Password must contain at least one uppercase letter\", \"Password must contain at least one digit\", \"Password must contain at least one special character\"]}",
-          "explanation": "Password fails multiple requirements"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "SecurePass1!",
-          "expected_output": "{\"valid\": true, \"errors\": []}",
-          "description": "Valid strong password"
-        },
-        {
-          "input": "weak",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must be at least 8 characters\", \"Password must contain at least one uppercase letter\", \"Password must contain at least one digit\", \"Password must contain at least one special character\"]}",
-          "description": "Multiple failures"
-        },
-        {
-          "input": "Password123",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must contain at least one special character\"]}",
-          "description": "Missing special character"
-        },
-        {
-          "input": "password123!",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must contain at least one uppercase letter\"]}",
-          "description": "Missing uppercase"
-        },
-        {
-          "input": "PASSWORD123!",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must contain at least one lowercase letter\"]}",
-          "description": "Missing lowercase"
-        },
-        {
-          "input": "SecurePass!!",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must contain at least one digit\"]}",
-          "description": "Missing digit"
-        },
-        {
-          "input": "Short1!",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must be at least 8 characters\"]}",
-          "description": "Too short"
-        },
-        {
-          "input": "Passsword1!",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must not have more than 2 consecutive identical characters\"]}",
-          "description": "Three consecutive 's' characters"
-        },
-        {
-          "input": "",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must be at least 8 characters\", \"Password must contain at least one uppercase letter\", \"Password must contain at least one lowercase letter\", \"Password must contain at least one digit\", \"Password must contain at least one special character\"]}",
-          "description": "Empty password"
-        },
-        {
-          "input": "Aa1!Aa1!",
-          "expected_output": "{\"valid\": true, \"errors\": []}",
-          "description": "Exactly 8 characters - minimum valid"
-        },
-        {
-          "input": "Paaaass1!",
-          "expected_output": "{\"valid\": false, \"errors\": [\"Password must not have more than 2 consecutive identical characters\"]}",
-          "description": "Four consecutive 'a' characters"
-        },
-        {
-          "input": "MyP@ssw0rd",
-          "expected_output": "{\"valid\": true, \"errors\": []}",
-          "description": "Valid with @ symbol"
-        }
-      ],
-      "company_tags": [
-        "Google",
-        "Microsoft",
-        "Okta"
-      ],
-      "hints": [
-        "Check each requirement separately and collect all errors",
-        "Use regex or character class checks for uppercase, lowercase, digit, special",
-        "Iterate through password to check consecutive identical characters",
-        "Return all errors, not just the first one"
-      ],
-      "solution": "1. Check length >= 8. 2. Check for at least one uppercase using isupper() or regex. 3. Check for at least one lowercase using islower() or regex. 4. Check for at least one digit using isdigit() or regex. 5. Check for at least one special character from the allowed set. 6. Check for no more than 2 consecutive identical characters by iterating. 7. Collect all errors and return validity status.",
-      "time_complexity": "O(n)",
-      "space_complexity": "O(1)",
-      "constraints": [
-        "Password is a non-null string",
-        "Special characters: !@#$%^&*()_+-=[]",
-        "Maximum consecutive identical chars: 2",
-        "Minimum length: 8 characters"
-      ]
-    },
-    {
-      "id": "schedule-meeting-slots",
-      "title": "Find Available Meeting Time Slots",
-      "difficulty": "medium",
-      "category": "Scheduling",
-      "description": "You are building a calendar application that needs to find available meeting time slots for a group of participants. Given a list of participants with their existing meetings (each meeting has start and end time in 'HH:MM' format), a meeting duration in minutes, and a time range to search within, find all available time slots where all participants are free. The available slots should be at least as long as the required meeting duration. Return slots as a list of {start, end} objects.",
-      "starter": {
-        "python": "def find_available_slots(participants: list, duration: int, search_range: dict) -> list:\n    # participants = [{\"meetings\": [{\"start\": \"HH:MM\", \"end\": \"HH:MM\"}, ...]}, ...]\n    # duration = meeting duration in minutes\n    # search_range = {\"start\": \"HH:MM\", \"end\": \"HH:MM\"}\n    # Return [{\"start\": \"HH:MM\", \"end\": \"HH:MM\"}, ...]\n    return []",
-        "javascript": "function findAvailableSlots(participants, duration, searchRange) {\n    // participants = [{meetings: [{start: \"HH:MM\", end: \"HH:MM\"}, ...]}, ...]\n    // duration = meeting duration in minutes\n    // searchRange = {start: \"HH:MM\", end: \"HH:MM\"}\n    // Return [{start: \"HH:MM\", end: \"HH:MM\"}, ...]\n    return [];\n}",
-        "java": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Map;\n\npublic class Solution {\n    public static List<Map<String, String>> findAvailableSlots(List<Map<String, Object>> participants, int duration, Map<String, String> searchRange) {\n        // Return list of available slots\n        return new ArrayList<>();\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "[{\"meetings\": [{\"start\": \"09:00\", \"end\": \"10:00\"}]}]\\n60\\n{\"start\": \"09:00\", \"end\": \"12:00\"}",
-          "output": "[{\"start\": \"10:00\", \"end\": \"12:00\"}]",
-          "explanation": "Participant is busy 9-10, so available slots are 10-12 (2 hours, enough for 60 min meeting)"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "[{\"meetings\": [{\"start\": \"09:00\", \"end\": \"10:00\"}]}]\\n60\\n{\"start\": \"09:00\", \"end\": \"12:00\"}",
-          "expected_output": "[{\"start\": \"10:00\", \"end\": \"12:00\"}]",
-          "description": "Single participant with one meeting"
-        },
-        {
-          "input": "[{\"meetings\": []}]\\n30\\n{\"start\": \"09:00\", \"end\": \"10:00\"}",
-          "expected_output": "[{\"start\": \"09:00\", \"end\": \"10:00\"}]",
-          "description": "No existing meetings - full availability"
-        },
-        {
-          "input": "[{\"meetings\": [{\"start\": \"09:00\", \"end\": \"12:00\"}]}]\\n60\\n{\"start\": \"09:00\", \"end\": \"12:00\"}",
-          "expected_output": "[]",
-          "description": "Fully booked - no availability"
-        },
-        {
-          "input": "[{\"meetings\": [{\"start\": \"09:00\", \"end\": \"10:00\"}]}, {\"meetings\": [{\"start\": \"10:00\", \"end\": \"11:00\"}]}]\\n60\\n{\"start\": \"09:00\", \"end\": \"12:00\"}",
-          "expected_output": "[{\"start\": \"11:00\", \"end\": \"12:00\"}]",
-          "description": "Two participants with different meetings"
-        },
-        {
-          "input": "[{\"meetings\": [{\"start\": \"09:00\", \"end\": \"09:30\"}, {\"start\": \"10:00\", \"end\": \"10:30\"}]}]\\n30\\n{\"start\": \"09:00\", \"end\": \"11:00\"}",
-          "expected_output": "[{\"start\": \"09:30\", \"end\": \"10:00\"}, {\"start\": \"10:30\", \"end\": \"11:00\"}]",
-          "description": "Multiple gaps between meetings"
-        },
-        {
-          "input": "[{\"meetings\": [{\"start\": \"09:00\", \"end\": \"09:30\"}]}]\\n60\\n{\"start\": \"09:00\", \"end\": \"10:00\"}",
-          "expected_output": "[]",
-          "description": "Gap too short for meeting duration"
-        },
-        {
-          "input": "[]\\n60\\n{\"start\": \"09:00\", \"end\": \"12:00\"}",
-          "expected_output": "[{\"start\": \"09:00\", \"end\": \"12:00\"}]",
-          "description": "No participants - full availability"
-        },
-        {
-          "input": "[{\"meetings\": [{\"start\": \"09:00\", \"end\": \"10:00\"}]}, {\"meetings\": [{\"start\": \"09:30\", \"end\": \"10:30\"}]}]\\n30\\n{\"start\": \"09:00\", \"end\": \"11:00\"}",
-          "expected_output": "[{\"start\": \"10:30\", \"end\": \"11:00\"}]",
-          "description": "Overlapping meetings from different participants"
-        },
-        {
-          "input": "[{\"meetings\": [{\"start\": \"09:00\", \"end\": \"09:15\"}]}]\\n15\\n{\"start\": \"09:00\", \"end\": \"09:30\"}",
-          "expected_output": "[{\"start\": \"09:15\", \"end\": \"09:30\"}]",
-          "description": "Short meeting duration"
-        },
-        {
-          "input": "[{\"meetings\": [{\"start\": \"08:00\", \"end\": \"09:00\"}]}, {\"meetings\": [{\"start\": \"11:00\", \"end\": \"12:00\"}]}]\\n60\\n{\"start\": \"08:00\", \"end\": \"12:00\"}",
-          "expected_output": "[{\"start\": \"09:00\", \"end\": \"11:00\"}]",
-          "description": "Meetings at search range boundaries"
-        }
-      ],
-      "company_tags": [
-        "Google",
-        "Microsoft",
-        "Calendly"
-      ],
-      "hints": [
-        "Convert time strings to minutes for easier calculation",
-        "Merge all meetings from all participants into a single timeline",
-        "Find gaps between merged meetings that are >= duration",
-        "Convert back to HH:MM format for output"
-      ],
-      "solution": "1. Convert all times to minutes from midnight. 2. Collect all meetings from all participants. 3. Sort and merge overlapping meetings. 4. Find gaps between merged meetings that are >= duration. 5. Convert gap times back to HH:MM format.",
-      "time_complexity": "O(n log n)",
-      "space_complexity": "O(n)",
-      "constraints": [
-        "Time format is HH:MM (24-hour)",
-        "Duration is in minutes",
-        "Search range defines the boundaries",
-        "Meeting times are non-overlapping per participant"
-      ]
-    },
-    {
-      "id": "process-log-entries",
-      "title": "Parse and Filter Server Log Entries",
-      "difficulty": "medium",
-      "category": "Data Processing",
-      "description": "You are building a log analysis tool for a web server. The server logs are in a specific format: '[TIMESTAMP] [LEVEL] [SOURCE] - Message'. TIMESTAMP is in ISO format, LEVEL is one of DEBUG, INFO, WARN, ERROR, FATAL, SOURCE is the service name. Write a function that parses log entries and filters them by level (minimum level threshold), time range (start and end), and source (optional). Return a list of parsed log entries with timestamp, level, source, and message fields, sorted by timestamp.",
-      "starter": {
-        "python": "def process_log_entries(logs: list, min_level: str, time_range: dict, source: str = None) -> list:\n    # logs = [\"[2024-01-15T10:30:00Z] [INFO] [api] - Request received\", ...]\n    # min_level = \"INFO\" (returns INFO, WARN, ERROR, FATAL)\n    # time_range = {\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\n    # Return [{\"timestamp\": str, \"level\": str, \"source\": str, \"message\": str}, ...]\n    return []",
-        "javascript": "function processLogEntries(logs, minLevel, timeRange, source = null) {\n    // logs = [\"[2024-01-15T10:30:00Z] [INFO] [api] - Request received\", ...]\n    // minLevel = \"INFO\" (returns INFO, WARN, ERROR, FATAL)\n    // timeRange = {start: \"2024-01-15T00:00:00Z\", end: \"2024-01-15T23:59:59Z\"}\n    // Return [{timestamp: string, level: string, source: string, message: string}, ...]\n    return [];\n}",
-        "java": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Map;\n\npublic class Solution {\n    public static List<Map<String, String>> processLogEntries(List<String> logs, String minLevel, Map<String, String> timeRange, String source) {\n        // Return list of parsed log entries\n        return new ArrayList<>();\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "[\"[2024-01-15T10:30:00Z] [INFO] [api] - Request received\", \"[2024-01-15T10:31:00Z] [ERROR] [db] - Connection failed\"]\\nWARN\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\nnull",
-          "output": "[{\"timestamp\": \"2024-01-15T10:31:00Z\", \"level\": \"ERROR\", \"source\": \"db\", \"message\": \"Connection failed\"}]",
-          "explanation": "Only ERROR log passes the WARN threshold filter"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "[\"[2024-01-15T10:30:00Z] [INFO] [api] - Request received\", \"[2024-01-15T10:31:00Z] [ERROR] [db] - Connection failed\"]\\nWARN\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\nnull",
-          "expected_output": "[{\"timestamp\": \"2024-01-15T10:31:00Z\", \"level\": \"ERROR\", \"source\": \"db\", \"message\": \"Connection failed\"}]",
-          "description": "Filter by minimum level"
-        },
-        {
-          "input": "[\"[2024-01-15T10:30:00Z] [INFO] [api] - Request\", \"[2024-01-15T11:00:00Z] [WARN] [api] - Warning\"]\\nINFO\\n{\"start\": \"2024-01-15T10:00:00Z\", \"end\": \"2024-01-15T10:45:00Z\"}\\nnull",
-          "expected_output": "[{\"timestamp\": \"2024-01-15T10:30:00Z\", \"level\": \"INFO\", \"source\": \"api\", \"message\": \"Request\"}]",
-          "description": "Filter by time range"
-        },
-        {
-          "input": "[\"[2024-01-15T10:30:00Z] [INFO] [api] - Request\", \"[2024-01-15T10:31:00Z] [INFO] [db] - Query\"]\\nINFO\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\napi",
-          "expected_output": "[{\"timestamp\": \"2024-01-15T10:30:00Z\", \"level\": \"INFO\", \"source\": \"api\", \"message\": \"Request\"}]",
-          "description": "Filter by source"
-        },
-        {
-          "input": "[]\\nDEBUG\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\nnull",
-          "expected_output": "[]",
-          "description": "Empty log list"
-        },
-        {
-          "input": "[\"[2024-01-15T10:30:00Z] [DEBUG] [api] - Debug msg\", \"[2024-01-15T10:31:00Z] [INFO] [api] - Info msg\", \"[2024-01-15T10:32:00Z] [WARN] [api] - Warn msg\", \"[2024-01-15T10:33:00Z] [ERROR] [api] - Error msg\", \"[2024-01-15T10:34:00Z] [FATAL] [api] - Fatal msg\"]\\nWARN\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\nnull",
-          "expected_output": "[{\"timestamp\": \"2024-01-15T10:32:00Z\", \"level\": \"WARN\", \"source\": \"api\", \"message\": \"Warn msg\"}, {\"timestamp\": \"2024-01-15T10:33:00Z\", \"level\": \"ERROR\", \"source\": \"api\", \"message\": \"Error msg\"}, {\"timestamp\": \"2024-01-15T10:34:00Z\", \"level\": \"FATAL\", \"source\": \"api\", \"message\": \"Fatal msg\"}]",
-          "description": "All log levels - filter WARN and above"
-        },
-        {
-          "input": "[\"[2024-01-15T10:30:00Z] [INFO] [api] - Request\"]\\nFATAL\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\nnull",
-          "expected_output": "[]",
-          "description": "No logs match FATAL threshold"
-        },
-        {
-          "input": "[\"[2024-01-14T10:30:00Z] [ERROR] [api] - Old error\", \"[2024-01-16T10:30:00Z] [ERROR] [api] - Future error\"]\\nERROR\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\nnull",
-          "expected_output": "[]",
-          "description": "Logs outside time range"
-        },
-        {
-          "input": "[\"[2024-01-15T10:30:00Z] [INFO] [api] - Request with multiple words in message\"]\\nINFO\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\nnull",
-          "expected_output": "[{\"timestamp\": \"2024-01-15T10:30:00Z\", \"level\": \"INFO\", \"source\": \"api\", \"message\": \"Request with multiple words in message\"}]",
-          "description": "Long message with spaces"
-        },
-        {
-          "input": "[\"[2024-01-15T10:35:00Z] [ERROR] [db] - Error 1\", \"[2024-01-15T10:30:00Z] [ERROR] [api] - Error 2\"]\\nERROR\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\nnull",
-          "expected_output": "[{\"timestamp\": \"2024-01-15T10:30:00Z\", \"level\": \"ERROR\", \"source\": \"api\", \"message\": \"Error 2\"}, {\"timestamp\": \"2024-01-15T10:35:00Z\", \"level\": \"ERROR\", \"source\": \"db\", \"message\": \"Error 1\"}]",
-          "description": "Sort by timestamp"
-        },
-        {
-          "input": "[\"[2024-01-15T10:30:00Z] [INFO] [api] - Test\", \"[2024-01-15T10:31:00Z] [INFO] [db] - Test\", \"[2024-01-15T10:32:00Z] [INFO] [cache] - Test\"]\\nINFO\\n{\"start\": \"2024-01-15T00:00:00Z\", \"end\": \"2024-01-15T23:59:59Z\"}\\ndb",
-          "expected_output": "[{\"timestamp\": \"2024-01-15T10:31:00Z\", \"level\": \"INFO\", \"source\": \"db\", \"message\": \"Test\"}]",
-          "description": "Filter by specific source"
-        }
-      ],
-      "company_tags": [
-        "Datadog",
-        "Splunk",
-        "New Relic"
-      ],
-      "hints": [
-        "Use regex to parse the log format: \\[(.*?)\\] \\[(.*?)\\] \\[(.*?)\\] - (.*)",
-        "Create a level hierarchy: DEBUG < INFO < WARN < ERROR < FATAL",
-        "Parse timestamps for time range comparison",
-        "Sort results by timestamp before returning"
-      ],
-      "solution": "1. Parse each log line using regex to extract timestamp, level, source, message. 2. Filter by level threshold using a level hierarchy. 3. Filter by time range by comparing timestamps. 4. Filter by source if provided. 5. Sort remaining entries by timestamp.",
-      "time_complexity": "O(n log n)",
-      "space_complexity": "O(n)",
-      "constraints": [
-        "Log format: [TIMESTAMP] [LEVEL] [SOURCE] - Message",
-        "Levels: DEBUG, INFO, WARN, ERROR, FATAL",
-        "Timestamps are ISO 8601 format",
-        "Source names are alphanumeric"
-      ]
-    },
-    {
-      "id": "compress-string-data",
-      "title": "Compress String Data for Storage Optimization",
-      "difficulty": "medium",
-      "category": "String Manipulation",
-      "description": "You are working on a data storage optimization system that needs to compress repetitive string data. Implement a run-length encoding compression algorithm. The compression format uses the count followed by the character for runs of 2 or more identical characters (e.g., 'aaabb' becomes '3a2b'). Single characters are left as-is without a count. Write both compress and decompress functions. The compress function should only compress if the result is shorter than the original. Handle edge cases like empty strings and strings with no repeated characters.",
-      "starter": {
-        "python": "def compress_string(s: str) -> str:\n    # Return compressed string if shorter, else original\n    return s\n\ndef decompress_string(s: str) -> str:\n    # Return decompressed string\n    return s",
-        "javascript": "function compressString(s) {\n    // Return compressed string if shorter, else original\n    return s;\n}\n\nfunction decompressString(s) {\n    // Return decompressed string\n    return s;\n}",
-        "java": "public class Solution {\n    public static String compressString(String s) {\n        // Return compressed string if shorter, else original\n        return s;\n    }\n    \n    public static String decompressString(String s) {\n        // Return decompressed string\n        return s;\n    }\n}"
-      },
-      "examples": [
-        {
-          "input": "aaabb",
-          "output": "3a2b",
-          "explanation": "Three 'a's followed by two 'b's - compressed to '3a2b' (5 chars -> 4 chars)"
-        },
-        {
-          "input": "abc",
-          "output": "abc",
-          "explanation": "No repeated characters - compression would make it longer, return original"
-        }
-      ],
-      "test_cases": [
-        {
-          "input": "aaabb",
-          "expected_output": "3a2b",
-          "description": "Basic compression"
-        },
-        {
-          "input": "abc",
-          "expected_output": "abc",
-          "description": "No compression benefit - return original"
-        },
-        {
-          "input": "",
-          "expected_output": "",
-          "description": "Empty string"
-        },
-        {
-          "input": "a",
-          "expected_output": "a",
-          "description": "Single character"
-        },
-        {
-          "input": "aaaaaaaaaa",
-          "expected_output": "10a",
-          "description": "Long run of same character"
-        },
-        {
-          "input": "aaabbaa",
-          "expected_output": "3a2b2a",
-          "description": "Multiple runs"
-        },
-        {
-          "input": "aabbccdd",
-          "expected_output": "2a2b2c2d",
-          "description": "Equal length runs"
-        },
-        {
-          "input": "ab",
-          "expected_output": "ab",
-          "description": "Two different characters"
-        },
-        {
-          "input": "aaaaaaaaaaaaaaaaaaaa",
-          "expected_output": "20a",
-          "description": "Very long run"
-        },
-        {
-          "input": "aaab",
-          "expected_output": "3ab",
-          "description": "Run followed by single character"
-        },
-        {
-          "input": "baaa",
-          "expected_output": "b3a",
-          "description": "Single character followed by run"
-        },
-        {
-          "input": "  aaa",
-          "expected_output": " 3a",
-          "description": "Spaces are valid characters"
-        }
-      ],
-      "company_tags": [
-        "Google",
-        "Amazon",
-        "Dropbox"
-      ],
-      "hints": [
-        "Iterate through string, counting consecutive identical characters",
-        "Only add count if run length >= 2",
-        "Compare compressed length with original before returning",
-        "For decompression, parse digits followed by character"
-      ],
-      "solution": "Compression: Iterate through string, count consecutive identical characters. For runs of 2+, output count+char. For singles, just output char. Return compressed only if shorter. Decompression: Parse digits followed by character, repeat character that many times.",
-      "time_complexity": "O(n)",
-      "space_complexity": "O(n)",
-      "constraints": [
-        "Input contains only printable ASCII characters",
-        "Numbers in original string need special handling",
-        "Compression only applied if result is shorter",
-        "Run length can be any positive integer"
-      ]
-    },
-    {
-      "title": "First Duplicate in Array",
+      "title": "Find Duplicates in an Array",
       "difficulty": "easy",
       "category": "Arrays & Hashing",
-      "company_tags": [
-        "Amazon",
-        "Microsoft"
-      ],
-      "description": "Given an array of integers, find and return the first duplicate element in the array. If no duplicate element is found, return -1. You can assume that the array is not empty and contains only unique integers initially.",
+      "description": "Given an array of integers, find and return all duplicate elements in the array. A duplicate is an element that appears more than once in the array.",
       "examples": [
         {
-          "input": "[2, 3, 4, 5, 2]",
-          "output": "2",
-          "explanation": "The first duplicate element in the array is 2."
+          "input": "[1, 2, 3, 2, 4, 5, 6, 2, 3]",
+          "output": "[2, 3]",
+          "explanation": "The numbers 2 and 3 are the only duplicates in the array."
+        },
+        {
+          "input": "[1, 1, 1, 2, 2, 3, 4, 5]",
+          "output": "[1, 2]",
+          "explanation": "The numbers 1 and 2 are the only duplicates in the array."
         },
         {
           "input": "[1, 2, 3, 4, 5]",
-          "output": "-1",
-          "explanation": "No duplicate element is found in the array."
+          "output": "[]",
+          "explanation": "There are no duplicates in the array."
         }
       ],
       "test_cases": [
         {
-          "input": "[2, 3, 4, 5, 2]",
-          "expected_output": "2",
-          "description": "Test case for finding the first duplicate element.",
+          "input": "[1, 2, 3, 2, 4, 5, 6]",
+          "expected_output": "[]",
+          "description": "No duplicates in the array",
           "hidden": false
         },
         {
-          "input": "[1, 2, 3, 4, 5]",
-          "expected_output": "-1",
-          "description": "Test case for when no duplicate element is found.",
+          "input": "[1, 1, 1, 2, 2, 3]",
+          "expected_output": "[1, 2]",
+          "description": "Duplicates in the array",
           "hidden": false
         },
         {
-          "input": "[5, 5, 5, 5, 5]",
-          "expected_output": "5",
-          "description": "Test case for when all elements are duplicates.",
+          "input": "[1, 2, 3, 4, 5, 6]",
+          "expected_output": "[2]",
+          "description": "One duplicate in the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 1, 1, 1, 1, 1]",
+          "expected_output": "[1]",
+          "description": "One duplicate in the array",
+          "hidden": false
+        },
+        {
+          "input": "[]",
+          "expected_output": "[]",
+          "description": "Empty array",
+          "hidden": false
+        },
+        {
+          "input": "[1]",
+          "expected_output": "[]",
+          "description": "Single element array",
+          "hidden": false
+        },
+        {
+          "input": "[2, 2, 3, 4]",
+          "expected_output": "[2]",
+          "description": "Duplicate is the first element",
           "hidden": true
         },
         {
-          "input": "[10, 20, 30, 40, 50]",
-          "expected_output": "-1",
-          "description": "Test case for when all elements are unique.",
+          "input": "[1, 2, 2, 3, 4]",
+          "expected_output": "[2]",
+          "description": "Duplicate is the second element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 2, 3, 4, 5, 6, 7, 8]",
+          "expected_output": "[]",
+          "description": "No duplicates in the array",
+          "hidden": true
+        },
+        {
+          "input": "[1, 1, 1, 1, 1, 1, 1, 1]",
+          "expected_output": "[1]",
+          "description": "Duplicate is the last element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 1, 1, 1, 1, 1, 1]",
+          "expected_output": "[1]",
+          "description": "Duplicate is the last element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 1, 1, 1]",
+          "expected_output": "[1]",
+          "description": "Duplicate is the last element",
           "hidden": true
         }
       ],
       "starter": {
-        "python": "def first_duplicate(arr):",
-        "javascript": "function firstDuplicate(arr) {",
-        "java": "public int firstDuplicate(int[] arr) {"
+        "python": "def find_duplicates(nums):",
+        "javascript": "function findDuplicates(nums):",
+        "java": "public int[] findDuplicates(int[] nums):"
       },
       "hints": [
-        "Use a hash set to keep track of the elements you have seen so far.",
-        "Iterate through the array and check if each element is already in the hash set."
+        "Use a set to keep track of unique elements in the array.",
+        "Use a list to store the duplicates.",
+        "Iterate through the array and compare each element to the set.",
+        "Use the set and list to find the duplicates."
       ],
-      "solution": "The optimal solution is to use a hash set to keep track of the elements you have seen so far. Iterate through the array and check if each element is already in the hash set. If it is, return the element as the first duplicate. If not, add the element to the hash set.",
+      "solution": "To find the duplicates in the array, we can use a set to keep track of unique elements and a list to store the duplicates. We can iterate through the array and compare each element to the set. If the element is already in the set, it means it's a duplicate, so we add it to the list. Finally, we return the list of duplicates.",
       "time_complexity": "O(n)",
       "space_complexity": "O(n)",
       "constraints": [
-        "The array is not empty and contains only unique integers initially.",
-        "The array may contain duplicate elements."
+        "The input array is already sorted.",
+        "The input array contains only positive integers.",
+        "The input array is not empty.",
+        "The input array is not too large."
       ],
-      "id": "first-duplicate-in-array"
+      "company_tags": [],
+      "id": "find-duplicates-in-an-array"
+    },
+    {
+      "title": "Container With Most Water",
+      "difficulty": "easy",
+      "category": "Two Pointers",
+      "description": "Given n non-negative integers a1, a2, ..., an , where each represents a point at coordinate (i, ai). n vertical lines are drawn such that the two endpoints of line i is at (i, ai) and (i, 0). Find two lines which together with the x-axis forms a container, such that the area of water it contains is the maximum.",
+      "examples": [
+        {
+          "input": "[1,8,6,2,5,4,8,3,7]",
+          "output": "49",
+          "explanation": "The max area is 49 with points (1, 8) and (2, 1)."
+        },
+        {
+          "input": "[1,1]",
+          "output": "1",
+          "explanation": "The max area is 1 with points (1, 1) and (1, 1)."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[1,8,6,2,5,4,8,3,7]",
+          "expected_output": "49",
+          "description": "Example 1",
+          "hidden": false
+        },
+        {
+          "input": "[1,1]",
+          "expected_output": "1",
+          "description": "Example 2",
+          "hidden": false
+        },
+        {
+          "input": "[1]",
+          "expected_output": "0",
+          "description": "Example 3",
+          "hidden": false
+        },
+        {
+          "input": "[1,2,3,4,5,6,7,8,9]",
+          "expected_output": "36",
+          "description": "Standard Case 1",
+          "hidden": false
+        },
+        {
+          "input": "[1,1,1,1,1,1,1,1,1]",
+          "expected_output": "1",
+          "description": "Standard Case 2",
+          "hidden": false
+        },
+        {
+          "input": "[9,8,7,6,5,4,3,2,1]",
+          "expected_output": "32",
+          "description": "Standard Case 3",
+          "hidden": false
+        },
+        {
+          "input": "[0,0,0,0,0,0,0,0,0]",
+          "expected_output": "0",
+          "description": "Hidden Case 1",
+          "hidden": true
+        },
+        {
+          "input": "[1,1,1,1,1,1,1,1,1,1]",
+          "expected_output": "1",
+          "description": "Hidden Case 2",
+          "hidden": true
+        },
+        {
+          "input": "[9,8,7,6,5,4,3,2,1,0]",
+          "expected_output": "32",
+          "description": "Hidden Case 3",
+          "hidden": true
+        },
+        {
+          "input": "[0,0,0,0,0,0,0,0,0,0,0]",
+          "expected_output": "0",
+          "description": "Hidden Case 4",
+          "hidden": true
+        },
+        {
+          "input": "[1,1,1,1,1,1,1,1,1,1,1]",
+          "expected_output": "1",
+          "description": "Hidden Case 5",
+          "hidden": true
+        },
+        {
+          "input": "[0,0,0,0,0,0,0,0,0,0,0,0]",
+          "expected_output": "0",
+          "description": "Hidden Case 6",
+          "hidden": true
+        }
+      ],
+      "starter": {
+        "python": "def maxArea(height) -> int:",
+        "javascript": "function maxArea(height) {",
+        "java": "public int maxArea(int[] height) {"
+      },
+      "hints": [
+        "Try to start from both ends of the array and move the pointer with the smaller height towards the other pointer.",
+        "You can use two pointers to represent the two lines and move them towards each other to find the maximum area.",
+        "Consider the area between the two lines as the base and the height as the difference between the two lines."
+      ],
+      "solution": "The idea is to use two pointers to represent the two lines and move them towards each other to find the maximum area. We start from both ends of the array and move the pointer with the smaller height towards the other pointer. We consider the area between the two lines as the base and the height as the difference between the two lines. We keep track of the maximum area found so far and update it whenever we find a larger area.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(1)",
+      "constraints": [
+        "n is the number of points.",
+        "1 <= n <= 2 * 10^5.",
+        "0 <= ai <= 10^4.",
+        "The input is guaranteed to be a valid input."
+      ],
+      "company_tags": [],
+      "id": "container-with-most-water"
+    },
+    {
+      "title": "Maximum Sum Subarray of Size K",
+      "difficulty": "easy",
+      "category": "Sliding Window",
+      "description": "The maximum sum of a subarray of size k is the sum of the maximum subarray of size k in the given array.",
+      "examples": [
+        {
+          "input": {
+            "nums": [
+              1,
+              4,
+              -3,
+              0,
+              1,
+              3,
+              10,
+              5
+            ],
+            "k": 4
+          },
+          "output": {
+            "max_sum": 6
+          },
+          "explanation": "Subarray [1, 4, -3, 0, 1] has the maximum sum 6. Note that the subarray can be non-contiguous."
+        },
+        {
+          "input": {
+            "nums": [
+              -1,
+              -2,
+              -3,
+              -4
+            ],
+            "k": 3
+          },
+          "output": {
+            "max_sum": -6
+          },
+          "explanation": "The maximum sum of a subarray of size 3 is -6."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": {
+            "nums": [
+              1,
+              4,
+              -3,
+              0,
+              1,
+              3,
+              10,
+              5
+            ],
+            "k": 4
+          },
+          "expected_output": {
+            "max_sum": 6
+          },
+          "description": "Edge case: maximum sum exists.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 1
+          },
+          "expected_output": {
+            "max_sum": 5
+          },
+          "description": "Standard case: maximum sum exists.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 6
+          },
+          "expected_output": {
+            "max_sum": 15
+          },
+          "description": "Edge case: maximum sum does not exist.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 2
+          },
+          "expected_output": {
+            "max_sum": 9
+          },
+          "description": "Standard case: maximum sum exists.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              -2,
+              3,
+              4,
+              -5
+            ],
+            "k": 2
+          },
+          "expected_output": {
+            "max_sum": 3
+          },
+          "description": "Standard case: maximum sum exists.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 10
+          },
+          "expected_output": {
+            "max_sum": 15
+          },
+          "description": "Standard case: maximum sum exists.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 3
+          },
+          "expected_output": {
+            "max_sum": 9
+          },
+          "description": "Standard case: maximum sum exists.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": -1
+          },
+          "expected_output": {
+            "max_sum": "Invalid input"
+          },
+          "description": "Edge case: invalid k.",
+          "hidden": true
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 0
+          },
+          "expected_output": {
+            "max_sum": "Invalid input"
+          },
+          "description": "Edge case: invalid k.",
+          "hidden": true
+        },
+        {
+          "input": {
+            "nums": [],
+            "k": 2
+          },
+          "expected_output": {
+            "max_sum": "Invalid input"
+          },
+          "description": "Edge case: empty array.",
+          "hidden": true
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 1
+          },
+          "expected_output": {
+            "max_sum": 5
+          },
+          "description": "Standard case: maximum sum exists.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 6
+          },
+          "expected_output": {
+            "max_sum": 15
+          },
+          "description": "Edge case: maximum sum does not exist.",
+          "hidden": false
+        },
+        {
+          "input": {
+            "nums": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "k": 2
+          },
+          "expected_output": {
+            "max_sum": 9
+          },
+          "description": "Standard case: maximum sum exists.",
+          "hidden": false
+        }
+      ],
+      "starter": {
+        "python": "def max_sum_subarray_k(nums, k):",
+        "javascript": "function maxSumSubarrayK(nums, k):",
+        "java": "public int maxSumSubarrayK(int[] nums, int k):"
+      },
+      "hints": [
+        "Use a sliding window approach to find the maximum sum subarray.",
+        "Consider the boundary cases where k is large or small.",
+        "Think about how to handle invalid inputs."
+      ],
+      "solution": "To find the maximum sum subarray of size k, we can use a sliding window approach. We maintain a window of size k and slide it over the array, updating the maximum sum as we go. We also need to handle boundary cases where k is large or small, and invalid inputs.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(1)",
+      "constraints": [
+        "nums[i] is an integer between -100000 and 100000.",
+        "k is an integer between 1 and the length of nums.",
+        "nums is a non-empty array.",
+        "k is not zero."
+      ],
+      "company_tags": [],
+      "id": "maximum-sum-subarray-of-size-k"
     },
     {
       "title": "Minimum Window Substring",
       "difficulty": "medium",
       "category": "Sliding Window",
-      "company_tags": [
-        "Amazon",
-        "Microsoft",
-        "Google"
-      ],
-      "description": "Given two strings `s` and `t`, find the minimum window substring of `s` that contains all the characters of `t`. Return the minimum window substring if exists, otherwise return an empty string.",
+      "description": "Given two strings s and t, return the minimum window in s which will contain all characters of t. If there is no such window, return an empty string.",
       "examples": [
         {
-          "input": "ADOBECODEBANC",
-          "t": "ABC",
+          "input": {
+            "s": "ADOBECODEBANC",
+            "t": "ABC"
+          },
           "output": "BANC",
-          "explanation": "The minimum window substring of 'ADOBECODEBANC' that contains all the characters of 'ABC' is 'BANC'."
+          "description": "The minimum window is 'BANC' because it contains all characters of 'ABC'."
         },
         {
-          "input": "a",
-          "t": "a",
+          "input": {
+            "s": "a",
+            "t": "a"
+          },
           "output": "a",
-          "explanation": "The minimum window substring of 'a' that contains all the characters of 'a' is 'a'."
+          "description": "The minimum window is 'a' because it contains all characters of 'a'."
         }
       ],
       "test_cases": [
         {
-          "input": "ADOBECODEBANC",
-          "t": "ABC",
-          "expected_output": "BANC",
-          "description": "Minimum window substring",
-          "hidden": false
+          "input": {
+            "s": "",
+            "t": ""
+          },
+          "expected_output": "",
+          "description": "Empty strings have an empty minimum window."
         },
         {
-          "input": "ADOBECODEBANC",
-          "t": "ABC",
-          "expected_output": "BANC",
-          "description": "Minimum window substring (hidden)",
-          "hidden": true
+          "input": {
+            "s": "abc",
+            "t": ""
+          },
+          "expected_output": "abc",
+          "description": "No characters in t, so the entire string s is the minimum window."
         },
         {
-          "input": "a",
-          "t": "a",
+          "input": {
+            "s": "bba",
+            "t": "ab"
+          },
+          "expected_output": "ba",
+          "description": "The minimum window is 'ba' because it contains all characters of 'ab'."
+        },
+        {
+          "input": {
+            "s": "ab",
+            "t": "b"
+          },
+          "expected_output": "",
+          "description": "No character in t, so no minimum window."
+        },
+        {
+          "input": {
+            "s": "abcde",
+            "t": "ace"
+          },
+          "expected_output": "ace",
+          "description": "The minimum window is 'ace' because it contains all characters of 'ace'."
+        },
+        {
+          "input": {
+            "s": "abcde",
+            "t": "ed"
+          },
+          "expected_output": "ed",
+          "description": "The minimum window is 'ed' because it contains all characters of 'ed'."
+        },
+        {
+          "input": {
+            "s": "abcde",
+            "t": "ec"
+          },
+          "expected_output": "c",
+          "description": "The minimum window is 'c' because it contains all characters of 'ec'."
+        },
+        {
+          "input": {
+            "s": "abcde",
+            "t": "a"
+          },
           "expected_output": "a",
-          "description": "Minimum window substring",
-          "hidden": false
+          "description": "The minimum window is 'a' because it contains all characters of 'a'."
         },
         {
-          "input": "a",
-          "t": "a",
+          "input": {
+            "s": "abc",
+            "t": "b"
+          },
+          "expected_output": "",
+          "description": "No character in t, so no minimum window."
+        },
+        {
+          "input": {
+            "s": "abc",
+            "t": "a"
+          },
           "expected_output": "a",
-          "description": "Minimum window substring (hidden)",
-          "hidden": true
+          "description": "The minimum window is 'a' because it contains all characters of 'a'."
+        },
+        {
+          "input": {
+            "s": "a",
+            "t": "a"
+          },
+          "expected_output": "a",
+          "description": "The minimum window is 'a' because it contains all characters of 'a'."
+        },
+        {
+          "input": {
+            "s": "",
+            "t": "a",
+            "hidden": true
+          },
+          "expected_output": "",
+          "description": ""
+        },
+        {
+          "input": {
+            "s": "a",
+            "t": ""
+          },
+          "expected_output": "a",
+          "description": ""
+        },
+        {
+          "input": {
+            "s": "abc",
+            "t": ""
+          },
+          "expected_output": "abc",
+          "description": ""
+        },
+        {
+          "input": {
+            "s": "abcd",
+            "t": "c",
+            "hidden": true
+          },
+          "expected_output": "c",
+          "description": ""
         }
       ],
       "starter": {
@@ -1103,80 +668,1924 @@
         "java": "public String minWindow(String s, String t) {"
       },
       "hints": [
-        "Use a sliding window approach to keep track of the minimum window substring.",
-        "Use a data structure like a HashMap to efficiently keep track of the frequency of each character.",
-        "Consider using a dynamic programming approach to solve this problem."
+        "Use a sliding window to track the minimum window.",
+        "Use a hashmap to store the frequency of characters in t.",
+        "Compare the frequency of characters in the window with t."
       ],
-      "solution": "The optimal solution uses a HashMap to keep track of the frequency of each character in the current window. The window is updated whenever a character is added or removed.",
-      "time_complexity": "O(n)",
-      "space_complexity": "O(1)",
+      "solution": "The solution is to use a sliding window to track the minimum window and a hashmap to store the frequency of characters in t. Compare the frequency of characters in the window with t and update the minimum window accordingly.",
+      "time_complexity": "O(n*m)",
+      "space_complexity": "O(m)",
       "constraints": [
-        "1 <= s.length, t.length <= 10^5",
-        "s and t consist of English letters"
+        "s and t are non-empty strings.",
+        "The length of t is at most 100 characters.",
+        "All characters in t are unique.",
+        "The length of the minimum window is at most the length of s."
       ],
+      "company_tags": [],
       "id": "minimum-window-substring"
     },
     {
-      "title": "Find First Greater Element",
-      "difficulty": "easy",
+      "title": "Searching for an Element in a Sorted Array",
+      "difficulty": "medium",
       "category": "Binary Search",
-      "company_tags": [
-        "Google",
-        "Amazon",
-        "Microsoft"
-      ],
-      "description": "Given a sorted array of integers, write a function that finds the first element that is greater than a given target. If no such element exists, return -1. For example, if the input array is [1, 2, 3, 4, 5] and the target is 3, the function should return 4. If the target is 5, the function should return -1.",
+      "description": "Binary search is an efficient algorithm for finding an item from a sorted list of items. It works by repeatedly dividing in half the portion of the list that could contain the item, until you've narrowed the possible locations to just one. In this problem, you will implement a binary search function to find an element in a sorted array.",
+      "description2": "The function should take in a sorted array and a target value as input, and return the index of the target value if it exists in the array. If the target value does not exist in the array, the function should return -1. The array can contain duplicate values, and the function should return the index of the first occurrence of the target value.",
+      "description3": "The function should have a time complexity of O(log n), where n is the number of elements in the array. This is because binary search is a divide-and-conquer algorithm that reduces the search space by half at each step.",
       "examples": [
         {
-          "input": "[1, 2, 3, 4, 5]",
-          "output": "4",
-          "explanation": "The first element greater than 3 in the array [1, 2, 3, 4, 5] is 4."
+          "input": "[1, 2, 3, 4, 5], 3",
+          "output": "2",
+          "explanation": "The target value 3 is at index 2 in the array."
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 6",
+          "output": "-1",
+          "explanation": "The target value 6 does not exist in the array."
         }
       ],
       "test_cases": [
         {
-          "input": "[1, 2, 3, 4, 5]",
+          "input": "[1, 2, 3, 4, 5], 3",
+          "expected_output": "2",
+          "description": "Target value exists in the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 6",
+          "expected_output": "-1",
+          "description": "Target value does not exist in the array",
+          "hidden": false
+        },
+        {
+          "input": "[], 3",
+          "expected_output": "-1",
+          "description": "Edge case: empty array",
+          "hidden": false
+        },
+        {
+          "input": "[1], 1",
+          "expected_output": "0",
+          "description": "Edge case: single-element array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 1",
+          "expected_output": "0",
+          "description": "Edge case: target value is the first element",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 5",
           "expected_output": "4",
-          "description": "First element greater than 3",
+          "description": "Standard case: target value is the last element",
           "hidden": false
         },
         {
-          "input": "[1, 2, 3, 4, 5]",
-          "expected_output": "-1",
-          "description": "No element greater than 5",
+          "input": "[1, 2, 3, 4, 5], 2",
+          "expected_output": "1",
+          "description": "Standard case: target value is in the middle of the array",
           "hidden": false
         },
         {
-          "input": "[1, 1, 1, 1, 1]",
-          "expected_output": "-1",
-          "description": "No element greater than 1",
+          "input": "[1, 2, 3, 4, 5], 4",
+          "expected_output": "3",
+          "description": "Standard case: target value is near the end of the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 1, 1, 1, 1], 1",
+          "expected_output": "0",
+          "description": "Hidden validation case: array with duplicate values",
           "hidden": true
         },
         {
-          "input": "[5, 5, 5, 5, 5]",
+          "input": "[1, 2, 3, 4, 5], 0",
           "expected_output": "-1",
-          "description": "No element greater than 5",
+          "description": "Hidden validation case: target value is less than the smallest element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 10",
+          "expected_output": "-1",
+          "description": "Hidden validation case: target value is greater than the largest element",
+          "hidden": true
+        },
+        {
+          "input": "[5, 4, 3, 2, 1], 3",
+          "expected_output": "-1",
+          "description": "Hidden validation case: unsorted array",
           "hidden": true
         }
       ],
       "starter": {
-        "python": "def find_first_greater(nums, target):",
-        "javascript": "function findFirstGreater(nums, target) {",
-        "java": "public int findFirstGreater(int[] nums, int target) {"
+        "python": "def binary_search(arr, target):",
+        "javascript": "function binarySearch(arr, target) {",
+        "java": "public int binarySearch(int[] arr, int target) {"
       },
       "hints": [
-        "Use a binary search algorithm to find the first element greater than the target.",
-        "Keep track of the current search range.",
-        "Adjust the search range based on the comparison with the middle element."
+        "Start by initializing two pointers, one at the beginning of the array and one at the end.",
+        "Use a while loop to repeatedly divide the search space in half until the target value is found or the search space is empty.",
+        "Use the midpoint of the search space to compare the target value with the middle element of the array."
       ],
-      "solution": "The optimal solution is to use a binary search algorithm to find the first element greater than the target. Start with the entire array as the search range and repeatedly divide the range in half. Compare the middle element with the target. If the middle element is greater than the target, adjust the search range to the left half. If the middle element is not greater than the target, adjust the search range to the right half. Repeat the comparison and adjustment until the search range is empty or the first element greater than the target is found.",
+      "solution": "The binary search function works by repeatedly dividing the search space in half until the target value is found or the search space is empty. The function starts by initializing two pointers, one at the beginning of the array and one at the end. Then, it uses a while loop to repeatedly divide the search space in half until the target value is found or the search space is empty. Inside the loop, the function calculates the midpoint of the search space and compares the target value with the middle element of the array. If the target value is equal to the middle element, the function returns the index of the middle element. If the target value is less than the middle element, the function updates the end pointer to the index of the middle element minus one. If the target value is greater than the middle element, the function updates the start pointer to the index of the middle element plus one.",
       "time_complexity": "O(log n)",
       "space_complexity": "O(1)",
       "constraints": [
         "The input array is sorted in ascending order.",
-        "The input array is not empty."
+        "The input array can contain duplicate values.",
+        "The target value is an integer.",
+        "The input array is not empty.",
+        "The input array contains at least one element.",
+        "The target value is within the range of the input array."
       ],
-      "id": "find-first-greater-element"
+      "company_tags": [],
+      "id": "searching-for-an-element-in-a-sorted-array"
+    },
+    {
+      "title": "Reverse a Linked List",
+      "difficulty": "easy",
+      "category": "Linked List",
+      "description": "You are given the head of a singly linked list. Reverse the linked list and return the reversed linked list. All elements should be the same numbers, but in reverse order.",
+      "examples": [
+        {
+          "input": "1 -> 2 -> 3 -> 4 -> 5",
+          "output": "5 -> 4 -> 3 -> 2 -> 1",
+          "explanation": "Reverse the linked list 1 -> 2 -> 3 -> 4 -> 5 and get 5 -> 4 -> 3 -> 2 -> 1"
+        },
+        {
+          "input": "1",
+          "output": "1",
+          "explanation": "Reverse the linked list 1 and get 1"
+        },
+        {
+          "input": "2 -> 1",
+          "output": "1 -> 2",
+          "explanation": "Reverse the linked list 2 -> 1 and get 1 -> 2"
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "1 -> 2 -> 3 -> 4 -> 5",
+          "expected_output": "5 -> 4 -> 3 -> 2 -> 1",
+          "description": "Standard case 1",
+          "hidden": false
+        },
+        {
+          "input": "1",
+          "expected_output": "1",
+          "description": "Standard case 2",
+          "hidden": false
+        },
+        {
+          "input": "2 -> 1",
+          "expected_output": "1 -> 2",
+          "description": "Standard case 3",
+          "hidden": false
+        },
+        {
+          "input": null,
+          "expected_output": null,
+          "description": "Edge case: null linked list",
+          "hidden": true
+        },
+        {
+          "input": "1 -> 2 -> 3",
+          "expected_output": "3 -> 2 -> 1",
+          "description": "Edge case: very short linked list",
+          "hidden": true
+        },
+        {
+          "input": "1",
+          "expected_output": "1",
+          "description": "Hidden validation case 1",
+          "hidden": true
+        },
+        {
+          "input": "2 -> 3 -> 4",
+          "expected_output": "4 -> 3 -> 2",
+          "description": "Hidden validation case 2",
+          "hidden": true
+        },
+        {
+          "input": "5 -> 4 -> 3 -> 2 -> 1",
+          "expected_output": "1 -> 2 -> 3 -> 4 -> 5",
+          "description": "Hidden validation case 3",
+          "hidden": true
+        },
+        {
+          "input": "2",
+          "expected_output": "2",
+          "description": "Hidden validation case 4",
+          "hidden": true
+        },
+        {
+          "input": "3 -> 2 -> 1",
+          "expected_output": "1 -> 2 -> 3",
+          "description": "Hidden validation case 5",
+          "hidden": true
+        },
+        {
+          "input": "1 -> 2",
+          "expected_output": "2 -> 1",
+          "description": "Hidden validation case 6",
+          "hidden": true
+        },
+        {
+          "input": "",
+          "expected_output": "",
+          "description": "",
+          "hidden": true
+        },
+        {
+          "input": null,
+          "expected_output": null,
+          "description": "",
+          "hidden": true
+        },
+        {
+          "input": 1,
+          "expected_output": null,
+          "description": "",
+          "hidden": true
+        }
+      ],
+      "starter": {
+        "python": "def reverse_linked_list(head)",
+        "javascript": "function reverseLinkedList(head)",
+        "java": "public ListNode reverseList(ListNode head)"
+      },
+      "hints": [
+        "Reverse a linked list using a stack or recursive approach",
+        "Use a temporary node to reverse the linked list",
+        "Consider edge cases where the linked list is empty or contains only one node"
+      ],
+      "solution": "To reverse a linked list, you can use a temporary node to store the next node of the current node, and then update the next node of the current node to point to the previous node. Repeat this process until the end of the linked list is reached.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(1)",
+      "constraints": [
+        "The linked list may contain negative numbers",
+        "The linked list may contain very large numbers",
+        "The linked list may contain non-integer numbers"
+      ],
+      "company_tags": [],
+      "id": "reverse-a-linked-list"
+    },
+    {
+      "title": "Lowest Common Ancestor of a Binary Tree",
+      "difficulty": "easy",
+      "category": "Trees",
+      "description": "Given the root of a binary tree, find the lowest common ancestor (LCA) of two nodes in the tree. The LCA is the node that is the furthest from the root node and is a common ancestor of both nodes. If both nodes are the same, return that node. If one of the nodes is a descendant of the other, return the ancestor of the other node.",
+      "examples": [
+        {
+          "input": {
+            "root": {
+              "val": 3,
+              "left": {
+                "val": 5,
+                "left": {
+                  "val": 6,
+                  "right": null
+                },
+                "right": {
+                  "val": 2,
+                  "right": null
+                }
+              },
+              "right": {
+                "val": 2,
+                "right": {
+                  "val": 4,
+                  "left": null,
+                  "right": null
+                }
+              }
+            },
+            "p": {
+              "val": 5,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 1,
+              "left": null,
+              "right": null
+            }
+          },
+          "output": {
+            "val": 3
+          },
+          "explanation": "The LCA of the nodes with values 5 and 1 is 3."
+        },
+        {
+          "input": {
+            "root": {
+              "val": 1,
+              "left": {
+                "val": 2,
+                "left": {
+                  "val": 4,
+                  "right": null
+                },
+                "right": {
+                  "val": 3,
+                  "right": null
+                }
+              },
+              "right": null
+            },
+            "p": {
+              "val": 5,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 1,
+              "left": null,
+              "right": null
+            }
+          },
+          "output": {
+            "val": 1
+          },
+          "explanation": "The LCA of the nodes with values 5 and 1 is 1."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": {
+            "root": {
+              "val": 2,
+              "left": null,
+              "right": {
+                "val": 3,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 2,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 3,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 2
+          },
+          "description": "Test case 1",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 1,
+              "left": null,
+              "right": {
+                "val": 2,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 1,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 2,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 1
+          },
+          "description": "Test case 2",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 3,
+              "left": {
+                "val": 5,
+                "left": null,
+                "right": null
+              },
+              "right": null
+            },
+            "p": {
+              "val": 3,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 5,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 3
+          },
+          "description": "Test case 3",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 2,
+              "left": null,
+              "right": {
+                "val": 1,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 2,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 1,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 2
+          },
+          "description": "Test case 4",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 3,
+              "left": null,
+              "right": {
+                "val": 2,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 2,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 3,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 3
+          },
+          "description": "Test case 5",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 1,
+              "left": {
+                "val": 2,
+                "left": null,
+                "right": null
+              },
+              "right": null
+            },
+            "p": {
+              "val": 1,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 2,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 1
+          },
+          "description": "Test case 6",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 2,
+              "left": null,
+              "right": {
+                "val": 3,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 3,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 2,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 2
+          },
+          "description": "Test case 7",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 3,
+              "left": null,
+              "right": {
+                "val": 2,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 3,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 2,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 3
+          },
+          "description": "Test case 8",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 1,
+              "left": null,
+              "right": {
+                "val": 2,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 2,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 1,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 1
+          },
+          "description": "Test case 9",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 2,
+              "left": null,
+              "right": {
+                "val": 1,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 2,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 1,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 2
+          },
+          "description": "Test case 10",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 3,
+              "left": null,
+              "right": {
+                "val": 2,
+                "left": null,
+                "right": null
+              }
+            },
+            "p": {
+              "val": 2,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 3,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 3
+          },
+          "description": "Test case 11",
+          "hidden": false
+        },
+        {
+          "input": {
+            "root": {
+              "val": 1,
+              "left": {
+                "val": 2,
+                "left": null,
+                "right": null
+              },
+              "right": null
+            },
+            "p": {
+              "val": 1,
+              "left": null,
+              "right": null
+            },
+            "q": {
+              "val": 2,
+              "left": null,
+              "right": null
+            }
+          },
+          "expected_output": {
+            "val": 1
+          },
+          "description": "Test case 12",
+          "hidden": false
+        }
+      ],
+      "starter": {
+        "python": "def lowestCommonAncestor(root, p, q):",
+        "javascript": "function lowestCommonAncestor(root, p, q) {",
+        "java": "public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {"
+      },
+      "hints": [
+        "You can start by finding the path from the root to node p and the path from the root to node q.",
+        "Then, you can compare the two paths and find the common ancestor.",
+        "You can use a recursive approach to find the path from the root to a node."
+      ],
+      "solution": "To solve this problem, you can use a recursive approach to find the path from the root to a node. You can start by finding the path from the root to node p and the path from the root to node q. Then, you can compare the two paths and find the common ancestor. The common ancestor is the node that is the furthest from the root node and is a common ancestor of both nodes.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(n)",
+      "constraints": [
+        "The input tree is not necessarily a binary search tree.",
+        "The input tree may contain duplicate values.",
+        "The input tree may be empty.",
+        "The input nodes p and q are not necessarily leaf nodes."
+      ],
+      "company_tags": [],
+      "id": "lowest-common-ancestor-of-a-binary-tree"
+    },
+    {
+      "title": "Find Duplicates in an Array",
+      "difficulty": "easy",
+      "category": "Arrays & Hashing",
+      "description": "Given an array of integers, find and return all duplicate elements in the array. A duplicate is an element that appears more than once in the array.",
+      "examples": [
+        {
+          "input": "[1, 2, 3, 2, 4, 5, 6, 2, 3]",
+          "output": "[2, 3]",
+          "explanation": "The numbers 2 and 3 are the only duplicates in the array."
+        },
+        {
+          "input": "[1, 1, 1, 2, 2, 3, 4, 5]",
+          "output": "[1, 2]",
+          "explanation": "The numbers 1 and 2 are the only duplicates in the array."
+        },
+        {
+          "input": "[1, 2, 3, 4, 5]",
+          "output": "[]",
+          "explanation": "There are no duplicates in the array."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[1, 2, 3, 2, 4, 5, 6]",
+          "expected_output": "[]",
+          "description": "No duplicates in the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 1, 1, 2, 2, 3]",
+          "expected_output": "[1, 2]",
+          "description": "Duplicates in the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5, 6]",
+          "expected_output": "[2]",
+          "description": "One duplicate in the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 1, 1, 1, 1, 1]",
+          "expected_output": "[1]",
+          "description": "One duplicate in the array",
+          "hidden": false
+        },
+        {
+          "input": "[]",
+          "expected_output": "[]",
+          "description": "Empty array",
+          "hidden": false
+        },
+        {
+          "input": "[1]",
+          "expected_output": "[]",
+          "description": "Single element array",
+          "hidden": false
+        },
+        {
+          "input": "[2, 2, 3, 4]",
+          "expected_output": "[2]",
+          "description": "Duplicate is the first element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 2, 2, 3, 4]",
+          "expected_output": "[2]",
+          "description": "Duplicate is the second element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 2, 3, 4, 5, 6, 7, 8]",
+          "expected_output": "[]",
+          "description": "No duplicates in the array",
+          "hidden": true
+        },
+        {
+          "input": "[1, 1, 1, 1, 1, 1, 1, 1]",
+          "expected_output": "[1]",
+          "description": "Duplicate is the last element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 1, 1, 1, 1, 1, 1]",
+          "expected_output": "[1]",
+          "description": "Duplicate is the last element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 1, 1, 1]",
+          "expected_output": "[1]",
+          "description": "Duplicate is the last element",
+          "hidden": true
+        }
+      ],
+      "starter": {
+        "python": "def find_duplicates(nums):",
+        "javascript": "function findDuplicates(nums):",
+        "java": "public int[] findDuplicates(int[] nums):"
+      },
+      "hints": [
+        "Use a set to keep track of unique elements in the array.",
+        "Use a list to store the duplicates.",
+        "Iterate through the array and compare each element to the set.",
+        "Use the set and list to find the duplicates."
+      ],
+      "solution": "To find the duplicates in the array, we can use a set to keep track of unique elements and a list to store the duplicates. We can iterate through the array and compare each element to the set. If the element is already in the set, it means it's a duplicate, so we add it to the list. Finally, we return the list of duplicates.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(n)",
+      "constraints": [
+        "The input array is already sorted.",
+        "The input array contains only positive integers.",
+        "The input array is not empty.",
+        "The input array is not too large."
+      ],
+      "company_tags": [],
+      "id": "find-duplicates-in-an-array-2"
+    },
+    {
+      "title": "Container With Most Water",
+      "difficulty": "easy",
+      "category": "Two Pointers",
+      "description": "Given n non-negative integers a1, a2, ..., an , where each represents a point at coordinate (i, ai). n vertical lines are drawn such that the two endpoints of line i is at (i, ai) and (i, 0). Find two lines which together with the x-axis forms a container, such that the area of water it contains is the maximum.",
+      "examples": [
+        {
+          "input": "[1,8,6,2,5,4,8,3,7]",
+          "output": "49",
+          "explanation": "The max area is 49 with points (1, 8) and (2, 1)."
+        },
+        {
+          "input": "[1,1]",
+          "output": "1",
+          "explanation": "The max area is 1 with points (1, 1) and (1, 1)."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[1,8,6,2,5,4,8,3,7]",
+          "expected_output": "49",
+          "description": "Example 1",
+          "hidden": false
+        },
+        {
+          "input": "[1,1]",
+          "expected_output": "1",
+          "description": "Example 2",
+          "hidden": false
+        },
+        {
+          "input": "[1]",
+          "expected_output": "0",
+          "description": "Example 3",
+          "hidden": false
+        },
+        {
+          "input": "[1,2,3,4,5,6,7,8,9]",
+          "expected_output": "36",
+          "description": "Standard Case 1",
+          "hidden": false
+        },
+        {
+          "input": "[1,1,1,1,1,1,1,1,1]",
+          "expected_output": "1",
+          "description": "Standard Case 2",
+          "hidden": false
+        },
+        {
+          "input": "[9,8,7,6,5,4,3,2,1]",
+          "expected_output": "32",
+          "description": "Standard Case 3",
+          "hidden": false
+        },
+        {
+          "input": "[0,0,0,0,0,0,0,0,0]",
+          "expected_output": "0",
+          "description": "Hidden Case 1",
+          "hidden": true
+        },
+        {
+          "input": "[1,1,1,1,1,1,1,1,1,1]",
+          "expected_output": "1",
+          "description": "Hidden Case 2",
+          "hidden": true
+        },
+        {
+          "input": "[9,8,7,6,5,4,3,2,1,0]",
+          "expected_output": "32",
+          "description": "Hidden Case 3",
+          "hidden": true
+        },
+        {
+          "input": "[0,0,0,0,0,0,0,0,0,0,0]",
+          "expected_output": "0",
+          "description": "Hidden Case 4",
+          "hidden": true
+        },
+        {
+          "input": "[1,1,1,1,1,1,1,1,1,1,1]",
+          "expected_output": "1",
+          "description": "Hidden Case 5",
+          "hidden": true
+        },
+        {
+          "input": "[0,0,0,0,0,0,0,0,0,0,0,0]",
+          "expected_output": "0",
+          "description": "Hidden Case 6",
+          "hidden": true
+        }
+      ],
+      "starter": {
+        "python": "def maxArea(height) -> int:",
+        "javascript": "function maxArea(height) {",
+        "java": "public int maxArea(int[] height) {"
+      },
+      "hints": [
+        "Try to start from both ends of the array and move the pointer with the smaller height towards the other pointer.",
+        "You can use two pointers to represent the two lines and move them towards each other to find the maximum area.",
+        "Consider the area between the two lines as the base and the height as the difference between the two lines."
+      ],
+      "solution": "The idea is to use two pointers to represent the two lines and move them towards each other to find the maximum area. We start from both ends of the array and move the pointer with the smaller height towards the other pointer. We consider the area between the two lines as the base and the height as the difference between the two lines. We keep track of the maximum area found so far and update it whenever we find a larger area.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(1)",
+      "constraints": [
+        "n is the number of points.",
+        "1 <= n <= 2 * 10^5.",
+        "0 <= ai <= 10^4.",
+        "The input is guaranteed to be a valid input."
+      ],
+      "company_tags": [],
+      "id": "container-with-most-water-2"
+    },
+    {
+      "title": "Searching for an Element in a Sorted Array",
+      "difficulty": "medium",
+      "category": "Binary Search",
+      "description": "Binary search is an efficient algorithm for finding an item from a sorted list of items. It works by repeatedly dividing in half the portion of the list that could contain the item, until you've narrowed the possible locations to just one. In this problem, you will implement a binary search function to find an element in a sorted array.",
+      "description2": "The function should take in a sorted array and a target value as input, and return the index of the target value if it exists in the array. If the target value does not exist in the array, the function should return -1. The array can contain duplicate values, and the function should return the index of the first occurrence of the target value.",
+      "description3": "The function should have a time complexity of O(log n), where n is the number of elements in the array. This is because binary search is a divide-and-conquer algorithm that reduces the search space by half at each step.",
+      "examples": [
+        {
+          "input": "[1, 2, 3, 4, 5], 3",
+          "output": "2",
+          "explanation": "The target value 3 is at index 2 in the array."
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 6",
+          "output": "-1",
+          "explanation": "The target value 6 does not exist in the array."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[1, 2, 3, 4, 5], 3",
+          "expected_output": "2",
+          "description": "Target value exists in the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 6",
+          "expected_output": "-1",
+          "description": "Target value does not exist in the array",
+          "hidden": false
+        },
+        {
+          "input": "[], 3",
+          "expected_output": "-1",
+          "description": "Edge case: empty array",
+          "hidden": false
+        },
+        {
+          "input": "[1], 1",
+          "expected_output": "0",
+          "description": "Edge case: single-element array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 1",
+          "expected_output": "0",
+          "description": "Edge case: target value is the first element",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 5",
+          "expected_output": "4",
+          "description": "Standard case: target value is the last element",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 2",
+          "expected_output": "1",
+          "description": "Standard case: target value is in the middle of the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 4",
+          "expected_output": "3",
+          "description": "Standard case: target value is near the end of the array",
+          "hidden": false
+        },
+        {
+          "input": "[1, 1, 1, 1, 1], 1",
+          "expected_output": "0",
+          "description": "Hidden validation case: array with duplicate values",
+          "hidden": true
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 0",
+          "expected_output": "-1",
+          "description": "Hidden validation case: target value is less than the smallest element",
+          "hidden": true
+        },
+        {
+          "input": "[1, 2, 3, 4, 5], 10",
+          "expected_output": "-1",
+          "description": "Hidden validation case: target value is greater than the largest element",
+          "hidden": true
+        },
+        {
+          "input": "[5, 4, 3, 2, 1], 3",
+          "expected_output": "-1",
+          "description": "Hidden validation case: unsorted array",
+          "hidden": true
+        }
+      ],
+      "starter": {
+        "python": "def binary_search(arr, target):",
+        "javascript": "function binarySearch(arr, target) {",
+        "java": "public int binarySearch(int[] arr, int target) {"
+      },
+      "hints": [
+        "Start by initializing two pointers, one at the beginning of the array and one at the end.",
+        "Use a while loop to repeatedly divide the search space in half until the target value is found or the search space is empty.",
+        "Use the midpoint of the search space to compare the target value with the middle element of the array."
+      ],
+      "solution": "The binary search function works by repeatedly dividing the search space in half until the target value is found or the search space is empty. The function starts by initializing two pointers, one at the beginning of the array and one at the end. Then, it uses a while loop to repeatedly divide the search space in half until the target value is found or the search space is empty. Inside the loop, the function calculates the midpoint of the search space and compares the target value with the middle element of the array. If the target value is equal to the middle element, the function returns the index of the middle element. If the target value is less than the middle element, the function updates the end pointer to the index of the middle element minus one. If the target value is greater than the middle element, the function updates the start pointer to the index of the middle element plus one.",
+      "time_complexity": "O(log n)",
+      "space_complexity": "O(1)",
+      "constraints": [
+        "The input array is sorted in ascending order.",
+        "The input array can contain duplicate values.",
+        "The target value is an integer.",
+        "The input array is not empty.",
+        "The input array contains at least one element.",
+        "The target value is within the range of the input array."
+      ],
+      "company_tags": [],
+      "id": "searching-for-an-element-in-a-sorted-array-2"
+    },
+    {
+      "title": "Implement a Stack",
+      "difficulty": "easy",
+      "category": "Stack",
+      "description": {
+        "paragraph1": "A stack is a linear data structure that follows a Last-In-First-Out (LIFO) principle. It means the last element added to the stack will be the first one to be removed. Stacks are commonly used in recursive algorithms, parsing, and evaluating postfix expressions.",
+        "paragraph2": "Implement a stack data structure in a programming language of your choice. You should be able to push elements onto the stack, pop elements from the stack, and check if the stack is empty."
+      },
+      "examples": [
+        {
+          "input": "push(1), push(2), pop(), pop()",
+          "expected_output": "2",
+          "description": "Example of pushing and popping elements from the stack"
+        },
+        {
+          "input": "push(1), push(2), push(3), pop(), pop(), pop()",
+          "expected_output": "",
+          "description": "Example of pushing and popping elements from the stack"
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "push(1), push(2), pop(), pop()",
+          "expected_output": "2",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), push(3), pop(), pop(), pop()",
+          "expected_output": "",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "is_empty(), push(1), is_empty()",
+          "expected_output": "true, false, false",
+          "description": "Example of checking if the stack is empty",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), pop(), pop(), pop()",
+          "expected_output": "",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), is_empty()",
+          "expected_output": "false, true",
+          "description": "Example of checking if the stack is empty",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), push(3), pop(), pop(), pop()",
+          "expected_output": "",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), pop(), pop()",
+          "expected_output": "2",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), push(3), pop(), pop(), pop()",
+          "expected_output": "",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), pop(), pop()",
+          "expected_output": "2",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), push(3), pop(), pop(), pop()",
+          "expected_output": "",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), is_empty()",
+          "expected_output": "false, true",
+          "description": "Example of checking if the stack is empty",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), push(3), pop(), pop(), pop()",
+          "expected_output": "",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        },
+        {
+          "input": "push(1), push(2), pop(), pop()",
+          "expected_output": "2",
+          "description": "Example of pushing and popping elements from the stack",
+          "hidden": false
+        }
+      ],
+      "starter": {
+        "python": "class Stack:\n    def __init__(self):\n        self.stack = []\n\n    def push(self, item):\n        self.stack.append(item)\n\n    def pop(self):\n        if self.is_empty():\n            return None\n        return self.stack.pop()\n\n    def is_empty(self):\n        return len(self.stack) == 0\n",
+        "javascript": "class Stack {\n    constructor() {\n        this.stack = [];\n    }\n\n    push(item) {\n        this.stack.push(item);\n    }\n\n    pop() {\n        if (this.isEmpty()) {\n            return null;\n        }\n        return this.stack.pop();\n    }\n\n    isEmpty() {\n        return this.stack.length === 0;\n    }\n}",
+        "java": "public class Stack {\n    private java.util.Stack<Integer> stack;\n\n    public Stack() {\n        stack = new java.util.Stack<>();\n    }\n\n    public void push(int item) {\n        stack.push(item);\n    }\n\n    public Integer pop() {\n        if (isEmpty()) {\n            return null;\n        }\n        return stack.pop();\n    }\n\n    public boolean isEmpty() {\n        return stack.isEmpty();\n    }\n}"
+      },
+      "hints": [
+        "Use a list to implement the stack.",
+        "Implement the push, pop, and is_empty methods.",
+        "Test your implementation with the provided examples."
+      ],
+      "solution": "Your implementation should match the provided starter code.",
+      "time_complexity": "O(1)",
+      "space_complexity": "O(n)",
+      "constraints": [
+        "The stack should be implemented using a list.",
+        "The push, pop, and is_empty methods should be implemented.",
+        "The implementation should be in a programming language of your choice.",
+        "The implementation should match the provided starter code."
+      ],
+      "id": "implement-a-stack"
+    },
+    {
+      "title": "Implement a Trie",
+      "difficulty": "easy",
+      "category": "Tries",
+      "description": "The Trie should be able to handle a large number of strings and be efficient in terms of time and space complexity. The insert method should add a string to the Trie, the search method should check if a string exists in the Trie, and the startsWith method should check if there is any string in the Trie that starts with the given prefix.",
+      "examples": [
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.search('app');",
+          "expected_output": "True, True, True"
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('app'); trie.startsWith('app');",
+          "expected_output": "True, True"
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.search('app');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('app'); trie.startsWith('app');",
+          "expected_output": "True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('app'); trie.startsWith('ap');",
+          "expected_output": "True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('app'); trie.search('ap');",
+          "expected_output": "True, True, False",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('app'); trie.search('a');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.startsWith('ap');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.search('appl');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.startsWith('appl');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.search('a');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.startsWith('a');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.search('app');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.startsWith('app');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        },
+        {
+          "input": "trie = Trie(); trie.insert('apple'); trie.search('apple'); trie.search('ap');",
+          "expected_output": "True, True, True",
+          "hidden": false
+        }
+      ],
+      "starter": "Python",
+      "hints": [
+        "Use a dictionary to store the children of each node.",
+        "The insert method should iterate over each character in the string and add it to the Trie.",
+        "The search method should start at the root of the Trie and follow the path of characters until it reaches the end of the string or a node that does not exist."
+      ],
+      "solution": "class TrieNode: def __init__(self): self.children = {}; self.end_of_word = False;\n\nclass Trie:\n    def __init__(self): self.root = TrieNode();\n\n    def insert(self, word):\n        node = self.root\n        for char in word:\n            if char not in node.children:\n                node.children[char] = TrieNode()\n            node = node.children[char]\n        node.end_of_word = True;\n\n    def search(self, word):\n        node = self.root\n        for char in word:\n            if char not in node.children:\n                return False\n            node = node.children[char]\n        return node.end_of_word;\n\n    def startsWith(self, prefix):\n        node = self.root\n        for char in prefix:\n            if char not in node.children:\n                return False\n            node = node.children[char]\n        return True;",
+      "time_complexity": "O(M) where M is the length of the string",
+      "space_complexity": "O(N) where N is the number of strings in the Trie",
+      "constraints": [
+        "The input strings may contain any character.",
+        "The input strings may be empty.",
+        "The Trie should be able to handle a large number of strings.",
+        "The Trie should be efficient in terms of time and space complexity."
+      ],
+      "id": "implement-a-trie"
+    },
+    {
+      "title": "Implement a Min Heap",
+      "difficulty": "easy",
+      "category": "Heap / Priority Queue",
+      "description": [
+        "Implement a Min Heap data structure. A Min Heap is a complete binary tree where the parent node is less than or equal to its child nodes.",
+        "Your implementation should support the following operations: insert, deleteMin, and getMin."
+      ],
+      "examples": [
+        {
+          "input": "[3, 2, 1]",
+          "expected_output": "1",
+          "description": "Delete the minimum element from the heap.",
+          "hidden": false
+        },
+        {
+          "input": "[4, 2, 9, 6, 5, 1, 8, 3]",
+          "expected_output": "1",
+          "description": "Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[]",
+          "expected_output": "[]",
+          "description": "Test case 1: Empty heap.",
+          "hidden": false
+        },
+        {
+          "input": "[1]",
+          "expected_output": "[1]",
+          "description": "Test case 2: Single element in the heap.",
+          "hidden": false
+        },
+        {
+          "input": "[3, 2, 1]",
+          "expected_output": "1",
+          "description": "Test case 3: Delete the minimum element from the heap.",
+          "hidden": false
+        },
+        {
+          "input": "[4, 2, 9, 6, 5, 1, 8, 3]",
+          "expected_output": "1",
+          "description": "Test case 4: Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        },
+        {
+          "input": "[10, 20, 30, 40, 50, 60, 70, 80]",
+          "expected_output": "10",
+          "description": "Test case 5: Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        },
+        {
+          "input": "[]",
+          "expected_output": "[]",
+          "description": "Test case 6: Empty heap.",
+          "hidden": false
+        },
+        {
+          "input": "[5, 10, 15, 20, 25, 30, 35, 40]",
+          "expected_output": "5",
+          "description": "Test case 7: Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5, 6, 7, 8]",
+          "expected_output": "1",
+          "description": "Test case 8: Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        },
+        {
+          "input": "[16, 31, 19, 22, 9, 24, 11, 13]",
+          "expected_output": "9",
+          "description": "Test case 9: Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        },
+        {
+          "input": "[5, 10, 15, 20, 25, 30, 35, 40, 45, 50]",
+          "expected_output": "5",
+          "description": "Test case 10: Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        },
+        {
+          "input": "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",
+          "expected_output": "1",
+          "description": "Test case 11: Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        },
+        {
+          "input": "[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200]",
+          "expected_output": "100",
+          "description": "Test case 12: Insert the elements into the heap and then delete the minimum element.",
+          "hidden": false
+        }
+      ],
+      "starter": {
+        "python": "class MinHeap:\n  def __init__(self):\n    self.heap = []\n  def insert(self, val):\n    self.heap.append(val)\n    self.heapify_up(len(self.heap) - 1)\n  def heapify_up(self, idx):\n    if idx > 0:\n      parent_idx = (idx - 1) // 2\n      if self.heap[parent_idx] > self.heap[idx]:\n        self.heap[parent_idx], self.heap[idx] = self.heap[idx], self.heap[parent_idx]\n        self.heapify_up(parent_idx)\n  def deleteMin(self):\n    if len(self.heap) == 0:\n      return None\n    if len(self.heap) == 1:\n      return self.heap.pop()\n    root = self.heap[0]\n    self.heap[0] = self.heap.pop()\n    self.heapify_down(0)\n    return root\n  def heapify_down(self, idx):\n    if idx < len(self.heap):\n      left_child_idx = 2 * idx + 1\n      right_child_idx = 2 * idx + 2\n      smallest = idx\n      if left_child_idx < len(self.heap) and self.heap[left_child_idx] < self.heap[smallest]:\n        smallest = left_child_idx\n      if right_child_idx < len(self.heap) and self.heap[right_child_idx] < self.heap[smallest]:\n        smallest = right_child_idx\n      if smallest != idx:\n        self.heap[idx], self.heap[smallest] = self.heap[smallest], self.heap[idx]\n        self.heapify_down(smallest)\n  def getMin(self):\n    if len(self.heap) == 0:\n      return None\n    return self.heap[0]"
+      },
+      "hints": [
+        "Use a complete binary tree to implement the Min Heap.",
+        "The parent node is less than or equal to its child nodes in a Min Heap.",
+        "You can use the heapify-up and heapify-down operations to maintain the heap property."
+      ],
+      "solution": "class MinHeap:\n  def __init__(self):\n    self.heap = []\n  def insert(self, val):\n    self.heap.append(val)\n    self.heapify_up(len(self.heap) - 1)\n  def heapify_up(self, idx):\n    if idx > 0:\n      parent_idx = (idx - 1) // 2\n      if self.heap[parent_idx] > self.heap[idx]:\n        self.heap[parent_idx], self.heap[idx] = self.heap[idx], self.heap[parent_idx]\n        self.heapify_up(parent_idx)\n  def deleteMin(self):\n    if len(self.heap) == 0:\n      return None\n    if len(self.heap) == 1:\n      return self.heap.pop()\n    root = self.heap[0]\n    self.heap[0] = self.heap.pop()\n    self.heapify_down(0)\n    return root\n  def heapify_down(self, idx):\n    if idx < len(self.heap):\n      left_child_idx = 2 * idx + 1\n      right_child_idx = 2 * idx + 2\n      smallest = idx\n      if left_child_idx < len(self.heap) and self.heap[left_child_idx] < self.heap[smallest]:\n        smallest = left_child_idx\n      if right_child_idx < len(self.heap) and self.heap[right_child_idx] < self.heap[smallest]:\n        smallest = right_child_idx\n      if smallest != idx:\n        self.heap[idx], self.heap[smallest] = self.heap[smallest], self.heap[idx]\n        self.heapify_down(smallest)\n  def getMin(self):\n    if len(self.heap) == 0:\n      return None\n    return self.heap[0]",
+      "time_complexity": "O(log n) for insert, deleteMin, and getMin operations.",
+      "space_complexity": "O(n) for storing the elements in the heap.",
+      "constraints": [
+        "The input array contains only positive integers.",
+        "The Min Heap should be implemented using a complete binary tree.",
+        "The heapify-up and heapify-down operations should be used to maintain the heap property.",
+        "The deleteMin operation should return the minimum element and update the heap."
+      ],
+      "id": "implement-a-min-heap"
+    },
+    {
+      "title": "Fibonacci Series",
+      "difficulty": "easy",
+      "category": "Dynamic Programming",
+      "description": [
+        "The Fibonacci sequence is a series of numbers in which each number is the sum of the two preceding ones, usually starting with 0 and 1. The sequence starts as follows: 0, 1, 1, 2, 3, 5, 8, 13, and so on.",
+        "Given a number n, find the nth number in the Fibonacci series."
+      ],
+      "examples": [
+        {
+          "input": "5",
+          "expected_output": "5",
+          "description": "Find the 5th number in the Fibonacci series"
+        },
+        {
+          "input": "10",
+          "expected_output": "55",
+          "description": "Find the 10th number in the Fibonacci series"
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "1",
+          "expected_output": "1",
+          "description": "Find the 1st number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "2",
+          "expected_output": "1",
+          "description": "Find the 2nd number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "3",
+          "expected_output": "2",
+          "description": "Find the 3rd number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "4",
+          "expected_output": "3",
+          "description": "Find the 4th number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "5",
+          "expected_output": "5",
+          "description": "Find the 5th number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "6",
+          "expected_output": "8",
+          "description": "Find the 6th number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "7",
+          "expected_output": "13",
+          "description": "Find the 7th number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "8",
+          "expected_output": "21",
+          "description": "Find the 8th number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "9",
+          "expected_output": "34",
+          "description": "Find the 9th number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "10",
+          "expected_output": "55",
+          "description": "Find the 10th number in the Fibonacci series",
+          "hidden": false
+        },
+        {
+          "input": "-1",
+          "expected_output": "Error",
+          "description": "Find the 1st number in the Fibonacci series for a negative input",
+          "hidden": false
+        },
+        {
+          "input": "0",
+          "expected_output": "Error",
+          "description": "Find the 1st number in the Fibonacci series for an invalid input",
+          "hidden": false
+        }
+      ],
+      "starter": "python",
+      "hints": [
+        "The Fibonacci series can be calculated using dynamic programming.",
+        "Use a bottom-up approach to find the nth number in the series.",
+        "The solution should be efficient with a time complexity of O(n)."
+      ],
+      "solution": "def fibonacci(n):\n  if n <= 0:\n    return \"Error\"\n  elif n == 1:\n    return 1\n  else:\n    fib_series = [0, 1]\n    for i in range(2, n+1):\n      fib_series.append(fib_series[i-1] + fib_series[i-2])\n    return fib_series[n-1]",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(n)",
+      "constraints": [
+        "The input number n should be a positive integer.",
+        "The function should return the nth number in the Fibonacci series.",
+        "The solution should be efficient with a time complexity of O(n).",
+        "The function should handle invalid inputs such as negative numbers and non-integer inputs."
+      ],
+      "id": "fibonacci-series"
+    },
+    {
+      "title": "Coin Changing Problem",
+      "difficulty": "easy",
+      "category": "Greedy",
+      "description": [
+        "Given a set of coins and an amount, find the minimum number of coins needed to make up that amount.",
+        "This problem is a classic example of the greedy algorithm, where we try to make the optimal choice at each step, hoping that it will lead to a global optimum."
+      ],
+      "examples": [
+        {
+          "input": "coins = [1, 2, 5], amount = 11",
+          "expected_output": "3",
+          "description": "The minimum number of coins needed to make up 11 is 3 (5 + 5 + 1)."
+        },
+        {
+          "input": "coins = [2], amount = 3",
+          "expected_output": "-1",
+          "description": "It's not possible to make up 3 with just coins of 2."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "{\"coins\": [1, 2, 5], \"amount\": 11}",
+          "expected_output": "3",
+          "description": "Test case 1",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [2], \"amount\": 3}",
+          "expected_output": "-1",
+          "description": "Test case 2",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [1, 2], \"amount\": 4}",
+          "expected_output": "2",
+          "description": "Test case 3",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [5, 10], \"amount\": 15}",
+          "expected_output": "2",
+          "description": "Test case 4",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [1, 2, 5], \"amount\": 0}",
+          "expected_output": "0",
+          "description": "Test case 5",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [1, 2], \"amount\": 1}",
+          "expected_output": "1",
+          "description": "Test case 6",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [5], \"amount\": 5}",
+          "expected_output": "1",
+          "description": "Test case 7",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [2, 5], \"amount\": 3}",
+          "expected_output": "-1",
+          "description": "Test case 8",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [1, 2, 5], \"amount\": 10}",
+          "expected_output": "2",
+          "description": "Test case 9",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [5], \"amount\": 3}",
+          "expected_output": "-1",
+          "description": "Test case 10",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [1, 2], \"amount\": 6}",
+          "expected_output": "2",
+          "description": "Test case 11",
+          "hidden": false
+        },
+        {
+          "input": "{\"coins\": [5], \"amount\": 7}",
+          "expected_output": "-1",
+          "description": "Test case 12",
+          "hidden": false
+        }
+      ],
+      "starter": [
+        {
+          "language": "python",
+          "code": "def coinChange(coins, amount):\n  dp = [float('inf')] * (amount + 1)\n  dp[0] = 0\n  for coin in coins:\n    for i in range(coin, amount + 1):\n      dp[i] = min(dp[i], dp[i - coin] + 1)\n  return dp[amount] if dp[amount] != float('inf') else -1"
+        },
+        {
+          "language": "javascript",
+          "code": "function coinChange(coins, amount) {\n  const dp = new Array(amount + 1).fill(Infinity);\n  dp[0] = 0;\n  for (const coin of coins) {\n    for (let i = coin; i <= amount; i++) {\n      dp[i] = Math.min(dp[i], dp[i - coin] + 1);\n    }\n  }\n  return dp[amount] !== Infinity ? dp[amount] : -1;\n}"
+        },
+        {
+          "language": "java",
+          "code": "public int coinChange(int[] coins, int amount) {\n  int[] dp = new int[amount + 1];\n  Arrays.fill(dp, amount + 1);\n  dp[0] = 0;\n  for (int coin : coins) {\n    for (int i = coin; i <= amount; i++) {\n      dp[i] = Math.min(dp[i], dp[i - coin] + 1);\n    }\n  }\n  return dp[amount] == amount + 1 ? -1 : dp[amount];\n}"
+        }
+      ],
+      "hints": [
+        "Try to think about the problem in terms of making the optimal choice at each step.",
+        "Use a dynamic programming approach to solve this problem.",
+        "Don't forget to handle the case where it's not possible to make up the amount."
+      ],
+      "solution": "Use a dynamic programming approach to solve this problem.",
+      "time_complexity": "O(n*m)",
+      "space_complexity": "O(n)",
+      "constraints": [
+        "n = number of coins",
+        "m = amount",
+        "1 <= n <= 12",
+        "1 <= m <= 100"
+      ],
+      "id": "coin-changing-problem"
+    },
+    {
+      "title": "Intervals",
+      "difficulty": "easy",
+      "category": "Intervals",
+      "description": {
+        "paragraph1": "An interval is a set of consecutive integers between two integers a and b. Given a list of intervals, find the intersection of all intervals.",
+        "paragraph2": "For example, if we have intervals [1, 3], [2, 4], and [5, 7], the intersection is [2, 3]."
+      },
+      "examples": [
+        {
+          "input": "[[1, 3], [2, 4]]",
+          "expected_output": "[2, 3]",
+          "description": "Example 1"
+        },
+        {
+          "input": "[[1, 2], [3, 4], [5, 6]]",
+          "expected_output": "[3, 4]",
+          "description": "Example 2"
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[[1, 3], [2, 4]]",
+          "expected_output": "[2, 3]",
+          "description": "Test case 1",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 2], [3, 4], [5, 6]]",
+          "expected_output": "[3, 4]",
+          "description": "Test case 2",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 1], [2, 2]]",
+          "expected_output": "[1, 1]",
+          "description": "Test case 3",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 3], [2, 4], [5, 7]]",
+          "expected_output": "[2, 3]",
+          "description": "Test case 4",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 2], [3, 4], [5, 6], [7, 8]]",
+          "expected_output": "[5, 6]",
+          "description": "Test case 5",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 1], [2, 2], [3, 3]]",
+          "expected_output": "[1, 1]",
+          "description": "Test case 6",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 3], [2, 4], [5, 7], [6, 8]]",
+          "expected_output": "[6, 7]",
+          "description": "Test case 7",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]",
+          "expected_output": "[7, 8]",
+          "description": "Test case 8",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 1], [2, 2], [3, 3], [4, 4]]",
+          "expected_output": "[1, 1]",
+          "description": "Test case 9",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 3], [2, 4], [5, 7], [6, 8], [9, 10]]",
+          "expected_output": "[6, 7]",
+          "description": "Test case 10",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12]]",
+          "expected_output": "[7, 8]",
+          "description": "Test case 11",
+          "hidden": false
+        },
+        {
+          "input": "[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]]",
+          "expected_output": "[1, 1]",
+          "description": "Test case 12",
+          "hidden": false
+        }
+      ],
+      "starter": {
+        "python": "def intersection(intervals):",
+        "javascript": "function intersection(intervals) {",
+        "java": "public static List<Integer> intersection(List<List<Integer>> intervals) {"
+      },
+      "hints": [
+        "Use a set to store the intersection of all intervals.",
+        "Sort the intervals by their start value.",
+        "For each interval, update the intersection set."
+      ],
+      "solution": "def intersection(intervals):\n    start = float('inf')\n    end = float('-inf')\n    for interval in intervals:\n        start = min(start, interval[0])\n        end = max(end, interval[1])\n    return [start, end]",
+      "time_complexity": "O(n log n)",
+      "space_complexity": "O(1)",
+      "constraints": [
+        "1 <= intervals.length <= 10^4",
+        "intervals[i].length == 2",
+        "-10^4 <= intervals[i][0] <= intervals[i][1] <= 10^4"
+      ],
+      "id": "intervals"
+    },
+    {
+      "title": "Detecting Cycles in a Graph",
+      "difficulty": "easy",
+      "category": "Graphs",
+      "description": "A graph is said to contain a cycle if there is a path from a node to itself. Write a function to detect whether a given graph contains a cycle or not.",
+      "examples": [
+        {
+          "input": "graph = {\n  'A': ['B', 'C'],\n  'B': ['D', 'E'],\n  'C': ['F'],\n  'D': [],\n  'E': ['F'],\n  'F': []\n}",
+          "output": "False",
+          "description": "A simple graph with no cycles."
+        },
+        {
+          "input": "graph = {\n  'A': ['B'],\n  'B': ['A']\n}",
+          "output": "True",
+          "description": "A graph with a cycle."
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "{\"A\": ['B'], \"B\": ['A']}",
+          "expected_output": "True",
+          "description": "A graph with a cycle.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['C'], \"C\": []}",
+          "expected_output": "False",
+          "description": "A graph with no cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['A'], \"C\": ['D'], \"D\": []}",
+          "expected_output": "True",
+          "description": "A graph with multiple cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": [], \"B\": ['C'], \"C\": []}",
+          "expected_output": "False",
+          "description": "A graph with no nodes and no cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['C'], \"C\": ['D'], \"D\": []}",
+          "expected_output": "False",
+          "description": "A graph with no cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['C'], \"C\": ['A'], \"D\": []}",
+          "expected_output": "True",
+          "description": "A graph with a cycle.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['C'], \"C\": ['D'], \"D\": ['A'], \"E\": []}",
+          "expected_output": "True",
+          "description": "A graph with multiple cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": [], \"B\": ['C'], \"C\": ['D'], \"D\": []}",
+          "expected_output": "False",
+          "description": "A graph with no cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['C'], \"C\": ['D'], \"D\": ['E'], \"E\": []}",
+          "expected_output": "False",
+          "description": "A graph with no cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['C'], \"C\": ['D'], \"D\": ['E'], \"E\": ['A'], \"F\": []}",
+          "expected_output": "True",
+          "description": "A graph with multiple cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['C'], \"C\": ['D'], \"D\": ['E'], \"E\": ['F'], \"F\": ['A']}",
+          "expected_output": "True",
+          "description": "A graph with multiple cycles.",
+          "hidden": false
+        },
+        {
+          "input": "{\"A\": ['B'], \"B\": ['C'], \"C\": ['D'], \"D\": ['E'], \"E\": ['F'], \"F\": ['G'], \"G\": []}",
+          "expected_output": "False",
+          "description": "A graph with no cycles.",
+          "hidden": false
+        }
+      ],
+      "starter": {
+        "language": "python",
+        "code": "def has_cycle(graph):\n    visited = {}\n    for node in graph:\n        if node not in visited:\n            if has_cycle_util(node, graph, visited):\n                return True\n    return False\n\ndef has_cycle_util(node, graph, visited):\n    visited[node] = 'visiting'\n    for neighbor in graph[node]:\n        if neighbor not in visited:\n            if has_cycle_util(neighbor, graph, visited):\n                return True\n        elif visited[neighbor] == 'visiting':\n            return True\n    visited[node] = 'visited'\n    return False"
+      },
+      "hints": [
+        "Use a recursive approach to traverse the graph.",
+        "Keep track of the current node's state (e.g., 'visiting' or 'visited') to detect cycles.",
+        "Consider using a depth-first search (DFS) algorithm to traverse the graph."
+      ],
+      "solution": "def has_cycle(graph):\n    visited = {}\n    for node in graph:\n        if node not in visited:\n            if has_cycle_util(node, graph, visited):\n                return True\n    return False\n\ndef has_cycle_util(node, graph, visited):\n    visited[node] = 'visiting'\n    for neighbor in graph[node]:\n        if neighbor not in visited:\n            if has_cycle_util(neighbor, graph, visited):\n                return True\n        elif visited[neighbor] == 'visiting':\n            return True\n    visited[node] = 'visited'\n    return False",
+      "time_complexity": "O(V + E)",
+      "space_complexity": "O(V)",
+      "constraints": [
+        "The graph is represented as an adjacency list.",
+        "The graph may contain multiple nodes and edges.",
+        "The graph may contain cycles.",
+        "The graph may be empty (i.e., no nodes or edges)."
+      ],
+      "id": "detecting-cycles-in-a-graph"
+    },
+    {
+      "title": "Generate All Permutations of a List",
+      "difficulty": "easy",
+      "category": "Backtracking",
+      "description": "Write a function to generate all permutations of a given list of integers.",
+      "examples": [
+        {
+          "input": "[1, 2, 3]",
+          "output": "[[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]"
+        },
+        {
+          "input": "[1, 2]",
+          "output": "[[1, 2], [2, 1]]"
+        }
+      ],
+      "test_cases": [
+        {
+          "input": "[1, 2, 3]",
+          "expected_output": "[[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]"
+        },
+        {
+          "input": "[1, 2]",
+          "expected_output": "[[1, 2], [2, 1]]"
+        },
+        {
+          "input": "[1]",
+          "expected_output": "[[1]]"
+        },
+        {
+          "input": "[1, 2, 3, 4]",
+          "expected_output": "[[1, 2, 3, 4], [1, 2, 4, 3], [1, 3, 2, 4], [1, 3, 4, 2], [1, 4, 2, 3], [1, 4, 3, 2], [2, 1, 3, 4], [2, 1, 4, 3], [2, 3, 1, 4], [2, 3, 4, 1], [2, 4, 1, 3], [2, 4, 3, 1], [3, 1, 2, 4], [3, 1, 4, 2], [3, 2, 1, 4], [3, 2, 4, 1], [3, 4, 1, 2], [3, 4, 2, 1], [4, 1, 2, 3], [4, 1, 3, 2], [4, 2, 1, 3], [4, 2, 3, 1], [4, 3, 1, 2], [4, 3, 2, 1]]"
+        },
+        {
+          "input": "[]",
+          "expected_output": "[[]]"
+        },
+        {
+          "input": "[1, 1, 2]",
+          "expected_output": "[[1, 1, 2], [1, 2, 1], [2, 1, 1]]"
+        },
+        {
+          "input": "[1, 2, 2]",
+          "expected_output": "[[1, 2, 2], [2, 1, 2], [2, 2, 1]]"
+        },
+        {
+          "input": "[1, 1, 1]",
+          "expected_output": "[[1, 1, 1]]"
+        }
+      ],
+      "starter": {
+        "python": "def generate_permutations(nums):\n    # Your code here\n    pass",
+        "javascript": "function generatePermutations(nums) {\n    // Your code here\n}",
+        "java": "public class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+      },
+      "hints": [
+        "Use a recursive approach to generate all permutations.",
+        "Use a helper function to swap elements in the list.",
+        "Use a set to keep track of visited permutations to avoid duplicates."
+      ],
+      "solution": {
+        "python": "def generate_permutations(nums):\n    def backtrack(first = 0):\n        # if all integers are used up\n        if first == n: \n            output.append(nums[:])\n        for i in range(first, n):\n            # place i-th integer first \n            # in the current permutation\n            nums[first], nums[i] = nums[i], nums[first]\n            # use next integers to complete the permutations\n            backtrack(first + 1)\n            # backtrack\n            nums[first], nums[i] = nums[i], nums[first]\n\n    n = len(nums)\n    output = []\n    backtrack()\n    return output",
+        "javascript": "function generatePermutations(nums) {\n    const output = [];\n    function backtrack(first = 0) {\n        if (first === nums.length) {\n            output.push([...nums]);\n        }\n        for (let i = first; i < nums.length; i++) {\n            [nums[first], nums[i]] = [nums[i], nums[first]];\n            backtrack(first + 1);\n            [nums[first], nums[i]] = [nums[i], nums[first]];\n        }\n    }\n    backtrack();\n    return output;\n}",
+        "java": "public class Main {\n    public static void main(String[] args) {\n        int[] nums = {1, 2, 3};\n        System.out.println(Arrays.deepToString(generatePermutations(nums)));\n    }\n\n    public static int[][] generatePermutations(int[] nums) {\n        int n = nums.length;\n        int[][] output = new int[factorial(n)][n];\n        backtrack(nums, 0, n, output);\n        return output;\n    }\n\n    public static void backtrack(int[] nums, int first, int n, int[][] output) {\n        if (first == n) {\n            output[permIndex++] = nums.clone();\n        }\n        for (int i = first; i < n; i++) {\n            swap(nums, first, i);\n            backtrack(nums, first + 1, n, output);\n            swap(nums, first, i);\n        }\n    }\n\n    public static void swap(int[] nums, int i, int j) {\n        int temp = nums[i];\n        nums[i] = nums[j];\n        nums[j] = temp;\n    }\n\n    public static int factorial(int n) {\n        int result = 1;\n        for (int i = 1; i <= n; i++) {\n            result *= i;\n        }\n        return result;\n    }\n}"
+      },
+      "time_complexity": "O(n!)",
+      "space_complexity": "O(n!)",
+      "constraints": [
+        "1 <= n <= 8",
+        "-10 <= nums[i] <= 10",
+        "Input list contains distinct integers."
+      ],
+      "id": "generate-all-permutations-of-a-list"
     }
   ]
 }

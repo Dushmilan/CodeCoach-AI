@@ -56,3 +56,9 @@ Programming language curricula (C, Python, Java) for CodeCoach AI:
 ### Phase 2 Step 10 Complete
 - E2E testing: 19 Playwright tests (auth-flow, homepage, user-flow, curriculum-flow)
 - All suites passing: 264 backend unit, 50 script, 297 frontend, 19 E2E, TypeScript clean
+
+### Session Context — May 28, 2026
+- **Question Generation:** 18 questions across 12/14 DSA topics (API timeouts limited generation)
+- **Graphify Updated:** 2689 nodes, 4558 edges, 265 communities
+- **Documentation:** Updated Progress.md, README.md, Phase1.md with current question counts
+- **Status:** Generation pipeline working but API-bound (~20-30s per question with 70B model)
