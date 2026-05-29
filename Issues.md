@@ -2,6 +2,7 @@
 # Active Issues
 
 1. **AI Chat Layout Collapse**: AI Chat Panel forces layout collapse to full-screen when long strings are generated, effectively hiding the code editor.
+2. **Quality of Generated Test Cases**: AI-generated questions frequently fail the quality gate (0/87 pass rate) due to schema inconsistencies between the NIM generator and Pydantic validation schemas.
 
 # Resolved Issues
 
