@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import logging
 
 from app.models.auth_schemas import (
     UserRegisterRequest,
@@ -10,23 +11,19 @@ from app.models.auth_schemas import (
 )
 from app.services.auth_service import AuthService
 
-security = HTTPBearer(auto_error=False)
+logger = logging.getLogger(__name__)
+security = HTTPBearer(auto_error=True)
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> UserResponse:
-    if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
     auth_service = AuthService()
     try:
         user = await auth_service.get_current_user(credentials.credentials)
         return user
-    except ValueError as e:
+    except Exception as e:
+        logger.error(f"Auth error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),

@@ -21,6 +21,7 @@ describe('CodeEditor', () => {
   const defaultProps = {
     language: 'python' as const,
     code: 'print("hello")',
+    initialCode: '',
     onCodeChange: vi.fn(),
     onLanguageChange: vi.fn(),
     onRunCode: vi.fn(),

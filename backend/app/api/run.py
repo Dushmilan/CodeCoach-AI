@@ -5,11 +5,13 @@ from functools import lru_cache
 from app.models.schemas import CodeExecutionRequest, CodeExecutionResult, Language
 from app.ports.code_executor import CodeExecutor
 from app.services.piston_service import PistonService
+from app.api.auth import get_current_user
+from app.models.auth_schemas import UserResponse
 import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @lru_cache()
@@ -28,7 +30,6 @@ async def execute_code(
 
     Supports multiple programming languages with safe execution environment.
     """
-
     try:
         result = await executor.execute(
             language=request.language.value,

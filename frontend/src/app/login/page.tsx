@@ -1,5 +1,7 @@
 'use client';
 
+import { Login } from '@/components/auth/Login/Login';
+
 export default function LoginPage() {
-    return <div>Hello</div>;
+    return <Login />;
 }

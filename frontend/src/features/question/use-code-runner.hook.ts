@@ -5,6 +5,7 @@ import { Question, Language } from '@/types';
 import { useCodeExecution } from '@/features/code-execution/code-execution.hook';
 import { useLocalStorage } from '@/hooks';
 import { showToast } from '@/components/ui/Toast';
+import { useAuth } from '@/providers';
 
 interface UseCodeRunnerOptions {
   fullQuestion: Question | null;
@@ -24,6 +25,7 @@ interface UseCodeRunnerReturn {
   executionError: string | null;
   clearOutput: () => void;
   clearExecutionError: () => void;
+  isAuthenticated: boolean;
 }
 
 export function useCodeRunner({
@@ -41,6 +43,8 @@ export function useCodeRunner({
     clearOutput,
     clearError: clearExecutionError,
   } = useCodeExecution();
+  
+  const { isAuthenticated } = useAuth();
 
   const [userProgress, setUserProgress] = useLocalStorage<Record<string, 'attempted' | 'solved'>>(
     'user_progress',
@@ -49,6 +53,10 @@ export function useCodeRunner({
 
   const handleRunCode = useCallback(async (stdin?: string) => {
     if (!fullQuestion) return;
+    if (!isAuthenticated) {
+        showToast('Please sign in to run code', 'error');
+        return;
+    }
 
     if (language === 'javascript') {
       try {
@@ -61,12 +69,6 @@ export function useCodeRunner({
 
     try {
       if (fullQuestion.is_interactive && stdin) {
-         // Custom logic for interactive questions: run against raw input
-         // This assumes we have a way to run raw code with stdin (like codeExecutionService.runCode)
-         // But codeExecutionService.validateCode is what we currently use.
-         // Let's stick to existing validateCode for now or modify if needed.
-         // Wait, the user wants the ability to input!
-         // I will create a temporary test case if is_interactive is true
          await validateCode(language, currentCode, [{ input: stdin, expected_output: "..." }]);
       } else {
          const visibleTestCases = fullQuestion.test_cases.filter((tc) => !tc.hidden).slice(0, 3);
@@ -76,10 +78,14 @@ export function useCodeRunner({
     } catch (err) {
       console.error('Code execution error:', err);
     }
-  }, [fullQuestion, language, currentCode, validateCode, runLocalJavaScript, setUserProgress]);
+  }, [fullQuestion, language, currentCode, validateCode, runLocalJavaScript, setUserProgress, isAuthenticated]);
 
   const handleSubmitCode = useCallback(async () => {
     if (!fullQuestion) return;
+    if (!isAuthenticated) {
+        showToast('Please sign in to submit code', 'error');
+        return;
+    }
 
     try {
       const result = await submitCode(fullQuestion.id, language, currentCode);
@@ -94,7 +100,7 @@ export function useCodeRunner({
     } catch (err) {
       console.error('Submit error:', err);
     }
-  }, [fullQuestion, language, currentCode, submitCode, setUserProgress]);
+  }, [fullQuestion, language, currentCode, submitCode, setUserProgress, isAuthenticated]);
 
   return {
     userProgress,
@@ -106,5 +112,6 @@ export function useCodeRunner({
     executionError,
     clearOutput,
     clearExecutionError,
+    isAuthenticated,
   };
 }

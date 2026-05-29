@@ -20,6 +20,7 @@ interface CodeEditorContainerProps {
   onLanguageChange: (language: Language) => void;
   onRunCode: (stdin: string) => void;
   onSubmitCode: () => void;
+  isAuthenticated?: boolean;
 }
 
 export function CodeEditorContainer({
@@ -34,6 +35,7 @@ export function CodeEditorContainer({
   onLanguageChange,
   onRunCode,
   onSubmitCode,
+  isAuthenticated = true,
 }: CodeEditorContainerProps) {
   const [outputHeight, setOutputHeight] = useState(200); // Default 200px
   const [outputCollapsed, setOutputCollapsed] = useState(false);
@@ -104,6 +106,7 @@ export function CodeEditorContainer({
           onSubmitCode={handleSubmit} // Use wrapped handler
           isRunning={isRunning}
           isResizing={isResizing}
+          isAuthenticated={isAuthenticated}
         />
         
         {/* Interactive Input Area */}
@@ -137,51 +140,54 @@ export function CodeEditorContainer({
       {/* Output Panel */}
       <div 
         className={cn(
-            "flex flex-col bg-background/95",
-            !hasOutput && "h-auto flex-shrink-0 border-t border-white/[0.04]"
+            "flex flex-col bg-muted/30 border-t border-border",
+            !hasOutput && "h-auto flex-shrink-0"
         )}
         style={hasOutput && !outputCollapsed ? { height: `${outputHeight}px`, flex: '0 0 auto' } : undefined}
       >
         {/* Output Header */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-white/[0.04]">
-            <span className="text-xs font-medium tracking-wide text-muted-foreground/60">OUTPUT</span>
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
+            <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Output</span>
             {hasOutput && (
                 <button
                 onClick={() => setOutputCollapsed(!outputCollapsed)}
-                className="p-1 hover:bg-white/[0.04] rounded transition-colors"
+                className="p-1 hover:bg-muted-foreground/10 rounded transition-colors"
                 aria-label={outputCollapsed ? "Expand output" : "Collapse output"}
                 >
                 {outputCollapsed ? (
-                    <ChevronUpIcon className="h-3.5 w-3.5 text-muted-foreground/40" />
+                    <ChevronUpIcon className="h-3.5 w-3.5 text-muted-foreground" />
                 ) : (
-                    <ChevronDownIcon className="h-3.5 w-3.5 text-muted-foreground/40" />
+                    <ChevronDownIcon className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
                 </button>
             )}
         </div>
 
         {hasOutput && !outputCollapsed ? (
-          <div className="flex-1 overflow-auto px-3 pb-3">
+          <div className="flex-1 overflow-auto p-4">
             {isInteractive ? (
               <TerminalSimulation output={error || output} />
             ) : (
-              <pre className={cn(
-                  "text-sm whitespace-pre-wrap font-mono",
-                  error ? "text-red-400" : "text-foreground/80"
+              <div className={cn(
+                  "text-xs font-mono p-3 rounded-lg border",
+                  error 
+                    ? "text-red-500 bg-red-500/5 border-red-500/20" 
+                    : "text-foreground/80 bg-background border-border"
               )}>
-                  {error || output}
-              </pre>
+                  <pre className="whitespace-pre-wrap">{error || output}</pre>
+              </div>
             )}
           </div>
         ) : !hasOutput ? (
-          <EmptyState
-            icon={PlayIcon}
-            title="Write code and hit Run"
-            description="Your output will appear here when you run your code."
-          />
+          <div className="p-8 flex items-center justify-center opacity-50">
+            <EmptyState
+                icon={PlayIcon}
+                title="Write code and hit Run"
+                description="Your output will appear here when you run your code."
+            />
+          </div>
         ) : null}
       </div>
     </div>
   );
-
 }

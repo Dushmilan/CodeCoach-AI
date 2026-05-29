@@ -45,26 +45,26 @@ describe('CodeEditorContainer', () => {
 
   it('shows output panel when output exists', () => {
     render(<CodeEditorContainer {...defaultProps} output="Hello, World!" />);
-    expect(screen.getByText('OUTPUT')).toBeInTheDocument();
+    expect(screen.getByText('Output')).toBeInTheDocument();
     expect(screen.getByText('Hello, World!')).toBeInTheDocument();
   });
 
   it('shows output panel when error exists', () => {
     render(<CodeEditorContainer {...defaultProps} error="SyntaxError" />);
-    expect(screen.getByText('OUTPUT')).toBeInTheDocument();
+    expect(screen.getByText('Output')).toBeInTheDocument();
     expect(screen.getByText('SyntaxError')).toBeInTheDocument();
   });
 
   it('renders error text in red color class', () => {
     render(<CodeEditorContainer {...defaultProps} error="SyntaxError" />);
-    const pre = screen.getByText('SyntaxError');
-    expect(pre.className).toContain('text-red-400');
+    const container = screen.getByText('SyntaxError').parentElement;
+    expect(container?.className).toContain('text-red-500');
   });
 
   it('renders output text in default color', () => {
     render(<CodeEditorContainer {...defaultProps} output="Hello" />);
-    const pre = screen.getByText('Hello');
-    expect(pre.className).toContain('text-foreground/80');
+    const container = screen.getByText('Hello').parentElement;
+    expect(container?.className).toContain('text-foreground/80');
   });
 
   it('collapses output panel when collapse button is clicked', async () => {

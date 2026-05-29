@@ -29,9 +29,14 @@ export function MainWorkspace() {
     selectedQuestion,
     fullQuestion,
     selectQuestion,
+    loadQuestions,
     isLoading,
     error,
   } = useQuestion();
+  
+  useEffect(() => {
+    loadQuestions();
+  }, [loadQuestions]);
   
   const {
     isRunning,
@@ -39,6 +44,7 @@ export function MainWorkspace() {
     executionError,
     handleRunCode,
     handleSubmitCode,
+    isAuthenticated,
   } = useCodeRunner({ currentCode, language, fullQuestion });
 
   const { messages, isTyping, sendMessage } = useCoaching();
@@ -101,6 +107,7 @@ export function MainWorkspace() {
               onLanguageChange={setLanguage}
               onRunCode={handleRunCodeWrapper}
               onSubmitCode={handleSubmitCode}
+              isAuthenticated={isAuthenticated}
             />
           </QuestionContentSection>
           {isAIChatOpen && (

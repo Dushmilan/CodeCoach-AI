@@ -17,6 +17,7 @@ interface CodeEditorProps {
   onSubmitCode: () => void;
   isRunning?: boolean;
   isResizing?: boolean;
+  isAuthenticated?: boolean;
 }
 
 export function CodeEditor({
@@ -29,6 +30,7 @@ export function CodeEditor({
   onSubmitCode,
   isRunning,
   isResizing,
+  isAuthenticated = true,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
 
@@ -78,7 +80,7 @@ export function CodeEditor({
         <div className="flex items-center gap-1.5">
           <button
             onClick={resetCode}
-            disabled={isRunning}
+            disabled={isRunning || !isAuthenticated}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-medium tracking-wide text-muted-foreground/60 bg-white/[0.03] hover:bg-white/[0.07] rounded-full ring-1 ring-white/5 disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
           >
             <ResetIcon className="h-3 w-3" />
@@ -86,7 +88,7 @@ export function CodeEditor({
           </button>
           <button
             onClick={onRunCode}
-            disabled={isRunning}
+            disabled={isRunning || !isAuthenticated}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-medium tracking-wide text-muted-foreground/60 bg-white/[0.03] hover:bg-white/[0.07] rounded-full ring-1 ring-white/5 disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
           >
             <PlayIcon className="h-3 w-3" />
@@ -94,7 +96,7 @@ export function CodeEditor({
           </button>
           <button
             onClick={onSubmitCode}
-            disabled={isRunning}
+            disabled={isRunning || !isAuthenticated}
             className="inline-flex items-center gap-1 px-4 py-1.5 text-[10px] font-medium tracking-wide text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-full ring-1 ring-emerald-500/20 disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
           >
             <CheckCircledIcon className="h-3 w-3" />

@@ -6,11 +6,13 @@ from app.ports.code_executor import CodeExecutor
 from app.ports.question_repository import QuestionRepository
 from app.repositories.file_question_repository import FileQuestionRepository
 from app.services.piston_service import PistonService
+from app.api.auth import get_current_user
+from app.models.auth_schemas import UserResponse
 import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @lru_cache()

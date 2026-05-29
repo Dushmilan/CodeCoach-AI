@@ -4,6 +4,16 @@ import userEvent from '@testing-library/user-event';
 import { QuestionItem } from './QuestionItem';
 import { QuestionSummary } from '@/types';
 
+// Mock icons
+vi.mock('@/components/ui/icons', async () => {
+  const actual = await vi.importActual('@/components/ui/icons');
+  return {
+    ...actual as any,
+    RadixCheckCircledIcon: vi.fn(({ className }) => <div className={className} data-testid="check-icon" />),
+    RadixCrossCircledIcon: vi.fn(({ className }) => <div className={className} data-testid="cross-icon" />),
+  };
+});
+
 const baseQuestion: QuestionSummary = {
   id: '1',
   title: 'Two Sum',
@@ -39,7 +49,7 @@ describe('QuestionItem', () => {
   });
 
   it('shows solved checkmark when progress is solved', () => {
-    const { container } = render(
+    render(
       <QuestionItem
         question={baseQuestion}
         isSelected={false}
@@ -48,12 +58,11 @@ describe('QuestionItem', () => {
         onClick={vi.fn()}
       />
     );
-    expect(screen.getByText('Two Sum')).toBeInTheDocument();
-    expect(container.querySelector('.lucide-circle-check-big')).toBeInTheDocument();
+    expect(screen.getByTestId('check-icon')).toBeInTheDocument();
   });
 
   it('shows attempted icon when progress is attempted', () => {
-    const { container } = render(
+    render(
       <QuestionItem
         question={baseQuestion}
         isSelected={false}
@@ -62,11 +71,11 @@ describe('QuestionItem', () => {
         onClick={vi.fn()}
       />
     );
-    expect(container.querySelector('.lucide-circle-alert')).toBeInTheDocument();
+    expect(screen.getByTestId('cross-icon')).toBeInTheDocument();
   });
 
   it('shows no progress icon when progress is undefined', () => {
-    const { container } = render(
+    render(
       <QuestionItem
         question={baseQuestion}
         isSelected={false}
@@ -74,8 +83,8 @@ describe('QuestionItem', () => {
         onClick={vi.fn()}
       />
     );
-    expect(container.querySelector('.lucide-circle-check-big')).not.toBeInTheDocument();
-    expect(container.querySelector('.lucide-circle-alert')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('check-icon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cross-icon')).not.toBeInTheDocument();
   });
 
   it('calls onClick when clicked', async () => {

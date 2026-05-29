@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsModal } from './SettingsModal';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -68,15 +68,21 @@ describe('SettingsModal', () => {
 
   it('toggles password visibility', async () => {
     const user = userEvent.setup();
-    const { container } = render(<SettingsModal {...defaultProps} apiKey="nvapi-secret" />);
-
+    render(<SettingsModal {...defaultProps} />);
     const input = screen.getByPlaceholderText('nvapi-...');
-    expect(input).toHaveAttribute('type', 'password');
-
-    const buttons = container.querySelectorAll('button');
-    const toggleBtn = Array.from(buttons).find(b => b.innerHTML.includes('lucide-eye'));
-    await user.click(toggleBtn!);
+    const toggleBtn = screen.getByRole('button', { name: /show password/i });
+    
+    await user.click(toggleBtn);
     expect(input).toHaveAttribute('type', 'text');
+  });
+
+  it('calls onClose when X button is clicked', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<SettingsModal {...defaultProps} onClose={onClose} />);
+    const xButton = screen.getByRole('button', { name: /close/i });
+    await user.click(xButton);
+    expect(onClose).toHaveBeenCalled();
   });
 
   it('calls onClose when backdrop is clicked', async () => {
@@ -88,17 +94,6 @@ describe('SettingsModal', () => {
     expect(backdrop).toBeInTheDocument();
     await user.click(backdrop);
     expect(onClose).toHaveBeenCalledOnce();
-  });
-
-  it('calls onClose when X button is clicked', async () => {
-    const onClose = vi.fn();
-    const user = userEvent.setup();
-    const { container } = render(<SettingsModal {...defaultProps} onClose={onClose} />);
-
-    const buttons = container.querySelectorAll('button');
-    const xButton = Array.from(buttons).find(b => b.innerHTML.includes('lucide-x'));
-    await user.click(xButton!);
-    expect(onClose).toHaveBeenCalled();
   });
 
   it('calls onClose when Cancel is clicked', async () => {

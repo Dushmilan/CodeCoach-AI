@@ -3,6 +3,10 @@ import { renderHook, act } from '@testing-library/react';
 import { useCodeRunner } from './use-code-runner.hook';
 import { Question } from '@/types';
 
+vi.mock('@/providers', () => ({
+  useAuth: vi.fn(() => ({ isAuthenticated: true })),
+}));
+
 const mockValidateCode = vi.fn();
 const mockSubmitCode = vi.fn();
 const mockRunLocalJavaScript = vi.fn();

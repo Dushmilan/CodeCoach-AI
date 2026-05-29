@@ -9,7 +9,7 @@ const mockUseAuth = vi.hoisted(() => vi.fn(() => ({
   user: null, isAuthenticated: false, isLoading: false, logout: vi.fn(),
 })));
 
-vi.mock('@/hooks', () => ({
+vi.mock('next-themes', () => ({
   useTheme: mockUseTheme,
 }));
 
@@ -32,11 +32,20 @@ vi.mock('@/components/settings/SettingsModal', () => ({
   )),
 }));
 
+vi.mock('@/components/ui/icons', () => ({
+  MoonIcon: () => <div data-testid="moon-icon" />,
+  SunIcon: () => <div data-testid="sun-icon" />,
+  SettingsIcon: () => <div data-testid="settings-icon" />,
+  UserIcon: () => <div data-testid="user-icon" />,
+  XIcon: () => <div data-testid="x-icon" />,
+  GraduationCapIcon: () => <div data-testid="grad-icon" />,
+}));
+
 import { Header } from './Header';
 
 describe('Header', () => {
   beforeEach(() => {
-    mockUseTheme.mockReturnValue({ theme: 'dark', setTheme: mockSetTheme });
+    mockUseTheme.mockReturnValue({ theme: 'dark', setTheme: mockSetTheme, resolvedTheme: 'dark' });
     mockUseAuth.mockReturnValue({ user: null, isAuthenticated: false, isLoading: false, logout: vi.fn() });
     vi.clearAllMocks();
   });
@@ -53,14 +62,14 @@ describe('Header', () => {
 
   it('shows sun icon when theme is dark', () => {
     render(<Header />);
-    expect(document.querySelector('.lucide-sun')).toBeTruthy();
+    expect(screen.getByTestId('sun-icon')).toBeInTheDocument();
   });
 
   it('toggles theme when theme button is clicked', async () => {
     const user = userEvent.setup();
     render(<Header />);
     const buttons = screen.getAllByRole('button');
-    const themeButton = buttons.find(b => b.querySelector('.lucide-sun, .lucide-moon'))!;
+    const themeButton = buttons.find(b => b.getAttribute('aria-label') === 'Toggle theme')!;
     await user.click(themeButton);
     expect(mockSetTheme).toHaveBeenCalledWith('light');
   });
@@ -74,8 +83,8 @@ describe('Header', () => {
   });
 
   it('shows moon icon when theme is light', () => {
-    mockUseTheme.mockReturnValue({ theme: 'light', setTheme: mockSetTheme });
+    mockUseTheme.mockReturnValue({ theme: 'light', setTheme: mockSetTheme, resolvedTheme: 'light' });
     render(<Header />);
-    expect(document.querySelector('.lucide-moon')).toBeTruthy();
+    expect(screen.getByTestId('moon-icon')).toBeInTheDocument();
   });
 });

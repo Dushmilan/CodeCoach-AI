@@ -8,6 +8,8 @@ import os
 
 from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language
 from app.services.nim_service import NIMService
+from app.api.auth import get_current_user
+from app.models.auth_schemas import UserResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -128,7 +130,9 @@ def get_nim_service(
 
 @router.post("/", response_model=CoachingResponse)
 async def get_coaching(
-    request: CoachingRequest, nim_service: NIMService = Depends(get_nim_service)
+    request: CoachingRequest,
+    nim_service: NIMService = Depends(get_nim_service),
+    user: UserResponse = Depends(get_current_user),
 ):
     """
     Get AI coaching response for coding problems.
@@ -247,7 +251,9 @@ def _format_structured_as_text(structured_data: dict) -> str:
 
 @router.post("/stream")
 async def get_coaching_stream(
-    request: CoachingRequest, nim_service: NIMService = Depends(get_nim_service)
+    request: CoachingRequest,
+    nim_service: NIMService = Depends(get_nim_service),
+    user: UserResponse = Depends(get_current_user),
 ):
     """
     Get streaming AI coaching response using Server-Sent Events.

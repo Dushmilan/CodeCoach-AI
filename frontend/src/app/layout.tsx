@@ -19,6 +19,7 @@ export default function RootLayout({
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans`} suppressHydrationWarning>
         <ThemeProvider
           defaultTheme="dark"
+          themes={['light', 'dark']}
           enableSystem={true}
           disableTransitionOnChange
           attribute="class"

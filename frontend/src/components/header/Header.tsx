@@ -13,13 +13,12 @@ import {
 } from '@/components/ui/icons';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/providers';
-import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/settings/SettingsModal';
 import { useSettings } from '@/hooks/use-settings';
 import { cn } from '@/lib/utils';
 
 export function Header() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   useEffect(() => {
@@ -72,12 +71,6 @@ export function Header() {
             >
               Privacy
             </Link>
-            <Link
-              href="/educators"
-              className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
-            >
-              For Educators
-            </Link>
           </nav>
 
           <div className="flex items-center gap-0.5 ml-2">
@@ -95,14 +88,14 @@ export function Header() {
             )}
 
             <button
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
               className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
               aria-label="Toggle theme"
             >
-              {theme === 'light' ? (
-                <MoonIcon className="h-3.5 w-3.5 text-muted-foreground" />
-              ) : (
+              {mounted && resolvedTheme === 'dark' ? (
                 <SunIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <MoonIcon className="h-3.5 w-3.5 text-muted-foreground" />
               )}
             </button>
 
@@ -167,7 +160,6 @@ export function Header() {
             { href: '/', label: 'Home', delay: 'delay-100' },
             { href: '/learn', label: 'Learn', delay: 'delay-125' },
             { href: '/privacy', label: 'Privacy', delay: 'delay-150' },
-            { href: '/educators', label: 'For Educators', delay: 'delay-200' },
           ].map((link) => (
             <Link
               key={link.href}
@@ -213,12 +205,12 @@ export function Header() {
           </button>
           <button
             onClick={() => {
-              setTheme(theme === 'dark' ? 'light' : 'dark');
+              setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
               setMenuOpen(false);
             }}
             className="px-5 py-2 text-sm text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
           >
-            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            {resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
           </button>
         </div>
       </div>

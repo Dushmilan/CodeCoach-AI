@@ -48,7 +48,7 @@ export function SettingsModal({ open, onClose, apiKey, onSave, isAuthenticated =
         <div className="rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-sm font-semibold tracking-wide text-foreground/80">SETTINGS</h2>
-            <button onClick={onClose} className="p-1.5 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+            <button aria-label="Close" onClick={onClose} className="p-1.5 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
               <XIcon className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </div>
@@ -73,6 +73,7 @@ export function SettingsModal({ open, onClose, apiKey, onSave, isAuthenticated =
               />
                   <button
                     onClick={() => setShowKey(!showKey)}
+                    aria-label={showKey ? "Hide password" : "Show password"}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                   >
                     {showKey ? <EyeOffIcon className="h-3.5 w-3.5 text-muted-foreground/60" /> : <EyeIcon className="h-3.5 w-3.5 text-muted-foreground/60" />}
