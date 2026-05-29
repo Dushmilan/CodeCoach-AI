@@ -453,7 +453,7 @@ class PistonService(CodeExecutor):
         user_code = re.sub(r'(\(\s*)self\s*,?\s*', r'\1', user_code)
 
         tc_clean = [
-            {"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}
+            {"input": tc["input"], "expected": tc["expected_output"], "index": i + 1}
             for i, tc in enumerate(test_cases)
         ]
         tc_repr = repr(tc_clean)
@@ -494,7 +494,6 @@ def run_suite():
     for __tc in __test_cases:
         __idx = __tc["index"]
         __exp = __tc["expected"]
-        __hidden = __tc["hidden"]
         try:
             __out = __run_test(__tc)
             if isinstance(__out, list):
@@ -507,7 +506,7 @@ def run_suite():
         except Exception as __e:
             __actual = str(__e)
             __passed = False
-        __results.append({{"index": __idx, "passed": __passed, "actual": __actual, "hidden": __hidden}})
+        __results.append({{"index": __idx, "passed": __passed, "actual": __actual}})
 
     print("@@SUITE_RESULT@@" + json.dumps(__results, separators=(",", ":")) + "@@SUITE_RESULT@@")
     sys.stdout.flush()
