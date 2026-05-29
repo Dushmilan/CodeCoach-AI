@@ -6,7 +6,11 @@ from app.ports.progress_repository import ProgressRepository
 from app.repositories.file_course_repository import FileCourseRepository
 from app.repositories.file_progress_repository import FileProgressRepository
 
-DATA_DIR = "data"
+from pathlib import Path
+import os
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DATA_DIR = BASE_DIR / "data"
 
 
 class CourseService:
@@ -16,9 +20,7 @@ class CourseService:
         progress_repo: Optional[ProgressRepository] = None,
     ):
         self.course_repo = course_repo or FileCourseRepository(
-            courses_path=f"{DATA_DIR}/courses.json",
-            modules_path=f"{DATA_DIR}/modules.json",
-            lessons_path=f"{DATA_DIR}/lessons.json",
+            courses_dir=str(DATA_DIR / "courses"),
         )
         self.progress_repo = progress_repo or FileProgressRepository(
             file_path=f"{DATA_DIR}/user_progress.json",

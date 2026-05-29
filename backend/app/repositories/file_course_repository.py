@@ -7,33 +7,34 @@ from app.ports.course_repository import CourseRepository
 
 
 class FileCourseRepository(CourseRepository):
-    def __init__(
-        self,
-        courses_path: str,
-        modules_path: str,
-        lessons_path: str,
-    ):
-        self.courses_path = courses_path
-        self.modules_path = modules_path
-        self.lessons_path = lessons_path
+    def __init__(self, courses_dir: str):
+        self.courses_dir = courses_dir
         self._courses: Dict[str, Course] = {}
         self._modules: Dict[str, Module] = {}
         self._lessons: Dict[str, Lesson] = {}
         self._load()
 
     def _load(self):
-        self._load_file(self.courses_path, self._courses, Course)
-        self._load_file(self.modules_path, self._modules, Module)
-        self._load_file(self.lessons_path, self._lessons, Lesson)
+        for root, _, files in os.walk(self.courses_dir):
+            if "course.json" in files:
+                self._load_file(os.path.join(root, "course.json"), self._courses, Course)
+            if "modules.json" in files:
+                self._load_file(os.path.join(root, "modules.json"), self._modules, Module)
+            if "lessons.json" in files:
+                self._load_file(os.path.join(root, "lessons.json"), self._lessons, Lesson)
 
     def _load_file(self, path: str, target: Dict, model):
         if not os.path.exists(path):
             return
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        if isinstance(data, dict):
-            data = data.get("items", [])
-        for item in data:
+        
+        if "items" in data:
+            items = data["items"]
+        else:
+            items = [data]
+            
+        for item in items:
             obj = model(**item)
             target[obj.id] = obj
 
