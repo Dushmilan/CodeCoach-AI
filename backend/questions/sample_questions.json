@@ -1,9 +1,15 @@
 [
   {
+    "id": "three-sum",
     "title": "Three Sum",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Google", "Facebook", "Amazon", "Microsoft"],
+    "company_tags": [
+      "Google",
+      "Facebook",
+      "Amazon",
+      "Microsoft"
+    ],
     "description": "Given an integer array nums, return all unique triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.\n\nNotice that the solution set must not contain duplicate triplets. The order of the triplets and the order of elements inside a triplet does not matter.\n\nImplement an algorithm that runs in O(n²) time and uses constant extra space (excluding the output).",
     "examples": [
       {
@@ -23,21 +29,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[]", "output": "[]", "hidden": false },
-      { "input": "[1]", "output": "[]", "hidden": false },
-      { "input": "[1,2]", "output": "[]", "hidden": false },
-      { "input": "[-1,0,1,2,-1,-4]", "output": "[[-1,-1,2],[-1,0,1]]", "hidden": false },
-      { "input": "[0,1,1]", "output": "[]", "hidden": false },
-      { "input": "[0,0,0]", "output": "[[0,0,0]]", "hidden": false },
-      { "input": "[-2,0,1,1,2]", "output": "[[-2,0,2],[-2,1,1]]", "hidden": true },
-      { "input": "[3,0,-2,-1,1,2]", "output": "[[-2,-1,3],[-2,0,2],[-1,0,1]]", "hidden": true },
-      { "input": "[-4,-2,-1,-1,0,1,2]", "output": "[[-2,0,2],[-1,-1,2],[-1,0,1]]", "hidden": true },
-      { "input": "[0,0,0,0]", "output": "[[0,0,0]]", "hidden": true },
-      { "input": "[-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6]", "output": "[[-4,0,4],[-4,1,3],[-4,2,2],[-2,-2,4],[-2,0,2]]", "hidden": true },
-      { "input": "[1,2,-3,4,-1,0,5,-5]", "output": "[[-5,0,5],[-5,1,4],[-3,-1,4],[-3,1,2],[-1,0,1]]", "hidden": true }
+      {
+        "input": "[]",
+        "expected_output": "[]",
+        "hidden": false
+      },
+      {
+        "input": "[1]",
+        "expected_output": "[]",
+        "hidden": false
+      },
+      {
+        "input": "[1,2]",
+        "expected_output": "[]",
+        "hidden": false
+      },
+      {
+        "input": "[-1,0,1,2,-1,-4]",
+        "expected_output": "[[-1,-1,2],[-1,0,1]]",
+        "hidden": false
+      },
+      {
+        "input": "[0,1,1]",
+        "expected_output": "[]",
+        "hidden": false
+      },
+      {
+        "input": "[0,0,0]",
+        "expected_output": "[[0,0,0]]",
+        "hidden": false
+      },
+      {
+        "input": "[-2,0,1,1,2]",
+        "expected_output": "[[-2,0,2],[-2,1,1]]",
+        "hidden": true
+      },
+      {
+        "input": "[3,0,-2,-1,1,2]",
+        "expected_output": "[[-2,-1,3],[-2,0,2],[-1,0,1]]",
+        "hidden": true
+      },
+      {
+        "input": "[-4,-2,-1,-1,0,1,2]",
+        "expected_output": "[[-2,0,2],[-1,-1,2],[-1,0,1]]",
+        "hidden": true
+      },
+      {
+        "input": "[0,0,0,0]",
+        "expected_output": "[[0,0,0]]",
+        "hidden": true
+      },
+      {
+        "input": "[-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6]",
+        "expected_output": "[[-4,0,4],[-4,1,3],[-4,2,2],[-2,-2,4],[-2,0,2]]",
+        "hidden": true
+      },
+      {
+        "input": "[1,2,-3,4,-1,0,5,-5]",
+        "expected_output": "[[-5,0,5],[-5,1,4],[-3,-1,4],[-3,1,2],[-1,0,1]]",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def threeSum(self, nums: List[int]) -> List[List[int]]:\n    pass",
+      "python": "def threeSum(nums: List[int]) -> List[List[int]]:\n    pass",
       "javascript": "function threeSum(nums) {\n    // your code here\n}",
       "java": "public List<List<Integer>> threeSum(int[] nums) {\n    // your code here\n}"
     },
@@ -57,10 +111,16 @@
     ]
   },
   {
+    "id": "product-of-array-except-self",
     "title": "Product of Array Except Self",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Amazon", "Google", "Facebook", "Apple"],
+    "company_tags": [
+      "Amazon",
+      "Google",
+      "Facebook",
+      "Apple"
+    ],
     "description": "Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i].\n\nThe product of any prefix or suffix is guaranteed to fit in a 32-bit integer. You must write an algorithm that runs in O(n) time and without using the division operation.\n\nSolve the problem in O(1) extra space (the output array does not count as extra space).",
     "examples": [
       {
@@ -80,21 +140,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[2,3]", "output": "[3,2]", "hidden": false },
-      { "input": "[1,1]", "output": "[1,1]", "hidden": false },
-      { "input": "[0,1]", "output": "[1,0]", "hidden": false },
-      { "input": "[1,2,3,4]", "output": "[24,12,8,6]", "hidden": false },
-      { "input": "[-1,1,0,-3,3]", "output": "[0,0,9,0,0]", "hidden": false },
-      { "input": "[2,3,4,5]", "output": "[60,40,30,24]", "hidden": false },
-      { "input": "[0,0]", "output": "[0,0]", "hidden": true },
-      { "input": "[0,4,0]", "output": "[0,0,0]", "hidden": true },
-      { "input": "[1,2,3,0,5]", "output": "[0,0,0,30,0]", "hidden": true },
-      { "input": "[10,-10,10,-10]", "output": "[1000,-1000,1000,-1000]", "hidden": true },
-      { "input": "[-1,-2,-3]", "output": "[6,3,2]", "hidden": true },
-      { "input": "[5,5,5,5]", "output": "[125,125,125,125]", "hidden": true }
+      {
+        "input": "[2,3]",
+        "expected_output": "[3,2]",
+        "hidden": false
+      },
+      {
+        "input": "[1,1]",
+        "expected_output": "[1,1]",
+        "hidden": false
+      },
+      {
+        "input": "[0,1]",
+        "expected_output": "[1,0]",
+        "hidden": false
+      },
+      {
+        "input": "[1,2,3,4]",
+        "expected_output": "[24,12,8,6]",
+        "hidden": false
+      },
+      {
+        "input": "[-1,1,0,-3,3]",
+        "expected_output": "[0,0,9,0,0]",
+        "hidden": false
+      },
+      {
+        "input": "[2,3,4,5]",
+        "expected_output": "[60,40,30,24]",
+        "hidden": false
+      },
+      {
+        "input": "[0,0]",
+        "expected_output": "[0,0]",
+        "hidden": true
+      },
+      {
+        "input": "[0,4,0]",
+        "expected_output": "[0,0,0]",
+        "hidden": true
+      },
+      {
+        "input": "[1,2,3,0,5]",
+        "expected_output": "[0,0,0,30,0]",
+        "hidden": true
+      },
+      {
+        "input": "[10,-10,10,-10]",
+        "expected_output": "[1000,-1000,1000,-1000]",
+        "hidden": true
+      },
+      {
+        "input": "[-1,-2,-3]",
+        "expected_output": "[6,3,2]",
+        "hidden": true
+      },
+      {
+        "input": "[5,5,5,5]",
+        "expected_output": "[125,125,125,125]",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def productExceptSelf(self, nums: List[int]) -> List[int]:\n    pass",
+      "python": "def productExceptSelf(nums: List[int]) -> List[int]:\n    pass",
       "javascript": "function productExceptSelf(nums) {\n    // your code here\n}",
       "java": "public int[] productExceptSelf(int[] nums) {\n    // your code here\n}"
     },
@@ -115,10 +223,16 @@
     ]
   },
   {
+    "id": "subarray-sum-equals-k",
     "title": "Subarray Sum Equals K",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Google", "Facebook", "Amazon", "Bloomberg"],
+    "company_tags": [
+      "Google",
+      "Facebook",
+      "Amazon",
+      "Bloomberg"
+    ],
     "description": "Given an array of integers nums and an integer k, return the total number of continuous subarrays whose sum equals to k.\n\nThe subarrays can consist of positive and negative numbers, and the same subarray must not be counted twice.\n\nYour solution must run in O(n) time.",
     "examples": [
       {
@@ -138,21 +252,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[1], k=1", "output": "1", "hidden": false },
-      { "input": "[1], k=0", "output": "0", "hidden": false },
-      { "input": "[0,0,0], k=0", "output": "6", "hidden": false },
-      { "input": "[1,1,1], k=2", "output": "2", "hidden": false },
-      { "input": "[1,2,3], k=3", "output": "2", "hidden": false },
-      { "input": "[1,-1,0], k=0", "output": "3", "hidden": false },
-      { "input": "[1,2,1,2,1], k=3", "output": "4", "hidden": true },
-      { "input": "[-1,-1,1], k=0", "output": "1", "hidden": true },
-      { "input": "[2,3,4,5,6], k=9", "output": "2", "hidden": true },
-      { "input": "[0,1,2,3,-3,-2,-1,0], k=0", "output": "7", "hidden": true },
-      { "input": "[1,2,3,-3,1,2,1], k=3", "output": "6", "hidden": true },
-      { "input": "[100,1,100,1,100], k=101", "output": "4", "hidden": true }
+      {
+        "input": "[1]\n1",
+        "expected_output": "1",
+        "hidden": false
+      },
+      {
+        "input": "[1]\n0",
+        "expected_output": "0",
+        "hidden": false
+      },
+      {
+        "input": "[0,0,0]\n0",
+        "expected_output": "6",
+        "hidden": false
+      },
+      {
+        "input": "[1,1,1]\n2",
+        "expected_output": "2",
+        "hidden": false
+      },
+      {
+        "input": "[1,2,3]\n3",
+        "expected_output": "2",
+        "hidden": false
+      },
+      {
+        "input": "[1,-1,0]\n0",
+        "expected_output": "3",
+        "hidden": false
+      },
+      {
+        "input": "[1,2,1,2,1]\n3",
+        "expected_output": "4",
+        "hidden": true
+      },
+      {
+        "input": "[-1,-1,1]\n0",
+        "expected_output": "1",
+        "hidden": true
+      },
+      {
+        "input": "[2,3,4,5,6]\n9",
+        "expected_output": "2",
+        "hidden": true
+      },
+      {
+        "input": "[0,1,2,3,-3,-2,-1,0]\n0",
+        "expected_output": "7",
+        "hidden": true
+      },
+      {
+        "input": "[1,2,3,-3,1,2,1]\n3",
+        "expected_output": "6",
+        "hidden": true
+      },
+      {
+        "input": "[100,1,100,1,100]\n101",
+        "expected_output": "4",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def subarraySum(self, nums: List[int], k: int) -> int:\n    pass",
+      "python": "def subarraySum(nums: List[int], k: int) -> int:\n    pass",
       "javascript": "function subarraySum(nums, k) {\n    // your code here\n}",
       "java": "public int subarraySum(int[] nums, int k) {\n    // your code here\n}"
     },
@@ -172,10 +334,16 @@
     ]
   },
   {
+    "id": "find-first-and-last-position-in-sorted-array",
     "title": "Find First and Last Position of Element in Sorted Array",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Facebook", "Amazon", "Microsoft", "LinkedIn"],
+    "company_tags": [
+      "Facebook",
+      "Amazon",
+      "Microsoft",
+      "LinkedIn"
+    ],
     "description": "Given an array of integers nums sorted in non-decreasing order, find the starting and ending position of a given target value.\n\nIf the target is not found in the array, return [-1, -1]. You must write an algorithm with O(log n) runtime complexity.\n\nThe array may contain duplicates and the targets can be any integer within the given constraints.",
     "examples": [
       {
@@ -195,21 +363,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[], target=0", "output": "[-1,-1]", "hidden": false },
-      { "input": "[1], target=1", "output": "[0,0]", "hidden": false },
-      { "input": "[1], target=2", "output": "[-1,-1]", "hidden": false },
-      { "input": "[5,7,7,8,8,10], target=8", "output": "[3,4]", "hidden": false },
-      { "input": "[5,7,7,8,8,10], target=6", "output": "[-1,-1]", "hidden": false },
-      { "input": "[1,2,3], target=3", "output": "[2,2]", "hidden": false },
-      { "input": "[1,1,1,1], target=1", "output": "[0,3]", "hidden": true },
-      { "input": "[1,2,2,2,3], target=2", "output": "[1,3]", "hidden": true },
-      { "input": "[1,3,5,7], target=4", "output": "[-1,-1]", "hidden": true },
-      { "input": "[0,0,0,0,0], target=0", "output": "[0,4]", "hidden": true },
-      { "input": "[-5,-4,-3], target=-3", "output": "[2,2]", "hidden": true },
-      { "input": "[1,2,3,4,5], target=5", "output": "[4,4]", "hidden": true }
+      {
+        "input": "[]\n0",
+        "expected_output": "[-1,-1]",
+        "hidden": false
+      },
+      {
+        "input": "[1]\n1",
+        "expected_output": "[0,0]",
+        "hidden": false
+      },
+      {
+        "input": "[1]\n2",
+        "expected_output": "[-1,-1]",
+        "hidden": false
+      },
+      {
+        "input": "[5,7,7,8,8,10]\n8",
+        "expected_output": "[3,4]",
+        "hidden": false
+      },
+      {
+        "input": "[5,7,7,8,8,10]\n6",
+        "expected_output": "[-1,-1]",
+        "hidden": false
+      },
+      {
+        "input": "[1,2,3]\n3",
+        "expected_output": "[2,2]",
+        "hidden": false
+      },
+      {
+        "input": "[1,1,1,1]\n1",
+        "expected_output": "[0,3]",
+        "hidden": true
+      },
+      {
+        "input": "[1,2,2,2,3]\n2",
+        "expected_output": "[1,3]",
+        "hidden": true
+      },
+      {
+        "input": "[1,3,5,7]\n4",
+        "expected_output": "[-1,-1]",
+        "hidden": true
+      },
+      {
+        "input": "[0,0,0,0,0]\n0",
+        "expected_output": "[0,4]",
+        "hidden": true
+      },
+      {
+        "input": "[-5,-4,-3]\n-3",
+        "expected_output": "[2,2]",
+        "hidden": true
+      },
+      {
+        "input": "[1,2,3,4,5]\n5",
+        "expected_output": "[4,4]",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def searchRange(self, nums: List[int], target: int) -> List[int]:\n    pass",
+      "python": "def searchRange(nums: List[int], target: int) -> List[int]:\n    pass",
       "javascript": "function searchRange(nums, target) {\n    // your code here\n}",
       "java": "public int[] searchRange(int[] nums, int target) {\n    // your code here\n}"
     },
@@ -230,10 +446,16 @@
     ]
   },
   {
+    "id": "rotate-image",
     "title": "Rotate Image",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Amazon", "Apple", "Adobe", "Microsoft"],
+    "company_tags": [
+      "Amazon",
+      "Apple",
+      "Adobe",
+      "Microsoft"
+    ],
     "description": "You are given an n x n 2D matrix representing an image. Rotate the image by 90 degrees clockwise.\n\nYou must rotate the image in-place, which means you have to modify the input matrix directly. Do not allocate another 2D matrix for the rotation.\n\nThe rotation should be performed on the original matrix, and the result should be readable from the same variable after the function call.",
     "examples": [
       {
@@ -253,21 +475,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[[1]]", "output": "[[1]]", "hidden": false },
-      { "input": "[[1,2],[3,4]]", "output": "[[3,1],[4,2]]", "hidden": false },
-      { "input": "[[0,0],[0,0]]", "output": "[[0,0],[0,0]]", "hidden": false },
-      { "input": "[[1,2,3],[4,5,6],[7,8,9]]", "output": "[[7,4,1],[8,5,2],[9,6,3]]", "hidden": false },
-      { "input": "[[5,1,9,11],[2,4,8,10],[13,3,6,7],[15,14,12,16]]", "output": "[[15,13,2,5],[14,3,4,1],[12,6,8,9],[16,7,10,11]]", "hidden": false },
-      { "input": "[[1,2,3],[2,3,4],[3,4,5]]", "output": "[[3,2,1],[4,3,2],[5,4,3]]", "hidden": false },
-      { "input": "[[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]]", "output": "[[13,9,5,1],[14,10,6,2],[15,11,7,3],[16,12,8,4]]", "hidden": true },
-      { "input": "[[1,0],[0,1]]", "output": "[[0,1],[1,0]]", "hidden": true },
-      { "input": "[[2,3],[4,5]]", "output": "[[4,2],[5,3]]", "hidden": true },
-      { "input": "[[1,2,3,4,5],[6,7,8,9,10],[11,12,13,14,15],[16,17,18,19,20],[21,22,23,24,25]]", "output": "[[21,16,11,6,1],[22,17,12,7,2],[23,18,13,8,3],[24,19,14,9,4],[25,20,15,10,5]]", "hidden": true },
-      { "input": "[[-1,-2],[-3,-4]]", "output": "[[-3,-1],[-4,-2]]", "hidden": true },
-      { "input": "[[10,20],[30,40]]", "output": "[[30,10],[40,20]]", "hidden": true }
+      {
+        "input": "[[1]]",
+        "expected_output": "[[1]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,2],[3,4]]",
+        "expected_output": "[[3,1],[4,2]]",
+        "hidden": false
+      },
+      {
+        "input": "[[0,0],[0,0]]",
+        "expected_output": "[[0,0],[0,0]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,2,3],[4,5,6],[7,8,9]]",
+        "expected_output": "[[7,4,1],[8,5,2],[9,6,3]]",
+        "hidden": false
+      },
+      {
+        "input": "[[5,1,9,11],[2,4,8,10],[13,3,6,7],[15,14,12,16]]",
+        "expected_output": "[[15,13,2,5],[14,3,4,1],[12,6,8,9],[16,7,10,11]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,2,3],[2,3,4],[3,4,5]]",
+        "expected_output": "[[3,2,1],[4,3,2],[5,4,3]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]]",
+        "expected_output": "[[13,9,5,1],[14,10,6,2],[15,11,7,3],[16,12,8,4]]",
+        "hidden": true
+      },
+      {
+        "input": "[[1,0],[0,1]]",
+        "expected_output": "[[0,1],[1,0]]",
+        "hidden": true
+      },
+      {
+        "input": "[[2,3],[4,5]]",
+        "expected_output": "[[4,2],[5,3]]",
+        "hidden": true
+      },
+      {
+        "input": "[[1,2,3,4,5],[6,7,8,9,10],[11,12,13,14,15],[16,17,18,19,20],[21,22,23,24,25]]",
+        "expected_output": "[[21,16,11,6,1],[22,17,12,7,2],[23,18,13,8,3],[24,19,14,9,4],[25,20,15,10,5]]",
+        "hidden": true
+      },
+      {
+        "input": "[[-1,-2],[-3,-4]]",
+        "expected_output": "[[-3,-1],[-4,-2]]",
+        "hidden": true
+      },
+      {
+        "input": "[[10,20],[30,40]]",
+        "expected_output": "[[30,10],[40,20]]",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def rotate(self, matrix: List[List[int]]) -> None:\n    \"\"\"\n    Do not return anything, modify matrix in-place instead.\n    \"\"\"\n    pass",
+      "python": "def rotate(matrix: List[List[int]]) -> None:\n    \"\"\"\n    Do not return anything, modify matrix in-place instead.\n    \"\"\"\n    pass",
       "javascript": "function rotate(matrix) {\n    // modify matrix in-place\n}",
       "java": "public void rotate(int[][] matrix) {\n    // modify matrix in-place\n}"
     },
@@ -286,10 +556,16 @@
     ]
   },
   {
+    "id": "merge-intervals",
     "title": "Merge Intervals",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Google", "Facebook", "Amazon", "Uber"],
+    "company_tags": [
+      "Google",
+      "Facebook",
+      "Amazon",
+      "Uber"
+    ],
     "description": "Given an array of intervals where intervals[i] = [start_i, end_i], merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.\n\nThe result should be returned as a new array, and the original input may be sorted or not. Two intervals overlap if the start of one is less than or equal to the end of the other.\n\nYour solution must sort the intervals appropriately and merge them in a single pass.",
     "examples": [
       {
@@ -309,21 +585,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[[5,5]]", "output": "[[5,5]]", "hidden": false },
-      { "input": "[[1,2],[3,4]]", "output": "[[1,2],[3,4]]", "hidden": false },
-      { "input": "[[0,0],[0,1]]", "output": "[[0,1]]", "hidden": false },
-      { "input": "[[1,3],[2,6],[8,10],[15,18]]", "output": "[[1,6],[8,10],[15,18]]", "hidden": false },
-      { "input": "[[1,4],[4,5]]", "output": "[[1,5]]", "hidden": false },
-      { "input": "[[1,4],[0,4]]", "output": "[[0,4]]", "hidden": false },
-      { "input": "[[1,4],[2,3]]", "output": "[[1,4]]", "hidden": true },
-      { "input": "[[2,3],[5,7],[1,8]]", "output": "[[1,8]]", "hidden": true },
-      { "input": "[[1,10],[2,6],[3,5],[7,9]]", "output": "[[1,10]]", "hidden": true },
-      { "input": "[[1,2],[3,5],[6,7],[8,10],[12,16]]", "output": "[[1,2],[3,5],[6,7],[8,10],[12,16]]", "hidden": true },
-      { "input": "[[0,0],[1,2],[5,5],[2,4]]", "output": "[[0,0],[1,4],[5,5]]", "hidden": true },
-      { "input": "[[1,4],[0,0]]", "output": "[[0,0],[1,4]]", "hidden": true }
+      {
+        "input": "[[5,5]]",
+        "expected_output": "[[5,5]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,2],[3,4]]",
+        "expected_output": "[[1,2],[3,4]]",
+        "hidden": false
+      },
+      {
+        "input": "[[0,0],[0,1]]",
+        "expected_output": "[[0,1]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,3],[2,6],[8,10],[15,18]]",
+        "expected_output": "[[1,6],[8,10],[15,18]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,4],[4,5]]",
+        "expected_output": "[[1,5]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,4],[0,4]]",
+        "expected_output": "[[0,4]]",
+        "hidden": false
+      },
+      {
+        "input": "[[1,4],[2,3]]",
+        "expected_output": "[[1,4]]",
+        "hidden": true
+      },
+      {
+        "input": "[[2,3],[5,7],[1,8]]",
+        "expected_output": "[[1,8]]",
+        "hidden": true
+      },
+      {
+        "input": "[[1,10],[2,6],[3,5],[7,9]]",
+        "expected_output": "[[1,10]]",
+        "hidden": true
+      },
+      {
+        "input": "[[1,2],[3,5],[6,7],[8,10],[12,16]]",
+        "expected_output": "[[1,2],[3,5],[6,7],[8,10],[12,16]]",
+        "hidden": true
+      },
+      {
+        "input": "[[0,0],[1,2],[5,5],[2,4]]",
+        "expected_output": "[[0,0],[1,4],[5,5]]",
+        "hidden": true
+      },
+      {
+        "input": "[[1,4],[0,0]]",
+        "expected_output": "[[0,0],[1,4]]",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def merge(self, intervals: List[List[int]]) -> List[List[int]]:\n    pass",
+      "python": "def merge(intervals: List[List[int]]) -> List[List[int]]:\n    pass",
       "javascript": "function merge(intervals) {\n    // your code here\n}",
       "java": "public int[][] merge(int[][] intervals) {\n    // your code here\n}"
     },
@@ -343,10 +667,16 @@
     ]
   },
   {
+    "id": "next-permutation",
     "title": "Next Permutation",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Google", "Facebook", "Amazon", "Microsoft"],
+    "company_tags": [
+      "Google",
+      "Facebook",
+      "Amazon",
+      "Microsoft"
+    ],
     "description": "Implement the next permutation, which rearranges numbers into the lexicographically next greater permutation of numbers.\n\nIf such an arrangement is not possible, it must rearrange it as the lowest possible order (i.e., sorted in ascending order). The replacement must be in-place and use only constant extra memory.\n\nThe algorithm should run in O(n) time and modify the input array directly.",
     "examples": [
       {
@@ -366,21 +696,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[1]", "output": "[1]", "hidden": false },
-      { "input": "[1,2]", "output": "[2,1]", "hidden": false },
-      { "input": "[2,1]", "output": "[1,2]", "hidden": false },
-      { "input": "[1,2,3]", "output": "[1,3,2]", "hidden": false },
-      { "input": "[3,2,1]", "output": "[1,2,3]", "hidden": false },
-      { "input": "[1,1,5]", "output": "[1,5,1]", "hidden": false },
-      { "input": "[1,3,2]", "output": "[2,1,3]", "hidden": true },
-      { "input": "[2,3,1]", "output": "[3,1,2]", "hidden": true },
-      { "input": "[5,4,7,5,3,2]", "output": "[5,5,2,3,4,7]", "hidden": true },
-      { "input": "[2,2,3,4,2,1]", "output": "[2,2,4,1,2,3]", "hidden": true },
-      { "input": "[100,101,99]", "output": "[101,99,100]", "hidden": true },
-      { "input": "[1,5,8,4,7,6,5,3,1]", "output": "[1,5,8,5,1,3,4,6,7]", "hidden": true }
+      {
+        "input": "[1]",
+        "expected_output": "[1]",
+        "hidden": false
+      },
+      {
+        "input": "[1,2]",
+        "expected_output": "[2,1]",
+        "hidden": false
+      },
+      {
+        "input": "[2,1]",
+        "expected_output": "[1,2]",
+        "hidden": false
+      },
+      {
+        "input": "[1,2,3]",
+        "expected_output": "[1,3,2]",
+        "hidden": false
+      },
+      {
+        "input": "[3,2,1]",
+        "expected_output": "[1,2,3]",
+        "hidden": false
+      },
+      {
+        "input": "[1,1,5]",
+        "expected_output": "[1,5,1]",
+        "hidden": false
+      },
+      {
+        "input": "[1,3,2]",
+        "expected_output": "[2,1,3]",
+        "hidden": true
+      },
+      {
+        "input": "[2,3,1]",
+        "expected_output": "[3,1,2]",
+        "hidden": true
+      },
+      {
+        "input": "[5,4,7,5,3,2]",
+        "expected_output": "[5,5,2,3,4,7]",
+        "hidden": true
+      },
+      {
+        "input": "[2,2,3,4,2,1]",
+        "expected_output": "[2,2,4,1,2,3]",
+        "hidden": true
+      },
+      {
+        "input": "[100,101,99]",
+        "expected_output": "[101,99,100]",
+        "hidden": true
+      },
+      {
+        "input": "[1,5,8,4,7,6,5,3,1]",
+        "expected_output": "[1,5,8,5,1,3,4,6,7]",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def nextPermutation(self, nums: List[int]) -> None:\n    \"\"\"\n    Do not return anything, modify nums in-place.\n    \"\"\"\n    pass",
+      "python": "def nextPermutation(nums: List[int]) -> None:\n    \"\"\"\n    Do not return anything, modify nums in-place.\n    \"\"\"\n    pass",
       "javascript": "function nextPermutation(nums) {\n    // modify nums in-place\n}",
       "java": "public void nextPermutation(int[] nums) {\n    // modify nums in-place\n}"
     },
@@ -399,10 +777,16 @@
     ]
   },
   {
+    "id": "maximum-product-subarray",
     "title": "Maximum Product Subarray",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Google", "Amazon", "LinkedIn", "Microsoft"],
+    "company_tags": [
+      "Google",
+      "Amazon",
+      "LinkedIn",
+      "Microsoft"
+    ],
     "description": "Given an integer array nums, find a contiguous non-empty subarray that has the largest product, and return the product.\n\nThe subarray must contain at least one number. The product may be negative, and you must handle both positive and negative numbers efficiently.\n\nYour solution should run in O(n) time and use constant extra space.",
     "examples": [
       {
@@ -422,21 +806,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[-2]", "output": "-2", "hidden": false },
-      { "input": "[0]", "output": "0", "hidden": false },
-      { "input": "[0,0]", "output": "0", "hidden": false },
-      { "input": "[2,3,-2,4]", "output": "6", "hidden": false },
-      { "input": "[-2,0,-1]", "output": "0", "hidden": false },
-      { "input": "[-2,3,-4]", "output": "24", "hidden": false },
-      { "input": "[-1,-2,-9,-6]", "output": "108", "hidden": true },
-      { "input": "[1,0,-1,2,3,-5,-2]", "output": "60", "hidden": true },
-      { "input": "[-4,-3,-2]", "output": "12", "hidden": true },
-      { "input": "[0,2,3,0,4,-2]", "output": "6", "hidden": true },
-      { "input": "[3,-1,4]", "output": "4", "hidden": true },
-      { "input": "[2,-5,-2,-4,3]", "output": "24", "hidden": true }
+      {
+        "input": "[-2]",
+        "expected_output": "-2",
+        "hidden": false
+      },
+      {
+        "input": "[0]",
+        "expected_output": "0",
+        "hidden": false
+      },
+      {
+        "input": "[0,0]",
+        "expected_output": "0",
+        "hidden": false
+      },
+      {
+        "input": "[2,3,-2,4]",
+        "expected_output": "6",
+        "hidden": false
+      },
+      {
+        "input": "[-2,0,-1]",
+        "expected_output": "0",
+        "hidden": false
+      },
+      {
+        "input": "[-2,3,-4]",
+        "expected_output": "24",
+        "hidden": false
+      },
+      {
+        "input": "[-1,-2,-9,-6]",
+        "expected_output": "108",
+        "hidden": true
+      },
+      {
+        "input": "[1,0,-1,2,3,-5,-2]",
+        "expected_output": "60",
+        "hidden": true
+      },
+      {
+        "input": "[-4,-3,-2]",
+        "expected_output": "12",
+        "hidden": true
+      },
+      {
+        "input": "[0,2,3,0,4,-2]",
+        "expected_output": "6",
+        "hidden": true
+      },
+      {
+        "input": "[3,-1,4]",
+        "expected_output": "4",
+        "hidden": true
+      },
+      {
+        "input": "[2,-5,-2,-4,3]",
+        "expected_output": "24",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def maxProduct(self, nums: List[int]) -> int:\n    pass",
+      "python": "def maxProduct(nums: List[int]) -> int:\n    pass",
       "javascript": "function maxProduct(nums) {\n    // your code here\n}",
       "java": "public int maxProduct(int[] nums) {\n    // your code here\n}"
     },
@@ -455,10 +887,16 @@
     ]
   },
   {
+    "id": "find-all-duplicates-in-an-array",
     "title": "Find All Duplicates in an Array",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Amazon", "Microsoft", "Apple", "Facebook"],
+    "company_tags": [
+      "Amazon",
+      "Microsoft",
+      "Apple",
+      "Facebook"
+    ],
     "description": "Given an integer array nums of length n where all the integers are in the range [1, n] and each integer appears at most twice, return an array of all the integers that appear twice.\n\nYou must implement an algorithm that runs in O(n) time and uses only constant extra space (excluding the output). You may assume the input array is mutable and can be modified.",
     "examples": [
       {
@@ -478,21 +916,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[1]", "output": "[]", "hidden": false },
-      { "input": "[1,2]", "output": "[]", "hidden": false },
-      { "input": "[2,2]", "output": "[2]", "hidden": false },
-      { "input": "[4,3,2,7,8,2,3,1]", "output": "[2,3]", "hidden": false },
-      { "input": "[1,1,2]", "output": "[1]", "hidden": false },
-      { "input": "[1,2,3,2,3]", "output": "[2,3]", "hidden": false },
-      { "input": "[5,4,3,2,1,1,2,3,4,5]", "output": "[1,2,3,4,5]", "hidden": true },
-      { "input": "[1,2,3,4,5,5,4,3,2,1]", "output": "[5,4,3,2,1]", "hidden": true },
-      { "input": "[10,2,3,4,5,6,7,8,9,10]", "output": "[10]", "hidden": true },
-      { "input": "[3,3,3]", "output": "[3]", "hidden": true },
-      { "input": "[2,1,2,1]", "output": "[2,1]", "hidden": true },
-      { "input": "[7,3,2,4,8,2,3,1,6,5]", "output": "[2,3]", "hidden": true }
+      {
+        "input": "[1]",
+        "expected_output": "[]",
+        "hidden": false
+      },
+      {
+        "input": "[1,2]",
+        "expected_output": "[]",
+        "hidden": false
+      },
+      {
+        "input": "[2,2]",
+        "expected_output": "[2]",
+        "hidden": false
+      },
+      {
+        "input": "[4,3,2,7,8,2,3,1]",
+        "expected_output": "[2,3]",
+        "hidden": false
+      },
+      {
+        "input": "[1,1,2]",
+        "expected_output": "[1]",
+        "hidden": false
+      },
+      {
+        "input": "[1,2,3,2,3]",
+        "expected_output": "[2,3]",
+        "hidden": false
+      },
+      {
+        "input": "[5,4,3,2,1,1,2,3,4,5]",
+        "expected_output": "[1,2,3,4,5]",
+        "hidden": true
+      },
+      {
+        "input": "[1,2,3,4,5,5,4,3,2,1]",
+        "expected_output": "[5,4,3,2,1]",
+        "hidden": true
+      },
+      {
+        "input": "[10,2,3,4,5,6,7,8,9,10]",
+        "expected_output": "[10]",
+        "hidden": true
+      },
+      {
+        "input": "[3,3,3]",
+        "expected_output": "[3]",
+        "hidden": true
+      },
+      {
+        "input": "[2,1,2,1]",
+        "expected_output": "[2,1]",
+        "hidden": true
+      },
+      {
+        "input": "[7,3,2,4,8,2,3,1,6,5]",
+        "expected_output": "[2,3]",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def findDuplicates(self, nums: List[int]) -> List[int]:\n    pass",
+      "python": "def findDuplicates(nums: List[int]) -> List[int]:\n    pass",
       "javascript": "function findDuplicates(nums) {\n    // your code here\n}",
       "java": "public List<Integer> findDuplicates(int[] nums) {\n    // your code here\n}"
     },
@@ -513,10 +999,16 @@
     ]
   },
   {
+    "id": "contiguous-array",
     "title": "Contiguous Array",
-    "difficulty": "Medium",
+    "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": ["Facebook", "Google", "Amazon", "Microsoft"],
+    "company_tags": [
+      "Facebook",
+      "Google",
+      "Amazon",
+      "Microsoft"
+    ],
     "description": "Given a binary array nums, return the maximum length of a contiguous subarray with an equal number of 0 and 1.\n\nThe array consists only of 0s and 1s. The subarray may start and end anywhere, and the goal is to maximize its length.\n\nYour solution should run in O(n) time and use O(n) auxiliary space.",
     "examples": [
       {
@@ -536,21 +1028,69 @@
       }
     ],
     "test_cases": [
-      { "input": "[0]", "output": "0", "hidden": false },
-      { "input": "[1]", "output": "0", "hidden": false },
-      { "input": "[0,0]", "output": "0", "hidden": false },
-      { "input": "[0,1]", "output": "2", "hidden": false },
-      { "input": "[0,1,0]", "output": "2", "hidden": false },
-      { "input": "[0,1,1,0,1,1]", "output": "4", "hidden": false },
-      { "input": "[0,0,1,1]", "output": "4", "hidden": true },
-      { "input": "[0,1,1,0,0,1]", "output": "6", "hidden": true },
-      { "input": "[1,1,0,1,1,0,0,0]", "output": "6", "hidden": true },
-      { "input": "[1,0,1,0,1,0]", "output": "6", "hidden": true },
-      { "input": "[0,0,0,1,1,1,0,0,0,0,1,1]", "output": "6", "hidden": true },
-      { "input": "[1,0,0,1,0,1,1,0,0,1]", "output": "10", "hidden": true }
+      {
+        "input": "[0]",
+        "expected_output": "0",
+        "hidden": false
+      },
+      {
+        "input": "[1]",
+        "expected_output": "0",
+        "hidden": false
+      },
+      {
+        "input": "[0,0]",
+        "expected_output": "0",
+        "hidden": false
+      },
+      {
+        "input": "[0,1]",
+        "expected_output": "2",
+        "hidden": false
+      },
+      {
+        "input": "[0,1,0]",
+        "expected_output": "2",
+        "hidden": false
+      },
+      {
+        "input": "[0,1,1,0,1,1]",
+        "expected_output": "4",
+        "hidden": false
+      },
+      {
+        "input": "[0,0,1,1]",
+        "expected_output": "4",
+        "hidden": true
+      },
+      {
+        "input": "[0,1,1,0,0,1]",
+        "expected_output": "6",
+        "hidden": true
+      },
+      {
+        "input": "[1,1,0,1,1,0,0,0]",
+        "expected_output": "6",
+        "hidden": true
+      },
+      {
+        "input": "[1,0,1,0,1,0]",
+        "expected_output": "6",
+        "hidden": true
+      },
+      {
+        "input": "[0,0,0,1,1,1,0,0,0,0,1,1]",
+        "expected_output": "6",
+        "hidden": true
+      },
+      {
+        "input": "[1,0,0,1,0,1,1,0,0,1]",
+        "expected_output": "10",
+        "hidden": true
+      }
     ],
     "starter": {
-      "python": "def findMaxLength(self, nums: List[int]) -> int:\n    pass",
+      "python": "def findMaxLength(nums: List[int]) -> int:\n    pass",
       "javascript": "function findMaxLength(nums) {\n    // your code here\n}",
       "java": "public int findMaxLength(int[] nums) {\n    // your code here\n}"
     },
@@ -565,6 +1105,108 @@
     "constraints": [
       "1 <= nums.length <= 10^5",
       "nums[i] is either 0 or 1."
+    ]
+  },
+  {
+    "id": "e42b2609-8b2c-49a0-9fa3-b7145df07bc3",
+    "title": "Operation Neon Overdrive: Mainframe Core Infiltration",
+    "difficulty": "Hard",
+    "category": "Graph Traversal (Stateful Dijkstra)",
+    "company_tags": [
+      "Arasaka Cyber-Defense",
+      "Neuralink DeepGrid Labs",
+      "Starlink Quantum Routing",
+      "Neo-Tokyo Municipal AI"
+    ],
+    "description": "The neon-drenched skies of Neo-Tokyo fade to absolute darkness as you jack your neural deck directly into the secure mainframe of Arasaka Cyber-Defense. Your critical mission is to navigate the localized network grid and extract a rogue sentient AI entity before the automated system lockdown sequence initiates and fries your synapses. The sub-grid is structured as a labyrinth of monitored server nodes connected by high-speed fiber channels, heavily guarded by deep packet inspection firewalls.\n\nYou must calculate the fastest path from your entry access point to the central mainframe core. Each physical link between nodes features a specific network latency overhead measured in milliseconds and may optionally be locked behind an active security firewall. Passing through an active firewall requires burning exactly one single-use ICEbreaker decryptor charge from your remaining software payload inventory. If you attempt to traverse a link protected by a firewall without an available ICEbreaker charge, the system's active countermeasures will instantly detect and flatline your connection.\n\nYou are provided with total_nodes representing the size of the cluster, and an array of connectivity vectors called mainframe_links, where each entry is formatted as [source_node, target_node, latency_ms, firewall_active]. The firewall_active flag is set to 1 if an ICEbreaker module is consumed upon entry, or 0 if it is an unmonitored open channel. You are also given your starting access_point node index, the destination mainframe_core node index, and your total allocation of icebreaker_charges. Return the absolute minimum cumulative latency required to reach the core safely.\n\nBeware of deceptive routing configurations where a highly optimized low-latency path tricks your subroutines into burning through your limited ICEbreaker charges prematurely, leaving you stranded later. Additionally, network segments may contain directional loops or entirely isolate the target core infrastructure from your initial terminal point, which requires your algorithm to gracefully abort.",
+    "starter": {
+      "python": "def bypass_mainframe_grid(total_nodes, mainframe_links, access_point, mainframe_core, icebreaker_charges):\n    pass",
+      "javascript": "function bypassMainframeGrid(total_nodes, mainframe_links, access_point, mainframe_core, icebreaker_charges) {\n    \n}",
+      "java": "class Solution {\n    public int bypassMainframeGrid(int totalNodes, int[][] mainframeLinks, int accessPoint, int mainframeCore, int icebreakerCharges) {\n        return -1;\n    }\n}"
+    },
+    "examples": [
+      {
+        "input": "{\n  \"total_nodes\": 4,\n  \"mainframe_links\": [[0, 1, 5, 1], [0, 2, 2, 0], [2, 1, 1, 1], [1, 3, 3, 0]],\n  \"access_point\": 0,\n  \"mainframe_core\": 3,\n  \"icebreaker_charges\": 1\n}",
+        "output": "6",
+        "explanation": "From access_point 0, taking a direct route to node 1 costs 5ms and consumes 1 charge, then moving to 3 costs 3ms (Total 8ms, 1 charge used). Alternatively, executing the path 0 -> 2 costs 2ms and 0 charges. Moving from 2 -> 1 costs 1ms and 1 charge (Total 3ms, 1 charge used). From node 1, routing directly to 3 costs 3ms (Cumulative 6ms, 1 charge used). The optimal state-aware path takes 6ms."
+      }
+    ],
+    "test_cases": [
+      {
+        "input": "{\"total_nodes\": 3, \"mainframe_links\": [[0, 1, 10, 0], [1, 2, 10, 0]], \"access_point\": 0, \"mainframe_core\": 2, \"icebreaker_charges\": 0}",
+        "expected_output": "20",
+        "hidden": false
+      },
+      {
+        "input": "{\"total_nodes\": 4, \"mainframe_links\": [[0, 1, 2, 1], [1, 3, 2, 1], [0, 2, 10, 0], [2, 3, 10, 0]], \"access_point\": 0, \"mainframe_core\": 3, \"icebreaker_charges\": 1}",
+        "expected_output": "20",
+        "hidden": false
+      },
+      {
+        "input": "{\"total_nodes\": 4, \"mainframe_links\": [[0, 1, 5, 1], [0, 2, 2, 0], [2, 1, 1, 1], [1, 3, 3, 0]], \"access_point\": 0, \"mainframe_core\": 3, \"icebreaker_charges\": 1}",
+        "expected_output": "6",
+        "hidden": false
+      },
+      {
+        "input": "{\"total_nodes\": 3, \"mainframe_links\": [[0, 1, 5, 0]], \"access_point\": 0, \"mainframe_core\": 2, \"icebreaker_charges\": 5}",
+        "expected_output": "-1",
+        "hidden": false
+      },
+      {
+        "input": "{\"total_nodes\": 2, \"mainframe_links\": [], \"access_point\": 0, \"mainframe_core\": 0, \"icebreaker_charges\": 0}",
+        "expected_output": "0",
+        "hidden": false
+      },
+      {
+        "input": "{\"total_nodes\": 3, \"mainframe_links\": [[0, 1, 2, 1], [1, 2, 2, 1]], \"access_point\": 0, \"mainframe_core\": 2, \"icebreaker_charges\": 0}",
+        "expected_output": "-1",
+        "hidden": false
+      },
+      {
+        "input": "{\"total_nodes\": 5, \"mainframe_links\": [[0, 1, 1, 1], [1, 2, 1, 1], [2, 3, 1, 1], [3, 4, 1, 1]], \"access_point\": 0, \"mainframe_core\": 4, \"icebreaker_charges\": 3}",
+        "expected_output": "-1",
+        "hidden": true
+      },
+      {
+        "input": "{\"total_nodes\": 5, \"mainframe_links\": [[0, 1, 1, 1], [1, 2, 1, 1], [2, 3, 1, 1], [3, 4, 1, 1]], \"access_point\": 0, \"mainframe_core\": 4, \"icebreaker_charges\": 4}",
+        "expected_output": "4",
+        "hidden": true
+      },
+      {
+        "input": "{\"total_nodes\": 4, \"mainframe_links\": [[0, 1, 100, 0], [0, 2, 10, 1], [2, 1, 10, 1], [1, 3, 10, 0]], \"access_point\": 0, \"mainframe_core\": 3, \"icebreaker_charges\": 1}",
+        "expected_output": "110",
+        "hidden": true
+      },
+      {
+        "input": "{\"total_nodes\": 6, \"mainframe_links\": [[0, 1, 4, 1], [0, 2, 2, 0], [2, 3, 3, 1], [1, 4, 1, 0], [3, 4, 2, 0], [4, 5, 6, 1]], \"access_point\": 0, \"mainframe_core\": 5, \"icebreaker_charges\": 2}",
+        "expected_output": "13",
+        "hidden": true
+      },
+      {
+        "input": "{\"total_nodes\": 3, \"mainframe_links\": [[0, 1, 5, 0], [1, 0, 1, 0], [1, 2, 10, 0]], \"access_point\": 0, \"mainframe_core\": 2, \"icebreaker_charges\": 2}",
+        "expected_output": "15",
+        "hidden": true
+      },
+      {
+        "input": "{\"total_nodes\": 4, \"mainframe_links\": [[0, 1, 10, 1], [1, 2, 20, 1], [2, 3, 30, 1]], \"access_point\": 0, \"mainframe_core\": 3, \"icebreaker_charges\": 10}",
+        "expected_output": "60",
+        "hidden": true
+      }
+    ],
+    "hints": [
+      "Track your location in the sub-grid along with your current inventory of ICEbreaker charges as a composite execution state.",
+      "Adapt Dijkstra's Shortest Path algorithm by modifying your min-heap priority element structure to store states as (latency, node, remaining_charges).",
+      "Maintain a 2D distance array where dist[node][charges] records the minimum latency required to reach that node configuration, preventing redundant search cycles."
+    ],
+    "solution": "The problem requires finding the shortest path in a weighted graph with a resource constraint, which can be modeled as a stateful traversal problem. We define our state space as a tuple of (node, remaining_charges). We implement a modified Dijkstra's algorithm utilizing a min-heap priority queue. Each entry in the min-heap tracks the cumulative latency encountered so far, the current network server node, and the remaining count of operational ICEbreaker modules. We initialize a 2D tracking matrix, distances[total_nodes][icebreaker_charges + 1], filled with infinity, setting distances[access_point][icebreaker_charges] to 0. During queue extraction, for every directed link branching from the current node, we evaluate if the target channel is gated by a firewall. If it is open (0), we can transition to the state (neighbor, remaining_charges) provided the cumulative latency is lower than previously recorded for that specific state. If the link is gated (1) and remaining_charges > 0, we transition to (neighbor, remaining_charges - 1). The first instance where our popped state node matches the destination mainframe_core guarantees the minimum network latency due to the greedy property of Dijkstra's algorithm. If the queue empties without hitting the core, we return -1.",
+    "time_complexity": "O((V * K + E * K) * log(V * K))",
+    "space_complexity": "O(V * K + E)",
+    "constraints": [
+      "2 <= total_nodes <= 1000",
+      "1 <= mainframe_links.length <= 5000",
+      "0 <= icebreaker_charges <= 100",
+      "1 <= latency_ms <= 10^4",
+      "0 <= access_point, mainframe_core < total_nodes"
     ]
   }
 ]
