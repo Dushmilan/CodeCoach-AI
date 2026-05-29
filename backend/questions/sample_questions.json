@@ -299,12 +299,12 @@
       },
       {
         "input": "[0,1,2,3,-3,-2,-1,0]\n0",
-        "expected_output": "7",
+        "expected_output": "8",
         "hidden": true
       },
       {
         "input": "[1,2,3,-3,1,2,1]\n3",
-        "expected_output": "6",
+        "expected_output": "7",
         "hidden": true
       },
       {
@@ -962,8 +962,8 @@
         "hidden": true
       },
       {
-        "input": "[3,3,3]",
-        "expected_output": "[3]",
+        "input": "[1,1]",
+        "expected_output": "[1]",
         "hidden": true
       },
       {
