@@ -18,7 +18,7 @@ class TestPythonCodeWrapper:
         assert "import sys" in result
         assert "import json" in result
         assert 'result = add(line)' in result or 'result = add("")' in result
-        assert "json.dumps(result)" in result
+        assert "json.dumps(result" in result
 
     def test_detects_existing_input(self):
         wrapper = get_wrapper("python")
@@ -54,7 +54,7 @@ class TestPythonCodeWrapper:
         wrapper = get_wrapper("python")
         code = "def get_items():\n    return [1, 2, 3]"
         result = wrapper.wrap(code)
-        assert "json.dumps(result)" in result
+        assert "json.dumps(result" in result
 
     def test_exception_handling_in_runner(self):
         wrapper = get_wrapper("python")
@@ -62,6 +62,15 @@ class TestPythonCodeWrapper:
         result = wrapper.wrap(code)
         assert "except Exception as e" in result
         assert "sys.exit(1)" in result
+
+    def test_none_return_in_place_mutation(self):
+        wrapper = get_wrapper("python")
+        code = "def rotate(matrix):\n    matrix.reverse()"
+        result = wrapper.wrap(code)
+        assert "result is None" in result
+        assert "parsed_line" in result
+        assert "separators" in result
+        assert "json.dumps" in result
 
     def test_self_stripping_removes_self(self):
         wrapper = get_wrapper("python")
@@ -119,7 +128,7 @@ class TestJavaScriptCodeWrapper:
         wrapper = get_wrapper("javascript")
         code = "function add(a, b) {\n  return a + b;\n}"
         result = wrapper.wrap(code)
-        assert "const fs = require('fs');" in result
+        assert "require('fs').readFileSync(0, 'utf-8')" in result
         assert "const result = add(" in result
         assert "console.error(e.message)" in result
 
@@ -145,7 +154,7 @@ class TestJavaScriptCodeWrapper:
         wrapper = get_wrapper("javascript")
         code = "const add = (a, b) => a + b;"
         result = wrapper.wrap(code)
-        assert "const fs = require('fs');" in result
+        assert "require('fs').readFileSync(0, 'utf-8')" in result
         assert "const result = add(" in result
 
     def test_var_function_detection(self):
@@ -183,7 +192,7 @@ class TestJavaScriptCodeWrapper:
         code = "let add = (a, b) => a + b;"
         result = wrapper.wrap(code)
         assert "const result = add(" in result
-        assert "const fs = require('fs');" in result
+        assert "require('fs').readFileSync(0, 'utf-8')" in result
 
     def test_let_declaration_function_expr(self):
         wrapper = get_wrapper("javascript")
@@ -217,6 +226,13 @@ class TestJavaScriptCodeWrapper:
         assert "split('\\n')" in result
         assert "...args" in result
         assert "process.exit(1)" in result
+
+    def test_undefined_return_in_place_mutation(self):
+        wrapper = get_wrapper("javascript")
+        code = "function rotate(matrix) {\n  matrix.reverse();\n}"
+        result = wrapper.wrap(code)
+        assert "result === undefined" in result
+        assert "args[0]" in result
 
 
 class TestJavaCodeWrapper:
@@ -289,7 +305,18 @@ class TestJavaCodeWrapper:
         wrapper = get_wrapper("java")
         code = "public static String greet(String name) {\n  return \"hi\";\n}"
         result = wrapper.wrap(code)
-        assert result == code
+        assert "public class Solution {" in result
+        assert "greet" in result
+        assert "main(String[] args)" in result
+
+    def test_no_class_fallback_with_imports(self):
+        wrapper = get_wrapper("java")
+        code = "import java.util.*;\npublic static String greet(String name) {\n  return \"hi\";\n}"
+        result = wrapper.wrap(code)
+        assert result.startswith("import java.util.*;")
+        assert "public class Solution {" in result
+        assert "greet" in result
+        assert "main(String[] args)" in result
 
     def test_zero_param_method(self):
         wrapper = get_wrapper("java")
@@ -368,6 +395,98 @@ class TestJavaCodeWrapper:
         result = wrapper.wrap(code)
         assert "nums" in result
         assert "__convertArg" in result or "main" in result
+
+    def test_toJson_compact_no_spaces(self):
+        wrapper = get_wrapper("java")
+        code = """public class Solution {
+    public static int[] getArray() {
+        return new int[]{1, 2, 3};
+    }
+}"""
+        result = wrapper.wrap(code)
+        assert '__toJson' in result
+        assert 'sb.append(",")' in result
+        assert 'sb.append(", ")' not in result
+
+    def test_toJson_handles_int_array(self):
+        wrapper = get_wrapper("java")
+        code = """public class Solution {
+    public static int[] getArray() {
+        return new int[]{1, 2, 3};
+    }
+}"""
+        result = wrapper.wrap(code)
+        assert "obj instanceof int[]" in result
+        assert "sb.append(arr[i])" in result
+
+    def test_toJson_handles_boolean_array(self):
+        wrapper = get_wrapper("java")
+        code = """public class Solution {
+    public static boolean[] getFlags() {
+        return new boolean[]{true, false};
+    }
+}"""
+        result = wrapper.wrap(code)
+        assert "obj instanceof boolean[]" in result
+
+    def test_toJson_handles_double_array(self):
+        wrapper = get_wrapper("java")
+        code = """public class Solution {
+    public static double[] getValues() {
+        return new double[]{1.5, 2.5};
+    }
+}"""
+        result = wrapper.wrap(code)
+        assert "obj instanceof double[]" in result
+
+    def test_toJson_handles_object_array(self):
+        wrapper = get_wrapper("java")
+        code = """public class Solution {
+    public static String[] getStrings() {
+        return new String[]{"a", "b"};
+    }
+}"""
+        result = wrapper.wrap(code)
+        assert "obj instanceof Object[]" in result
+
+    def test_toJson_handles_map(self):
+        wrapper = get_wrapper("java")
+        code = """public class Solution {
+    public static int sum(int a, int b) {
+        return a + b;
+    }
+}"""
+        result = wrapper.wrap(code)
+        # __helper_code() is injected for multi-param methods — verify Map branch exists
+        assert "obj instanceof java.util.Map" in result
+
+    def test_toJson_handles_collection(self):
+        wrapper = get_wrapper("java")
+        code = """public class Solution {
+    public static int sum(int a, int b) {
+        return a + b;
+    }
+}"""
+        result = wrapper.wrap(code)
+        # __helper_code() is injected for multi-param methods — verify Collection branch exists
+        assert "obj instanceof java.util.Collection" in result
+
+    def test_void_return_in_place_mutation(self):
+        wrapper = get_wrapper("java")
+        code = """public class Solution {
+    public static void rotate(int[][] matrix) {
+        for (int i = 0; i < matrix.length; i++)
+            for (int j = i + 1; j < matrix[i].length; j++) {
+                int tmp = matrix[i][j];
+                matrix[i][j] = matrix[j][i];
+                matrix[j][i] = tmp;
+            }
+    }
+}"""
+        result = wrapper.wrap(code)
+        assert "method.getReturnType() == void.class" in result
+        assert "callArgs[0]" in result
+        assert "__toJson(callArgs[0])" in result
 
 
 class TestGetWrapper:

@@ -51,7 +51,7 @@ export function useCodeExecution(): CodeExecutionFeature {
           lines.push(`   Status: ${r.passed ? 'Pass' : 'Fail'}`);
           lines.push(`   Input: ${tc.input}`);
           lines.push(`   Expected Output: ${tc.expected_output}`);
-          lines.push(`   Actual Output: ${r.stdout || '(empty)'}`);
+          lines.push(`   Actual Output: ${normalizeDisplayJson(r.stdout) || '(empty)'}`);
           if (r.error) lines.push(`   Error: ${r.error}`);
           if (r.stderr) lines.push(`   Stderr: ${r.stderr}`);
         });
@@ -154,4 +154,12 @@ export function useCodeExecution(): CodeExecutionFeature {
     clearOutput,
     clearError,
   };
+}
+
+function normalizeDisplayJson(s: string): string {
+  try {
+    return JSON.stringify(JSON.parse(s));
+  } catch {
+    return s;
+  }
 }

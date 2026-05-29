@@ -33,7 +33,7 @@ export class CodeExecutionService {
         const execResult = await this.runCode(language, code, tc.input);
         const actual = (execResult.stdout || '').trim();
         const expected = tc.expected_output.trim();
-        const isPassed = actual === expected;
+        const isPassed = compareJson(actual, expected);
         if (isPassed) passedCount++;
         results.push({
           test_name: tc.description || `Test ${results.length + 1}`,
@@ -70,6 +70,14 @@ export class CodeExecutionService {
       language,
       code,
     });
+  }
+}
+
+function compareJson(a: string, b: string): boolean {
+  try {
+    return JSON.stringify(JSON.parse(a)) === JSON.stringify(JSON.parse(b));
+  } catch {
+    return a === b;
   }
 }
 

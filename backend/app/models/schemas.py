@@ -104,9 +104,9 @@ class TestCase(BaseModel):
     @classmethod
     def normalize_to_string(cls, v):
         if isinstance(v, dict):
-            return json.dumps(v)
+            return json.dumps(v, separators=(",", ":"))
         if isinstance(v, (list, int, float, bool)):
-            return json.dumps(v) if not isinstance(v, bool) else str(v).lower()
+            return json.dumps(v, separators=(",", ":")) if not isinstance(v, bool) else str(v).lower()
         if v is None:
             return ""
         return v

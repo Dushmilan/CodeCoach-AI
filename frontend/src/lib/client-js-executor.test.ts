@@ -113,6 +113,73 @@ describe('executeClientJS', () => {
     executeClientJS(passingCode, question);
     expect(console.warn).toBe(originalWarn);
   });
+
+  it('handles non-JSON expected_output gracefully', () => {
+    const strQuestion: Question = {
+      ...question,
+      test_cases: [
+        { input: '"world"', expected_output: 'Hello, world' },
+      ],
+      starter: { python: '', javascript: 'function greet(name) {}', java: '' },
+    };
+    const code = `function greet(name) { return "Hello, " + name; }`;
+    const result = executeClientJS(code, strQuestion);
+    // Should not throw on JSON.parse("Hello, world") — falls back to string comparison
+    expect(result.results[0].passed).toBe(true);
+  });
+
+  it('handles expected_output that is a non-JSON string', () => {
+    const strQuestion: Question = {
+      ...question,
+      test_cases: [
+        { input: '5', expected_output: 'not a json string' },
+      ],
+      starter: { python: '', javascript: 'function foo(x) {}', java: '' },
+    };
+    const code = `function foo(x) { return "not a json string"; }`;
+    const result = executeClientJS(code, strQuestion);
+    expect(result.results[0].passed).toBe(true);
+  });
+
+  it('handles in-place (void) function that returns undefined', () => {
+    const rotateQuestion: Question = {
+      ...question,
+      test_cases: [
+        { input: '[[1,2],[3,4]]', expected_output: '[[3,1],[4,2]]' },
+        { input: '[[1]]', expected_output: '[[1]]' },
+      ],
+      starter: { python: '', javascript: 'function rotate(matrix) {}', java: '' },
+    };
+    const code = `function rotate(matrix) {
+      for (let i = 0; i < matrix.length; i++) {
+        for (let j = i + 1; j < matrix[i].length; j++) {
+          [matrix[i][j], matrix[j][i]] = [matrix[j][i], matrix[i][j]];
+        }
+      }
+      for (let i = 0; i < matrix.length; i++) {
+        matrix[i].reverse();
+      }
+    }`;
+    const result = executeClientJS(code, rotateQuestion);
+    expect(result.results[0].passed).toBe(true);
+    expect(result.results[1].passed).toBe(true);
+    expect(result.allPassed).toBe(true);
+  });
+
+  it('uses parsedArgs[0] as actual when function returns undefined', () => {
+    const mutateQuestion: Question = {
+      ...question,
+      test_cases: [
+        { input: '[1,2,3]', expected_output: '[1,2,3,4]' },
+      ],
+      starter: { python: '', javascript: 'function push(arr) {}', java: '' },
+    };
+    const code = `function push(arr) {
+      arr.push(4);
+    }`;
+    const result = executeClientJS(code, mutateQuestion);
+    expect(result.results[0].actual).toEqual([1, 2, 3, 4]);
+  });
 });
 
 describe('formatClientJsOutput', () => {

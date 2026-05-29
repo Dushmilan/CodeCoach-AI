@@ -69,9 +69,11 @@ export function executeClientJS(
             }
           });
           const result = ${functionName}(...parsedArgs);
-          const expectedOutput = JSON.parse(tc.expected_output);
-          const passed = JSON.stringify(result) === JSON.stringify(expectedOutput);
-          return { index: index + 1, passed, input: tc.input, expected: tc.expected_output, actual: result };
+          const actual = result !== undefined ? result : parsedArgs[0];
+          let expectedOutput;
+          try { expectedOutput = JSON.parse(tc.expected_output); } catch { expectedOutput = tc.expected_output; }
+          const passed = JSON.stringify(actual) === JSON.stringify(expectedOutput);
+          return { index: index + 1, passed, input: tc.input, expected: tc.expected_output, actual };
         } catch (e) {
           return { index: index + 1, passed: false, error: (e).message, input: tc.input };
         }

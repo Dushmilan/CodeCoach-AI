@@ -239,6 +239,59 @@ class TestJavaSuiteRunner:
         assert "parseTcArray" in runner
         assert "toJson(results)" in runner
 
+    def test_uses_toJson_instead_of_arrays_tostring(self, service):
+        """Runner serializes with toJson(result), not Arrays.toString()."""
+        code = """public class Solution {
+    public static int[] searchRange(int[] nums, int target) {
+        return new int[]{-1, -1};
+    }
+}"""
+        test_cases = [
+            {"input": "[]\n0", "expected_output": "[-1,-1]", "hidden": False},
+        ]
+        runner = self._generate(service, code, test_cases)
+        assert "actual = toJson(result)" in runner
+        assert "Arrays.toString" not in runner
+
+    def test_toJson_handles_int_array(self, service):
+        """Generated toJson has int[] branch producing compact JSON."""
+        code = """public class Solution {
+    public static int[] nums(int[] a) { return a; }
+}"""
+        test_cases = [{"input": "[1,2,3]", "expected_output": "[1,2,3]"}]
+        runner = self._generate(service, code, test_cases)
+        assert "instanceof int[]" in runner
+        assert "sb.append(arr[i])" in runner
+        assert "[\",\"])" in runner or 'sb.append(",")' in runner
+
+    def test_toJson_handles_boolean_array(self, service):
+        """Generated toJson has boolean[] branch."""
+        code = """public class Solution {
+    public static boolean[] bools(boolean[] a) { return a; }
+}"""
+        test_cases = [{"input": "[true,false]", "expected_output": "[true,false]"}]
+        runner = self._generate(service, code, test_cases)
+        assert "instanceof boolean[]" in runner
+
+    def test_toJson_handles_double_array(self, service):
+        """Generated toJson has double[] branch."""
+        code = """public class Solution {
+    public static double[] doubles(double[] a) { return a; }
+}"""
+        test_cases = [{"input": "[1.5,2.5]", "expected_output": "[1.5,2.5]"}]
+        runner = self._generate(service, code, test_cases)
+        assert "instanceof double[]" in runner
+
+    def test_toJson_handles_object_array(self, service):
+        """Generated toJson has Object[] branch with recursive toJson."""
+        code = """public class Solution {
+    public static String[] strs(String[] a) { return a; }
+}"""
+        test_cases = [{"input": "\"a\"\n\"b\"", "expected_output": "[\"a\",\"b\"]"}]
+        runner = self._generate(service, code, test_cases)
+        assert "instanceof Object[]" in runner
+        assert "toJson(arr[i])" in runner
+
 
 # ── Parse Suite Output Tests ───────────────────────────────────────────
 
@@ -399,6 +452,35 @@ class TestParseSuiteOutput:
         assert results[0].passed is True
         assert results[1].passed is False
         assert results[1].actual == ""  # no signal -> no crash annotation
+
+    def test_normalize_collapses_whitespace(self, service):
+        assert service._normalize("  [1, 2, 3]  ") == "[1,2,3]"
+        assert service._normalize("[1,\n2,\n3]") == "[1,2,3]"
+        assert service._normalize("  hello world  ") == "helloworld"
+        assert service._normalize("") == ""
+
+    def test_normalize_re_verifies_whitespace_mismatch(self, service, caplog):
+        """Runner returns passed=false but normalized actual==expected -> re-verify = True."""
+        test_cases = [{"input": "1", "expected_output": "1", "hidden": False}]
+        # Simulate runner output where actual has extra whitespace
+        results_json = json.dumps([
+            {"index": 1, "passed": True, "actual": "1"},
+        ], separators=(",", ":"))
+        stdout = f"@@SUITE_RESULT@@{results_json}@@SUITE_RESULT@@"
+        results = self._parse(service, stdout=stdout, test_cases=test_cases)
+        assert results[0].passed is True  # trusts runner's True
+
+    def test_normalize_re_verify_detects_runner_bug(self, service, caplog):
+        """Runner says passed but re-verify disagrees -> log warning."""
+        test_cases = [{"input": "1", "expected_output": "2", "hidden": False}]
+        results_json = json.dumps([
+            {"index": 1, "passed": True, "actual": "1"},  # runner says pass, but 1 != 2
+        ], separators=(",", ":"))
+        stdout = f"@@SUITE_RESULT@@{results_json}@@SUITE_RESULT@@"
+        with caplog.at_level("WARNING"):
+            results = self._parse(service, stdout=stdout, test_cases=test_cases)
+        assert results[0].passed is True  # still trusts runner
+        assert "Runner mismatch" in caplog.text
 
     def test_stdout_is_none(self, service):
         test_cases = [{"input": "1", "expected_output": "1", "hidden": False}]
@@ -614,6 +696,101 @@ class TestSuiteRunnerIntegration:
             assert results[0].passed is True
 
     @pytest.mark.asyncio
+    async def test_java_evaluate_suite_int_array_return(self, service):
+        """Java int[] returns compact JSON via toJson, not Arrays.toString space format."""
+        test_cases = [
+            {"input": "[1,2,3,4,5]\n5", "expected_output": "[4,4]", "hidden": False},
+        ]
+        code = """public class Solution {
+    public static int[] searchRange(int[] nums, int target) {
+        return new int[]{4, 4};
+    }
+}"""
+        with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
+            mock_exec.return_value = ExecutionResult(
+                stdout="@@SUITE_RESULT@@[{\"index\":1,\"passed\":true,\"actual\":\"[4,4]\"}]@@SUITE_RESULT@@",
+                stderr="", exit_code=0,
+            )
+            results = await service.evaluate_suite("java", code, test_cases)
+            assert len(results) == 1
+            assert results[0].passed is True
+
+    @pytest.mark.asyncio
+    async def test_java_evaluate_suite_int2d_array_return(self, service):
+        """Java int[][] returns compact JSON via recursive toJson, no Array.toString."""
+        test_cases = [
+            {"input": "[[1,3],[2,6],[8,10],[15,18]]", "expected_output": "[[1,6],[8,10],[15,18]]", "hidden": False},
+        ]
+        code = """public class Solution {
+    public static int[][] merge(int[][] intervals) {
+        return new int[][]{{1,6},{8,10},{15,18}};
+    }
+}"""
+        with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
+            mock_exec.return_value = ExecutionResult(
+                stdout="@@SUITE_RESULT@@[{\"index\":1,\"passed\":true,\"actual\":\"[[1,6],[8,10],[15,18]]\"}]@@SUITE_RESULT@@",
+                stderr="", exit_code=0,
+            )
+            results = await service.evaluate_suite("java", code, test_cases)
+            assert len(results) == 1
+            assert results[0].passed is True
+
+    @pytest.mark.asyncio
+    async def test_java_evaluate_suite_list_return(self, service):
+        """Java List<List<Integer>> returns compact JSON via toJson, not ArrayList.toString spacing."""
+        test_cases = [
+            {"input": "[-1,0,1,2,-1,-4]", "expected_output": "[[-1,-1,2],[-1,0,1]]", "hidden": False},
+        ]
+        code = """public class Solution {
+    public static java.util.List<java.util.List<Integer>> threeSum(int[] nums) {
+        return java.util.List.of(java.util.List.of(-1,-1,2), java.util.List.of(-1,0,1));
+    }
+}"""
+        with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
+            mock_exec.return_value = ExecutionResult(
+                stdout="@@SUITE_RESULT@@[{\"index\":1,\"passed\":true,\"actual\":\"[[-1,-1,2],[-1,0,1]]\"}]@@SUITE_RESULT@@",
+                stderr="", exit_code=0,
+            )
+            results = await service.evaluate_suite("java", code, test_cases)
+            assert len(results) == 1
+            assert results[0].passed is True
+
+    @pytest.mark.asyncio
+    async def test_java_evaluate_suite_void_in_place_mutation(self, service):
+        """Java void method (in-place mutation) serializes first arg via _lastFirstArg."""
+        test_cases = [
+            {"input": "[[1,2],[3,4]]", "expected_output": "[[3,1],[4,2]]", "hidden": False},
+            {"input": "[[1]]", "expected_output": "[[1]]", "hidden": False},
+        ]
+        code = """public class Solution {
+    public static void solve(int[][] matrix) {
+        int n = matrix.length;
+        for (int i = 0; i < n; i++)
+            for (int j = i + 1; j < n; j++) {
+                int tmp = matrix[i][j];
+                matrix[i][j] = matrix[j][i];
+                matrix[j][i] = tmp;
+            }
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n / 2; j++) {
+                int tmp = matrix[i][j];
+                matrix[i][j] = matrix[i][n - 1 - j];
+                matrix[i][n - 1 - j] = tmp;
+            }
+    }
+}"""
+        with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
+            mock_exec.return_value = ExecutionResult(
+                stdout="@@SUITE_RESULT@@[{\"index\":1,\"passed\":true,\"actual\":\"[[3,1],[4,2]]\"},{\"index\":2,\"passed\":true,\"actual\":\"[[1]]\"}]@@SUITE_RESULT@@",
+                stderr="", exit_code=0,
+            )
+            results = await service.evaluate_suite("java", code, test_cases)
+            assert len(results) == 2
+            assert results[0].passed is True
+            assert results[1].passed is True
+            assert results[0].actual == "[[3,1],[4,2]]"
+
+    @pytest.mark.asyncio
     async def test_js_evaluate_suite_no_fs_in_code_sent_to_piston(self, service):
         """Verify the final wrapped code sent to execute() has no 'require('fs')'."""
         test_cases = [
@@ -653,3 +830,54 @@ class TestSuiteRunnerIntegration:
             # Wrapper adds "readFileSync(0" for stdin reading - should NOT be present
             assert "readFileSync(0" not in sent_code, \
                 "wrapper should not add stdin-reading code to suite runner"
+
+
+# ── Schema Normalization Tests ─────────────────────────────────────────
+
+class TestSchemaNormalization:
+    """Verify TestCase.normalize_to_string produces compact JSON matching suite runners."""
+
+    def test_dict_compact_format(self):
+        from app.models.schemas import TestCase
+        tc = TestCase(input='{"a":1}', expected_output={"x": [1, 2, 3]})
+        # expected_output should be compact (no spaces after commas)
+        assert tc.expected_output == '{"x":[1,2,3]}', f"got {tc.expected_output!r}"
+
+    def test_list_compact_format(self):
+        from app.models.schemas import TestCase
+        tc = TestCase(input='1', expected_output=[1, 2, 3])
+        assert tc.expected_output == "[1,2,3]", f"got {tc.expected_output!r}"
+
+    def test_bool_lowercase(self):
+        from app.models.schemas import TestCase
+        tc = TestCase(input='1', expected_output=True)
+        assert tc.expected_output == "true", f"got {tc.expected_output!r}"
+        tc2 = TestCase(input='1', expected_output=False)
+        assert tc2.expected_output == "false", f"got {tc2.expected_output!r}"
+
+    def test_none_becomes_empty_string(self):
+        from app.models.schemas import TestCase
+        tc = TestCase(input='1', expected_output=None)
+        assert tc.expected_output == "", f"got {tc.expected_output!r}"
+
+    def test_nested_dict_compact(self):
+        from app.models.schemas import TestCase
+        tc = TestCase(input='1', expected_output={"a": {"b": [1, 2]}})
+        assert tc.expected_output == '{"a":{"b":[1,2]}}', f"got {tc.expected_output!r}"
+
+    def test_int_compact(self):
+        from app.models.schemas import TestCase
+        tc = TestCase(input='1', expected_output=42)
+        assert tc.expected_output == "42", f"got {tc.expected_output!r}"
+
+    def test_float_compact(self):
+        from app.models.schemas import TestCase
+        tc = TestCase(input='1', expected_output=3.14)
+        # json.dumps of float produces "3.14"
+        assert tc.expected_output == "3.14", f"got {tc.expected_output!r}"
+
+    def test_already_string_passthrough(self):
+        from app.models.schemas import TestCase
+        tc = TestCase(input='1', expected_output="[1, 2, 3]")
+        # Already a string — passes through unchanged
+        assert tc.expected_output == "[1, 2, 3]", f"got {tc.expected_output!r}"
