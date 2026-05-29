@@ -2,7 +2,9 @@
 # Active Issues
 
 1. **AI Chat Layout Collapse**: AI Chat Panel forces layout collapse to full-screen when long strings are generated, effectively hiding the code editor.
-2. **Quality of Generated Test Cases**: AI-generated questions frequently fail the quality gate (0/87 pass rate) due to schema inconsistencies between the NIM generator and Pydantic validation schemas.
+2. **OBSOLETE**: Quality of Generated Test Cases: AI-generated questions frequently fail the quality gate (0/87 pass rate). *Status: Automated generation pipeline has been completely scrapped in favor of author-provided questions.*
+
+3. Check if all the codes are taking as a string. Does Leetcode or hackerrank works like this??, Is linked list or tree also taken as a string?
 
 # Resolved Issues
 

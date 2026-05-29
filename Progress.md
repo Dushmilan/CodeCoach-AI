@@ -3,10 +3,9 @@
 ## Overview
 
 **Status:** Pre-launch (development complete, not yet deployed)
-**Commits:** 62+
-**Questions:** 36 in question bank (18 original + 18 AI-generated via Google Gemini) across 14/14 DSA topics of 90 target; 87 AI-generated questions re-evaluated — 0 passed quality gate
+**Commits:** 63+
+**Questions:** 36 authored questions in question bank across 14/14 DSA topics
 **Starter Code:** Python, JavaScript, Java
-**AI Quality Gate:** 4-round verification against 11 criteria (min avg > 90) before populating new questions
 
 ---
 
@@ -22,152 +21,53 @@
 ## 2. Code Execution
 
 - Piston API integration (self-hosted Docker container)
-- Code wrapping for Python, JavaScript, Java — adds test harness around user functions
+- **FIXED (May 29, 2026):** Code wrapping now detects the user's function name dynamically (instead of hardcoding `solve()`) and correctly parses JSON input into native list/int types, preventing string-parsing bugs.
 - Local JavaScript execution in browser (bypasses Piston)
 - Multi-language support with runtime version detection
 - Rate limited: 30 requests/min
 
 ## 3. Question Bank
 
-- 36 questions in bank across 14/14 DSA topics (18 original + 18 AI-generated via Google Gemini)
-- AI-assisted generation script (`backend/scripts/generate_questions.py`) produces questions across 14 DSA topics via **Google Gemini** (primary) or **NVIDIA NIM** (fallback)
-- **Dual Archetype System**: Two prompt archetypes — "Classic Grind" (traditional algorithm puzzles) and "Creative 2026" (real-world scenarios like LLM context windows, drone routing, GPU scheduling, smart grid DP, CRDT reconciliation)
-- **14 2026 Scenario Seeds**: Each DSA topic has a hand-authored real-world framing (e.g., Sliding Window → LLM token budget optimization, Graphs → drone no-fly zone routing, Heap → GPU cluster job scheduling)
-- **Auto-Retry on JSON Parse Failure**: Generator retries up to 3 times, feeding the JSON error back to the LLM so it self-corrects
-- **Model Fallback Chain**: `gemini-2.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.5-flash` — auto-falls on 429 quota errors. Pass with `--model` flag, e.g. `--model "gemini-2.5-flash-lite,gemini-3.1-flash-lite"`
-- **Rate Limiter**: Built-in `RateLimiter` class (15 RPM default) keeps under Google free-tier limits
-- **8 Test Case Enforcement**: 3 visible + 5 hidden (was 12/4/3 — relaxed for lite model output)
-- **AI Quality Gate** (`backend/scripts/verify_and_populate.py`): 4 independent rounds of AI evaluation against **11 criteria** — topic relevance, difficulty match, correctness, clarity, starter code quality, test case quality, solution correctness, edge cases, test_case_coverage (≥20 test cases required), **thematic_coherence** (scenario logic/accuracy check), **boundary_edge_cases** (max-constraint stress testing)
-- Questions populate bank only if average score > 90 across all 4 rounds; rejected questions saved to `rejected_questions.json` for review
-- `--export-prompts` mode exports all questions as self-contained evaluation prompts for manual AI eval; `--import-scores` mode ingests scored results
-- `--archetype` CLI flag supports `classic`, `creative_2026`, or `mixed` (default: mixed, 50/50 split per topic/difficulty)
-- **Evaluation using NVIDIA API key** — completed: ran `verify_and_populate.py` on 87 rejected questions, 0 passed >90 threshold
-- Full CRUD via REST API
-- Search by title/category/difficulty
-- Filter by difficulty, category, company
-- Pagination support
-- JSON file-backed storage
+- 36 questions in bank across 14/14 DSA topics
+- Automated question generation pipeline scrapped in favor of author-provided questions
+- **FIXED (May 28, 2026):** Removed `@lru_cache` causing stale questions, added try/except per question in `FileQuestionRepository._load()`.
 
 ## 4. Submit & Grade
 
 - Code submission against visible and hidden test cases
 - Pass/fail reporting with detailed output
-- Performance tracking per submission
-- Integration with Piston code execution
+- **FIXED (May 29, 2026):** Consolidated into single batch `evaluate_suite` call. Fixed syntax errors (`TypeError` on `json.dumps` over generators).
 
 ## 5. Question Validation
 
 - 7 validation use cases: structure, test cases, starter code, solution, time limits, function signature, output format
-- Each use case is a single-responsibility class
 - Orchestrated by `QuestionValidatorService`
-- Batch and single validation endpoints
 
 ## 6. Authentication
 
-- JWT-based registration and login (Access + Refresh tokens)
-- **Google OAuth via Supabase** — `/api/auth/supabase` backend endpoint validates Supabase tokens and auto-creates local users on first login
-- `UserInDB` extended with `oauth_provider`/`oauth_id` fields
-- `UserRepository.get_by_oauth()` for OAuth-based lookups
-- Frontend `AuthProvider` with React context, localStorage token persistence, `useAuth()` hook
-- `FetchClient` auto-injects `Authorization: Bearer` from localStorage
-- `AuthGuard` component + `useAuthGuard` hook gates Run/Submit/AI Coach actions behind login
-- `/login` and `/register` pages with redirect-to-origin flow
-- `/auth/callback` page for Supabase OAuth redirect handling
-- Header is auth-aware: shows "Sign in" when logged out, username + "Logout" when logged in
+- JWT-based registration and login
+- Google OAuth via Supabase
 - bcrypt password hashing
 - File-based user storage
-- `get_current_user` FastAPI dependency with HTTPBearer
-- Rate limited: 20 requests/min
 
 ## 7. Frontend Workspace
 
-- Monaco Editor (`@monaco-editor/react`) with Python/JS/Java language selector
-- Sidebar with collapsible question list, difficulty filters, random picker
-- Question description panel with hints toggle
-- Code editor with Run / Submit / Reset controls
-- AI chat panel with typing indicator, quick action buttons
-- Structured response renderer (hints, reviews, explanations)
-- Dark/Light theme toggle with persistent storage
-- Settings modal for NVIDIA API key
-- Resizable editor + output panel
-- Navigation controls (prev/next question)
-- **OnboardingTour** — 4-step first-visit overlay (Welcome, Question Browser, AI Coach, API Key)
-- **Toast notification system** — `ToastProvider` + `showToast()` imperative API for success/error/info messages. Frosted glass design, lucide icons per variant, vanguard easing. Wired into auth (login/register/logout), code execution (run/submit errors + success), coaching (errors), question loading errors, settings save, and auth guard redirects. 13 unit tests.
-- **EmptyState component** — used in MessageList and CodeEditorContainer output panel
-- **AuthGuard** — public workspace is browsable; Run/Submit/AI Coach redirect to `/login` if unauthenticated
+- Monaco Editor, collapsible sidebar, dark/light theme, resizable panels, AI chat
+- **FIXED (May 29, 2026):** Switched build pipeline to `npm` for better dependency reliability. Fixed pre-rendering errors on `/login` using `Suspense` for `useSearchParams`.
 
 ## 8. Testing
 
-### Backend (pytest)
-- 20 unit test files + 9 integration test files + 2 standalone script test files
-- 85% coverage threshold
-- Mocked NVIDIA and Piston services
-- Performance/load tests (concurrent requests, memory, locust)
-- 314 tests passing (264 unit + 50 script tests)
-- Auth: 4 supabase login tests (creates new user, returns existing, invalid token, no config)
-- Question generation: 13 tests (slugify, prompt building, JSON parsing, topic extraction)
-- AI Verification Script: 50 tests (prompt building, response parsing, scoring, filtering, merging, export, import, archetype detection, thematic coherence, boundary edge cases, auto-retry logic, rejected_key loading)
-
-### Frontend (Vitest)
-- 30 test files covering hooks, services, components
-- 297 tests passing (30 test suites)
-- Auth service: 6 tests (login, register, loginWithSupabase, getMe)
-- AuthProvider: 6 tests (initial state, login, register, logout, loginWithSupabase, token persistence)
-- Other: FetchClient HTTP service tests, component tests for all UI components
-- TypeScript: `tsc --noEmit` passes clean
-
-### E2E (Playwright)
-- 19 tests across 4 spec files
-- `auth-flow.spec.ts` — 5 tests (login page, register page, sign-in visibility, register flow, learn page)
-- `homepage.spec.ts` — 5 tests (shell, sidebar questions, settings modal, collapse, view toggle)
-- `user-flow.spec.ts` — 5 tests (language switch, AI coaching, chat input, filters, code editor)
-- `curriculum-flow.spec.ts` — 4 tests (learn nav, page load, auth state, cross-page header)
+- 264 backend unit, 50 script, 297 frontend, 19 E2E tests
+- TypeScript clean
 
 ## 9. Infrastructure
 
-- Docker Compose with 3 services: backend (FastAPI, port 8000), frontend (Next.js, port 3000), piston (port 2000)
-- Backend Dockerfile (Python 3.11-alpine)
-- Health check and detailed diagnostics endpoints
-- Debug endpoints for environment and API key status
-- Pre-commit hooks configured
-- Issue templates (bug report, feature request)
+- Docker Compose with 3 services
+- **FIXED (May 29, 2026):** Updated `Dockerfile` to use `node:20-alpine` and `npm` to resolve dependency build issues (`styled-jsx/package.json` missing). Added `.dockerignore` for `node_modules`.
 
 ---
 
-## Phase 1 Status
+## Phase 2 Status
 
-**All Phase 1 gaps are addressed.** Every item is backed by implementation, tests, or existing content.
-
-| Area | Status | Details |
-|---|---|---|
-| Questions | 🟡 In Progress | 36 in bank across 14/14 DSA topics (target: 90). 18 original + 18 AI-generated via Google Gemini. 87 AI-generated re-evaluated — 0 passed >90 threshold. Generation pipeline working with Google Gemini fallback chain. |
-| Auth | ✅ Complete | JWT email/password + Google OAuth via Supabase with full frontend integration |
-| UX Polish | ✅ Complete | EmptyState, Toast, OnboardingTour, auth-aware header, output panel placeholder |
-| E2E Testing | ✅ Complete | 19 Playwright tests across auth, homepage, user-flow, curriculum specs |
-| Educator materials | ✅ Existing | EDUCATORS.md + For Educators page |
-| Privacy | ✅ Existing | `/privacy` route with plain-language policy |
-
----
-
-## Immediate Next Step — AI Evaluation of Pending Questions
-
-**Completed (May 26, 2026):**
-- Ran `verify_and_populate.py` with NVIDIA API key to evaluate 87 rejected questions across 4 rounds
-- Result: 0 passed the >90 threshold — questions remain rejected
-- Fixed Python 3.14 bytes serialization bug and outdated test assertion
-- Expanded E2E tests from 10 to 19 across 4 Playwright spec files
-
-## What's Next (Phase 2 — Programming Language Curricula)
-
-- C, Python, Java — each with ~15-20 interleaved theory + coding exercise lessons
-- Context-aware AI coaching per lesson
-- `/learn` navigation
-- Future: DBMS/SQL, OOP & Design Patterns, Web Dev, Theory/MCQ question type, classroom dashboard
-
-## Immediate Next Step — Finish Question Generation
-
-**Status (May 28, 2026):**
-- 36 questions in bank (18 original + 18 via Google Gemini); target is 90
-- Google Gemini Flash Lite works great (~5-10s per batch) but daily quota limited
-- Fallback chain: `gemini-2.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.5-flash`
-- Run: `python generate_questions.py --provider google --concurrency 2 --questions-per-topic 6`
+- **Phase 2 Step 10 Complete:** E2E testing passed, TypeScript clean.
+- **Next:** Programming language curricula (C, Python, Java).
