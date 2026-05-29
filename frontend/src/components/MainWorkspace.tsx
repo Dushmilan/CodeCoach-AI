@@ -39,7 +39,7 @@ export function MainWorkspace() {
     executionError,
     handleRunCode,
     handleSubmitCode,
-  } = useCodeRunner(currentCode, language, fullQuestion);
+  } = useCodeRunner({ currentCode, language, fullQuestion });
 
   const { messages, isTyping, sendMessage } = useCoaching();
 

@@ -111,11 +111,11 @@ export default function LessonPage() {
     setIsRunning(true);
     setRunError('');
     try {
-      const res = await api.post('/api/run/', {
+      const res = (await api.post('/api/run/', {
         language,
         code: currentCode,
         stdin: stdin
-      }) as { stdout: string; stderr: string };
+      })) as { stdout: string; stderr: string };
       setOutput(res.stdout || '');
       setRunError(res.stderr || '');
     } catch (err) {
@@ -130,11 +130,11 @@ export default function LessonPage() {
     setIsRunning(true);
     setRunError('');
     try {
-      const submitRes = await api.post('/api/submit/', {
+      const submitRes = (await api.post('/api/submit/', {
         question_id: linkedQuestion.id,
         language,
         code: currentCode
-      }) as { passed: boolean; total: number; passed_count: number; results: Array<{ index: number; passed: boolean; actual: string }> };
+      })) as { passed: boolean; total: number; passed_count: number; results: Array<{ index: number; passed: boolean; actual: string }> };
       
       const results = submitRes.results.map((r: any) => 
         `Test ${r.index}: ${r.passed ? 'PASSED' : 'FAILED'}${r.actual ? ` (Actual: ${r.actual})` : ''}`
@@ -179,12 +179,81 @@ export default function LessonPage() {
       <Header />
 
       <main className="flex-1 flex flex-col px-6 pt-6 pb-4 max-w-7xl mx-auto w-full">
-        {/* ... header content omitted for brevity, keeping logic ... */}
-        
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/learn/${lesson.course_id}`}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground/40 hover:text-foreground/60 transition-colors"
+            >
+              <ArrowLeftIcon width={12} height={12} /> Back
+            </Link>
+            <span className="text-muted-foreground/15">/</span>
+            <div className="flex items-center gap-2.5">
+              <span className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-lg',
+                isExercise ? 'bg-emerald-500/8' : 'bg-white/[0.04]'
+              )}>
+                {isExercise ? (
+                  <CodeIcon width={14} height={14} className="text-emerald-500/60" />
+                ) : (
+                  <ReaderIcon width={14} height={14} className="text-muted-foreground/40" />
+                )}
+              </span>
+              <div>
+                <h1 className="text-sm font-medium tracking-tight text-foreground/80">
+                  {lesson.title}
+                </h1>
+                <span className={cn(
+                  'text-[10px] uppercase tracking-widest',
+                  isExercise ? 'text-emerald-500/50' : 'text-muted-foreground/30'
+                )}>
+                  {isExercise ? 'Coding Exercise' : 'Theory Lesson'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {prevId && (
+              <Link
+                href={`/learn/lesson/${prevId}`}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+              >
+                <ArrowLeftIcon width={14} height={14} className="text-muted-foreground/40" />
+              </Link>
+            )}
+            {nextId && (
+              <Link
+                href={`/learn/lesson/${nextId}`}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+              >
+                <ArrowRightIcon width={14} height={14} className="text-muted-foreground/40" />
+              </Link>
+            )}
+          </div>
+        </div>
+
         {isExercise ? (
           <div className="flex-1 grid grid-cols-[35%_1fr] min-h-0 divide-x divide-white/[0.04]">
             <div className="min-w-0 overflow-y-auto p-6">
               <MarkdownRenderer content={lesson.content} />
+              {resolvedTestCases.length > 0 && (
+                <div className="mt-6 pt-5 border-t border-white/[0.04]">
+                  <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground/40 mb-3 font-mono">
+                    Test Cases
+                  </h3>
+                  <div className="space-y-2">
+                    {resolvedTestCases.map((tc, i) => (
+                      <div key={i} className="border border-white/[0.04] rounded-lg px-3 py-2">
+                        <p className="text-xs text-foreground/70 font-medium">{tc.description}</p>
+                        <p className="text-[11px] font-mono text-muted-foreground/40 mt-1 tabular-nums">
+                          input: &ldquo;{tc.input}&rdquo; &rarr; expected: &ldquo;{tc.expected_output}&rdquo;
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-[1fr_auto] min-w-0 divide-x divide-white/[0.04]">
@@ -219,9 +288,36 @@ export default function LessonPage() {
             </div>
           </div>
         ) : (
-          <div>Theory lesson content</div>
+          <div className="flex-1 flex min-h-0">
+            <div className="flex-1 overflow-y-auto max-w-3xl">
+              <div className="border border-white/[0.04] rounded-2xl p-8">
+                <MarkdownRenderer content={lesson.content} />
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pb-8">
+                {isAuthenticated && (
+                  <button
+                    onClick={handleMarkComplete}
+                    disabled={isCompleted || isMarkingComplete}
+                    className="inline-flex items-center gap-2 text-xs px-4 py-2 rounded-full border border-primary/15 text-primary/70 hover:bg-primary/5 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <CheckIcon width={12} height={12} />
+                    {isCompleted ? 'Completed' : isMarkingComplete ? 'Marking...' : 'Mark Complete'}
+                  </button>
+                )}
+                <Link
+                  href={nextId ? `/learn/lesson/${nextId}` : `/learn/${lesson.course_id}`}
+                  className="inline-flex items-center gap-2 text-xs text-foreground/50 hover:text-foreground/70 px-4 py-2 rounded-full border border-white/[0.06] hover:border-white/[0.12] transition-all"
+                >
+                  {nextId ? 'Next Lesson' : 'Back to Course'}
+                  <ArrowRightIcon width={12} height={12} />
+                </Link>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </motion.div>
   );
 }
+', filePath: 'C:\Users\Dushmilan\Desktop\CodeCoach-AI\frontend\src\app\learn\lesson\[lessonId]\page.tsx')
