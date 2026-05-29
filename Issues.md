@@ -1,46 +1,12 @@
-1. When the cose is right the out put is getting wrong.
 
+# Active Issues
 
-For example. def find_duplicates(nums):
-    """
-    Find all elements that appear more than once in the list.
-    
-    Args:
-        nums: List of elements (typically integers)
-    
-    Returns:
-        List of duplicate elements (without repetition)
-    """
-    seen = set()
-    duplicates = set()
-    
-    for num in nums:
-        if num in seen:
-            duplicates.add(num)
-        else:
-            seen.add(num)
-    
-    return list(duplicates)
+1. **AI Chat Layout Collapse**: AI Chat Panel forces layout collapse to full-screen when long strings are generated, effectively hiding the code editor.
 
-    ---
-    Output
-    ----
-    Run Results: 0/3 passed
+# Resolved Issues
 
-❌ No duplicates in the array:
-   Status: Fail
-   Input: [1, 2, 3, 2, 4, 5, 6]
-   Expected Output: []
-   Actual Output: ["2", ",", " "]
-
-❌ Duplicates in the array:
-   Status: Fail
-   Input: [1, 1, 1, 2, 2, 3]
-   Expected Output: [1, 2]
-   Actual Output: ["1", "2", ",", " "]
-
-❌ One duplicate in the array:
-   Status: Fail
-   Input: [1, 2, 3, 4, 5, 6]
-   Expected Output: [2]
-   Actual Output: [" ", ","]
+1. **FIXED**: Code submission input parsing (backend). `PistonService` was passing raw strings to functions instead of parsed lists, causing `find_duplicates` to iterate characters of the input string.
+2. **FIXED**: Code submission `NameError` (backend). Suite runners hardcoded `solve()` as the entry point, breaking functions named `find_duplicates` etc.
+3. **FIXED**: Code submission `TypeError` (backend). Suite runners had invalid syntax (`json.dumps` over a generator) in the new batch execution refactor.
+4. **FIXED**: Frontend build crash (frontend). Added missing `styled-jsx` dependency and switched from `pnpm` to `npm` in `Dockerfile`.
+5. **FIXED**: Next.js pre-rendering error (frontend). Wrapped `/login` page `useSearchParams` in `Suspense`.

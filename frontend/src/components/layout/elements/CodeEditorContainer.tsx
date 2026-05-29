@@ -74,7 +74,7 @@ export function CodeEditorContainer({
   const hasOutput = output || error;
 
   return (
-    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden p-0">
+    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden p-0 min-w-[300px]">
       {isResizing && <div className="fixed inset-0 z-[9999] cursor-row-resize bg-transparent select-none" />}
       {/* Code Editor Section */}
       <div 

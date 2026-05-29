@@ -5,6 +5,7 @@ import { ChatMessage, Language } from '@/types';
 interface AIChatPanelContainerProps {
   messages: ChatMessage[];
   onSendMessage: (message: string, mode: string) => void;
+  onClose?: () => void;
   isTyping: boolean;
   selectedQuestion: string;
   currentCode: string;
@@ -14,16 +15,18 @@ interface AIChatPanelContainerProps {
 export function AIChatPanelContainer({
   messages,
   onSendMessage,
+  onClose,
   isTyping,
   selectedQuestion,
   currentCode,
   language,
 }: AIChatPanelContainerProps) {
   return (
-    <aside className="flex flex-col overflow-hidden" aria-label="AI Assistant Panel">
+    <aside className="flex flex-col flex-none overflow-hidden border-l border-white/[0.04]" aria-label="AI Assistant Panel">
       <AIChatPanel
         messages={messages}
         onSendMessage={onSendMessage}
+        onClose={onClose}
         isTyping={isTyping}
         selectedQuestion={selectedQuestion}
         currentCode={currentCode}

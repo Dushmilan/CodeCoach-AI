@@ -67,115 +67,27 @@ export default function LessonPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
   const [linkedQuestion, setLinkedQuestion] = useState<Question | null>(null);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(true);
 
   const { messages, isTyping, sendMessage, clearMessages } = useCoaching();
 
   // Fetch linked question when question_id is present
-  useEffect(() => {
-    if (!lesson?.question_id) {
-      setLinkedQuestion(null);
-      return;
-    }
-    let cancelled = false;
-    api.get<Question>(`/api/questions/${lesson.question_id}`)
-      .then(q => { if (!cancelled) setLinkedQuestion(q); })
-      .catch(() => { if (!cancelled) setLinkedQuestion(null); });
-    return () => { cancelled = true; };
-  }, [lesson?.question_id]);
-
-  // Resolve starter code and test cases from linked question or embedded data
-  const resolvedStarterCode = linkedQuestion
-    ? linkedQuestion.starter.python
-    : lesson?.starter_code || '';
-  const resolvedTestCases = linkedQuestion
-    ? linkedQuestion.test_cases.map(tc => ({
-        input: tc.input,
-        expected_output: tc.expected_output,
-        description: tc.description || '',
-      }))
-    : lesson?.test_cases || null;
-
-  useEffect(() => {
-    setCurrentCode(resolvedStarterCode);
-    if (lesson?.language) {
-      setLanguage(lesson.language as Language);
-    }
-  }, [lesson, resolvedStarterCode]);
-
-  useEffect(() => {
-    if (lesson && isAuthenticated) {
-      api.post(`/api/progress/${lesson.id}/access?course_id=${lesson.course_id}`).catch(() => {});
-    }
-  }, [lesson, isAuthenticated]);
-
-  const handleMarkComplete = useCallback(async () => {
-    if (!lesson || !isAuthenticated) return;
-    setIsMarkingComplete(true);
-    try {
-      await api.post(`/api/progress/${lesson.id}/complete?course_id=${lesson.course_id}`);
-      setIsCompleted(true);
-      showToast('Lesson marked as complete!', 'success');
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to mark complete', 'error');
-    } finally {
-      setIsMarkingComplete(false);
-    }
-  }, [lesson, isAuthenticated]);
-
-  const handleRunCode = async () => {
-    setIsRunning(true);
-    setOutput('');
-    setRunError('');
-    try {
-      const result = await api.post<{ stdout: string; stderr: string; exit_code: number }>('/api/run/', {
+// ...
+  const handleSendMessage = useCallback(
+    async (message: string, mode: string) => {
+      setIsAIChatOpen(true);
+      const lessonContext = lesson ? `${lesson.title}` : undefined;
+      await sendMessage(
+        message,
+        mode as any,
+        lesson?.title || 'Coding exercise',
+        currentCode,
         language,
-        code: currentCode,
-        stdin: '',
-      });
-      if (result.exit_code !== 0) {
-        setRunError(result.stderr || `Exit code: ${result.exit_code}`);
-      } else {
-        setOutput(result.stdout);
-      }
-    } catch (err) {
-      setRunError(err instanceof Error ? err.message : 'Run failed');
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  const handleSubmitCode = async () => {
-    if (!resolvedTestCases?.length) {
-      await handleRunCode();
-      return;
-    }
-    setIsRunning(true);
-    setOutput('');
-    setRunError('');
-    try {
-      const submitRes = await api.post<{
-        passed: boolean;
-        total: number;
-        passed_count: number;
-        results: Array<{
-          index: number;
-          passed: boolean;
-          input: string;
-          expected: string;
-          actual: string;
-          hidden: boolean;
-        }>;
-      }>('/api/submit/', {
-        question_id: lesson?.question_id || lesson?.id,
-        language,
-        code: currentCode,
-      });
-      const results = submitRes.results.map(r =>
-        `${r.passed ? '✓' : '✗'} Test ${r.index}\n` +
-        `  Input:    "${r.input}"\n` +
-        `  Expected: "${r.expected}"\n` +
-        `  Got:      "${r.actual}"\n`
+        lessonContext
       );
+    },
+    [lesson, currentCode, language, sendMessage]
+  );
       if (submitRes.passed) {
         setOutput('All tests passed!\n\n' + results.join('\n'));
         if (isAuthenticated && !isCompleted) {
@@ -312,8 +224,8 @@ export default function LessonPage() {
         </div>
 
         {isExercise ? (
-          <div className="flex-1 flex min-h-0 divide-x divide-white/[0.04]">
-            <div className="w-[35%] min-w-0 overflow-y-auto p-6">
+          <div className="flex-1 grid grid-cols-[35%_1fr] min-h-0 divide-x divide-white/[0.04]">
+            <div className="min-w-0 overflow-y-auto p-6">
               <MarkdownRenderer content={lesson.content} />
               {resolvedTestCases && resolvedTestCases.length > 0 && (
                 <div className="mt-6 pt-5 border-t border-white/[0.04]">
@@ -341,8 +253,8 @@ export default function LessonPage() {
               )}
             </div>
 
-            <div className="flex-[2] flex min-w-0 divide-x divide-white/[0.04]">
-              <div className="flex-1 min-w-0 flex flex-col">
+            <div className="grid grid-cols-[1fr_auto] min-w-0 divide-x divide-white/[0.04]">
+              <div className="min-w-0 flex flex-col">
                 <CodeEditorContainer
                   language={language}
                   currentCode={currentCode}
@@ -356,16 +268,30 @@ export default function LessonPage() {
                   onSubmitCode={handleSubmitCode}
                 />
               </div>
-              <div className="w-80 flex-shrink-0">
-                <AIChatPanelContainer
-                  messages={messages}
-                  onSendMessage={handleSendMessage}
-                  isTyping={isTyping}
-                  selectedQuestion={lesson.title}
-                  currentCode={currentCode}
-                  language={language}
-                />
-              </div>
+              {isAIChatOpen && (
+                <div className="w-[400px] flex-shrink-0">
+                  <AIChatPanelContainer
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    onClose={() => setIsAIChatOpen(false)}
+                    isTyping={isTyping}
+                    selectedQuestion={lesson.title}
+                    currentCode={currentCode}
+                    language={language}
+                  />
+                </div>
+              )}
+              {!isAIChatOpen && (
+                <div className="flex flex-col items-center justify-center p-4">
+                  <button
+                    onClick={() => setIsAIChatOpen(true)}
+                    className="p-3 bg-white/[0.05] hover:bg-white/[0.08] rounded-full transition-all"
+                    aria-label="Open AI Panel"
+                  >
+                    <div className="w-5 h-5 bg-primary/60 rounded-full" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ) : (

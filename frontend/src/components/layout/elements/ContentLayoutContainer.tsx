@@ -6,7 +6,7 @@ interface ContentLayoutContainerProps {
 
 export function ContentLayoutContainer({ children }: ContentLayoutContainerProps) {
   return (
-    <div className="flex-1 flex overflow-hidden gap-0.5">
+    <div className="flex-1 grid grid-cols-[1fr_auto] overflow-hidden gap-0.5">
       {children}
     </div>
   );
