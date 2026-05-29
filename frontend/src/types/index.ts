@@ -111,6 +111,7 @@ export interface LessonSummary {
     expected_output: string;
     description: string;
   }> | null;
+  question_id: string | null;
   language: string;
 }
 

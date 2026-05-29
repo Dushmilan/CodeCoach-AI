@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 
@@ -15,11 +15,29 @@ class ExecutionResult:
     version: str = ""
 
 
+@dataclass
+class TestCaseResult:
+    index: int = 0
+    passed: bool = False
+    input: str = ""
+    expected: str = ""
+    actual: str = ""
+    hidden: bool = False
+
+
 class CodeExecutor(ABC):
     @abstractmethod
     async def execute(
         self, language: str, code: str, stdin: str = "", version: Optional[str] = None
     ) -> ExecutionResult: ...
+
+    @abstractmethod
+    async def evaluate_suite(
+        self,
+        language: str,
+        code: str,
+        test_cases: List[dict],
+    ) -> List[TestCaseResult]: ...
 
     @abstractmethod
     async def get_runtimes(self) -> List[dict]: ...

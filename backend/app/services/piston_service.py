@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 import httpx
 from fastapi import HTTPException
 
-from app.ports.code_executor import CodeExecutor, ExecutionResult
+from app.ports.code_executor import CodeExecutor, ExecutionResult, TestCaseResult
 
 logger = logging.getLogger(__name__)
 
@@ -404,6 +404,356 @@ class PistonService(CodeExecutor):
         except Exception as e:
             logger.error(f"Error fetching runtimes: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to fetch available runtimes")
+
+    # ── Batch Test Suite Execution ────────────────────────────────────────
+
+    async def evaluate_suite(
+        self,
+        language: str,
+        code: str,
+        test_cases: List[dict],
+    ) -> List[TestCaseResult]:
+        """Execute all test cases in a single Piston request using a generated runner."""
+        if language not in self.languages:
+            raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+        if not test_cases:
+            return []
+
+        runner_code = self._build_suite_runner(language, code, test_cases)
+        exec_result = await self.execute(
+            language=language,
+            code=runner_code,
+            stdin="",
+        )
+
+        return self._parse_suite_output(exec_result, test_cases)
+
+    def _build_suite_runner(
+        self, language: str, user_code: str, test_cases: List[dict]
+    ) -> str:
+        if language == "python":
+            return self._python_suite_runner(user_code, test_cases)
+        elif language == "javascript":
+            return self._javascript_suite_runner(user_code, test_cases)
+        elif language == "java":
+            return self._java_suite_runner(user_code, test_cases)
+        # Fallback: run individually (shouldn't normally reach here)
+        return user_code
+
+    # ── Python suite runner ───────────────────────────────────────────────
+
+    def _python_suite_runner(self, user_code: str, test_cases: List[dict]) -> str:
+        tc_literals = json.dumps(
+            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}]
+            for i, tc in enumerate(test_cases)
+        )
+        return f"""import sys, json
+
+{user_code}
+
+__test_cases = {tc_literals}
+__results = []
+for __tc in __test_cases:
+    __idx = __tc["index"]
+    __inp = __tc["input"]
+    __exp = __tc["expected"]
+    __hidden = __tc["hidden"]
+    try:
+        __lines = __inp.split("\\n") if __inp else [""]
+        if len(__lines) == 1:
+            try:
+                __parsed = json.loads(__lines[0])
+            except Exception:
+                __parsed = __lines[0]
+            __out = solve(__parsed) if callable(solve) else solve(__lines[0])
+        elif len(__lines) == 2:
+            try:
+                __a = json.loads(__lines[0])
+                __b = json.loads(__lines[1]) if __lines[1].strip().lstrip("-").isdigit() or __lines[1].strip().startswith("[") else __lines[1]
+            except Exception:
+                __a, __b = __lines[0], __lines[1]
+            __out = solve(__a, __b)
+        else:
+            __out = solve(__lines)
+        if isinstance(__out, list):
+            __actual = json.dumps(__out)
+        elif isinstance(__out, bool):
+            __actual = str(__out).lower()
+        else:
+            __actual = str(__out)
+        __passed = __actual.strip() == __exp.strip()
+    except Exception as __e:
+        __actual = ""
+        __passed = False
+    __results.append({{"index": __idx, "passed": __passed, "actual": __actual, "hidden": __hidden}})
+
+print(__SUITE_DELIM__ + json.dumps(__results) + __SUITE_DELIM__)
+""".replace("__SUITE_DELIM__", '"@@SUITE_RESULT@@"')
+
+    # ── JavaScript suite runner ───────────────────────────────────────────
+
+    def _javascript_suite_runner(self, user_code: str, test_cases: List[dict]) -> str:
+        tc_json = json.dumps(
+            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}]
+            for i, tc in enumerate(test_cases)
+        )
+        return f"""const fs = require('fs');
+
+{user_code}
+
+const testCases = {tc_json};
+const results = [];
+
+for (const tc of testCases) {{
+    let actual = "";
+    let passed = false;
+    try {{
+        const lines = tc.input ? tc.input.split('\\n') : [""];
+        let out;
+        if (lines.length === 1) {{
+            let parsed;
+            try {{ parsed = JSON.parse(lines[0]); }} catch {{ parsed = lines[0]; }}
+            out = solve(parsed);
+        }} else if (lines.length === 2) {{
+            let a, b;
+            try {{ a = JSON.parse(lines[0]); }} catch {{ a = lines[0]; }}
+            try {{ b = JSON.parse(lines[1]); }} catch {{ b = lines[1]; }}
+            out = solve(a, b);
+        }} else {{
+            out = solve(lines);
+        }}
+        if (typeof out === 'boolean') {{
+            actual = String(out);
+        }} else if (typeof out === 'object') {{
+            actual = JSON.stringify(out);
+        }} else {{
+            actual = String(out);
+        }}
+        passed = actual.trim() === tc.expected.trim();
+    }} catch (e) {{
+        actual = "";
+        passed = false;
+    }}
+    results.push({{ index: tc.index, passed, actual, hidden: tc.hidden }});
+}}
+
+process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RESULT@@');
+"""
+
+    # ── Java suite runner ─────────────────────────────────────────────────
+
+    def _java_suite_runner(self, user_code: str, test_cases: List[dict]) -> str:
+        tc_json = json.dumps(
+            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}]
+            for i, tc in enumerate(test_cases)
+        )
+        return (
+            "import java.util.*;\n"
+            "import java.lang.reflect.*;\n"
+            "\n"
+            "public class Solution {\n"
+            + user_code + "\n"
+            "\n"
+            "    public static void main(String[] args) throws Exception {\n"
+            '        String tcJson = "' + tc_json.replace('"', '\\"') + '";\n'
+            "        List<Map<String, Object>> testCases = parseTcArray(tcJson);\n"
+            "        List<Map<String, Object>> results = new ArrayList<>();\n"
+            "\n"
+            "        for (Map<String, Object> tc : testCases) {\n"
+            '            int idx = ((Number) tc.get("index")).intValue();\n'
+            '            String input = (String) tc.get("input");\n'
+            '            String expected = (String) tc.get("expected");\n'
+            '            boolean hidden = (Boolean) tc.get("hidden");\n'
+            '            String actual = "";\n'
+            "            boolean passed = false;\n"
+            "            try {\n"
+            '                String[] lines = input.isEmpty() ? new String[]{""} : input.split("\\n", -1);\n'
+            "                Object result;\n"
+            "                if (lines.length == 1) {\n"
+            "                    result = callSolution(lines[0].trim());\n"
+            "                } else if (lines.length == 2) {\n"
+            "                    result = callSolution(lines[0].trim(), lines[1].trim());\n"
+            "                } else {\n"
+            "                    result = callSolution(lines);\n"
+            "                }\n"
+            '                actual = result == null ? "null" : result.toString();\n'
+            "                if (result instanceof boolean[]) actual = Arrays.toString((boolean[]) result);\n"
+            "                else if (result instanceof int[]) actual = Arrays.toString((int[]) result);\n"
+            "                else if (result instanceof double[]) actual = Arrays.toString((double[]) result);\n"
+            "                else if (result instanceof Object[]) actual = Arrays.toString((Object[]) result);\n"
+            "                passed = actual.trim().equals(expected.trim());\n"
+            "            } catch (Exception e) {\n"
+            '                actual = "";\n'
+            "                passed = false;\n"
+            "            }\n"
+            "            Map<String, Object> r = new LinkedHashMap<>();\n"
+            '            r.put("index", idx); r.put("passed", passed); r.put("actual", actual); r.put("hidden", hidden);\n'
+            "            results.add(r);\n"
+            "        }\n"
+            '        System.out.print("@@SUITE_RESULT@@" + toJson(results) + "@@SUITE_RESULT@@");\n'
+            "    }\n"
+            "\n"
+            "    static Object callSolution(Object... args) throws Exception {\n"
+            "        Class<?> clazz = Solution.class;\n"
+            "        for (Method m : clazz.getDeclaredMethods()) {\n"
+            '            if (m.getName().equals("solve") && m.getParameterCount() == args.length) {\n'
+            "                Object[] converted = new Object[args.length];\n"
+            "                Class<?>[] types = m.getParameterTypes();\n"
+            "                for (int i = 0; i < args.length; i++) {\n"
+            "                    converted[i] = convert(args[i], types[i]);\n"
+            "                }\n"
+            "                m.setAccessible(true);\n"
+            "                return m.invoke(null, converted);\n"
+            "            }\n"
+            "        }\n"
+            '        throw new NoSuchMethodException("solve");\n'
+            "    }\n"
+            "\n"
+            "    static Object convert(Object arg, Class<?> type) {\n"
+            "        if (arg == null) return null;\n"
+            "        String s = arg.toString();\n"
+            "        if (type == int.class || type == Integer.class) return Integer.parseInt(s);\n"
+            "        if (type == double.class || type == Double.class) return Double.parseDouble(s);\n"
+            "        if (type == boolean.class || type == Boolean.class) return Boolean.parseBoolean(s);\n"
+            "        if (type == long.class || type == Long.class) return Long.parseLong(s);\n"
+            "        if (type == String.class) return s;\n"
+            "        if (type == int[].class) return parseIntArray(s);\n"
+            "        if (type == String[].class) return parseStringArray(s);\n"
+            "        return s;\n"
+            "    }\n"
+            "\n"
+            "    static int[] parseIntArray(String s) {\n"
+            '        s = s.replaceAll("[\\\\[\\\\]\\\\s]", "");\n'
+            "        if (s.isEmpty()) return new int[0];\n"
+            '        String[] parts = s.split(",");\n'
+            "        int[] arr = new int[parts.length];\n"
+            "        for (int i = 0; i < parts.length; i++) arr[i] = Integer.parseInt(parts[i].trim());\n"
+            "        return arr;\n"
+            "    }\n"
+            "\n"
+            "    static String[] parseStringArray(String s) {\n"
+            '        s = s.replaceAll("^\\\\[|\\\\]$", "");\n'
+            "        if (s.isEmpty()) return new String[0];\n"
+            '        return s.split(",\\\\s*");\n'
+            "    }\n"
+            "\n"
+            "    static List<Map<String, Object>> parseTcArray(String json) {\n"
+            "        List<Map<String, Object>> list = new ArrayList<>();\n"
+            "        json = json.trim();\n"
+            '        if (json.startsWith("[")) json = json.substring(1);\n'
+            '        if (json.endsWith("]")) json = json.substring(0, json.length() - 1);\n'
+            "        int depth = 0; int start = -1;\n"
+            "        for (int i = 0; i < json.length(); i++) {\n"
+            "            char c = json.charAt(i);\n"
+            "            if (c == '{') { if (depth == 0) start = i; depth++; }\n"
+            "            else if (c == '}') { depth--; if (depth == 0) { list.add(parseTcObj(json.substring(start, i + 1))); start = -1; } }\n"
+            "        }\n"
+            "        return list;\n"
+            "    }\n"
+            "\n"
+            "    static Map<String, Object> parseTcObj(String json) {\n"
+            "        Map<String, Object> m = new LinkedHashMap<>();\n"
+            '        json = json.trim().replaceAll("^\\\\{|\\\\}$", "");\n'
+            '        String[] pairs = json.split(",(?=\\\\s*\\"[\\\\w]+\\")");\n'
+            "        for (String p : pairs) {\n"
+            "            int colon = p.indexOf(':');\n"
+            "            if (colon < 0) continue;\n"
+            '            String key = p.substring(0, colon).trim().replaceAll("\\\"", "");\n'
+            "            String val = p.substring(colon + 1).trim();\n"
+            '            if (val.equals("true")) m.put(key, true);\n'
+            '            else if (val.equals("false")) m.put(key, false);\n'
+            '            else if (val.startsWith("\\\"")) m.put(key, val.substring(1, val.length() - 1));\n'
+            "            else m.put(key, val);\n"
+            "        }\n"
+            "        return m;\n"
+            "    }\n"
+            "\n"
+            "    static String toJson(Object obj) {\n"
+            '        if (obj == null) return "null";\n'
+            "        if (obj instanceof Boolean || obj instanceof Number) return obj.toString();\n"
+            '        if (obj instanceof String) return "\\"" + ((String) obj).replace("\\\\", "\\\\\\\\").replace("\\\"", "\\\\\\"") + "\\"";\n'
+            "        if (obj instanceof Map) {\n"
+            '            StringBuilder sb = new StringBuilder("{");\n'
+            "            boolean first = true;\n"
+            "            for (Map.Entry<?, ?> e : ((Map<?, ?>) obj).entrySet()) {\n"
+            "                if (!first) sb.append(\",\");\n"
+            '                sb.append("\\"" + e.getKey() + "\\":").append(toJson(e.getValue()));\n'
+            "                first = false;\n"
+            "            }\n"
+            '            return sb.append("}").toString();\n'
+            "        }\n"
+            "        if (obj instanceof Collection) {\n"
+            '            StringBuilder sb = new StringBuilder("[");\n'
+            "            boolean first = true;\n"
+            "            for (Object item : (Collection<?>) obj) {\n"
+            "                if (!first) sb.append(\",\");\n"
+            "                sb.append(toJson(item));\n"
+            "                first = false;\n"
+            "            }\n"
+            '            return sb.append("]").toString();\n'
+            "        }\n"
+            "        return obj.toString();\n"
+            "    }\n"
+            "}\n"
+        )
+
+    def _parse_suite_output(
+        self, exec_result: ExecutionResult, test_cases: List[dict]
+    ) -> List[TestCaseResult]:
+        """Parse the delimited JSON output from a suite runner."""
+        stdout = exec_result.stdout
+        # Extract JSON between delimiters
+        marker = "@@SUITE_RESULT@@"
+        start = stdout.find(marker)
+        end = stdout.rfind(marker)
+        if start == -1 or end == -1 or start == end:
+            # Runner failed — mark all as failed
+            return [
+                TestCaseResult(
+                    index=i + 1,
+                    passed=False,
+                    input="" if tc.get("hidden") else tc["input"],
+                    expected="" if tc.get("hidden") else tc["expected_output"],
+                    actual="",
+                    hidden=tc.get("hidden", False),
+                )
+                for i, tc in enumerate(test_cases)
+            ]
+
+        json_str = stdout[start + len(marker) : end].strip()
+        try:
+            results = json.loads(json_str)
+        except json.JSONDecodeError:
+            return [
+                TestCaseResult(
+                    index=i + 1,
+                    passed=False,
+                    input="" if tc.get("hidden") else tc["input"],
+                    expected="" if tc.get("hidden") else tc["expected_output"],
+                    actual="",
+                    hidden=tc.get("hidden", False),
+                )
+                for i, tc in enumerate(test_cases)
+            ]
+
+        # Map runner results back to TestCaseResult objects
+        result_map = {r["index"]: r for r in results}
+        out: List[TestCaseResult] = []
+        for i, tc in enumerate(test_cases):
+            idx = i + 1
+            r = result_map.get(idx, {})
+            hidden = tc.get("hidden", False)
+            out.append(
+                TestCaseResult(
+                    index=idx,
+                    passed=r.get("passed", False),
+                    input="" if hidden else tc["input"],
+                    expected="" if hidden else tc["expected_output"],
+                    actual="" if hidden else r.get("actual", ""),
+                    hidden=hidden,
+                )
+            )
+        return out
 
     def validate_code(self, language: str, code: str) -> dict:
         return self.validator.validate(language, code)

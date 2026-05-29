@@ -22,7 +22,8 @@ export class CodeExecutionService {
   async validateCode(
     language: string,
     code: string,
-    testCases: TestCase[]
+    testCases: TestCase[],
+    questionId?: string
   ): Promise<ValidationResponse> {
     const results: TestResult[] = [];
     let passedCount = 0;

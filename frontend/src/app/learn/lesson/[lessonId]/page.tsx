@@ -18,7 +18,7 @@ import { useLesson } from '@/features/curriculum/use-curriculum.hook';
 import { useCoaching } from '@/features/coaching/coaching.hook';
 import { useAuth } from '@/providers';
 import { FetchClient } from '@/lib/fetch-client';
-import { Language, LessonSummary, CourseDetail } from '@/types';
+import { Language, LessonSummary, CourseDetail, Question } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { showToast } from '@/components/ui/Toast';
@@ -66,19 +66,41 @@ export default function LessonPage() {
   const [language, setLanguage] = useState<Language>('python');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
+  const [linkedQuestion, setLinkedQuestion] = useState<Question | null>(null);
 
   const { messages, isTyping, sendMessage, clearMessages } = useCoaching();
 
+  // Fetch linked question when question_id is present
   useEffect(() => {
-    if (lesson?.starter_code) {
-      setCurrentCode(lesson.starter_code);
-    } else {
-      setCurrentCode('');
+    if (!lesson?.question_id) {
+      setLinkedQuestion(null);
+      return;
     }
+    let cancelled = false;
+    api.get<Question>(`/api/questions/${lesson.question_id}`)
+      .then(q => { if (!cancelled) setLinkedQuestion(q); })
+      .catch(() => { if (!cancelled) setLinkedQuestion(null); });
+    return () => { cancelled = true; };
+  }, [lesson?.question_id]);
+
+  // Resolve starter code and test cases from linked question or embedded data
+  const resolvedStarterCode = linkedQuestion
+    ? linkedQuestion.starter.python
+    : lesson?.starter_code || '';
+  const resolvedTestCases = linkedQuestion
+    ? linkedQuestion.test_cases.map(tc => ({
+        input: tc.input,
+        expected_output: tc.expected_output,
+        description: tc.description || '',
+      }))
+    : lesson?.test_cases || null;
+
+  useEffect(() => {
+    setCurrentCode(resolvedStarterCode);
     if (lesson?.language) {
       setLanguage(lesson.language as Language);
     }
-  }, [lesson]);
+  }, [lesson, resolvedStarterCode]);
 
   useEffect(() => {
     if (lesson && isAuthenticated) {
@@ -123,7 +145,7 @@ export default function LessonPage() {
   };
 
   const handleSubmitCode = async () => {
-    if (!lesson?.test_cases?.length) {
+    if (!resolvedTestCases?.length) {
       await handleRunCode();
       return;
     }
@@ -131,24 +153,30 @@ export default function LessonPage() {
     setOutput('');
     setRunError('');
     try {
-      const results: string[] = [];
-      let allPassed = true;
-      for (const tc of lesson.test_cases) {
-        const result = await api.post<{ stdout: string; stderr: string; exit_code: number }>('/api/run/', {
-          language,
-          code: currentCode,
-          stdin: tc.input,
-        });
-        const passed = result.exit_code === 0 && result.stdout.trim() === tc.expected_output.trim();
-        if (!passed) allPassed = false;
-        results.push(
-          `${passed ? '✓' : '✗'} ${tc.description}\n` +
-          `  Input:    "${tc.input}"\n` +
-          `  Expected: "${tc.expected_output}"\n` +
-          `  Got:      "${result.stdout.trim()}"\n`
-        );
-      }
-      if (allPassed) {
+      const submitRes = await api.post<{
+        passed: boolean;
+        total: number;
+        passed_count: number;
+        results: Array<{
+          index: number;
+          passed: boolean;
+          input: string;
+          expected: string;
+          actual: string;
+          hidden: boolean;
+        }>;
+      }>('/api/submit/', {
+        question_id: lesson?.question_id || lesson?.id,
+        language,
+        code: currentCode,
+      });
+      const results = submitRes.results.map(r =>
+        `${r.passed ? '✓' : '✗'} Test ${r.index}\n` +
+        `  Input:    "${r.input}"\n` +
+        `  Expected: "${r.expected}"\n` +
+        `  Got:      "${r.actual}"\n`
+      );
+      if (submitRes.passed) {
         setOutput('All tests passed!\n\n' + results.join('\n'));
         if (isAuthenticated && !isCompleted) {
           await handleMarkComplete();
@@ -287,13 +315,13 @@ export default function LessonPage() {
           <div className="flex-1 flex min-h-0 divide-x divide-white/[0.04]">
             <div className="w-[35%] min-w-0 overflow-y-auto p-6">
               <MarkdownRenderer content={lesson.content} />
-              {lesson.test_cases && lesson.test_cases.length > 0 && (
+              {resolvedTestCases && resolvedTestCases.length > 0 && (
                 <div className="mt-6 pt-5 border-t border-white/[0.04]">
                   <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground/40 mb-3 font-mono">
                     Test Cases
                   </h3>
                   <div className="space-y-2">
-                    {lesson.test_cases.map((tc, i) => (
+                    {resolvedTestCases.map((tc, i) => (
                       <div key={i} className="border border-white/[0.04] rounded-lg px-3 py-2">
                         <p className="text-xs text-foreground/70 font-medium">{tc.description}</p>
                         <p className="text-[11px] font-mono text-muted-foreground/40 mt-1 tabular-nums">
@@ -318,7 +346,7 @@ export default function LessonPage() {
                 <CodeEditorContainer
                   language={language}
                   currentCode={currentCode}
-                  initialCode={lesson.starter_code || ''}
+                  initialCode={resolvedStarterCode}
                   isRunning={isRunning}
                   output={output}
                   error={runError}

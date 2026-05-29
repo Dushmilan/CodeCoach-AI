@@ -23,8 +23,9 @@ class Lesson(BaseModel):
     type: LessonType = Field(..., description="Theory or exercise")
     content: str = Field(..., description="Markdown lesson body")
     order: int = Field(..., description="Display order within module")
-    starter_code: Optional[str] = Field(None, description="Starter code for exercises")
-    test_cases: Optional[List[TestCase]] = Field(None, description="Test assertions for exercises")
+    starter_code: Optional[str] = Field(None, description="Starter code for exercises (legacy, prefer question_id)")
+    test_cases: Optional[List[TestCase]] = Field(None, description="Test assertions for exercises (legacy, prefer question_id)")
+    question_id: Optional[str] = Field(None, description="Linked Question ID for exercises — preferred over embedded starter_code/test_cases")
     language: str = Field(..., description="Language this lesson belongs to")
 
 

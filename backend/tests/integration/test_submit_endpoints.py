@@ -31,6 +31,8 @@ def mock_question_repo():
 
 @pytest.fixture
 def mock_executor():
+    from app.ports.code_executor import TestCaseResult
+
     class MockExec:
         async def execute(self, language, code, stdin="", version=None):
             from app.ports.code_executor import ExecutionResult
@@ -39,6 +41,24 @@ def mock_executor():
             if "wrong" in code.lower():
                 return ExecutionResult(stdout="wrong\n", exit_code=0)
             return ExecutionResult(stdout=stdin + "\n", exit_code=0)
+
+        async def evaluate_suite(self, language, code, test_cases):
+            results = []
+            for i, tc in enumerate(test_cases):
+                result = await self.execute(language=language, code=code, stdin=tc["input"])
+                actual = result.stdout.rstrip("\n")
+                expected = tc["expected_output"].rstrip("\n")
+                passed = actual == expected and result.exit_code == 0
+                hidden = tc.get("hidden", False)
+                results.append(TestCaseResult(
+                    index=i + 1,
+                    passed=passed,
+                    input="" if hidden else tc["input"],
+                    expected="" if hidden else tc["expected_output"],
+                    actual="" if hidden else actual,
+                    hidden=hidden,
+                ))
+            return results
 
     return MockExec()
 
