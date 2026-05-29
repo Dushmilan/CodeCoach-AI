@@ -192,6 +192,7 @@ class Question(BaseModel):
         None, description="Space complexity of optimal solution"
     )
     constraints: List[str] = Field(default=[], description="Problem constraints")
+    is_interactive: bool = Field(default=False, description="Whether this is an interactive terminal challenge")
 
     @field_validator("description", mode="before")
     @classmethod

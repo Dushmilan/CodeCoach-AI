@@ -171,9 +171,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ```bash
 cd frontend
-pnpm install
+npm install
 cp .env.example .env.local
-pnpm dev
+npm run dev
 ```
 
 #### Piston (code execution)
@@ -267,17 +267,17 @@ python -m pytest --cov=app             # With coverage (85% threshold)
 
 ```bash
 cd frontend
-pnpm test                             # Watch mode
-pnpm test:run                         # Single run
-pnpm lint                             # ESLint
-pnpm typecheck                        # TypeScript check
+npm test                             # Watch mode
+npm run test:run                     # Single run
+npm run lint                         # ESLint
+npm run typecheck                    # TypeScript check
 ```
 
 ### E2E (Playwright)
 
 ```bash
 cd frontend
-pnpm exec playwright test             # Requires dev server running
+npx playwright test             # Requires dev server running
 ```
 
 ## Contributing

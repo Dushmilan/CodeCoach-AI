@@ -6,6 +6,7 @@ import { Language } from '@/types';
 import { ChevronDownIcon, ChevronUpIcon, DragHandleDots2Icon, PlayIcon } from '@radix-ui/react-icons';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/EmptyState';
+import TerminalSimulation from '@/components/terminal/TerminalSimulation';
 
 interface CodeEditorContainerProps {
   language: Language;
@@ -14,9 +15,10 @@ interface CodeEditorContainerProps {
   isRunning: boolean;
   output: string;
   error: string;
+  isInteractive?: boolean;
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: Language) => void;
-  onRunCode: () => void;
+  onRunCode: (stdin: string) => void;
   onSubmitCode: () => void;
 }
 
@@ -27,6 +29,7 @@ export function CodeEditorContainer({
   isRunning,
   output,
   error,
+  isInteractive = false,
   onCodeChange,
   onLanguageChange,
   onRunCode,
@@ -35,6 +38,7 @@ export function CodeEditorContainer({
   const [outputHeight, setOutputHeight] = useState(200); // Default 200px
   const [outputCollapsed, setOutputCollapsed] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [stdin, setStdin] = useState(''); // New state for interactive input
   const containerRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const startHeightRef = useRef(0);
@@ -73,9 +77,18 @@ export function CodeEditorContainer({
 
   const hasOutput = output || error;
 
+  const handleRun = () => {
+    onRunCode(stdin); // Pass stdin to onRunCode
+  };
+
+  const handleSubmit = () => {
+    onSubmitCode();
+  };
+
   return (
     <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden p-0 min-w-[300px]">
       {isResizing && <div className="fixed inset-0 z-[9999] cursor-row-resize bg-transparent select-none" />}
+      
       {/* Code Editor Section */}
       <div 
         className="min-h-0 overflow-hidden flex flex-col"
@@ -87,11 +100,24 @@ export function CodeEditorContainer({
           initialCode={initialCode}
           onCodeChange={onCodeChange}
           onLanguageChange={onLanguageChange}
-            onRunCode={onRunCode}
-            onSubmitCode={onSubmitCode}
-            isRunning={isRunning}
-            isResizing={isResizing}
+          onRunCode={handleRun} // Use wrapped handler
+          onSubmitCode={handleSubmit} // Use wrapped handler
+          isRunning={isRunning}
+          isResizing={isResizing}
         />
+        
+        {/* Interactive Input Area */}
+        {isInteractive && (
+          <div className="bg-white/[0.02] border-t border-white/[0.04] p-3">
+             <div className="text-xs font-medium tracking-wide text-muted-foreground/60 mb-2">INPUT (STDIN)</div>
+             <textarea 
+                className="w-full h-16 bg-background rounded border border-white/[0.1] p-2 text-sm font-mono text-foreground focus:outline-none focus:border-primary/50"
+                placeholder="Enter input for your program (one line per input)..."
+                value={stdin}
+                onChange={(e) => setStdin(e.target.value)}
+             />
+          </div>
+        )}
       </div>
 
       {/* Resize Handle */}
@@ -136,12 +162,16 @@ export function CodeEditorContainer({
 
         {hasOutput && !outputCollapsed ? (
           <div className="flex-1 overflow-auto px-3 pb-3">
-            <pre className={cn(
-                "text-sm whitespace-pre-wrap font-mono",
-                error ? "text-red-400" : "text-foreground/80"
-            )}>
-                {error || output}
-            </pre>
+            {isInteractive ? (
+              <TerminalSimulation output={error || output} />
+            ) : (
+              <pre className={cn(
+                  "text-sm whitespace-pre-wrap font-mono",
+                  error ? "text-red-400" : "text-foreground/80"
+              )}>
+                  {error || output}
+              </pre>
+            )}
           </div>
         ) : !hasOutput ? (
           <EmptyState
@@ -153,4 +183,5 @@ export function CodeEditorContainer({
       </div>
     </div>
   );
+
 }

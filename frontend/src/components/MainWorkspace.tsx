@@ -25,7 +25,42 @@ export function MainWorkspace() {
   const [isAIChatOpen, setIsAIChatOpen] = useState(true);
 
   const {
-// ... existing hook code ...
+    questions,
+    selectedQuestion,
+    fullQuestion,
+    selectQuestion,
+    isLoading,
+    error,
+  } = useQuestion();
+  
+  const {
+    isRunning,
+    output,
+    executionError,
+    handleRunCode,
+    handleSubmitCode,
+  } = useCodeRunner(currentCode, language, fullQuestion);
+
+  const { messages, isTyping, sendMessage } = useCoaching();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (fullQuestion?.starter && typeof fullQuestion.starter === 'object' && language in fullQuestion.starter) {
+      setCurrentCode(fullQuestion.starter[language as keyof typeof fullQuestion.starter] || '');
+    } else {
+      setCurrentCode('');
+    }
+  }, [language, fullQuestion]);
+
+  const displayQuestion: Question | QuestionSummary | null = fullQuestion || selectedQuestion;
+
+  const handleRunCodeWrapper = (stdin: string) => {
+    handleRunCode(stdin);
+  };
+
   const handleSendMessage = useCallback(
     async (message: string, mode: string) => {
       if (!displayQuestion) return;
@@ -36,16 +71,18 @@ export function MainWorkspace() {
   );
 
   if (!isMounted || isLoading) {
-// ... existing return code ...
+    return <LoadingSkeleton />;
+  }
+
   return (
     <MainLayoutContainer>
       <OnboardingTour />
       <Sidebar
         questions={questions}
         selectedQuestion={selectedQuestion}
-        fullQuestion={displayQuestion}
+        fullQuestion={fullQuestion}
         onSelectQuestion={selectQuestion}
-        userProgress={userProgress}
+        userProgress={{}}
       />
 
       <MainContentContainer>
@@ -55,13 +92,14 @@ export function MainWorkspace() {
             <CodeEditorContainer
               language={language}
               currentCode={currentCode}
-              initialCode={fullQuestion?.starter?.[language] || ''}
+              initialCode={fullQuestion && typeof fullQuestion.starter === 'object' ? (fullQuestion.starter[language as keyof typeof fullQuestion.starter] || '') : ''}
               isRunning={isRunning}
               output={output}
-              error={executionError || questionError || ''}
+              error={executionError || error || ''}
+              isInteractive={fullQuestion?.is_interactive || false}
               onCodeChange={setCurrentCode}
               onLanguageChange={setLanguage}
-              onRunCode={handleRunCode}
+              onRunCode={handleRunCodeWrapper}
               onSubmitCode={handleSubmitCode}
             />
           </QuestionContentSection>
@@ -89,65 +127,6 @@ export function MainWorkspace() {
               </button>
             </div>
           )}
-        </ContentLayoutContainer>
-      </MainContentContainer>
-    </MainLayoutContainer>
-  );
-}
-  }, [language, fullQuestion]);
-
-  const displayQuestion: Question | QuestionSummary | null = fullQuestion || selectedQuestion;
-
-  const handleSendMessage = useCallback(
-    async (message: string, mode: string) => {
-      if (!displayQuestion) return;
-      await sendMessage(message, mode as any, displayQuestion.title, currentCode, language);
-    },
-    [displayQuestion, currentCode, language, sendMessage]
-  );
-
-  if (!isMounted || isLoading) {
-    return <LoadingSkeleton />;
-  }
-
-  return (
-    <MainLayoutContainer>
-      <OnboardingTour />
-      <Sidebar
-        questions={questions}
-        selectedQuestion={selectedQuestion}
-        fullQuestion={displayQuestion}
-        onSelectQuestion={selectQuestion}
-        userProgress={userProgress}
-      />
-
-      <MainContentContainer>
-        <Header />
-        <ContentLayoutContainer>
-          <QuestionContentSection>
-            <CodeEditorContainer
-              language={language}
-              currentCode={currentCode}
-              initialCode={fullQuestion?.starter?.[language] || ''}
-              isRunning={isRunning}
-              output={output}
-              error={executionError || questionError || ''}
-              onCodeChange={setCurrentCode}
-              onLanguageChange={setLanguage}
-              onRunCode={handleRunCode}
-              onSubmitCode={handleSubmitCode}
-            />
-          </QuestionContentSection>
-          <div className="w-[400px] flex-shrink-0">
-            <AIChatPanelContainer
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              isTyping={isTyping}
-              selectedQuestion={displayQuestion?.title || ''}
-              currentCode={currentCode}
-              language={language}
-            />
-          </div>
         </ContentLayoutContainer>
       </MainContentContainer>
     </MainLayoutContainer>

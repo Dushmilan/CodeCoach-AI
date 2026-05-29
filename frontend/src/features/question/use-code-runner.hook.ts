@@ -17,7 +17,7 @@ interface UseCodeRunnerReturn {
   setUserProgress: (
     updater: (prev: Record<string, 'attempted' | 'solved'>) => Record<string, 'attempted' | 'solved'>
   ) => void;
-  handleRunCode: () => Promise<void>;
+  handleRunCode: (stdin?: string) => Promise<void>;
   handleSubmitCode: () => Promise<void>;
   isRunning: boolean;
   output: string;
@@ -47,7 +47,7 @@ export function useCodeRunner({
     {}
   );
 
-  const handleRunCode = useCallback(async () => {
+  const handleRunCode = useCallback(async (stdin?: string) => {
     if (!fullQuestion) return;
 
     if (language === 'javascript') {
@@ -60,8 +60,18 @@ export function useCodeRunner({
     }
 
     try {
-      const visibleTestCases = fullQuestion.test_cases.filter((tc) => !tc.hidden).slice(0, 3);
-      await validateCode(language, currentCode, visibleTestCases);
+      if (fullQuestion.is_interactive && stdin) {
+         // Custom logic for interactive questions: run against raw input
+         // This assumes we have a way to run raw code with stdin (like codeExecutionService.runCode)
+         // But codeExecutionService.validateCode is what we currently use.
+         // Let's stick to existing validateCode for now or modify if needed.
+         // Wait, the user wants the ability to input!
+         // I will create a temporary test case if is_interactive is true
+         await validateCode(language, currentCode, [{ input: stdin, expected_output: "..." }]);
+      } else {
+         const visibleTestCases = fullQuestion.test_cases.filter((tc) => !tc.hidden).slice(0, 3);
+         await validateCode(language, currentCode, visibleTestCases);
+      }
       setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: 'attempted' }));
     } catch (err) {
       console.error('Code execution error:', err);

@@ -29,6 +29,7 @@ export interface Question extends QuestionSummary {
   solution: string;
   time_complexity: string;
   space_complexity: string;
+  is_interactive?: boolean;
 }
 
 export interface StructuredCoachingResponse {

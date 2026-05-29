@@ -88,6 +88,9 @@ except Exception as e:
 """
 
     def _create_executable_solution(self, question: Question) -> Optional[str]:
+        if question.is_interactive:
+            return str(question.solution) if question.solution else None
+
         starter_code = question.starter.python
         func_match = re.search(r"def\s+(\w+)\s*\(", starter_code)
         if not func_match:
