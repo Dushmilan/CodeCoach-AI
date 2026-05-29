@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Lightbulb, Code, MessageSquare, Settings } from 'lucide-react';
+import {
+  XIcon,
+  RadixChevronLeft,
+  RadixChevronRight,
+  LightbulbIcon,
+  RadixCodeIcon,
+  MessageSquareIcon,
+  SettingsIcon,
+} from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks';
 
@@ -9,22 +17,22 @@ const STEPS = [
   {
     title: 'Welcome to CodeCoach AI',
     description: 'Practice coding interview questions with instant feedback, AI coaching, and progress tracking.',
-    icon: Lightbulb,
+    icon: LightbulbIcon,
   },
   {
     title: 'Question Browser',
     description: 'Browse coding questions by difficulty or category. Click any question to view its description, examples, and hints in the sidebar.',
-    icon: Code,
+    icon: RadixCodeIcon,
   },
   {
     title: 'AI Coach',
     description: 'Get 24/7 AI-powered help. Ask for hints, code reviews, explanations, or debugging assistance. The AI understands your code context.',
-    icon: MessageSquare,
+    icon: MessageSquareIcon,
   },
   {
     title: 'NVIDIA API Key',
     description: 'Open Settings and add your free NVIDIA API key to enable the AI Coach. Your key stays in your browser — never sent to our server.',
-    icon: Settings,
+    icon: SettingsIcon,
   },
 ];
 
@@ -66,7 +74,7 @@ export function OnboardingTour() {
             className="p-1 hover:bg-secondary rounded transition-colors"
             aria-label="Dismiss tour"
           >
-            <X className="h-4 w-4 text-muted-foreground" />
+            <XIcon className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -92,13 +100,13 @@ export function OnboardingTour() {
           <div className="flex gap-2">
             {step > 0 && (
               <Button variant="ghost" size="sm" onClick={() => setStep(s => s - 1)}>
-                <ChevronLeft className="h-4 w-4 mr-1" />
+                <RadixChevronLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
             )}
             <Button size="sm" onClick={handleNext}>
               {isLast ? 'Get started' : 'Next'}
-              {!isLast && <ChevronRight className="h-4 w-4 ml-1" />}
+              {!isLast && <RadixChevronRight className="h-4 w-4 ml-1" />}
             </Button>
           </div>
         </div>

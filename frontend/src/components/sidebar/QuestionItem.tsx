@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { RadixCheckCircledIcon, RadixCrossCircledIcon } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 import { QuestionSummary } from '@/types';
 
@@ -47,10 +47,10 @@ export function QuestionItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {progress === 'solved' && (
-              <CheckCircle className="h-3.5 w-3.5 text-green-400 flex-shrink-0" strokeWidth={1.5} />
+              <RadixCheckCircledIcon className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
             )}
             {progress === 'attempted' && (
-              <AlertCircle className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0" strokeWidth={1.5} />
+              <RadixCrossCircledIcon className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0" />
             )}
             <h3 className="text-sm font-medium text-foreground/90 truncate">{question.title}</h3>
           </div>

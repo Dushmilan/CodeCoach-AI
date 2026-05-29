@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { ChevronRight, FileText, List } from 'lucide-react';
+import {
+  RadixChevronRight,
+  RadixReaderIcon,
+  RadixCodeIcon,
+} from '@/components/ui/icons';
 import { QuestionSummary, Question } from '@/types';
 import { cn } from '@/lib/utils';
 import { QuestionList } from './QuestionList';
@@ -44,6 +48,8 @@ export function Sidebar({
     (question: QuestionSummary, index: number) => {
       setCurrentIndex(index);
       onSelectQuestion(question);
+      setViewMode('description');
+      setIsCollapsed(false);
     },
     [onSelectQuestion]
   );
@@ -76,12 +82,8 @@ export function Sidebar({
     (newFilter: 'easy' | 'medium' | 'hard') => {
       setFilter(newFilter);
       setCurrentIndex(0);
-      const filtered = questions.filter((q) => q.difficulty === newFilter);
-      if (filtered.length > 0) {
-        handleSelectQuestion(filtered[0], 0);
-      }
     },
-    [questions, handleSelectQuestion]
+    []
   );
 
   const solvedCount = Object.values(userProgress).filter(
@@ -132,13 +134,12 @@ export function Sidebar({
                 className="p-1.5 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
-                <ChevronRight
-                  className={cn(
-                    'h-3.5 w-3.5 text-muted-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
-                    isCollapsed ? 'rotate-0' : 'rotate-180'
-                  )}
-                  strokeWidth={1}
-                />
+<RadixChevronRight
+                    className={cn(
+                      'h-3.5 w-3.5 text-muted-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                      isCollapsed ? 'rotate-0' : 'rotate-180'
+                    )}
+                  />
               </button>
             </div>
           </div>
@@ -156,12 +157,12 @@ export function Sidebar({
             >
               {viewMode === 'list' ? (
                 <>
-                  <FileText className="h-3.5 w-3.5" strokeWidth={1} />
+                  <RadixReaderIcon className="h-3.5 w-3.5" />
                   <span className="flex-1 text-left text-muted-foreground">Show Active Question</span>
                 </>
               ) : (
                 <>
-                  <List className="h-3.5 w-3.5" strokeWidth={1} />
+                  <RadixCodeIcon className="h-3.5 w-3.5" />
                   <span className="flex-1 text-left text-muted-foreground">Show All Questions</span>
                 </>
               )}
@@ -190,7 +191,19 @@ export function Sidebar({
 
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto">
-            {viewMode === 'list' ? (
+            {isCollapsed && viewMode === 'description' ? (
+              <div className="flex justify-center p-4">
+                <button
+                  onClick={() => {
+                    setIsCollapsed(false);
+                  }}
+                  className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                  aria-label="Expand description"
+                >
+                  <RadixReaderIcon className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </div>
+            ) : viewMode === 'list' ? (
               <QuestionList
                 questions={filteredQuestions}
                 selectedQuestion={selectedQuestion}
@@ -200,11 +213,11 @@ export function Sidebar({
                 onSelectQuestion={handleSelectQuestion}
               />
             ) : (
-                fullQuestion && (
-                  <QuestionDescriptionPanel
-                    selectedQuestion={fullQuestion}
-                    onToggleView={() => setViewMode('list')}
-                  />
+              fullQuestion && (
+                <QuestionDescriptionPanel
+                  selectedQuestion={fullQuestion}
+                  onToggleView={() => setViewMode('list')}
+                />
               )
             )}
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Eye, EyeOff } from 'lucide-react';
+import { XIcon, EyeIcon, EyeOffIcon, LogOutIcon } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { showToast } from '@/components/ui/Toast';
 
@@ -10,9 +10,11 @@ interface SettingsModalProps {
   onClose: () => void;
   apiKey: string;
   onSave: (key: string) => void;
+  isAuthenticated?: boolean;
+  onLogout?: () => void;
 }
 
-export function SettingsModal({ open, onClose, apiKey, onSave }: SettingsModalProps) {
+export function SettingsModal({ open, onClose, apiKey, onSave, isAuthenticated = false, onLogout }: SettingsModalProps) {
   const [inputValue, setInputValue] = useState(apiKey);
   const [showKey, setShowKey] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +49,7 @@ export function SettingsModal({ open, onClose, apiKey, onSave }: SettingsModalPr
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-sm font-semibold tracking-wide text-foreground/80">SETTINGS</h2>
             <button onClick={onClose} className="p-1.5 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
-              <X className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
+              <XIcon className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </div>
 
@@ -73,7 +75,7 @@ export function SettingsModal({ open, onClose, apiKey, onSave }: SettingsModalPr
                     onClick={() => setShowKey(!showKey)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                   >
-                    {showKey ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground/60" strokeWidth={1} /> : <Eye className="h-3.5 w-3.5 text-muted-foreground/60" strokeWidth={1} />}
+                    {showKey ? <EyeOffIcon className="h-3.5 w-3.5 text-muted-foreground/60" /> : <EyeIcon className="h-3.5 w-3.5 text-muted-foreground/60" />}
                   </button>
                 </div>
               </div>
@@ -87,6 +89,23 @@ export function SettingsModal({ open, onClose, apiKey, onSave }: SettingsModalPr
                 Save
               </Button>
             </div>
+
+            {isAuthenticated && onLogout && (
+              <>
+                <div className="border-t border-white/5 pt-4 mt-2">
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      onClose();
+                    }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400/80 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                  >
+                    <LogOutIcon className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

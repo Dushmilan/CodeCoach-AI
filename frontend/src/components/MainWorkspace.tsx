@@ -98,6 +98,7 @@ export function MainWorkspace() {
             <CodeEditorContainer
               language={language}
               currentCode={currentCode}
+              initialCode={fullQuestion?.starter?.[language] || ''}
               isRunning={isRunning}
               output={output}
               error={executionError || questionError || ''}

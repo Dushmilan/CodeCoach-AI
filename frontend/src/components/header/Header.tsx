@@ -1,9 +1,17 @@
 'use client';
 
+import * as React from 'react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Moon, Sun, Settings, LogOut, User, X, GraduationCap } from 'lucide-react';
-import { useTheme } from '@/hooks';
+import {
+  MoonIcon,
+  SunIcon,
+  SettingsIcon,
+  UserIcon,
+  XIcon,
+  GraduationCapIcon,
+} from '@/components/ui/icons';
+import { useTheme } from 'next-themes';
 import { useAuth } from '@/providers';
 import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/settings/SettingsModal';
@@ -12,6 +20,12 @@ import { cn } from '@/lib/utils';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { apiKey, setApiKey } = useSettings();
   const { user, isAuthenticated, logout } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
@@ -49,7 +63,7 @@ export function Header() {
               href="/learn"
               className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
             >
-              <GraduationCap className="h-3 w-3" strokeWidth={1.5} />
+              <GraduationCapIcon className="h-3 w-3" />
               Learn
             </Link>
             <Link
@@ -69,7 +83,7 @@ export function Header() {
           <div className="flex items-center gap-0.5 ml-2">
             {isAuthenticated ? (
               <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground">
-                <User className="h-3 w-3" strokeWidth={1} />
+                <UserIcon className="h-3 w-3" />
                 {user?.username}
               </span>
             ) : (
@@ -81,14 +95,14 @@ export function Header() {
             )}
 
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
               className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? (
-                <Sun className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
+              {theme === 'light' ? (
+                <MoonIcon className="h-3.5 w-3.5 text-muted-foreground" />
               ) : (
-                <Moon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
+                <SunIcon className="h-3.5 w-3.5 text-muted-foreground" />
               )}
             </button>
 
@@ -97,18 +111,8 @@ export function Header() {
               className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
               title="Settings"
             >
-              <Settings className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
+              <SettingsIcon className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
-
-            {isAuthenticated && (
-              <button
-                onClick={logout}
-                className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
-                title="Sign out"
-              >
-                <LogOut className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1} />
-              </button>
-            )}
 
             {/* Hamburger */}
             <button
@@ -155,7 +159,7 @@ export function Header() {
           className="absolute top-6 right-6 p-3 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
           aria-label="Close menu"
         >
-          <X className="h-5 w-5 text-white/70" strokeWidth={1} />
+          <XIcon className="h-5 w-5 text-white/70" />
         </button>
 
         <nav className="flex flex-col items-center gap-6">
@@ -194,10 +198,19 @@ export function Header() {
         >
           {isAuthenticated && (
             <span className="text-sm text-white/40 flex items-center gap-2">
-              <User className="h-3.5 w-3.5" strokeWidth={1} />
+              <UserIcon className="h-3.5 w-3.5" />
               {user?.username}
             </span>
           )}
+          <button
+            onClick={() => {
+              setShowSettings(true);
+              setMenuOpen(false);
+            }}
+            className="px-5 py-2 text-sm text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          >
+            Settings
+          </button>
           <button
             onClick={() => {
               setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -215,6 +228,8 @@ export function Header() {
         onClose={() => setShowSettings(false)}
         apiKey={apiKey}
         onSave={setApiKey}
+        isAuthenticated={isAuthenticated}
+        onLogout={logout}
       />
     </>
   );

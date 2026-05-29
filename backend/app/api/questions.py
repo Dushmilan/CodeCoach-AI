@@ -17,7 +17,7 @@ async def get_questions(
     difficulty: Optional[Difficulty] = Query(None, description="Filter by difficulty"),
     category: Optional[str] = Query(None, description="Filter by category"),
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(20, ge=1, le=100, description="Items per page"),
+    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
     questions_service: QuestionsService = Depends(get_questions_service),
 ):
     """
@@ -94,7 +94,7 @@ async def search_questions(
     difficulty: Optional[Difficulty] = Query(None, description="Filter by difficulty"),
     category: Optional[str] = Query(None, description="Filter by category"),
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(20, ge=1, le=100, description="Items per page"),
+    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
     questions_service: QuestionsService = Depends(get_questions_service),
 ):
     """
@@ -160,7 +160,7 @@ async def get_question_stats(
 async def get_questions_by_category(
     category: str,
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(20, ge=1, le=100, description="Items per page"),
+    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
     questions_service: QuestionsService = Depends(get_questions_service),
 ):
     """Get questions filtered by category."""
@@ -190,7 +190,7 @@ async def get_questions_by_category(
 async def get_questions_by_difficulty(
     difficulty: Difficulty,
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(20, ge=1, le=100, description="Items per page"),
+    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
     questions_service: QuestionsService = Depends(get_questions_service),
 ):
     """Get questions filtered by difficulty."""

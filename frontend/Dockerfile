@@ -1,15 +1,12 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
-
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
+# Install dependencies using npm
+RUN npm install
 
 # Copy source
 COPY . .
@@ -19,10 +16,10 @@ ENV NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_WS_URL=ws://localhost:8000
 
 # Build
-RUN pnpm build
+RUN npm run build
 
 # Expose port
 EXPOSE 3000
 
 # Start
-CMD ["pnpm", "start"]
+CMD ["npm", "start"]

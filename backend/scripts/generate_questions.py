@@ -388,7 +388,7 @@ async def call_nvidia_async(
             return raw
 
         except (json.JSONDecodeError, httpx.RequestError, KeyError) as e:
-            logger.warning(f"  Attempt {attempt} failed: {e}")
+            logger.error(f"  Attempt {attempt} failed: {type(e).__name__} - {e}")
             if attempt < max_retries:
                 prompt = prompt + (
                     f"\n\nYour previous response caused an error: {e}. "
@@ -575,7 +575,7 @@ def generate_questions(
 
     async def _run_all():
         nonlocal total, all_questions
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             batch_size = concurrency * 2
             for batch_start in range(0, len(tasks_to_run), batch_size):
                 batch = tasks_to_run[batch_start:batch_start + batch_size]

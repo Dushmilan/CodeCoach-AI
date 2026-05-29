@@ -228,5 +228,5 @@ backend/dry_run_output.json
 batch_classic_dry.json
 debug_creative_raw.txt
 
-# Graphify cache
-graphify-out/cache/
+# Graphify
+graphify-out/

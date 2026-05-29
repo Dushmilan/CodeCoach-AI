@@ -2,7 +2,12 @@
 
 import React, { useState, useMemo } from 'react';
 import { Question, QuestionSummary } from '@/types';
-import { ChevronRight, ChevronDown, Lightbulb, Loader2 } from 'lucide-react';
+import {
+  RadixChevronRight,
+  RadixChevronDown,
+  LightbulbIcon,
+  Loader2Icon,
+} from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
 interface QuestionDescriptionPanelProps {
@@ -48,7 +53,7 @@ export function QuestionDescriptionPanel({
 
         {!hasFullData ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" strokeWidth={1} />
+            <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground/40" />
             <span className="ml-2 text-xs text-muted-foreground/60">
               Loading description...
             </span>
@@ -90,12 +95,12 @@ export function QuestionDescriptionPanel({
                     onClick={() => setHintsExpanded(!hintsExpanded)}
                     className="flex items-center gap-2 text-xs font-medium text-muted-foreground/70 hover:text-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] w-full"
                   >
-                    <Lightbulb className="h-3.5 w-3.5" strokeWidth={1} />
+                    <LightbulbIcon className="h-3.5 w-3.5" />
                     <span>Hints</span>
                     {hintsExpanded ? (
-                      <ChevronDown className="h-3.5 w-3.5 ml-auto" strokeWidth={1} />
+                      <RadixChevronDown className="h-3.5 w-3.5 ml-auto" />
                     ) : (
-                      <ChevronRight className="h-3.5 w-3.5 ml-auto" strokeWidth={1} />
+                      <RadixChevronRight className="h-3.5 w-3.5 ml-auto" />
                     )}
                   </button>
                   {hintsExpanded && (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { XIcon, RadixCheckCircledIcon, RadixCrossCircledIcon, RadixInfoCircledIcon } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
 export type ToastVariant = 'success' | 'error' | 'info';
@@ -12,10 +12,10 @@ interface ToastData {
   variant: ToastVariant;
 }
 
-const VARIANT_ICONS: Record<ToastVariant, typeof CheckCircle2> = {
-  success: CheckCircle2,
-  error: AlertCircle,
-  info: Info,
+const VARIANT_ICONS: Record<ToastVariant, typeof RadixCheckCircledIcon> = {
+  success: RadixCheckCircledIcon,
+  error: RadixCrossCircledIcon,
+  info: RadixInfoCircledIcon,
 };
 
 const VARIANT_STYLES: Record<ToastVariant, string> = {
@@ -73,13 +73,13 @@ export function ToastContainer() {
               VARIANT_STYLES[toast.variant]
             )}
           >
-            <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.5} />
+            <Icon className="h-4 w-4 shrink-0 opacity-80" />
             <span className="flex-1 text-sm font-medium tracking-tight">{toast.message}</span>
             <button
               onClick={() => dismiss(toast.id)}
               className="p-1 -mr-1 opacity-40 hover:opacity-100 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
-              <X className="h-3 w-3" strokeWidth={1.5} />
+              <XIcon className="h-3 w-3" />
             </button>
           </div>
         );

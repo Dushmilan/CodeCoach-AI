@@ -1,6 +1,9 @@
 'use client';
 
-import { ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import {
+  RadixChevronLeft,
+  RadixChevronRight,
+} from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
 interface NavigationControlsProps {
@@ -29,7 +32,7 @@ export function NavigationControls({
           disabled={disabled}
           className="flex items-center justify-center px-2 py-1.5 text-[10px] font-medium rounded-full bg-white/5 hover:bg-white/10 text-muted-foreground disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
         >
-          <ChevronLeft className="h-3 w-3 mr-1" strokeWidth={1} />
+          <RadixChevronLeft className="h-3 w-3 mr-1" />
           Prev
         </button>
         <button
@@ -37,7 +40,7 @@ export function NavigationControls({
           disabled={disabled}
           className="flex items-center justify-center px-2 py-1.5 text-[10px] font-medium rounded-full bg-white/5 hover:bg-white/10 text-muted-foreground disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
         >
-          <ChevronRightIcon className="h-3 w-3 mr-1" strokeWidth={1} />
+          <RadixChevronRight className="h-3 w-3 mr-1" />
           Next
         </button>
       </div>

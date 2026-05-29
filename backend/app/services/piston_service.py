@@ -444,20 +444,21 @@ class PistonService(CodeExecutor):
 
     def _python_suite_runner(self, user_code: str, test_cases: List[dict]) -> str:
         tc_literals = json.dumps(
-            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}]
-            for i, tc in enumerate(test_cases)
+            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}
+             for i, tc in enumerate(test_cases)]
         )
+        
+        func_match = re.search(r"def\s+(\w+)\s*\(", user_code)
+        func_name = func_match.group(1) if func_match else "solve"
+        
         return f"""import sys, json
 
 {user_code}
 
 __test_cases = {tc_literals}
 __results = []
-for __tc in __test_cases:
-    __idx = __tc["index"]
+def __run_test(__tc):
     __inp = __tc["input"]
-    __exp = __tc["expected"]
-    __hidden = __tc["hidden"]
     try:
         __lines = __inp.split("\\n") if __inp else [""]
         if len(__lines) == 1:
@@ -465,16 +466,25 @@ for __tc in __test_cases:
                 __parsed = json.loads(__lines[0])
             except Exception:
                 __parsed = __lines[0]
-            __out = solve(__parsed) if callable(solve) else solve(__lines[0])
+            return {func_name}(__parsed)
         elif len(__lines) == 2:
             try:
                 __a = json.loads(__lines[0])
                 __b = json.loads(__lines[1]) if __lines[1].strip().lstrip("-").isdigit() or __lines[1].strip().startswith("[") else __lines[1]
             except Exception:
                 __a, __b = __lines[0], __lines[1]
-            __out = solve(__a, __b)
+            return {func_name}(__a, __b)
         else:
-            __out = solve(__lines)
+            return {func_name}(__lines)
+    except Exception as e:
+        raise e
+
+for __tc in __test_cases:
+    __idx = __tc["index"]
+    __exp = __tc["expected"]
+    __hidden = __tc["hidden"]
+    try:
+        __out = __run_test(__tc)
         if isinstance(__out, list):
             __actual = json.dumps(__out)
         elif isinstance(__out, bool):
@@ -494,9 +504,16 @@ print(__SUITE_DELIM__ + json.dumps(__results) + __SUITE_DELIM__)
 
     def _javascript_suite_runner(self, user_code: str, test_cases: List[dict]) -> str:
         tc_json = json.dumps(
-            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}]
-            for i, tc in enumerate(test_cases)
+            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}
+             for i, tc in enumerate(test_cases)]
         )
+        
+        # Extract function name
+        func_match = re.search(r"function\s+(\w+)\s*\(", user_code)
+        if not func_match:
+            func_match = re.search(r"(?:const|let|var)\s+(\w+)\s*=\s*(?:function|\(.*\)\s*=>)", user_code)
+        func_name = func_match.group(1) if func_match else "solve"
+        
         return f"""const fs = require('fs');
 
 {user_code}
@@ -513,14 +530,14 @@ for (const tc of testCases) {{
         if (lines.length === 1) {{
             let parsed;
             try {{ parsed = JSON.parse(lines[0]); }} catch {{ parsed = lines[0]; }}
-            out = solve(parsed);
+            out = {func_name}(parsed);
         }} else if (lines.length === 2) {{
             let a, b;
             try {{ a = JSON.parse(lines[0]); }} catch {{ a = lines[0]; }}
             try {{ b = JSON.parse(lines[1]); }} catch {{ b = lines[1]; }}
-            out = solve(a, b);
+            out = {func_name}(a, b);
         }} else {{
-            out = solve(lines);
+            out = {func_name}(lines);
         }}
         if (typeof out === 'boolean') {{
             actual = String(out);

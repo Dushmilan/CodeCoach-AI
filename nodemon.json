@@ -1,0 +1,6 @@
+{
+  "watch": ["backend/**/*.py"],
+  "ext": "py",
+  "exec": "uvicorn app.main:app",
+  "verbose": true
+}

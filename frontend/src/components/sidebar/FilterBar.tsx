@@ -1,6 +1,6 @@
 'use client';
 
-import { Shuffle, List } from 'lucide-react';
+import { ShuffleIcon, RadixCodeIcon } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
 interface FilterBarProps {
@@ -48,14 +48,14 @@ export function FilterBar({
               : 'bg-white/5 hover:bg-white/10 text-muted-foreground'
           )}
         >
-          <List className="h-3 w-3 mr-1.5" strokeWidth={1} />
+          <RadixCodeIcon className="h-3 w-3 mr-1.5" />
           All
         </button>
         <button
           onClick={onRandom}
           className="flex items-center justify-center px-2 py-1.5 text-[10px] font-medium rounded-full tracking-wide bg-white/5 hover:bg-white/10 text-muted-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
         >
-          <Shuffle className="h-3 w-3 mr-1.5" strokeWidth={1} />
+          <ShuffleIcon className="h-3 w-3 mr-1.5" />
           Random
         </button>
       </div>
