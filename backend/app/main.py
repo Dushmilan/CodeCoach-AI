@@ -4,13 +4,29 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
 import logging
+import os
+import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
+def setup_logging():
+    level = os.getenv("LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(
+        level=getattr(logging, level, logging.INFO),
+        format="%(asctime)s [%(levelname)8s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        stream=sys.stdout,
+    )
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+
+
 # Load environment variables from .env file with explicit path
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
+
+setup_logging()
 
 from app.api import (  # noqa: E402
     coach,

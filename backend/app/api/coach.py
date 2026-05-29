@@ -3,11 +3,13 @@ from fastapi.responses import StreamingResponse
 from typing import AsyncIterator, Optional
 import asyncio
 import json
+import logging
 import os
 
 from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language
 from app.services.nim_service import NIMService
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -17,10 +19,6 @@ def get_nim_service(
     """Dependency injection for NIM service."""
     api_key = x_nvidia_api_key or os.getenv("NVIDIA_API_KEY")
     environment = os.getenv("ENVIRONMENT", "production")
-
-    import logging
-
-    logger = logging.getLogger(__name__)
 
     # Force load environment variables in get_nim_service
     from dotenv import load_dotenv
@@ -138,24 +136,20 @@ async def get_coaching(
     This endpoint provides structured AI coaching using NVIDIA NIM API.
     Returns both raw text response and structured JSON response.
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
     # DEBUG: Log incoming request details
-    logger.info("=== COACH API REQUEST (structured) ===")
-    logger.info(
+    logger.debug("=== COACH API REQUEST (structured) ===")
+    logger.debug(
         f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}..."
     )
-    logger.info(
+    logger.debug(
         f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}..."
     )
-    logger.info(f"Language: {request.language.value}")
-    logger.info(f"Message: {request.message}")
-    logger.info(f"Mode: {request.mode.value}")
-    logger.info(f"Difficulty: {request.difficulty.value}")
-    logger.info(f"NIM Service initialized: {nim_service is not None}")
-    logger.info("=========================================")
+    logger.debug(f"Language: {request.language.value}")
+    logger.debug(f"Message: {request.message}")
+    logger.debug(f"Mode: {request.mode.value}")
+    logger.debug(f"Difficulty: {request.difficulty.value}")
+    logger.debug(f"NIM Service initialized: {nim_service is not None}")
+    logger.debug("=========================================")
 
     try:
         # Get structured response
@@ -172,10 +166,10 @@ async def get_coaching(
         # Create raw text response from structured data for backward compatibility
         raw_response = _format_structured_as_text(structured_data)
 
-        logger.info("=== COACH API RESPONSE ===")
-        logger.info(f"Structured response keys: {list(structured_data.keys())}")
-        logger.info(f"Summary: {structured_data.get('summary', 'N/A')[:100]}...")
-        logger.info("==========================")
+        logger.debug("=== COACH API RESPONSE ===")
+        logger.debug(f"Structured response keys: {list(structured_data.keys())}")
+        logger.debug(f"Summary: {structured_data.get('summary', 'N/A')[:100]}...")
+        logger.debug("==========================")
 
         return CoachingResponse(
             response=raw_response,
@@ -261,29 +255,25 @@ async def get_coaching_stream(
     Returns a streaming response with Server-Sent Events format.
     Each chunk is sent as a separate SSE event.
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
     # DEBUG: Log incoming request details for streaming endpoint
-    logger.info("=== COACH API STREAM REQUEST ===")
-    logger.info(
+    logger.debug("=== COACH API STREAM REQUEST ===")
+    logger.debug(
         f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}..."
     )
-    logger.info(
+    logger.debug(
         f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}..."
     )
-    logger.info(f"Language: {request.language.value}")
-    logger.info(f"Message: {request.message}")
-    logger.info(f"Mode: {request.mode.value}")
-    logger.info(f"Difficulty: {request.difficulty.value}")
-    logger.info(f"NIM Service initialized: {nim_service is not None}")
-    logger.info("================================")
+    logger.debug(f"Language: {request.language.value}")
+    logger.debug(f"Message: {request.message}")
+    logger.debug(f"Mode: {request.mode.value}")
+    logger.debug(f"Difficulty: {request.difficulty.value}")
+    logger.debug(f"NIM Service initialized: {nim_service is not None}")
+    logger.debug("================================")
 
     async def generate_stream() -> AsyncIterator[str]:
         chunk_count = 0
         try:
-            logger.info("Starting to stream chunks from NIM service...")
+            logger.debug("Starting to stream chunks from NIM service...")
             async for chunk in nim_service.get_coaching_response(
                 problem=request.problem,
                 code=request.code,
@@ -301,9 +291,9 @@ async def get_coaching_stream(
                 # Small delay to prevent overwhelming the client
                 await asyncio.sleep(0.01)
 
-            logger.info("=== STREAM COMPLETE ===")
-            logger.info(f"Total chunks sent: {chunk_count}")
-            logger.info("=======================")
+            logger.debug("=== STREAM COMPLETE ===")
+            logger.debug(f"Total chunks sent: {chunk_count}")
+            logger.debug("=======================")
 
             # Send completion signal
             yield f"data: {json.dumps({'done': True})}\n\n"

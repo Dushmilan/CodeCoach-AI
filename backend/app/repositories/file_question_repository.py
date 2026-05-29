@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 from typing import Dict, Optional
 
 from app.models.schemas import Question, Difficulty
+
+logger = logging.getLogger(__name__)
 from app.models.question_validation_schemas import QuestionValidationStatus
 from app.ports.question_repository import QuestionRepository
 
@@ -29,7 +32,7 @@ class FileQuestionRepository(QuestionRepository):
                 self._questions[q.id] = q
             except Exception as e:
                 title = item.get("title", "unknown")
-                print(f"Warning: Skipping malformed question '{title}': {e}")
+                logger.warning("Skipping malformed question '%s': %s", title, e)
 
     def _load_validation_statuses(self):
         if not os.path.exists(self._validation_file):
