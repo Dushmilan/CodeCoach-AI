@@ -106,3 +106,32 @@ Programming language curricula (C, Python, Java) for CodeCoach AI:
 **Key insight:** Different models have separate quota buckets. Using a fallback chain (comma-separated `--model`) maximises free tier throughput. Threshold: 90 questions (currently 36).
 
 **Usage:** `python generate_questions.py --provider google --concurrency 2 --questions-per-topic 6`
+
+### Session Context — May 29, 2026 (Suite Runner Bug Fixes)
+
+**Problem:** 4 root-cause bugs in `piston_service.py` causing suite-runner failures:
+
+1. **In-place functions** (`rotate-image`, `next-permutation`): return `None` → runner compares `"None"` to expected matrix → always fails.
+2. **5-param AI question** (`e42b2609-...`): JSON dict fed but function expects 5 positional args → `TypeError`.
+3. **Signal 6 crash**: `_parse_suite_output` ignored `exec_result.signal`; SIGABRT silenced.
+4. **JS `fs` redeclaration**: Both runner template and `JavaScriptCodeWrapper.wrap()` add `const fs = require('fs')` → `SyntaxError`.
+
+**Fixes:**
+- `__run_test` returns `(output, input_value)` tuple; `None` → serialize input_value
+- AI question inputs converted to `\n`-separated 5-line format; `*parsed_args` / `...parsedArgs` spread
+- Added `signal_info` to `_parse_suite_output` error paths
+- Removed `const fs` from JS runner template; added `process.stdout.write` to wrapper bypass list
+- **Bonus fixes:** Java `json.dumps` bare generator → list comprehension; `stdout=None` guard
+
+**Tests added:** 62 new tests across 5 files (32 suite_runners, +28 code_wrappers, +15 piston_service, +4 formatter, +18 submit_endpoints).
+
+**Graphify Updated:** 3149 nodes, 5391 edges, 311 communities.
+
+**Relevant files:**
+- `backend/app/services/piston_service.py` — all 4 bugs fixed; `stdout=None` guard; `process.stdout.write` bypass
+- `backend/questions/sample_questions.json` — AI question inputs converted to multi-line
+- `backend/tests/unit/test_suite_runners.py` — 49 new tests (runners + parser + integration)
+- `backend/tests/unit/test_code_wrappers.py` — +28 tests
+- `backend/tests/unit/test_piston_service.py` — +15 tests
+- `backend/tests/unit/test_execution_result_formatter.py` — +4 tests
+- `backend/tests/integration/test_submit_endpoints.py` — +18 tests

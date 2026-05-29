@@ -70,7 +70,7 @@ except Exception as e:
 
 class JavaScriptCodeWrapper(CodeWrapper):
     def wrap(self, code: str) -> str:
-        if "process.stdin" in code or "readFileSync" in code or "console.log" in code:
+        if "process.stdin" in code or "readFileSync" in code or "console.log" in code or "process.stdout.write" in code:
             return code
         func_match = re.search(r"function\s+(\w+)\s*\(", code)
         if not func_match:
@@ -478,16 +478,20 @@ def run_suite():
                     __parsed = json.loads(__lines[0])
                 except Exception:
                     __parsed = __lines[0]
-                return {func_name}(__parsed)
+                __result = {func_name}(__parsed)
+                return __result, __parsed
             elif len(__lines) == 2:
                 try:
                     __a = json.loads(__lines[0])
                     __b = json.loads(__lines[1]) if (__lines[1].strip().lstrip("-").isdigit() or __lines[1].strip().startswith("[")) else __lines[1]
                 except Exception:
                     __a, __b = __lines[0], __lines[1]
-                return {func_name}(__a, __b)
+                __result = {func_name}(__a, __b)
+                return __result, __a
             else:
-                return {func_name}(__lines)
+                __parsed_args = [json.loads(ln) if ln.strip() else ln for ln in __lines]
+                __result = {func_name}(*__parsed_args)
+                return __result, __parsed_args[0]
         except Exception as e:
             raise e
 
@@ -495,8 +499,10 @@ def run_suite():
         __idx = __tc["index"]
         __exp = __tc["expected"]
         try:
-            __out = __run_test(__tc)
-            if isinstance(__out, list):
+            __out, __in_val = __run_test(__tc)
+            if __out is None:
+                __actual = json.dumps(__in_val, separators=(",", ":")) if isinstance(__in_val, (list, dict)) else str(__in_val)
+            elif isinstance(__out, list):
                 __actual = json.dumps(__out, separators=(",", ":"))
             elif isinstance(__out, bool):
                 __actual = str(__out).lower()
@@ -529,9 +535,7 @@ if __name__ == "__main__":
             func_match = re.search(r"(?:const|let|var)\s+(\w+)\s*=\s*(?:function|\(.*\)\s*=>)", user_code)
         func_name = func_match.group(1) if func_match else "solve"
         
-        return f"""const fs = require('fs');
-
-{user_code}
+        return f"""{user_code}
 
 const testCases = {tc_json};
 const results = [];
@@ -541,20 +545,26 @@ for (const tc of testCases) {{
     let passed = false;
     try {{
         const lines = tc.input ? tc.input.split('\\n') : [""];
-        let out;
+        let out, inVal;
         if (lines.length === 1) {{
             let parsed;
             try {{ parsed = JSON.parse(lines[0]); }} catch {{ parsed = lines[0]; }}
             out = {func_name}(parsed);
+            inVal = parsed;
         }} else if (lines.length === 2) {{
             let a, b;
             try {{ a = JSON.parse(lines[0]); }} catch {{ a = lines[0]; }}
             try {{ b = JSON.parse(lines[1]); }} catch {{ b = lines[1]; }}
             out = {func_name}(a, b);
+            inVal = a;
         }} else {{
-            out = {func_name}(lines);
+            const parsedArgs = lines.map(l => {{ try {{ return JSON.parse(l); }} catch {{ return l; }} }});
+            out = {func_name}(...parsedArgs);
+            inVal = parsedArgs[0];
         }}
-        if (typeof out === 'boolean') {{
+        if (out == null) {{
+            actual = typeof inVal === 'object' ? JSON.stringify(inVal) : String(inVal);
+        }} else if (typeof out === 'boolean') {{
             actual = String(out);
         }} else if (typeof out === 'object') {{
             actual = JSON.stringify(out);
@@ -576,8 +586,10 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
 
     def _java_suite_runner(self, user_code: str, test_cases: List[dict]) -> str:
         tc_json = json.dumps(
-            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}]
-            for i, tc in enumerate(test_cases)
+            [
+                {"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}
+                for i, tc in enumerate(test_cases)
+            ]
         )
         return (
             "import java.util.*;\n"
@@ -733,7 +745,8 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
         self, exec_result: ExecutionResult, test_cases: List[dict]
     ) -> List[TestCaseResult]:
         """Parse the delimited JSON output from a suite runner."""
-        stdout = exec_result.stdout
+        stdout = exec_result.stdout or ""
+        signal_info = f" (signal {exec_result.signal})" if exec_result.signal else ""
         # Extract JSON between delimiters
         marker = "@@SUITE_RESULT@@"
         start = stdout.find(marker)
@@ -747,7 +760,7 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
                     passed=False,
                     input="" if tc.get("hidden") else tc["input"],
                     expected="" if tc.get("hidden") else tc["expected_output"],
-                    actual=f"Execution Error: {stderr}",
+                    actual=f"Execution Error{signal_info}: {stderr}",
                     hidden=tc.get("hidden", False),
                 )
                 for i, tc in enumerate(test_cases)
@@ -757,13 +770,14 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
         try:
             results = json.loads(json_str)
         except json.JSONDecodeError:
+            err_msg = f"Invalid suite output{signal_info}" if signal_info else ""
             return [
                 TestCaseResult(
                     index=i + 1,
                     passed=False,
                     input="" if tc.get("hidden") else tc["input"],
                     expected="" if tc.get("hidden") else tc["expected_output"],
-                    actual="",
+                    actual=err_msg,
                     hidden=tc.get("hidden", False),
                 )
                 for i, tc in enumerate(test_cases)
@@ -771,18 +785,24 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
 
         # Map runner results back to TestCaseResult objects
         result_map = {r["index"]: r for r in results}
+        # If runner produced fewer results than test cases and signal was set,
+        # the missing ones likely crashed — mark them as failed
+        missing_signal = signal_info if len(results) < len(test_cases) else ""
         out: List[TestCaseResult] = []
         for i, tc in enumerate(test_cases):
             idx = i + 1
             r = result_map.get(idx, {})
             hidden = tc.get("hidden", False)
+            actual = r.get("actual", "")
+            if not r and missing_signal:
+                actual = f"Crashed{missing_signal}"
             out.append(
                 TestCaseResult(
                     index=idx,
-                    passed=r.get("passed", False),
+                    passed=r.get("passed", False) if r else False,
                     input="" if hidden else tc["input"],
                     expected="" if hidden else tc["expected_output"],
-                    actual="" if hidden else r.get("actual", ""),
+                    actual="" if hidden else actual,
                     hidden=hidden,
                 )
             )

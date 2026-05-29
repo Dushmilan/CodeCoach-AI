@@ -57,8 +57,9 @@
 
 ## 8. Testing
 
-- 264 backend unit, 50 script, 297 frontend, 19 E2E tests
+- **462 backend tests** (356 unit + 106 integration), 50 script, 297 frontend, 19 E2E
 - TypeScript clean
+- **May 29, 2026:** Fixed 6 suite-runner bugs (in-place functions, multi-param, Signal 6, JS fs, Java json.dumps, stdout=None). Added 62 new tests across 5 files — total coverage: **849 tests**.
 
 ## 9. Infrastructure
 

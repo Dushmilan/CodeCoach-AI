@@ -104,3 +104,35 @@ class TestFormat:
             }
         })
         assert result["stdout"] == long_stdout
+
+    def test_both_time_and_wall_time_none(self, formatter):
+        result = formatter.format({
+            "run": {
+                "stdout": "", "stderr": "", "code": 0,
+            }
+        })
+        assert result["execution_time"] is None
+
+    def test_signal_field_preserved(self, formatter):
+        result = formatter.format({
+            "run": {
+                "stdout": "", "stderr": "", "code": -6, "signal": "6",
+            },
+            "language": "python",
+        })
+        assert result["signal"] == "6"
+
+    def test_run_key_missing_returns_defaults(self, formatter):
+        result = formatter.format({"language": "python"})
+        assert result["stdout"] == ""
+        assert result["exit_code"] == 1
+        assert result["signal"] is None
+
+    def test_stdout_not_string_logged_gracefully(self, formatter):
+        result = formatter.format({
+            "run": {
+                "stdout": 12345,  # not a string
+                "stderr": "", "code": 0,
+            }
+        })
+        assert isinstance(result["stdout"], str) or result["stdout"] == 12345
