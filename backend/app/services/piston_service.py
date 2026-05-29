@@ -43,7 +43,11 @@ import json
 try:
     line = sys.stdin.read().strip()
     if line:
-        result = {func_name}(line)
+        try:
+            parsed_line = json.loads(line)
+        except:
+            parsed_line = line
+        result = {func_name}(parsed_line)
     else:
         result = {func_name}("")
     if isinstance(result, list):
@@ -446,7 +450,7 @@ class PistonService(CodeExecutor):
         tc_literals = json.dumps(
             [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}
              for i, tc in enumerate(test_cases)]
-        )
+        ).replace("false", "False").replace("true", "True")
         
         func_match = re.search(r"def\s+(\w+)\s*\(", user_code)
         func_name = func_match.group(1) if func_match else "solve"

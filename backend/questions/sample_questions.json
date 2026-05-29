@@ -1962,9 +1962,9 @@
     ],
     "test_cases": [
       {
-        "input": "[]",
-        "expected_output": "[]",
-        "description": "Test case 1: Empty heap.",
+        "input": "[1, 2, 3, 2, 4, 5, 6]",
+        "expected_output": "[2]",
+        "description": "No duplicates in the array",
         "hidden": false
       },
       {
