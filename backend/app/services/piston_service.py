@@ -53,8 +53,10 @@ try:
         result = {func_name}(parsed_line)
     else:
         result = {func_name}("")
-    if isinstance(result, list):
-        print(json.dumps(result))
+    if result is None and isinstance(parsed_line, (list, dict)):
+        print(json.dumps(parsed_line, separators=(",", ":")))
+    elif isinstance(result, list):
+        print(json.dumps(result, separators=(",", ":")))
     elif isinstance(result, bool):
         print(str(result).lower())
     elif isinstance(result, str):
@@ -70,7 +72,7 @@ except Exception as e:
 
 class JavaScriptCodeWrapper(CodeWrapper):
     def wrap(self, code: str) -> str:
-        if "process.stdin" in code or "readFileSync" in code or "console.log" in code or "process.stdout.write" in code:
+        if "process.stdin" in code or "readFileSync" in code or "console.log" in code or "process.stdout.write" in code or "require('fs')" in code:
             return code
         func_match = re.search(r"function\s+(\w+)\s*\(", code)
         if not func_match:
@@ -79,18 +81,18 @@ class JavaScriptCodeWrapper(CodeWrapper):
             return code
         func_name = func_match.group(1)
         runner = f"""
-const fs = require('fs');
-
 {code}
 
 try {{
-    const input = fs.readFileSync(0, 'utf-8').trim();
+    const input = require('fs').readFileSync(0, 'utf-8').trim();
     const lines = input.split('\\n');
     const args = lines.map(line => {{
         try {{ return JSON.parse(line); }} catch {{ return line; }}
     }});
     const result = {func_name}(...args);
-    if (typeof result === 'boolean') {{
+    if (result === undefined && args.length > 0 && typeof args[0] === 'object') {{
+        console.log(JSON.stringify(args[0]));
+    }} else if (typeof result === 'boolean') {{
         console.log(String(result));
     }} else if (typeof result === 'object') {{
         console.log(JSON.stringify(result));
@@ -109,13 +111,14 @@ class JavaCodeWrapper(CodeWrapper):
     def wrap(self, code: str) -> str:
         if "public static void main" in code:
             return code
-        method_pattern = r'public\s+static\s+([\w<>[\],\s?]+)\s+(\w+)\s*\(([^)]*)\)'
+        method_pattern = r'public\s+(?:static\s+)?([\w<>[\],\s?]+)\s+(\w+)\s*\(([^)]*)\)'
         method_match = re.search(method_pattern, code)
         if not method_match:
             return code
         method_name = method_match.group(2)
         return_type = method_match.group(1).strip()
         params_str = method_match.group(3).strip()
+        is_static = bool(re.search(r'public\s+static', code))
         param_count = len([p for p in params_str.split(",") if p.strip()])
         first_param_type = params_str.split(",")[0].strip().split(" ")[0] if params_str else ""
         is_single_string = param_count == 1 and first_param_type == "String"
@@ -124,15 +127,29 @@ class JavaCodeWrapper(CodeWrapper):
             main_code = self._build_single_string_main(method_name, return_type)
             helper_code = ""
         else:
-            main_code = self._build_multi_param_main(method_name)
+            main_code = self._build_multi_param_main(method_name, is_static)
             helper_code = self._helper_code()
 
         insertion = "\n" + main_code + "\n" + (helper_code + "\n" if not is_single_string else "")
         class_match = re.search(r"(public\s+class\s+\w+\s*\{)", code)
-        if not class_match:
-            return code
-        insertion_point = class_match.end(1)
-        return code[:insertion_point] + insertion + code[insertion_point:]
+        if class_match:
+            insertion_point = class_match.end(1)
+            return code[:insertion_point] + insertion + code[insertion_point:]
+        imports = []
+        body_lines = []
+        for line in code.split("\n"):
+            if line.strip().startswith("import "):
+                imports.append(line)
+            else:
+                body_lines.append(line)
+        body = "\n".join(body_lines).strip()
+        imports_str = "\n".join(imports)
+        if imports_str:
+            imports_str += "\n"
+        return f"""{imports_str}public class Solution {{
+{insertion}
+{body}
+}}"""
 
     def _build_single_string_main(self, method_name: str, return_type: str) -> str:
         output_line = ('System.out.println(String.valueOf(result).toLowerCase());' if return_type == "boolean" else 'System.out.println(result);')
@@ -154,7 +171,8 @@ class JavaCodeWrapper(CodeWrapper):
             "    }",
         ])
 
-    def _build_multi_param_main(self, method_name: str) -> str:
+    def _build_multi_param_main(self, method_name: str, is_static: bool = True) -> str:
+        instance_code = "null" if is_static else "new Solution()"
         return "\n".join([
             "    public static void main(String[] args) throws Exception {",
             "        java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));",
@@ -185,10 +203,12 @@ class JavaCodeWrapper(CodeWrapper):
             "        for (int i = 0; i < parsedArgs.size() && i < paramTypes.length; i++) {",
             "            callArgs[i] = __convertArg(parsedArgs.get(i), paramTypes[i].getType());",
             "        }",
-            "        Object result = method.invoke(null, callArgs);",
-            "        if (result instanceof Boolean) { System.out.println(String.valueOf(result).toLowerCase()); }",
-            "        else if (result instanceof String) { System.out.println(result); }",
-            "        else { System.out.println(__toJson(result)); }",
+            f"        Object result = method.invoke({instance_code}, callArgs);",
+        "        if (result == null && method.getReturnType() == void.class && callArgs.length > 0) {",
+        "            System.out.println(__toJson(callArgs[0]));",
+        "        } else if (result instanceof Boolean) { System.out.println(String.valueOf(result).toLowerCase()); }",
+        "        else if (result instanceof String) { System.out.println(result); }",
+        "        else { System.out.println(__toJson(result)); }",
             "    }",
         ])
 
@@ -213,6 +233,36 @@ class JavaCodeWrapper(CodeWrapper):
             if (arg instanceof Number) return ((Number) arg).longValue();
             return Long.parseLong(arg.toString());
         }
+        if (targetType == int[].class && arg instanceof java.util.List) {
+            java.util.List<?> list = (java.util.List<?>) arg;
+            int[] arr = new int[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                Object item = list.get(i);
+                arr[i] = (item instanceof Number) ? ((Number) item).intValue() : Integer.parseInt(item.toString());
+            }
+            return arr;
+        }
+        if (targetType == String[].class && arg instanceof java.util.List) {
+            java.util.List<?> list = (java.util.List<?>) arg;
+            String[] arr = new String[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                arr[i] = String.valueOf(list.get(i));
+            }
+            return arr;
+        }
+        if (targetType == int[][].class && arg instanceof java.util.List) {
+            java.util.List<?> list = (java.util.List<?>) arg;
+            int[][] arr = new int[list.size()][];
+            for (int i = 0; i < list.size(); i++) {
+                java.util.List<?> row = (java.util.List<?>) list.get(i);
+                arr[i] = new int[row.size()];
+                for (int j = 0; j < row.size(); j++) {
+                    Object item = row.get(j);
+                    arr[i][j] = (item instanceof Number) ? ((Number) item).intValue() : Integer.parseInt(item.toString());
+                }
+            }
+            return arr;
+        }
         return arg;
     }
     private static String __toJson(Object obj) {
@@ -220,10 +270,50 @@ class JavaCodeWrapper(CodeWrapper):
         if (obj instanceof Boolean) return String.valueOf(obj).toLowerCase();
         if (obj instanceof Number) return String.valueOf(obj);
         if (obj instanceof String) return "\\"" + ((String) obj).replace("\\\\", "\\\\\\\\").replace("\\"", "\\\\\\"") + "\\"";
+        if (obj instanceof int[]) {
+            int[] arr = (int[]) obj;
+            StringBuilder sb = new StringBuilder("["); for (int i = 0; i < arr.length; i++) { if (i > 0) sb.append(","); sb.append(arr[i]); } sb.append("]");
+            return sb.toString();
+        }
+        if (obj instanceof boolean[]) {
+            boolean[] arr = (boolean[]) obj;
+            StringBuilder sb = new StringBuilder("["); for (int i = 0; i < arr.length; i++) { if (i > 0) sb.append(","); sb.append(arr[i]); } sb.append("]");
+            return sb.toString();
+        }
+        if (obj instanceof double[]) {
+            double[] arr = (double[]) obj;
+            StringBuilder sb = new StringBuilder("["); for (int i = 0; i < arr.length; i++) { if (i > 0) sb.append(","); sb.append(arr[i]); } sb.append("]");
+            return sb.toString();
+        }
+        if (obj instanceof Object[]) {
+            Object[] arr = (Object[]) obj;
+            StringBuilder sb = new StringBuilder("["); for (int i = 0; i < arr.length; i++) { if (i > 0) sb.append(","); sb.append(__toJson(arr[i])); } sb.append("]");
+            return sb.toString();
+        }
         if (obj instanceof java.util.List) {
             java.util.List<?> list = (java.util.List<?>) obj;
-            StringBuilder sb = new StringBuilder("["); for (int i = 0; i < list.size(); i++) { if (i > 0) sb.append(", "); sb.append(__toJson(list.get(i))); } sb.append("]");
+            StringBuilder sb = new StringBuilder("["); for (int i = 0; i < list.size(); i++) { if (i > 0) sb.append(","); sb.append(__toJson(list.get(i))); } sb.append("]");
             return sb.toString();
+        }
+        if (obj instanceof java.util.Map) {
+            java.util.Map<?, ?> map = (java.util.Map<?, ?>) obj;
+            StringBuilder sb = new StringBuilder("{"); boolean first = true;
+            for (java.util.Map.Entry<?, ?> e : map.entrySet()) {
+                if (!first) sb.append(",");
+                sb.append("\\"" + e.getKey() + "\\":").append(__toJson(e.getValue()));
+                first = false;
+            }
+            return sb.append("}").toString();
+        }
+        if (obj instanceof java.util.Collection) {
+            java.util.Collection<?> coll = (java.util.Collection<?>) obj;
+            StringBuilder sb = new StringBuilder("["); boolean first = true;
+            for (Object item : coll) {
+                if (!first) sb.append(",");
+                sb.append(__toJson(item));
+                first = false;
+            }
+            return sb.append("]").toString();
         }
         return String.valueOf(obj);
     }
@@ -373,6 +463,7 @@ class PistonService(CodeExecutor):
         version_to_use = version or lang_config["version"]
         wrapper = get_wrapper(language)
         code_to_run = wrapper.wrap(code) if wrapper else code
+        logger.info(f"[{language}] code_to_run (first 300 chars): {code_to_run[:300]}")
 
         piston_language = self._PISTON_LANGUAGE_MAP.get(language, language)
 
@@ -591,6 +682,9 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
                 for i, tc in enumerate(test_cases)
             ]
         )
+        func_match = re.search(r"public\s+[\w<>[\]]+\s+(\w+)\s*\(", user_code)
+        func_name = func_match.group(1) if func_match else "solve"
+        
         return (
             "import java.util.*;\n"
             "import java.lang.reflect.*;\n"
@@ -604,7 +698,7 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
             "        List<Map<String, Object>> results = new ArrayList<>();\n"
             "\n"
             "        for (Map<String, Object> tc : testCases) {\n"
-            '            int idx = ((Number) tc.get("index")).intValue();\n'
+            '            int idx = Integer.parseInt(tc.get("index").toString());\n'
             '            String input = (String) tc.get("input");\n'
             '            String expected = (String) tc.get("expected");\n'
             '            boolean hidden = (Boolean) tc.get("hidden");\n'
@@ -614,17 +708,17 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
             '                String[] lines = input.isEmpty() ? new String[]{""} : input.split("\\n", -1);\n'
             "                Object result;\n"
             "                if (lines.length == 1) {\n"
-            "                    result = callSolution(lines[0].trim());\n"
+            '                    result = callSolution("' + func_name + '", lines[0].trim());\n'
             "                } else if (lines.length == 2) {\n"
-            "                    result = callSolution(lines[0].trim(), lines[1].trim());\n"
+            '                    result = callSolution("' + func_name + '", lines[0].trim(), lines[1].trim());\n'
             "                } else {\n"
-            "                    result = callSolution(lines);\n"
+            '                    result = callSolution("' + func_name + '", (Object) lines);\n'
             "                }\n"
-            '                actual = result == null ? "null" : result.toString();\n'
-            "                if (result instanceof boolean[]) actual = Arrays.toString((boolean[]) result);\n"
-            "                else if (result instanceof int[]) actual = Arrays.toString((int[]) result);\n"
-            "                else if (result instanceof double[]) actual = Arrays.toString((double[]) result);\n"
-            "                else if (result instanceof Object[]) actual = Arrays.toString((Object[]) result);\n"
+            "                if (result == null && _lastFirstArg != null) {\n"
+            "                    actual = toJson(_lastFirstArg);\n"
+            "                } else {\n"
+            '                    actual = toJson(result);\n'
+            "                }\n"
             "                passed = actual.trim().equals(expected.trim());\n"
             "            } catch (Exception e) {\n"
             '                actual = "";\n'
@@ -637,20 +731,24 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
             '        System.out.print("@@SUITE_RESULT@@" + toJson(results) + "@@SUITE_RESULT@@");\n'
             "    }\n"
             "\n"
-            "    static Object callSolution(Object... args) throws Exception {\n"
+            "    static Object _lastFirstArg = null;\n"
+            "\n"
+            '    static Object callSolution(String methodName, Object... args) throws Exception {\n'
             "        Class<?> clazz = Solution.class;\n"
             "        for (Method m : clazz.getDeclaredMethods()) {\n"
-            '            if (m.getName().equals("solve") && m.getParameterCount() == args.length) {\n'
+            '            if (m.getName().equals(methodName) && m.getParameterCount() == args.length) {\n'
             "                Object[] converted = new Object[args.length];\n"
             "                Class<?>[] types = m.getParameterTypes();\n"
             "                for (int i = 0; i < args.length; i++) {\n"
             "                    converted[i] = convert(args[i], types[i]);\n"
             "                }\n"
+            "                _lastFirstArg = converted.length > 0 ? converted[0] : null;\n"
             "                m.setAccessible(true);\n"
-            "                return m.invoke(null, converted);\n"
+            "                Object obj = java.lang.reflect.Modifier.isStatic(m.getModifiers()) ? null : new Solution();\n"
+            "                return m.invoke(obj, converted);\n"
             "            }\n"
             "        }\n"
-            '        throw new NoSuchMethodException("solve");\n'
+            '        throw new NoSuchMethodException(methodName);\n'
             "    }\n"
             "\n"
             "    static Object convert(Object arg, Class<?> type) {\n"
@@ -663,6 +761,7 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
             "        if (type == String.class) return s;\n"
             "        if (type == int[].class) return parseIntArray(s);\n"
             "        if (type == String[].class) return parseStringArray(s);\n"
+            "        if (type == int[][].class) return parseInt2DArray(s);\n"
             "        return s;\n"
             "    }\n"
             "\n"
@@ -679,6 +778,17 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
             '        s = s.replaceAll("^\\\\[|\\\\]$", "");\n'
             "        if (s.isEmpty()) return new String[0];\n"
             '        return s.split(",\\\\s*");\n'
+            "    }\n"
+            "\n"
+            "    static int[][] parseInt2DArray(String s) {\n"
+            '        s = s.trim().replaceAll("^\\\\[\\\\[|\\\\]\\\\]$", "");\n'
+            "        if (s.isEmpty()) return new int[0][0];\n"
+            '        String[] rows = s.split("\\\\],\\\\[");\n'
+            "        int[][] result = new int[rows.length][];\n"
+            "        for (int i = 0; i < rows.length; i++) {\n"
+            "            result[i] = parseIntArray(rows[i]);\n"
+            "        }\n"
+            "        return result;\n"
             "    }\n"
             "\n"
             "    static List<Map<String, Object>> parseTcArray(String json) {\n"
@@ -712,34 +822,71 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
             "        return m;\n"
             "    }\n"
             "\n"
-            "    static String toJson(Object obj) {\n"
-            '        if (obj == null) return "null";\n'
-            "        if (obj instanceof Boolean || obj instanceof Number) return obj.toString();\n"
-            '        if (obj instanceof String) return "\\"" + ((String) obj).replace("\\\\", "\\\\\\\\").replace("\\\"", "\\\\\\"") + "\\"";\n'
-            "        if (obj instanceof Map) {\n"
-            '            StringBuilder sb = new StringBuilder("{");\n'
-            "            boolean first = true;\n"
-            "            for (Map.Entry<?, ?> e : ((Map<?, ?>) obj).entrySet()) {\n"
-            "                if (!first) sb.append(\",\");\n"
-            '                sb.append("\\"" + e.getKey() + "\\":").append(toJson(e.getValue()));\n'
-            "                first = false;\n"
-            "            }\n"
-            '            return sb.append("}").toString();\n'
-            "        }\n"
-            "        if (obj instanceof Collection) {\n"
-            '            StringBuilder sb = new StringBuilder("[");\n'
-            "            boolean first = true;\n"
-            "            for (Object item : (Collection<?>) obj) {\n"
-            "                if (!first) sb.append(\",\");\n"
-            "                sb.append(toJson(item));\n"
-            "                first = false;\n"
-            "            }\n"
-            '            return sb.append("]").toString();\n'
-            "        }\n"
-            "        return obj.toString();\n"
-            "    }\n"
-            "}\n"
+             "    static String toJson(Object obj) {\n"
+             '        if (obj == null) return "null";\n'
+             "        if (obj instanceof Boolean || obj instanceof Number) return obj.toString();\n"
+             '        if (obj instanceof String) return "\\"" + ((String) obj).replace("\\\\", "\\\\\\\\").replace("\\\"", "\\\\\\"") + "\\"";\n'
+             "        if (obj instanceof int[]) {\n"
+             "            int[] arr = (int[]) obj;\n"
+             '            StringBuilder sb = new StringBuilder("[");\n'
+             "            for (int i = 0; i < arr.length; i++) {\n"
+             "                if (i > 0) sb.append(\",\");\n"
+             "                sb.append(arr[i]);\n"
+             "            }\n"
+             '            return sb.append("]").toString();\n'
+             "        }\n"
+             "        if (obj instanceof boolean[]) {\n"
+             "            boolean[] arr = (boolean[]) obj;\n"
+             '            StringBuilder sb = new StringBuilder("[");\n'
+             "            for (int i = 0; i < arr.length; i++) {\n"
+             "                if (i > 0) sb.append(\",\");\n"
+             "                sb.append(arr[i]);\n"
+             "            }\n"
+             '            return sb.append("]").toString();\n'
+             "        }\n"
+             "        if (obj instanceof double[]) {\n"
+             "            double[] arr = (double[]) obj;\n"
+             '            StringBuilder sb = new StringBuilder("[");\n'
+             "            for (int i = 0; i < arr.length; i++) {\n"
+             "                if (i > 0) sb.append(\",\");\n"
+             "                sb.append(arr[i]);\n"
+             "            }\n"
+             '            return sb.append("]").toString();\n'
+             "        }\n"
+             "        if (obj instanceof Object[]) {\n"
+             "            Object[] arr = (Object[]) obj;\n"
+             '            StringBuilder sb = new StringBuilder("[");\n'
+             "            for (int i = 0; i < arr.length; i++) {\n"
+             "                if (i > 0) sb.append(\",\");\n"
+             "                sb.append(toJson(arr[i]));\n"
+             "            }\n"
+             '            return sb.append("]").toString();\n'
+             "        }\n"
+             "        if (obj instanceof Map) {\n"
+             '            StringBuilder sb = new StringBuilder("{");\n'
+             "            boolean first = true;\n"
+             "            for (Map.Entry<?, ?> e : ((Map<?, ?>) obj).entrySet()) {\n"
+             "                if (!first) sb.append(\",\");\n"
+             '                sb.append("\\"" + e.getKey() + "\\":").append(toJson(e.getValue()));\n'
+             "                first = false;\n"
+             "            }\n"
+             '            return sb.append("}").toString();\n'
+             "        }\n"
+             "        if (obj instanceof Collection) {\n"
+             '            StringBuilder sb = new StringBuilder("[");\n'
+             "            boolean first = true;\n"
+             "            for (Object item : (Collection<?>) obj) {\n"
+             "                if (!first) sb.append(\",\");\n"
+             "                sb.append(toJson(item));\n"
+             "                first = false;\n"
+             "            }\n"
+             '            return sb.append("]").toString();\n'
+             "        }\n"
+             "        return obj.toString();\n"
+             "    }\n"
+             "}\n"
         )
+
 
     def _parse_suite_output(
         self, exec_result: ExecutionResult, test_cases: List[dict]
@@ -796,6 +943,16 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
             actual = r.get("actual", "")
             if not r and missing_signal:
                 actual = f"Crashed{missing_signal}"
+            elif r:
+                # Re-verify: compare normalized actual vs expected to catch runner bugs
+                runner_passed = r.get("passed", False)
+                re_verified = self._normalize(actual) == self._normalize(tc.get("expected_output", ""))
+                if runner_passed != re_verified:
+                    logger.warning(
+                        "Runner mismatch for test case %d: runner=%s re-verify=%s "
+                        "actual=%r expected=%r",
+                        idx, runner_passed, re_verified, actual[:100], tc.get("expected_output", "")[:100],
+                    )
             out.append(
                 TestCaseResult(
                     index=idx,
@@ -807,6 +964,11 @@ process.stdout.write('@@SUITE_RESULT@@' + JSON.stringify(results) + '@@SUITE_RES
                 )
             )
         return out
+
+    @staticmethod
+    def _normalize(s: str) -> str:
+        import re
+        return re.sub(r'\s+', '', s.strip())
 
     def validate_code(self, language: str, code: str) -> dict:
         return self.validator.validate(language, code)
