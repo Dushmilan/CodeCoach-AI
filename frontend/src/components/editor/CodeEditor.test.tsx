@@ -98,12 +98,17 @@ describe('CodeEditor', () => {
     expect(onCodeChange).toHaveBeenCalledWith('');
   });
 
-  it('renders language options', () => {
+  it('renders all language options including C', () => {
     render(<CodeEditor {...defaultProps} />);
     const options = screen.getAllByRole('option');
-    expect(options).toHaveLength(3);
+    expect(options).toHaveLength(8);
     expect(options[0]).toHaveTextContent('Python');
     expect(options[1]).toHaveTextContent('JavaScript');
     expect(options[2]).toHaveTextContent('Java');
+    expect(options[3]).toHaveTextContent('C++');
+    expect(options[4]).toHaveTextContent('C');
+    expect(options[5]).toHaveTextContent('Go');
+    expect(options[6]).toHaveTextContent('Rust');
+    expect(options[7]).toHaveTextContent('TypeScript');
   });
 });

@@ -33,6 +33,7 @@ export function CodeEditor({
   isAuthenticated = true,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
+  const monacoLanguage = language === 'c' ? 'cpp' : language;
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
@@ -111,7 +112,7 @@ export function CodeEditor({
       )}>
         <Editor
           height="100%"
-          language={language}
+          language={monacoLanguage}
           value={code}
           onChange={(value) => onCodeChange(value || '')}
           onMount={handleEditorDidMount}
