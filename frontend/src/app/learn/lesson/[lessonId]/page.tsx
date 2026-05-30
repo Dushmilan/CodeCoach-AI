@@ -60,7 +60,14 @@ export default function LessonPage() {
   const [output, setOutput] = useState('');
   const [runError, setRunError] = useState('');
   const [currentCode, setCurrentCode] = useState('');
-  const [language, setLanguage] = useState<Language>('python');
+  const [language, setLanguage] = useState<Language>((lesson?.language as Language) || 'python');
+
+  // Sync language when lesson changes
+  useEffect(() => {
+    if (lesson?.language) {
+      setLanguage(lesson.language as Language);
+    }
+  }, [lesson?.language]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
   const [linkedQuestion, setLinkedQuestion] = useState<Question | null>(null);
@@ -173,7 +180,7 @@ export default function LessonPage() {
 
   const isExercise = lesson.type === 'exercise';
   const resolvedTestCases = linkedQuestion?.test_cases || [];
-  const resolvedStarterCode = linkedQuestion?.starter[language as keyof typeof linkedQuestion.starter] || lesson.starter_code || '';
+  const resolvedStarterCode = (linkedQuestion?.starter as any)?.[language] || lesson.starter_code || '';
 
   return (
     <HydrationGuard>

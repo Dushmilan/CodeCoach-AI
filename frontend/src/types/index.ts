@@ -13,6 +13,11 @@ export interface Question extends QuestionSummary {
     python: string;
     javascript: string;
     java: string;
+    cpp: string;
+    c: string;
+    go: string;
+    rust: string;
+    typescript: string;
   };
   examples: Array<{
     input: string;
@@ -67,7 +72,7 @@ export interface UserProgress {
   attempts: number;
 }
 
-export type Language = 'python' | 'javascript' | 'java';
+export type Language = 'python' | 'javascript' | 'java' | 'cpp' | 'c' | 'go' | 'rust' | 'typescript';
 
 export interface CourseSummary {
   id: string;
