@@ -14,13 +14,12 @@ services:
       - PISTON_API_URL=http://piston:2000/api/v2
     volumes:
       - ./backend:/app
-      - backend-data:/app/data
     depends_on:
       - piston
     networks:
       - codecoach-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health/"]
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/health').status == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -70,6 +69,5 @@ networks:
     driver: bridge
 
 volumes:
-  backend-data:
   piston-data:
     external: true
