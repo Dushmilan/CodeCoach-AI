@@ -138,4 +138,5 @@ export interface AuthState {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isHydrated: boolean;
 }

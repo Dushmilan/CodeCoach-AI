@@ -26,18 +26,11 @@ export function Header() {
   }, []);
 
   const { apiKey, setApiKey } = useSettings();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isHydrated } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (menuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [menuOpen]);
+  // ... (lines 33-40)
 
   return (
     <>
@@ -74,17 +67,21 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-0.5 ml-2">
-            {isAuthenticated ? (
-              <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground">
-                <UserIcon className="h-3 w-3" />
-                {user?.username}
-              </span>
+            {isHydrated ? (
+              isAuthenticated ? (
+                <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground">
+                  <UserIcon className="h-3 w-3" />
+                  {user?.username}
+                </span>
+              ) : (
+                <Link href="/login">
+                  <button className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+                    Sign in
+                  </button>
+                </Link>
+              )
             ) : (
-              <Link href="/login">
-                <button className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
-                  Sign in
-                </button>
-              </Link>
+              <div className="w-16 h-6 rounded-full bg-white/5 animate-pulse" />
             )}
 
             <button
@@ -92,10 +89,14 @@ export function Header() {
               className="p-2 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
               aria-label="Toggle theme"
             >
-              {mounted && resolvedTheme === 'dark' ? (
-                <SunIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              {mounted ? (
+                resolvedTheme === 'dark' ? (
+                  <SunIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                ) : (
+                  <MoonIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                )
               ) : (
-                <MoonIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <div className="h-3.5 w-3.5" />
               )}
             </button>
 
@@ -188,7 +189,7 @@ export function Header() {
               : "translate-y-8 opacity-0"
           )}
         >
-          {isAuthenticated && (
+          {isHydrated && isAuthenticated && (
             <span className="text-sm text-white/40 flex items-center gap-2">
               <UserIcon className="h-3.5 w-3.5" />
               {user?.username}
@@ -215,14 +216,14 @@ export function Header() {
         </div>
       </div>
 
-      <SettingsModal
-        open={showSettings}
-        onClose={() => setShowSettings(false)}
-        apiKey={apiKey}
-        onSave={setApiKey}
-        isAuthenticated={isAuthenticated}
-        onLogout={logout}
-      />
+        <SettingsModal
+          open={showSettings}
+          onClose={() => setShowSettings(false)}
+          apiKey={apiKey}
+          onSave={setApiKey}
+          isAuthenticated={isHydrated && isAuthenticated}
+          onLogout={logout}
+        />
     </>
   );
 }

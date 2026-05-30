@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: null,
     isLoading: true,
     isAuthenticated: false,
+    isHydrated: false,
   });
 
   const setAuth = useCallback((user: User | null, token: string | null) => {
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       isLoading: false,
       isAuthenticated: !!user && !!token,
+      isHydrated: true,
     });
     setStoredToken(token);
   }, []);
@@ -54,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedToken = getStoredToken();
     if (!storedToken) {
-      setState(prev => ({ ...prev, isLoading: false }));
+      setState(prev => ({ ...prev, isLoading: false, isHydrated: true }));
       return;
     }
 
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token: storedToken,
           isLoading: false,
           isAuthenticated: true,
+          isHydrated: true,
         });
       })
       .catch(() => {
@@ -74,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token: null,
           isLoading: false,
           isAuthenticated: false,
+          isHydrated: true,
         });
       });
   }, []);

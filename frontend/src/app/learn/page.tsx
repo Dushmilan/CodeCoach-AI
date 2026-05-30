@@ -8,6 +8,7 @@ import { useCurriculum } from '@/features/curriculum/use-curriculum.hook';
 import { Header } from '@/components/header/Header';
 import { useEffect, useState, memo, ReactNode } from 'react';
 import { FetchClient } from '@/lib/fetch-client';
+import { HydrationGuard } from '@/components/ui/HydrationGuard';
 import { cn } from '@/lib/utils';
 import type { CourseSummary } from '@/types';
 
@@ -156,11 +157,16 @@ function SkeletonCard({ className }: { className?: string }) {
 
 export default function LearnPage() {
   const { courses, isLoading, error } = useCurriculum();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isHydrated } = useAuth();
   const [progressMap, setProgressMap] = useState<ProgressMap>({});
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isHydrated) return;
     const fetchProgress = async () => {
       try {
         const data = await api.get<{ progress: any[] }>('/api/progress/');
@@ -177,7 +183,7 @@ export default function LearnPage() {
       }
     };
     fetchProgress();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isHydrated]);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
@@ -212,7 +218,7 @@ export default function LearnPage() {
           </div>
         )}
 
-        {!isLoading && !error && (
+        {!isLoading && !error && mounted && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {courses.map((course, i) => {
               const prog = progressMap[course.id];
@@ -234,7 +240,7 @@ export default function LearnPage() {
                     course={course}
                     completedCount={completedCount}
                     lastLessonId={lastLessonId}
-                    isAuthenticated={isAuthenticated}
+                    isAuthenticated={isHydrated && isAuthenticated}
                     accentBorder={
                       isHero
                         ? 'md:hover:border-primary/20'
@@ -244,6 +250,13 @@ export default function LearnPage() {
                 </motion.div>
               );
             })}
+          </div>
+        )}
+        {!mounted && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <SkeletonCard className="md:col-span-2" />
+            <SkeletonCard />
+            <SkeletonCard />
           </div>
         )}
       </main>

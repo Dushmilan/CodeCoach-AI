@@ -66,6 +66,8 @@ export function Sidebar({
   }, [currentIndex, filteredQuestions, handleSelectQuestion]);
 
   const handleRandom = useCallback(() => {
+    // Only perform the random selection if we have questions.
+    // This is called from an event handler, so it's fine.
     const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
     handleSelectQuestion(filteredQuestions[randomIndex], randomIndex);
   }, [filteredQuestions, handleSelectQuestion]);

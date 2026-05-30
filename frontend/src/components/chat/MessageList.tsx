@@ -4,10 +4,19 @@ import { ChatBubbleIcon } from '@radix-ui/react-icons';
 import { ChatMessage } from '@/types';
 import { StructuredResponse } from './StructuredResponse';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useEffect, useState } from 'react';
 
 interface MessageListProps {
   messages: ChatMessage[];
   isTyping: boolean;
+}
+
+function TimeDisplay({ timestamp }: { timestamp: Date }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
+  if (!mounted) return null;
+  return <>{new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>;
 }
 
 export function MessageList({ messages, isTyping }: MessageListProps) {
@@ -49,7 +58,7 @@ export function MessageList({ messages, isTyping }: MessageListProps) {
               <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
             )}
             <div className="text-[10px] text-muted-foreground/40 mt-1.5 tracking-wide">
-              {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <TimeDisplay timestamp={message.timestamp} />
             </div>
           </div>
         </div>
