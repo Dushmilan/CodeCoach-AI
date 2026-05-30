@@ -21,4 +21,4 @@ RUN echo "NEXT_PUBLIC_API_URL=http://host.docker.internal:8000" > .env
 EXPOSE 3000
 
 # Run dev server (works for demos)
-CMD ["pnpm", "dev", "-H", "0.0.0.0"]
+CMD ["sh", "-c", "rm -rf .next && pnpm dev -H 0.0.0.0"]
