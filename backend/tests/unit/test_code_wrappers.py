@@ -1,6 +1,5 @@
 import pytest
-from app.services.piston_service import get_wrapper
-from app.services.piston_service import CodeWrapper
+from app.adapters.code_wrappers import get_wrapper, CodeWrapper
 
 
 class TestCodeWrapperABC:
@@ -492,17 +491,17 @@ class TestJavaCodeWrapper:
 class TestGetWrapper:
     def test_returns_python_wrapper(self):
         wrapper = get_wrapper("python")
-        from app.services.piston_service import PythonCodeWrapper
+        from app.adapters.code_wrappers.python_wrapper import PythonCodeWrapper
         assert isinstance(wrapper, PythonCodeWrapper)
 
     def test_returns_javascript_wrapper(self):
         wrapper = get_wrapper("javascript")
-        from app.services.piston_service import JavaScriptCodeWrapper
+        from app.adapters.code_wrappers.javascript_wrapper import JavaScriptCodeWrapper
         assert isinstance(wrapper, JavaScriptCodeWrapper)
 
     def test_returns_java_wrapper(self):
         wrapper = get_wrapper("java")
-        from app.services.piston_service import JavaCodeWrapper
+        from app.adapters.code_wrappers.java_wrapper import JavaCodeWrapper
         assert isinstance(wrapper, JavaCodeWrapper)
 
     def test_returns_none_for_unknown_language(self):

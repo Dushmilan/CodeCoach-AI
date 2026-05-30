@@ -320,14 +320,14 @@ class TestPistonServiceRuntimes:
 
 class TestFileExtension:
     def test_file_extensions(self):
-        from app.services.piston_service import _get_file_extension
-        assert _get_file_extension("python") == "py"
-        assert _get_file_extension("javascript") == "js"
-        assert _get_file_extension("java") == "java"
-        assert _get_file_extension("cpp") == "cpp"
-        assert _get_file_extension("unknown") == "txt"
-        assert _get_file_extension("c") == "c"
-        assert _get_file_extension("go") == "go"
+        from app.services.static_code_validator import get_file_extension
+        assert get_file_extension("python") == "py"
+        assert get_file_extension("javascript") == "js"
+        assert get_file_extension("java") == "java"
+        assert get_file_extension("cpp") == "cpp"
+        assert get_file_extension("unknown") == "txt"
+        assert get_file_extension("c") == "c"
+        assert get_file_extension("go") == "go"
 
 
 class TestPistonServiceEvaluateSuite:

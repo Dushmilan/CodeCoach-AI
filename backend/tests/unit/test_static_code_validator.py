@@ -1,5 +1,5 @@
 import pytest
-from app.services.piston_service import StaticCodeValidator
+from app.services.static_code_validator import StaticCodeValidator
 
 
 @pytest.fixture
