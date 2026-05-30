@@ -13,6 +13,7 @@ from app.services.auth_service import AuthService
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=True)
+security_optional = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
@@ -32,7 +33,7 @@ async def get_current_user(
 
 
 async def get_optional_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security_optional),
 ) -> UserResponse | None:
     if credentials is None:
         return None

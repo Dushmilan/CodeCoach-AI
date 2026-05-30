@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.services.course_service import CourseService
 from app.api.auth import get_current_user
@@ -101,7 +101,7 @@ async def track_lesson_access(
             await course_service.progress_repo.save(progress)
         else:
             progress.last_accessed_lesson_id = lesson_id
-            progress.last_accessed_at = datetime.utcnow()
+            progress.last_accessed_at = datetime.now(timezone.utc)
             await course_service.progress_repo.save(progress)
 
         return {"status": "ok", "last_accessed_lesson_id": lesson_id}

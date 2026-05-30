@@ -1,49 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime
-from fastapi.testclient import TestClient
+from datetime import datetime, timezone
 
-from app.main import app
-from app.models.question_validation_schemas import (
-    QuestionValidationResult,
-    UseCaseValidationResult,
-    ValidationUseCase,
-    ValidationSeverity,
-    ValidationIssue,
-)
+# ...
 
-
-VALID_QUESTION = {
-    "id": "test-question",
-    "title": "Test Question",
-    "difficulty": "easy",
-    "category": "arrays",
-    "description": "A test question",
-    "starter": {
-        "python": "def solve():\n    pass",
-        "javascript": "function solve() {}",
-        "java": "class Solution { public static void solve() {} }",
-    },
-    "examples": [{"input": "1", "output": "1", "explanation": "test"}],
-    "test_cases": [{"input": "1", "expected_output": "1", "description": "basic"}],
-}
-
-
-def make_mock_result(valid: bool = True) -> QuestionValidationResult:
-    return QuestionValidationResult(
-        question_id="test-question",
-        valid=valid,
-        results={
-            ValidationUseCase.STRUCTURE: UseCaseValidationResult(
-                use_case=ValidationUseCase.STRUCTURE,
-                passed=True,
-                issues=[],
-            ),
-        },
-        total_issues=0,
-        error_count=0 if valid else 1,
-        warning_count=0,
-        validated_at=datetime.utcnow(),
+        validated_at=datetime.now(timezone.utc),
     )
 
 

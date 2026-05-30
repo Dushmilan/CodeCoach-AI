@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from app.models.course_schemas import CourseProgress
@@ -57,7 +57,7 @@ class FileProgressRepository(ProgressRepository):
         if lesson_id not in progress.completed_lessons:
             progress.completed_lessons.append(lesson_id)
         progress.last_accessed_lesson_id = lesson_id
-        progress.last_accessed_at = datetime.utcnow()
+        progress.last_accessed_at = datetime.now(timezone.utc)
         self._save()
         return progress
 

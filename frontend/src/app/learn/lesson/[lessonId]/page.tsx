@@ -33,21 +33,12 @@ function useAdjacentLessons(lesson: LessonSummary | null) {
 
   useEffect(() => {
     if (!lesson) return;
-    const fetchAdjacent = async () => {
-      try {
-        const course = await api.get<CourseDetail>(`/api/courses/${lesson.course_id}`);
-        const allLessons = course.modules.flatMap(m => m.lessons);
-        const currentIndex = allLessons.findIndex(l => l.id === lesson.id);
-        setAdjacent({
-          prevId: currentIndex > 0 ? allLessons[currentIndex - 1].id : null,
-          nextId: currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1].id : null,
-        });
-      } catch (err) {
-        console.error('Failed to fetch adjacent lessons:', err);
-      }
-    };
-    fetchAdjacent();
-  }, [lesson]);
+    api.get<{ prev_id: string | null; next_id: string | null }>(
+      `/api/courses/lessons/${lesson.id}/adjacent`
+    )
+      .then((d) => setAdjacent({ prevId: d.prev_id, nextId: d.next_id }))
+      .catch((err) => console.error('Failed to fetch adjacent lessons:', err));
+  }, [lesson?.id]);
   return adjacent;
 }
 
@@ -69,6 +60,14 @@ export default function LessonPage() {
   const [isAIChatOpen, setIsAIChatOpen] = useState(true);
 
   const { messages, isTyping, sendMessage } = useCoaching();
+
+  // Load progress
+  useEffect(() => {
+    if (!lesson || !isAuthenticated) return;
+    api.get<{ completed_lessons: string[] }>(`/api/progress/${lesson.course_id}`)
+      .then((p) => setIsCompleted(p.completed_lessons?.includes(lesson.id) ?? false))
+      .catch(() => setIsCompleted(false));
+  }, [lesson?.id, lesson?.course_id, isAuthenticated]);
 
   // Load linked question data
   useEffect(() => {
@@ -97,7 +96,7 @@ export default function LessonPage() {
     if (!lesson || !isAuthenticated) return;
     setIsMarkingComplete(true);
     try {
-      await api.post(`/api/progress/complete`, { lesson_id: lesson.id });
+      await api.post(`/api/progress/${lesson.id}/complete?course_id=${lesson.course_id}`);
       setIsCompleted(true);
       showToast('Lesson marked as complete!');
     } catch (err) {

@@ -1,9 +1,13 @@
 import json
 import os
+import logging
 from typing import Dict, List, Optional
 
 from app.models.course_schemas import Course, Module, Lesson
 from app.ports.course_repository import CourseRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileCourseRepository(CourseRepository):
@@ -35,8 +39,11 @@ class FileCourseRepository(CourseRepository):
             items = [data]
             
         for item in items:
-            obj = model(**item)
-            target[obj.id] = obj
+            try:
+                obj = model(**item)
+                target[obj.id] = obj
+            except Exception as e:
+                logger.warning(f"Skipping malformed item in {path}: {e}")
 
     async def get_all_courses(self) -> List[Course]:
         return list(self._courses.values())

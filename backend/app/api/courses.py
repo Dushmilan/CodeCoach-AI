@@ -61,3 +61,37 @@ async def get_lesson(
         raise HTTPException(
             status_code=500, detail=f"Error fetching lesson: {str(e)}"
         )
+
+
+@router.get("/lessons/{lesson_id}/adjacent")
+async def get_adjacent_lessons(
+    lesson_id: str,
+    course_service: CourseService = Depends(get_course_service),
+):
+    try:
+        lesson = await course_service.get_lesson(lesson_id)
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Lesson not found")
+        course = await course_service.get_course_with_modules(lesson.course_id)
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+            
+        all_lessons = [
+            (m["order"], l["order"], l["id"])
+            for m in course["modules"]
+            for l in m["lessons"]
+        ]
+        all_lessons.sort()
+        flat_ids = [lid for _, _, lid in all_lessons]
+        
+        try:
+            current_idx = flat_ids.index(lesson_id)
+        except ValueError:
+            return {"prev_id": None, "next_id": None}
+            
+        return {
+            "prev_id": flat_ids[current_idx - 1] if current_idx > 0 else None,
+            "next_id": flat_ids[current_idx + 1] if current_idx < len(flat_ids) - 1 else None,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -64,3 +64,45 @@ class TestGetCurrentUser:
 
             assert exc.value.status_code == status.HTTP_401_UNAUTHORIZED
             assert "deactivated" in exc.value.detail
+
+
+class TestGetOptionalCurrentUser:
+    @pytest.mark.asyncio
+    async def test_optional_no_token_returns_none(self):
+        with patch("app.api.auth.AuthService") as mock_auth_cls:
+            from app.api.auth import get_optional_current_user
+            result = await get_optional_current_user(None)
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_optional_valid_token_returns_user(self):
+        creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="valid.token")
+        expected_user = UserResponse(
+            id="user-1", username="testuser", email="test@test.com",
+            created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+            is_active=True,
+        )
+
+        with patch("app.api.auth.AuthService") as mock_auth_cls:
+            mock_auth = AsyncMock()
+            mock_auth_cls.return_value = mock_auth
+            mock_auth.get_current_user = AsyncMock(return_value=expected_user)
+
+            from app.api.auth import get_optional_current_user
+            result = await get_optional_current_user(creds)
+            assert result.username == "testuser"
+
+    @pytest.mark.asyncio
+    async def test_optional_invalid_token_returns_none(self):
+        creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="bad.token")
+
+        with patch("app.api.auth.AuthService") as mock_auth_cls:
+            mock_auth = AsyncMock()
+            mock_auth_cls.return_value = mock_auth
+            mock_auth.get_current_user = AsyncMock(
+                side_effect=ValueError("Invalid token")
+            )
+
+            from app.api.auth import get_optional_current_user
+            result = await get_optional_current_user(creds)
+            assert result is None
