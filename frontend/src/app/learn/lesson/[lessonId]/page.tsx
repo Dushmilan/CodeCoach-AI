@@ -8,7 +8,7 @@ import {
   ReaderIcon,
   CodeIcon,
 } from '@radix-ui/react-icons';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/header/Header';
 import { MarkdownRenderer } from '@/components/learn/MarkdownRenderer';
@@ -68,6 +68,7 @@ export default function LessonPage() {
       setLanguage(lesson.language as Language);
     }
   }, [lesson?.language]);
+
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
   const [linkedQuestion, setLinkedQuestion] = useState<Question | null>(null);
@@ -139,32 +140,77 @@ export default function LessonPage() {
   };
 
   const handleSubmitCode = async () => {
-    if (!linkedQuestion) return;
+    if (!lesson) return;
     setIsRunning(true);
     setRunError('');
-    try {
-      const submitRes = (await api.post('/api/submit/', {
-        question_id: linkedQuestion.id,
-        language,
-        code: currentCode
-      })) as { passed: boolean; total: number; passed_count: number; results: Array<{ index: number; passed: boolean; actual: string }> };
-      
-      const results = submitRes.results.map((r: any) => 
-        `Test ${r.index}: ${r.passed ? 'PASSED' : 'FAILED'}${r.actual ? ` (Actual: ${r.actual})` : ''}`
-      );
-      if (submitRes.passed) {
-        setOutput('All tests passed!\n\n' + results.join('\n'));
-        if (isAuthenticated && !isCompleted) {
-          await handleMarkComplete();
+
+    if (linkedQuestion) {
+      try {
+        const submitRes = (await api.post('/api/submit/', {
+          question_id: linkedQuestion.id,
+          language,
+          code: currentCode
+        })) as { passed: boolean; total: number; passed_count: number; results: Array<{ index: number; passed: boolean; actual: string }> };
+
+        const results = submitRes.results.map((r: any) =>
+          `Test ${r.index}: ${r.passed ? 'PASSED' : 'FAILED'}${r.actual ? ` (Actual: ${r.actual})` : ''}`
+        );
+        if (submitRes.passed) {
+          setOutput('All tests passed!\n\n' + results.join('\n'));
+          if (isAuthenticated && !isCompleted) {
+            await handleMarkComplete();
+          }
+        } else {
+          setOutput(results.join('\n'));
         }
-      } else {
-        setOutput(results.join('\n'));
+      } catch (err) {
+        setRunError(err instanceof Error ? err.message : 'Submission failed');
+      } finally {
+        setIsRunning(false);
       }
-    } catch (err) {
-      setRunError(err instanceof Error ? err.message : 'Submission failed');
-    } finally {
-      setIsRunning(false);
+      return;
     }
+
+    const lessonTestCases = lesson.test_cases;
+    if (!lessonTestCases || lessonTestCases.length === 0) {
+      setIsRunning(false);
+      return;
+    }
+
+    let passedCount = 0;
+    const resultLines: string[] = [];
+
+    for (let i = 0; i < lessonTestCases.length; i++) {
+      const tc = lessonTestCases[i];
+      try {
+        const res = (await api.post('/api/run/', {
+          language,
+          code: currentCode,
+          stdin: tc.input
+        })) as { stdout: string; stderr: string };
+
+        const actual = (res.stdout || '').trim();
+        const expected = tc.expected_output.trim();
+        const passed = actual === expected;
+        if (passed) passedCount++;
+        resultLines.push(
+          `Test ${i + 1}: ${passed ? 'PASSED' : 'FAILED'}\n  Input: ${tc.input}\n  Expected: ${expected}\n  Actual: ${actual}`
+        );
+      } catch (err) {
+        resultLines.push(`Test ${i + 1}: ERROR - ${err instanceof Error ? err.message : 'Execution failed'}`);
+      }
+    }
+
+    const allPassed = passedCount === lessonTestCases.length;
+    if (allPassed) {
+      setOutput('All tests passed!\n\n' + resultLines.join('\n'));
+      if (isAuthenticated && !isCompleted) {
+        await handleMarkComplete();
+      }
+    } else {
+      setOutput(`Passed ${passedCount}/${lessonTestCases.length}\n\n` + resultLines.join('\n'));
+    }
+    setIsRunning(false);
   };
 
   const handleCodeChange = (code: string) => {
@@ -175,11 +221,25 @@ export default function LessonPage() {
     setLanguage(lang);
   };
 
+  const codeInitialized = useRef(false);
+
+  useEffect(() => {
+    codeInitialized.current = false;
+  }, [lesson?.id]);
+
+  useEffect(() => {
+    const starter = (linkedQuestion?.starter as any)?.[language] || lesson?.starter_code || '';
+    if (starter && !codeInitialized.current) {
+      setCurrentCode(starter);
+      codeInitialized.current = true;
+    }
+  }, [lesson?.id, linkedQuestion?.id, language]);
+
   if (isLoading) return <div>Loading...</div>;
   if (error || !lesson) return <div>Error</div>;
 
   const isExercise = lesson.type === 'exercise';
-  const resolvedTestCases = linkedQuestion?.test_cases || [];
+  const resolvedTestCases = linkedQuestion?.test_cases || lesson.test_cases || [];
   const resolvedStarterCode = (linkedQuestion?.starter as any)?.[language] || lesson.starter_code || '';
 
   return (

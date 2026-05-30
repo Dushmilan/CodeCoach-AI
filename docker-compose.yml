@@ -10,6 +10,7 @@ services:
       - "8000:8000"
     environment:
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DATABASE_URL=sqlite:///./codecoach.db
       - PISTON_API_URL=http://piston:2000/api/v2
     volumes:
