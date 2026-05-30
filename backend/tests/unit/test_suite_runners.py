@@ -47,7 +47,7 @@ class TestPythonSuiteRunner:
         test_cases = [
             {"input": "[[1]]", "expected_output": "[[1]]", "hidden": False},
         ]
-        runner = self._generate(service, code, test_cases)
+        runner = self._generate(code, test_cases)
         assert "if __out is None:" in runner
         assert "json.dumps(__in_val" in runner
 
@@ -57,7 +57,7 @@ class TestPythonSuiteRunner:
         test_cases = [
             {"input": "[]\n0", "expected_output": "[-1,-1]", "hidden": False},
         ]
-        runner = self._generate(service, code, test_cases)
+        runner = self._generate(code, test_cases)
         assert "searchRange(__a, __b)" in runner
         assert "json.dumps(__out" in runner
 
@@ -67,7 +67,7 @@ class TestPythonSuiteRunner:
         test_cases = [
             {"input": "[1,2,3]", "expected_output": "3", "hidden": False},
         ]
-        runner = self._generate(service, code, test_cases)
+        runner = self._generate(code, test_cases)
         # self should be stripped from user_code
         assert "(self, nums)" not in runner
         assert "def solve(nums):" in runner
@@ -78,7 +78,7 @@ class TestPythonSuiteRunner:
         test_cases = [
             {"input": "4", "expected_output": "true", "hidden": False},
         ]
-        runner = self._generate(service, code, test_cases)
+        runner = self._generate(code, test_cases)
         assert "str(__out).lower()" in runner
 
     def test_exception_during_run(self):
@@ -87,7 +87,7 @@ class TestPythonSuiteRunner:
         test_cases = [
             {"input": "1", "expected_output": "1", "hidden": False},
         ]
-        runner = self._generate(service, code, test_cases)
+        runner = self._generate(code, test_cases)
         assert "except Exception as __e:" in runner
         assert "__passed = False" in runner
 
