@@ -12,6 +12,35 @@ from app.adapters.coaching_prompts import (
 
 
 class TestBuildSystemPrompt:
+    def test_persona_is_socratic(self):
+        prompt = build_system_prompt("hint", "python")
+        assert "Socratic" in prompt
+        assert "NEVER give away the answer" in prompt
+
+    def test_frustration_escalation_strategy(self):
+        prompt = build_system_prompt("hint", "python")
+        assert "frustration" in prompt
+        assert "completely stuck" in prompt
+
+    def test_lesson_context_framing(self):
+        prompt = build_system_prompt("hint", "python", lesson_context="Python Lesson 4: For Loops")
+        assert "Frame your guiding questions" in prompt
+        assert "Connect the student's current struggle" in prompt
+
+    def test_debug_mode_socratic(self):
+        prompt = build_system_prompt("debug", "python")
+        assert "Do NOT explain the fix" in prompt
+
+    def test_review_mode_socratic(self):
+        prompt = build_system_prompt("review", "python")
+        assert "Do NOT write the improved code" in prompt
+
+    def test_explain_mode_bite_sized(self):
+        prompt = build_system_prompt("explain", "python")
+        assert "ONE foundational idea at a time" in prompt
+        assert "Do NOT dump the full concept" in prompt
+
+
     def test_includes_persona(self):
         prompt = build_system_prompt("hint", "python")
         assert "You are CodeCoach AI" in prompt
@@ -61,6 +90,39 @@ class TestBuildSystemPrompt:
 
 
 class TestBuildStructuredSystemPrompt:
+    def test_structured_persona_is_socratic(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "Socratic" in prompt
+        assert "Never give away the full solution" in prompt
+
+    def test_structured_includes_general_guidelines(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "General Guidelines" in prompt
+        assert "Be concise but thorough" in prompt
+
+    def test_single_hint_rule(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "EXACTLY 1 subtle hint" in prompt
+
+    def test_minimize_populated_fields_rule(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "Only populate the specific field" in prompt
+
+    def test_end_summary_with_question_rule(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "end summary with a question" in prompt
+
+    def test_structured_frustration_escalation_strategy(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "frustration" in prompt
+        assert "completely stuck" in prompt
+
+    def test_structured_lesson_context_framing(self):
+        prompt = build_structured_system_prompt("hint", "python", lesson_context="Python Lesson 4: For Loops")
+        assert "Frame your guiding questions" in prompt
+        assert "Connect the student's current struggle" in prompt
+
+
     def test_includes_structured_persona(self):
         prompt = build_structured_system_prompt("hint", "python")
         assert "You MUST respond with ONLY a valid JSON object" in prompt
@@ -72,7 +134,7 @@ class TestBuildStructuredSystemPrompt:
     def test_includes_hints_structured_section(self):
         prompt = build_structured_system_prompt("hint", "python")
         assert "hint mode:" in prompt
-        assert "2-3 progressive hints" in prompt
+        assert "EXACTLY 1 subtle hint" in prompt
 
     def test_includes_review_structured_section(self):
         prompt = build_structured_system_prompt("review", "python")
@@ -82,7 +144,7 @@ class TestBuildStructuredSystemPrompt:
     def test_includes_explain_structured_section(self):
         prompt = build_structured_system_prompt("explain", "python")
         assert "explain mode:" in prompt
-        assert "Detailed breakdown" in prompt
+        assert "One concept at a time" in prompt
 
     def test_includes_debug_structured_section(self):
         prompt = build_structured_system_prompt("debug", "python")
