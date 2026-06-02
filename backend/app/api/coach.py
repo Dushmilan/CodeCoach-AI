@@ -26,7 +26,7 @@ def get_nim_service(
     from dotenv import load_dotenv
     from pathlib import Path
 
-    env_path = Path(__file__).parent.parent.parent / ".env"
+    env_path = Path(__file__).parent.parent.parent.parent / ".env"
     load_dotenv(env_path)
 
     # Fall back to env var if header was not provided
@@ -114,7 +114,7 @@ def get_nim_service(
         from dotenv import load_dotenv
         from pathlib import Path
 
-        env_path = Path(__file__).parent.parent.parent / ".env"
+        env_path = Path(__file__).parent.parent.parent.parent / ".env"
         load_dotenv(env_path)
 
         # Check again after forced reload

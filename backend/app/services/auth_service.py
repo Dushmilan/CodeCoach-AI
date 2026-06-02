@@ -2,6 +2,7 @@ import uuid
 import os
 import logging
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Optional
 
 import bcrypt
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+_USERS_FILE = str(Path(__file__).parent.parent.parent / "data" / "users.json")
 
 
 def _get_secret_key() -> str:
@@ -81,7 +83,7 @@ def _user_to_response(user: UserInDB) -> UserResponse:
 
 class AuthService:
     def __init__(self, repository: Optional[UserRepository] = None):
-        self.repository = repository or FileUserRepository("data/users.json")
+        self.repository = repository or FileUserRepository(_USERS_FILE)
 
     async def register(self, request: UserRegisterRequest) -> TokenResponse:
         existing = await self.repository.get_by_username(request.username)

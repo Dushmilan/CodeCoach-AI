@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Optional
 import logging
 
 from app.models.auth_schemas import (
@@ -34,7 +35,7 @@ async def get_current_user(
 
 async def get_optional_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security_optional),
-) -> UserResponse | None:
+) -> Optional[UserResponse]:
     if credentials is None:
         return None
     auth_service = AuthService()

@@ -23,7 +23,7 @@ def setup_logging():
 
 
 # Load environment variables from .env file with explicit path
-env_path = Path(__file__).parent.parent / ".env"
+env_path = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(env_path)
 
 setup_logging()
