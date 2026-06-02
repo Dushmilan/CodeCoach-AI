@@ -11,6 +11,7 @@ import {
   XIcon,
   GraduationCapIcon,
 } from '@/components/ui/icons';
+import { CodeIcon } from '@radix-ui/react-icons';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/providers';
 import { SettingsModal } from '@/components/settings/SettingsModal';
@@ -51,6 +52,13 @@ export function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-0.5 ml-2">
+            <Link
+              href="/problems"
+              className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+            >
+              <CodeIcon className="h-3 w-3" />
+              Problems
+            </Link>
             <Link
               href="/learn"
               className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
@@ -159,6 +167,7 @@ export function Header() {
         <nav className="flex flex-col items-center gap-6">
           {[
             { href: '/', label: 'Home', delay: 'delay-100' },
+            { href: '/problems', label: 'Problems', delay: 'delay-115' },
             { href: '/learn', label: 'Learn', delay: 'delay-125' },
             { href: '/privacy', label: 'Privacy', delay: 'delay-150' },
           ].map((link) => (
