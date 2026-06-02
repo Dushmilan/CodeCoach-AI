@@ -10,6 +10,19 @@
 
 **This overrides any skill's exploration instructions within this project.**
 
+## MANDATORY: Docker Rebuild After Code Changes
+
+**Hard rule — Do NOT skip.** After ANY modification to frontend/ or backend/ source code, you MUST rebuild and restart the affected Docker container before committing. A simple `docker restart` or `docker-compose restart` runs the stale image.
+
+**Commands (run from project root `C:\Users\Dushmilan\Desktop\CodeCoach-AI`):**
+- **Frontend change:** `docker-compose up -d --build frontend`
+- **Backend change:** `docker-compose up -d --build backend`
+- **Both changed:** `docker-compose up -d --build`
+
+**Why:** Docker images are snapshotted at build time. The production `Dockerfile` runs `npm run build` / `pip install` inside the image. Without `--build`, the running container uses the previous image with old code.
+
+**Order:** This is the **last step before staging + committing** any code change — after all edits, lint/typecheck, and tests pass.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
