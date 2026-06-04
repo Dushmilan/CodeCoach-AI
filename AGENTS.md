@@ -39,7 +39,7 @@ Rules:
 ## Session Context — May 26, 2026
 
 ### Phase 2 Complete (Steps 1–9)
-Programming language curricula (C, Python, Java) for CodeCoach AI:
+Programming language curriculum (C, Python, Java) for CodeCoach AI:
 
 **Backend:**
 - Course/Module/Lesson schemas (`course_schemas.py`), ports, file repos, service layer

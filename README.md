@@ -27,7 +27,7 @@ Practice DSA problems and learn programming languages with structured lessons an
 CodeCoach AI is an open-source LeetCode alternative with integrated AI coaching. It helps university students:
 
 - **Practice coding interview questions** — 36 DSA problems (target: 90) across 14 standard topics with Python, JavaScript, and Java starter code
-- **Learn programming languages** — structured C, Python, and Java curricula with interleaved theory and coding exercises (coming soon)
+- **Learn programming languages** — structured C, Python, and Java curriculum with interleaved theory and coding exercises (coming soon)
 - **Get instant AI coaching** — hints, code reviews, explanations, and debugging help powered by NVIDIA NIM or Google Gemini (BYO API key)
 - **Submit and grade** — code runs against test cases in an isolated Piston container with pass/fail results
 
@@ -65,7 +65,7 @@ Multi-institution, drop-in, voluntary — students sign up on their own time, ze
 | Phase | Scope |
 |---|---|
 | **Phase 1 — DSA Ship** | 54 more questions → 90 total (24 Easy / 10 Medium / 2 Hard existing) across 14 standard topics. Google OAuth. Privacy policy page. Polish pass. |
-| **Phase 2 — Curricula** | C, Python, Java language curricula with interleaved theory + coding exercises. `/learn` navigation. Context-aware AI coaching. |
+| **Phase 2 — Curriculum** | C, Python, Java language curriculum with interleaved theory + coding exercises. `/learn` navigation. Context-aware AI coaching. |
 | **Phase 3 — Expand** | DBMS/SQL module, OOP/Design Patterns, Web Dev (React, Node), theory/MCQ question type. Classroom dashboard. |
 
 ## Roadmap
@@ -77,7 +77,7 @@ Phase 1 ─── DSA Practice (current focus)
 ├── Privacy policy + For Educators page
 └── Polish (onboarding, empty states, error handling)
 
-Phase 2 ─── Programming Language Curricula
+Phase 2 ─── Programming Language Curriculum
 ├── C curriculum ─── 15-20 lessons
 ├── Python curriculum ─── 15-20 lessons
 ├── Java curriculum ─── 15-20 lessons

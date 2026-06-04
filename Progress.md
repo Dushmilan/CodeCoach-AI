@@ -71,4 +71,4 @@
 ## Phase 2 Status
 
 - **Phase 2 Step 10 Complete:** E2E testing passed, TypeScript clean.
-- **Next:** Programming language curricula (C, Python, Java).
+- **Next:** Programming language curriculum (C, Python, Java).

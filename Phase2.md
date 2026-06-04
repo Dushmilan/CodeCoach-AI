@@ -1,4 +1,4 @@
-# Phase 2 — Programming Language Curricula (Implemented)
+# Phase 2 — Programming Language Curriculum (Implemented)
 
 ## Overview
 

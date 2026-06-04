@@ -29,7 +29,7 @@ All majors welcome. Multi-institution, drop-in, voluntary.
 |---|---|---|---|---|
 | **Free** | Yes (BYO API key) | Freemium | Freemium | Free |
 | **AI Coaching** | Built-in (NVIDIA NIM) | No | Limited | No |
-| **Language Curricula** | C, Python, Java lessons + exercises | No | Limited tracks | Yes, exercises only |
+| **Language Curriculum** | C, Python, Java lessons + exercises | No | Limited tracks | Yes, exercises only |
 | **Open Source** | Yes | No | No | Yes |
 | **Professor-Ready** | Curriculum mapping, privacy-first | No | Enterprise only | No |
 
@@ -44,7 +44,7 @@ A free AI-powered coding platform where university students practice DSA problem
 - AI coaching with BYO NVIDIA API key
 - Email/password + Google OAuth
 
-### Phase 2 — Programming Language Curricula
+### Phase 2 — Programming Language Curriculum
 - C, Python, Java — each with ~15-20 interleaved theory + coding exercise lessons
 - Context-aware AI coaching per lesson
 - `/learn` navigation

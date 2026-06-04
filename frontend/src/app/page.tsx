@@ -43,7 +43,7 @@ const features = [
   },
   {
     icon: CodeIcon,
-    title: 'Language Curricula',
+    title: 'Language Curriculum',
     description:
       'Structured C, Python, and Java paths blending theory with hands-on coding exercises.',
     accent: 'border-l-violet-500/40',
@@ -142,7 +142,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-foreground/70 hover:text-foreground bg-white/[0.04] hover:bg-white/[0.08] rounded-full transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] border border-white/[0.06]"
             >
               <ReaderIcon className="h-4 w-4" />
-              View Curricula
+              View Curriculum
             </Link>
           </motion.div>
         </div>
@@ -300,7 +300,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-foreground/70 hover:text-foreground bg-white/[0.04] hover:bg-white/[0.08] rounded-full transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] border border-white/[0.06]"
               >
                 <ReaderIcon className="h-4 w-4" />
-                View Curricula
+                View Curriculum
               </Link>
             </div>
           </div>

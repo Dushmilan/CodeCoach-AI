@@ -88,7 +88,7 @@ Phase 1 delivers a free, open-source LeetCode alternative with built-in AI coach
 
 ## Phase 2 Migration Note
 
-Phase 2 (programming language curricula) is now live with its own quality-gate pipeline.
+Phase 2 (programming language curriculum) is now live with its own quality-gate pipeline.
 
 ## Phase 1 Cleanup (May 26, 2026)
 
