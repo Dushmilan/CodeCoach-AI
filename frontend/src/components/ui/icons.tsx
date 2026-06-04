@@ -211,6 +211,24 @@ export const EyeOffIcon = createIcon('EyeOffIcon',
   </>
 );
 
+export const FileTextIcon = createIcon('FileTextIcon',
+  <>
+    <path
+      d="M3.5 2.5H11.5V12.5H3.5V2.5Z"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M5.5 5.5H9.5M5.5 8H8.5"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+    />
+  </>
+);
+
 export const Loader2Icon = createIcon('Loader2Icon',
   <>
     <path

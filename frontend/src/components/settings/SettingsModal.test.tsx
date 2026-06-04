@@ -26,33 +26,10 @@ describe('SettingsModal', () => {
     expect(screen.getByText('SETTINGS')).toBeInTheDocument();
   });
 
-  it('shows API key tab by default', () => {
+  it('shows API key input by default', () => {
     render(<SettingsModal {...defaultProps} />);
     expect(screen.getByPlaceholderText('nvapi-...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
-  });
-
-  it('renders tab buttons', () => {
-    render(<SettingsModal {...defaultProps} />);
-    expect(screen.getByRole('button', { name: /^API Key$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Privacy$/i })).toBeInTheDocument();
-  });
-
-  it('switches to privacy tab on click', async () => {
-    const user = userEvent.setup();
-    render(<SettingsModal {...defaultProps} />);
-    await user.click(screen.getByRole('button', { name: /^Privacy$/i }));
-    expect(screen.getByText('What data we collect')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('nvapi-...')).not.toBeInTheDocument();
-  });
-
-  it('switches back to API key tab', async () => {
-    const user = userEvent.setup();
-    render(<SettingsModal {...defaultProps} />);
-    await user.click(screen.getByRole('button', { name: /^Privacy$/i }));
-    expect(screen.getByText('What data we collect')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /^API Key$/i }));
-    expect(screen.getByPlaceholderText('nvapi-...')).toBeInTheDocument();
   });
 
   it('shows API key input', () => {
@@ -65,6 +42,21 @@ describe('SettingsModal', () => {
     render(<SettingsModal {...defaultProps} />);
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+  });
+
+  it('renders Privacy Policy button', () => {
+    render(<SettingsModal {...defaultProps} />);
+    expect(screen.getByRole('button', { name: /privacy policy/i })).toBeInTheDocument();
+  });
+
+  it('closes settings and navigates when Privacy Policy is clicked', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    render(<SettingsModal {...defaultProps} onClose={onClose} />);
+    await user.click(screen.getByRole('button', { name: /privacy policy/i }));
+
+    expect(onClose).toHaveBeenCalled();
   });
 
   it('calls onSave with trimmed value when Save is clicked', async () => {
