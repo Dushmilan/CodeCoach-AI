@@ -248,11 +248,11 @@ export default function LessonPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-        className="min-h-[100dvh] bg-background text-foreground flex flex-col"
+        className="h-dvh bg-background text-foreground flex flex-col overflow-hidden"
       >
         <Header />
 
-        <main className="flex-1 flex flex-col px-6 pt-6 pb-4 max-w-7xl mx-auto w-full min-h-0">
+        <main className="flex-1 flex flex-col px-6 pt-6 pb-4 max-w-7xl mx-auto w-full min-h-0 overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Link

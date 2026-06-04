@@ -22,7 +22,7 @@ export function AIChatPanelContainer({
   language,
 }: AIChatPanelContainerProps) {
   return (
-    <aside className="h-full flex flex-col flex-none overflow-y-auto border-l border-white/[0.04]" aria-label="AI Assistant Panel">
+    <aside className="h-full flex flex-col flex-none overflow-hidden border-l border-white/[0.04]" aria-label="AI Assistant Panel">
       <AIChatPanel
         messages={messages}
         onSendMessage={onSendMessage}

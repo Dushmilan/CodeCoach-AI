@@ -128,7 +128,7 @@ export default function ProblemWorkspacePage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">
+    <div className="h-dvh bg-background text-foreground flex flex-col overflow-hidden">
       <Header />
       <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
       <div className="flex items-center gap-2 px-1 py-2">
