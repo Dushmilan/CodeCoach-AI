@@ -78,7 +78,7 @@ const CourseCard = memo(function CourseCard({
       onMouseLeave={() => setHovered(false)}
     >
       <Link
-        href={lastLessonId ? `/learn/lesson/${lastLessonId}` : `/learn/${course.id}`}
+        href={`/learn/${course.id}`}
         className={cn(
           'group relative block rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8',
           'transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
@@ -124,7 +124,7 @@ const CourseCard = memo(function CourseCard({
           )}
           {isAuthenticated && lastLessonId && (
             <span className="ml-auto text-[11px] text-primary/60 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-              Continue
+              View Path
               <span className="inline-block transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
                 &rarr;
               </span>

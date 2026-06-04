@@ -252,7 +252,7 @@ export default function LessonPage() {
       >
         <Header />
 
-        <main className="flex-1 flex flex-col px-6 pt-6 pb-4 max-w-7xl mx-auto w-full">
+        <main className="flex-1 flex flex-col px-6 pt-6 pb-4 max-w-7xl mx-auto w-full min-h-0">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Link
@@ -330,8 +330,8 @@ export default function LessonPage() {
                 )}
               </div>
 
-              <div className="h-full grid grid-cols-[1fr_auto] min-w-0 divide-x divide-white/[0.04]">
-                <div className="min-w-0 flex flex-col">
+              <div className="h-full grid grid-cols-[1fr_auto] min-w-0 min-h-0 divide-x divide-white/[0.04]">
+                <div className="min-w-0 flex flex-col min-h-0">
                     <CodeEditorContainer
                       language={language}
                       currentCode={currentCode}
@@ -347,7 +347,7 @@ export default function LessonPage() {
                     />
                 </div>
                 {isAIChatOpen && (
-                  <div className="w-[400px] flex-shrink-0 h-full flex flex-col">
+                  <div className="w-[400px] flex-shrink-0 h-full flex flex-col min-h-0">
                     <AIChatPanelContainer
                       messages={messages}
                       onSendMessage={handleSendMessage}
