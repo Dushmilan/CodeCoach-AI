@@ -29,6 +29,11 @@ class Difficulty(str, Enum):
     HARD = "hard"
 
 
+class ChatMessageContext(BaseModel):
+    role: str = Field(..., description="Message role (user or assistant)")
+    content: str = Field(..., description="Message content")
+
+
 class CoachingRequest(BaseModel):
     problem: str = Field(..., description="The coding problem description")
     code: str = Field(..., description="User's current code attempt")
@@ -39,6 +44,7 @@ class CoachingRequest(BaseModel):
         default=Difficulty.MEDIUM, description="Problem difficulty"
     )
     lesson_context: Optional[str] = Field(None, description="Lesson context for scoped coaching")
+    chat_history: Optional[List[ChatMessageContext]] = Field(default=[], description="Previous conversation messages for context")
 
 
 class StructuredCoachingResponse(BaseModel):

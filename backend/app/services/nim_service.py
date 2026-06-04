@@ -51,6 +51,7 @@ class NIMService:
         mode: str = "hint",
         difficulty: str = "medium",
         lesson_context: str = None,
+        chat_history: list = None,
     ) -> Dict[str, Any]:
         from app.models.schemas import StructuredCoachingResponse
 
@@ -59,12 +60,16 @@ class NIMService:
         system_prompt = build_structured_system_prompt(mode, language, lesson_context=lesson_context)
         user_prompt = build_structured_user_prompt(problem, code, message, mode)
 
+        messages = [
+            {"role": "system", "content": system_prompt},
+        ]
+        if chat_history:
+            messages.extend(chat_history)
+        messages.append({"role": "user", "content": user_prompt})
+
         payload = {
             "model": model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            "messages": messages,
             "max_tokens": 1000,
             "temperature": 0.1,
             "top_p": 0.9,
@@ -114,18 +119,23 @@ class NIMService:
         difficulty: str = "medium",
         lesson_context: str = None,
         structured: bool = False,
+        chat_history: list = None,
     ) -> AsyncIterator[str]:
         model = self.models.get(difficulty, self.models["medium"])
 
         system_prompt = build_system_prompt(mode, language, lesson_context=lesson_context)
         user_prompt = build_user_prompt(problem, code, message, mode)
 
+        messages = [
+            {"role": "system", "content": system_prompt},
+        ]
+        if chat_history:
+            messages.extend(chat_history)
+        messages.append({"role": "user", "content": user_prompt})
+
         payload = {
             "model": model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            "messages": messages,
             "max_tokens": 1500,
             "temperature": 0.7,
             "stream": not structured,

@@ -10,6 +10,7 @@ export interface CoachingRequest {
   language: string;
   difficulty?: string;
   lesson_context?: string;
+  chat_history?: { role: string; content: string }[];
 }
 
 export interface CoachingResponse {
@@ -33,7 +34,8 @@ export class CoachingService {
     message: string,
     mode: string,
     difficulty: string = 'medium',
-    lessonContext?: string
+    lessonContext?: string,
+    chatHistory?: { role: string; content: string }[]
   ): Promise<CoachingResponse> {
     const headers = this.getApiKeyHeader();
     const body: CoachingRequest = {
@@ -46,6 +48,9 @@ export class CoachingService {
     };
     if (lessonContext) {
       body.lesson_context = lessonContext;
+    }
+    if (chatHistory && chatHistory.length > 0) {
+      body.chat_history = chatHistory;
     }
     const data = await this.http.post<{ response: string; structured: StructuredCoachingResponse | null }>(
       '/api/coach/',

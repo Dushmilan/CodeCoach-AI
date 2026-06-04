@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { ChatMessage } from '@/types';
 import { coachingService } from './coaching.service';
 import { CoachingFeature, CoachingMode } from './coaching.types';
@@ -8,6 +8,8 @@ import { showToast } from '@/components/ui/Toast';
 
 export function useCoaching(): CoachingFeature {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,9 +29,16 @@ export function useCoaching(): CoachingFeature {
         timestamp: new Date(),
       };
 
+      const historyBeforeNew = messagesRef.current;
+
       setMessages((prev) => [...prev, userMessage]);
       setIsTyping(true);
       setError(null);
+
+      const chatHistory = historyBeforeNew.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
       try {
         const data = await coachingService.getCoachResponse(
@@ -39,7 +48,8 @@ export function useCoaching(): CoachingFeature {
           message,
           mode,
           'medium',
-          lessonContext
+          lessonContext,
+          chatHistory
         );
 
         const assistantMessage: ChatMessage = {

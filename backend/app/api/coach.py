@@ -157,6 +157,8 @@ async def get_coaching(
 
     try:
         # Get structured response
+        chat_history_list = [m.model_dump() for m in request.chat_history] if request.chat_history else []
+
         structured_data = await nim_service.get_structured_coaching_response(
             problem=request.problem,
             code=request.code,
@@ -165,6 +167,7 @@ async def get_coaching(
             mode=request.mode.value,
             difficulty=request.difficulty.value,
             lesson_context=request.lesson_context,
+            chat_history=chat_history_list,
         )
 
         # Create raw text response from structured data for backward compatibility
@@ -280,6 +283,8 @@ async def get_coaching_stream(
         chunk_count = 0
         try:
             logger.debug("Starting to stream chunks from NIM service...")
+            chat_history_list = [m.model_dump() for m in request.chat_history] if request.chat_history else []
+
             async for chunk in nim_service.get_coaching_response(
                 problem=request.problem,
                 code=request.code,
@@ -288,6 +293,7 @@ async def get_coaching_stream(
                 mode=request.mode.value,
                 difficulty=request.difficulty.value,
                 lesson_context=request.lesson_context,
+                chat_history=chat_history_list,
             ):
                 chunk_count += 1
                 # Format as SSE
