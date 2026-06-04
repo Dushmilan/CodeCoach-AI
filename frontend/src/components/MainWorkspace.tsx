@@ -111,7 +111,7 @@ export function MainWorkspace() {
             />
           </QuestionContentSection>
           {isAIChatOpen && (
-            <div className="flex-[0_0_35%] min-w-[350px] max-w-[450px]">
+            <div className="flex-[0_0_35%] min-w-[350px] max-w-[450px] h-full flex flex-col">
               <AIChatPanelContainer
                 messages={messages}
                 onSendMessage={handleSendMessage}

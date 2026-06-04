@@ -330,7 +330,7 @@ export default function LessonPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-[1fr_auto] min-w-0 divide-x divide-white/[0.04]">
+              <div className="h-full grid grid-cols-[1fr_auto] min-w-0 divide-x divide-white/[0.04]">
                 <div className="min-w-0 flex flex-col">
                     <CodeEditorContainer
                       language={language}
@@ -347,7 +347,7 @@ export default function LessonPage() {
                     />
                 </div>
                 {isAIChatOpen && (
-                  <div className="w-[400px] flex-shrink-0">
+                  <div className="w-[400px] flex-shrink-0 h-full flex flex-col">
                     <AIChatPanelContainer
                       messages={messages}
                       onSendMessage={handleSendMessage}
