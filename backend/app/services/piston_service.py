@@ -14,10 +14,9 @@ import httpx
 from fastapi import HTTPException
 
 from app.ports.code_executor import CodeExecutor, ExecutionResult, TestCaseResult
-from app.adapters.code_wrappers import get_wrapper
+from app.adapters.code_wrappers import build_runner, get_wrapper
 from app.adapters.execution_result_formatter import ExecutionResultFormatter
 from app.services.static_code_validator import StaticCodeValidator, get_file_extension
-from app.services.suite_runners import build_suite_runner
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +111,7 @@ class PistonService(CodeExecutor):
         if not test_cases:
             return []
 
-        runner_code = build_suite_runner(language, code, test_cases)
+        runner_code = build_runner(language, code, test_cases)
         exec_result = await self.execute(
             language=language,
             code=runner_code,

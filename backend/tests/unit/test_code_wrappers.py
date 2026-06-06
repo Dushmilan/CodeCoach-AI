@@ -522,3 +522,249 @@ class TestGetWrapper:
 
     def test_empty_string(self):
         assert get_wrapper("") is None
+
+
+# ── Python wrap_with_tests ──────────────────────────────────────────────
+
+class TestPythonWrapWithTests:
+    def _wrap(self, code, test_cases):
+        from app.adapters.code_wrappers.python_wrapper import PythonCodeWrapper
+        return PythonCodeWrapper().wrap_with_tests(code, test_cases)
+
+    def test_single_param_list_return(self):
+        code = "def threeSum(nums):\n    return [[-4,-2,6],[-4,0,4]]"
+        test_cases = [
+            {"input": "[-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6]", "expected_output": "[[-4,-2,6],[-4,0,4]]", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "def threeSum(nums):" in runner
+        assert "json.dumps(__out, separators=(\",\", \":\"))" in runner
+        assert "__out, __in_val = __run_test(__tc)" in runner
+        assert "threeSum(__parsed)" in runner
+        assert "hidden" not in runner
+
+    def test_two_param_int_return(self):
+        code = "def subarraySum(nums, k):\n    return 1"
+        test_cases = [
+            {"input": "[1]\n1", "expected_output": "1", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "subarraySum(__a, __b)" in runner
+        assert "str(__out)" in runner
+
+    def test_inplace_modification(self):
+        code = "def rotate(matrix):\n    matrix[:] = [[row[i] for row in reversed(matrix)] for i in range(len(matrix[0]))]"
+        test_cases = [
+            {"input": "[[1]]", "expected_output": "[[1]]", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "if __out is None:" in runner
+        assert "json.dumps(__in_val" in runner
+
+    def test_self_stripping(self):
+        code = "def solve(self, nums):\n    return len(nums)"
+        test_cases = [
+            {"input": "[1,2,3]", "expected_output": "3", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "(self, nums)" not in runner
+        assert "def solve(nums):" in runner
+
+    def test_bool_return(self):
+        code = "def isEven(n):\n    return n % 2 == 0"
+        test_cases = [
+            {"input": "4", "expected_output": "true", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "str(__out).lower()" in runner
+
+    def test_exception_during_run(self):
+        code = "def fail(n):\n    raise ValueError('bad')"
+        test_cases = [
+            {"input": "1", "expected_output": "1", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "except Exception as __e:" in runner
+        assert "__passed = False" in runner
+
+    def test_empty_test_cases(self):
+        runner = self._wrap("def f(x):\n    return x", [])
+        assert "__test_cases = " in runner
+        assert "run_suite()" in runner
+
+    def test_multi_param_spread(self):
+        code = "def bypass(a, b, c):\n    return a + b + c"
+        test_cases = [
+            {"input": "1\n2\n3", "expected_output": "6", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "__parsed_args = [json.loads(ln)" in runner
+        assert "bypass(*__parsed_args)" in runner
+        assert "__parsed_args[0]" in runner
+
+    def test_hidden_not_in_runner(self):
+        test_cases = [
+            {"input": "1", "expected_output": "1", "hidden": True},
+            {"input": "2", "expected_output": "2", "hidden": False},
+        ]
+        runner = self._wrap("def f(x):\n    return x", test_cases)
+        assert "\"hidden\"" not in runner
+        assert "True" not in runner.replace("True", "", 1)
+
+    def test_none_return_vs_string_return(self):
+        code = "def greet(name):\n    return 'hello'"
+        test_cases = [
+            {"input": "\"world\"", "expected_output": "hello", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "if __out is None:" in runner
+        assert "str(__out)" in runner
+
+
+# ── JavaScript wrap_with_tests ──────────────────────────────────────────
+
+class TestJavaScriptWrapWithTests:
+    def _wrap(self, code, test_cases):
+        from app.adapters.code_wrappers.javascript_wrapper import JavaScriptCodeWrapper
+        return JavaScriptCodeWrapper().wrap_with_tests(code, test_cases)
+
+    def test_single_param(self):
+        code = "function threeSum(nums) { return [[-4,-2,6],[-4,0,4]]; }"
+        test_cases = [
+            {"input": "[-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6]", "expected_output": "[[-4,-2,6],[-4,0,4]]", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "threeSum(parsed)" in runner
+        assert "inVal = parsed" in runner
+
+    def test_multi_param_spread(self):
+        code = "function add(a, b, c) { return a + b + c; }"
+        test_cases = [
+            {"input": "1\n2\n3", "expected_output": "6", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "parsedArgs = lines.map" in runner
+        assert "add(...parsedArgs)" in runner
+
+    def test_inplace_modification(self):
+        code = "function rotate(matrix) { matrix.reverse(); }"
+        test_cases = [
+            {"input": "[[1,2],[3,4]]", "expected_output": "[[3,4],[1,2]]", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "out == null" in runner
+        assert "inVal = parsed" in runner
+
+    def test_bool_return(self):
+        code = "function isEven(n) { return n % 2 === 0; }"
+        test_cases = [
+            {"input": "4", "expected_output": "true", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "typeof out === 'boolean'" in runner
+        assert "String(out)" in runner
+
+    def test_arrow_function(self):
+        code = "const threeSum = (nums) => { return []; }"
+        test_cases = [
+            {"input": "[]", "expected_output": "[]", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "threeSum(parsed)" in runner
+
+    def test_no_fs_require(self):
+        code = "function f(x) { return x; }"
+        test_cases = [{"input": "1", "expected_output": "1", "hidden": False}]
+        runner = self._wrap(code, test_cases)
+        assert "require('fs')" not in runner
+        assert "require(\"fs\")" not in runner
+
+    def test_uses_process_stdout_write(self):
+        code = "function f(x) { return x; }"
+        test_cases = [{"input": "1", "expected_output": "1", "hidden": False}]
+        runner = self._wrap(code, test_cases)
+        assert "process.stdout.write" in runner
+
+
+# ── Java wrap_with_tests ────────────────────────────────────────────────
+
+class TestJavaWrapWithTests:
+    def _wrap(self, code, test_cases):
+        from app.adapters.code_wrappers.java_wrapper import JavaCodeWrapper
+        return JavaCodeWrapper().wrap_with_tests(code, test_cases)
+
+    def test_single_string_param(self):
+        code = """public class Solution {
+    public static String greet(String name) {
+        return "Hello, " + name;
+    }
+}"""
+        test_cases = [
+            {"input": "\"world\"", "expected_output": "Hello, world", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "import java.util.*" in runner
+        assert "import java.lang.reflect.*" in runner
+        assert "public class Solution" in runner
+
+    def test_generates_valid_structure(self):
+        code = """public class Solution {
+    public static int add(int a, int b) {
+        return a + b;
+    }
+}"""
+        test_cases = [
+            {"input": "1\n2", "expected_output": "3", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "@@SUITE_RESULT@@" in runner
+        assert "parseTcArray" in runner
+        assert "toJson(results)" in runner
+
+    def test_uses_toJson_instead_of_arrays_tostring(self):
+        code = """public class Solution {
+    public static int[] searchRange(int[] nums, int target) {
+        return new int[]{-1, -1};
+    }
+}"""
+        test_cases = [
+            {"input": "[]\n0", "expected_output": "[-1,-1]", "hidden": False},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "actual = toJson(result)" in runner
+        assert "Arrays.toString" not in runner
+
+    def test_toJson_handles_int_array(self):
+        code = """public class Solution {
+    public static int[] nums(int[] a) { return a; }
+}"""
+        test_cases = [{"input": "[1,2,3]", "expected_output": "[1,2,3]"}]
+        runner = self._wrap(code, test_cases)
+        assert "instanceof int[]" in runner
+        assert "sb.append(arr[i])" in runner
+        assert "sb.append(\",\")" in runner
+
+    def test_toJson_handles_boolean_array(self):
+        code = """public class Solution {
+    public static boolean[] bools(boolean[] a) { return a; }
+}"""
+        test_cases = [{"input": "[true,false]", "expected_output": "[true,false]"}]
+        runner = self._wrap(code, test_cases)
+        assert "instanceof boolean[]" in runner
+
+    def test_toJson_handles_double_array(self):
+        code = """public class Solution {
+    public static double[] doubles(double[] a) { return a; }
+}"""
+        test_cases = [{"input": "[1.5,2.5]", "expected_output": "[1.5,2.5]"}]
+        runner = self._wrap(code, test_cases)
+        assert "instanceof double[]" in runner
+
+    def test_toJson_handles_object_array(self):
+        code = """public class Solution {
+    public static String[] strs(String[] a) { return a; }
+}"""
+        test_cases = [{"input": "\"a\"\n\"b\"", "expected_output": "[\"a\",\"b\"]"}]
+        runner = self._wrap(code, test_cases)
+        assert "instanceof Object[]" in runner
+        assert "toJson(arr[i])" in runner

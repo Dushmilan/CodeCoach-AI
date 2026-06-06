@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 from .base import CodeWrapper
 from .python_wrapper import PythonCodeWrapper
 from .javascript_wrapper import JavaScriptCodeWrapper
@@ -13,3 +13,10 @@ _WRAPPERS: Dict[str, CodeWrapper] = {
 
 def get_wrapper(language: str) -> Optional[CodeWrapper]:
     return _WRAPPERS.get(language)
+
+
+def build_runner(language: str, code: str, test_cases: List[Dict[str, Any]]) -> str:
+    wrapper = get_wrapper(language)
+    if wrapper is None:
+        return code
+    return wrapper.wrap_with_tests(code, test_cases)
