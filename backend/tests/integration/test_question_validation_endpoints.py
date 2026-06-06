@@ -1,10 +1,59 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone
+from fastapi.testclient import TestClient
 
-# ...
+from app.main import app
+from app.models.question_validation_schemas import (
+    QuestionValidationResult,
+    UseCaseValidationResult,
+    ValidationIssue,
+    ValidationSeverity,
+    ValidationUseCase,
+)
 
-        validated_at=datetime.now(timezone.utc),
+
+VALID_QUESTION = {
+    "id": "test-question",
+    "title": "Two Sum",
+    "difficulty": "easy",
+    "category": "arrays",
+    "company_tags": ["TestCompany"],
+    "description": "Find two numbers that sum to target.",
+    "starter": {
+        "python": "def two_sum(nums, target):\n    pass"
+    },
+    "examples": [
+        {
+            "input": "nums = [2, 7, 11, 15], target = 9",
+            "output": "[0, 1]",
+            "explanation": "nums[0] + nums[1] = 9"
+        }
+    ],
+    "test_cases": [
+        {
+            "input": "[2, 7, 11, 15], 9",
+            "expected_output": "[0, 1]",
+            "description": "Basic test case",
+            "hidden": False
+        }
+    ],
+    "hints": ["Use a hash map"],
+    "solution": "Use a hash map to store complements",
+    "time_complexity": "O(n)",
+    "space_complexity": "O(n)",
+    "constraints": ["2 <= nums.length <= 10^4"]
+}
+
+
+def make_mock_result(valid: bool = True) -> QuestionValidationResult:
+    return QuestionValidationResult(
+        question_id="test-question",
+        valid=valid,
+        results={},
+        total_issues=0,
+        error_count=0,
+        warning_count=0,
     )
 
 

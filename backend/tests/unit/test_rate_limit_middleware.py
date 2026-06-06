@@ -29,6 +29,7 @@ class TestRateLimitMiddleware:
         assert middleware.is_rate_limited("user-b", "5/minute") is False
 
     def test_is_rate_limited_window_expires(self):
+        from unittest.mock import patch
         from app.middleware.rate_limit import RateLimitMiddleware
         middleware = RateLimitMiddleware()
 
@@ -36,14 +37,9 @@ class TestRateLimitMiddleware:
             middleware.is_rate_limited("127.0.0.1", "5/minute")
 
         mock_now = time.time() + 61
-        original_time = time.time
-
-        try:
-            time.time = lambda: mock_now
+        with patch("app.middleware.rate_limit.time.time", return_value=mock_now):
             result = middleware.is_rate_limited("127.0.0.1", "5/minute")
             assert result is False
-        finally:
-            time.time = original_time
 
     def test_parse_time_window_minute(self):
         from app.middleware.rate_limit import RateLimitMiddleware

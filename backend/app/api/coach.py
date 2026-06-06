@@ -72,6 +72,7 @@ def get_nim_service(
                 mode: str,
                 difficulty: str,
                 lesson_context: str = None,
+                **kwargs,
             ):
                 yield self.responses.get(mode, "Here's some guidance for your problem.")
 
@@ -84,6 +85,7 @@ def get_nim_service(
                 mode: str,
                 difficulty: str,
                 lesson_context: str = None,
+                **kwargs,
             ):
                 return {
                     "summary": self.responses.get(mode, "Here's some guidance for your problem."),

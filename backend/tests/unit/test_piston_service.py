@@ -2,23 +2,23 @@ import httpx
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi import HTTPException
+from app.services.piston_service import PistonService
+from app.services.static_code_validator import get_file_extension
+from app.ports.code_executor import ExecutionResult
 
 
 class TestPistonServiceInit:
     def test_default_base_url(self):
         with patch.dict("os.environ", {}, clear=True):
-            from app.services.piston_service import PistonService
             service = PistonService()
             assert service.base_url == "http://localhost:2000/api/v2"
 
     def test_custom_base_url(self):
         with patch.dict("os.environ", {"PISTON_API_URL": "http://piston:2000/api/v2/piston"}):
-            from app.services.piston_service import PistonService
             service = PistonService()
             assert service.base_url == "http://piston:2000/api/v2/piston"
 
     def test_supported_languages(self):
-        from app.services.piston_service import PistonService
         service = PistonService()
         assert "python" in service.languages
         assert "javascript" in service.languages
@@ -29,8 +29,6 @@ class TestPistonServiceInit:
 class TestPistonServiceExecute:
     @pytest.mark.asyncio
     async def test_execute_code_success(self):
-        from app.services.piston_service import PistonService
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -53,8 +51,6 @@ class TestPistonServiceExecute:
 
     @pytest.mark.asyncio
     async def test_execute_code_unsupported_language(self):
-        from app.services.piston_service import PistonService
-
         service = PistonService()
         with pytest.raises(HTTPException) as exc:
             await service.execute("brainfuck", "code")
@@ -62,8 +58,6 @@ class TestPistonServiceExecute:
 
     @pytest.mark.asyncio
     async def test_execute_code_timeout(self):
-        from app.services.piston_service import PistonService
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -77,8 +71,6 @@ class TestPistonServiceExecute:
 
     @pytest.mark.asyncio
     async def test_execute_code_piston_error(self):
-        from app.services.piston_service import PistonService
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -96,8 +88,6 @@ class TestPistonServiceExecute:
 
     @pytest.mark.asyncio
     async def test_execute_code_with_stdin(self):
-        from app.services.piston_service import PistonService
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -118,8 +108,6 @@ class TestPistonServiceExecute:
 
     @pytest.mark.asyncio
     async def test_execute_with_custom_version(self):
-        from app.services.piston_service import PistonService
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -150,15 +138,12 @@ class TestPistonServiceExecute:
             }
             mock_instance.post.return_value = mock_response
 
-            from app.services.piston_service import PistonService
             service = PistonService()
             result = await service.execute("c", "int main() { return 0; }")
             assert result.language == "c"
 
     @pytest.mark.asyncio
     async def test_execute_payload_contains_timeout_values(self):
-        from app.services.piston_service import PistonService
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -181,9 +166,6 @@ class TestPistonServiceExecute:
 
     @pytest.mark.asyncio
     async def test_execute_piston_returns_non_json(self):
-        from app.services.piston_service import PistonService
-        from fastapi import HTTPException
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -200,8 +182,6 @@ class TestPistonServiceExecute:
 
     @pytest.mark.asyncio
     async def test_execute_response_missing_run(self):
-        from app.services.piston_service import PistonService
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -217,9 +197,6 @@ class TestPistonServiceExecute:
 
     @pytest.mark.asyncio
     async def test_execute_piston_connection_error(self):
-        from app.services.piston_service import PistonService
-        from fastapi import HTTPException
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -233,31 +210,26 @@ class TestPistonServiceExecute:
 
 class TestPistonServiceValidate:
     def test_validate_python_code(self):
-        from app.services.piston_service import PistonService
         service = PistonService()
         result = service.validate_code("python", 'print("Hello")')
         assert result["valid"] is True
 
     def test_validate_python_with_input_warning(self):
-        from app.services.piston_service import PistonService
         service = PistonService()
         result = service.validate_code("python", 'name = input()')
         assert len(result["warnings"]) > 0
 
     def test_validate_javascript_code(self):
-        from app.services.piston_service import PistonService
         service = PistonService()
         result = service.validate_code("javascript", 'console.log("Hi")')
         assert result["valid"] is True
 
     def test_validate_java_code(self):
-        from app.services.piston_service import PistonService
         service = PistonService()
         result = service.validate_code("java", 'class A { public static void main(String[] a) {} }')
         assert result["valid"] is True
 
     def test_validate_cpp_code(self):
-        from app.services.piston_service import PistonService
         service = PistonService()
         result = service.validate_code("cpp", "int main() { return 0; }")
         assert result["valid"] is True
@@ -266,8 +238,6 @@ class TestPistonServiceValidate:
 class TestPistonServiceRuntimes:
     @pytest.mark.asyncio
     async def test_get_runtimes(self):
-        from app.services.piston_service import PistonService
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -286,9 +256,6 @@ class TestPistonServiceRuntimes:
 
     @pytest.mark.asyncio
     async def test_get_runtimes_non_200(self):
-        from app.services.piston_service import PistonService
-        from fastapi import HTTPException
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -304,9 +271,6 @@ class TestPistonServiceRuntimes:
 
     @pytest.mark.asyncio
     async def test_get_runtimes_network_error(self):
-        from app.services.piston_service import PistonService
-        from fastapi import HTTPException
-
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
@@ -320,7 +284,6 @@ class TestPistonServiceRuntimes:
 
 class TestFileExtension:
     def test_file_extensions(self):
-        from app.services.static_code_validator import get_file_extension
         assert get_file_extension("python") == "py"
         assert get_file_extension("javascript") == "js"
         assert get_file_extension("java") == "java"
@@ -333,18 +296,15 @@ class TestFileExtension:
 class TestPistonServiceEvaluateSuite:
     @pytest.fixture
     def service(self):
-        from app.services.piston_service import PistonService
         return PistonService()
 
     @pytest.mark.asyncio
     async def test_evaluate_suite_unsupported_language_raises(self, service):
-        from fastapi import HTTPException
         with pytest.raises(HTTPException, match="Unsupported"):
             await service.evaluate_suite("brainfuck", "code", [{"input": "1", "expected_output": "1", "hidden": False}])
 
     @pytest.mark.asyncio
     async def test_evaluate_suite_empty_cases_returns_empty(self, service):
-        from unittest.mock import patch, AsyncMock
         with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
             results = await service.evaluate_suite("python", "code", [])
             assert results == []
@@ -352,8 +312,6 @@ class TestPistonServiceEvaluateSuite:
 
     @pytest.mark.asyncio
     async def test_evaluate_suite_mocked_python_runner(self, service):
-        from unittest.mock import patch, AsyncMock
-        from app.ports.code_executor import ExecutionResult
         with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
             mock_exec.return_value = ExecutionResult(
                 stdout="@@SUITE_RESULT@@[{\"index\":1,\"passed\":true,\"actual\":\"6\"}]@@SUITE_RESULT@@",
@@ -368,8 +326,6 @@ class TestPistonServiceEvaluateSuite:
 
     @pytest.mark.asyncio
     async def test_evaluate_suite_build_runner_fallback(self, service):
-        from unittest.mock import patch, AsyncMock
-        from app.ports.code_executor import ExecutionResult
         with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
             mock_exec.return_value = ExecutionResult(
                 stdout="@@SUITE_RESULT@@[{\"index\":1,\"passed\":true,\"actual\":\"42\"}]@@SUITE_RESULT@@",

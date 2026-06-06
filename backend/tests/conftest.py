@@ -6,7 +6,7 @@ import pytest_asyncio
 import asyncio
 from typing import Generator, AsyncGenerator
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 import json
 import os
 import tempfile
@@ -36,7 +36,8 @@ def test_client() -> Generator:
 @pytest_asyncio.fixture(scope="session")
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create an async test client for asynchronous testing."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
 
@@ -55,13 +56,15 @@ def mock_nim_service():
             self.api_key = api_key
             
         async def get_coaching_response(self, problem: str, code: str, language: str, 
-                                      message: str, mode: str, difficulty: str):
+                                      message: str, mode: str, difficulty: str,
+                                      **kwargs):
             """Mock coaching response generation."""
             yield self.responses.get(mode, "Here's some guidance for your problem.")
 
         async def get_structured_coaching_response(
             self, problem: str, code: str, language: str,
             message: str, mode: str, difficulty: str,
+            **kwargs,
         ):
             """Mock structured coaching response generation."""
             return {

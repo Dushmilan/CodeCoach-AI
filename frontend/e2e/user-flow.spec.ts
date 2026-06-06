@@ -1,9 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-const dismissOnboarding = async (page: import('@playwright/test').Page) => {
-  await page.evaluate(() => localStorage.setItem('onboarding-done', 'true'));
-  await page.reload();
-};
+import { dismissOnboarding } from './helpers/auth';
 
 test.describe('User Flow', () => {
   test('switches language in code editor', async ({ page }) => {

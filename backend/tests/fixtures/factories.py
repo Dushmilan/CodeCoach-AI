@@ -8,15 +8,7 @@ import json
 import random
 from datetime import datetime, timezone
 
-# ...
 
-    timestamp = factory.LazyFunction(lambda: datetime.now(timezone.utc).isoformat() + "Z")
-    dependencies = factory.LazyFunction(lambda: {
-        "fastapi": "running",
-        "uvicorn": "running",
-        "cors": "configured",
-        "rate_limiting": "enabled"
-    })
 
 
 class TestDataGenerator:
@@ -94,31 +86,38 @@ class TestDataGenerator:
     @staticmethod
     def generate_valid_test_questions(count: int = 10):
         """Generate a set of valid test questions."""
+        categories = ["arrays", "strings", "dynamic-programming", "trees", "graphs"]
+        difficulties = ["easy", "medium", "hard"]
+        titles = [
+            "Two Sum", "Reverse String", "Binary Search", "Valid Parentheses",
+            "Merge Sort", "BFS Traversal", "Quick Sort", "Heap Sort",
+            "LRU Cache", "Maximum Subarray",
+        ]
         questions = []
         for i in range(count):
-            question = QuestionFactory()
+            title = titles[i % len(titles)]
             questions.append({
                 "id": f"test-question-{i}",
-                "title": question.title,
-                "difficulty": question.difficulty.value,
-                "category": question.category,
-                "company_tags": question.company_tags,
-                "description": question.description,
+                "title": title,
+                "difficulty": random.choice(difficulties),
+                "category": random.choice(categories),
+                "company_tags": ["Google", "Amazon"],
+                "description": f"Solve {title}",
                 "starter": {
-                    "python": f"def solution(input):\n    # TODO: Implement solution for {question.title}\n    pass"
+                    "python": f"def solution(input):\n    # TODO: Implement {title}\n    pass"
                 },
                 "examples": [
                     {
                         "input": "input = {}".format(random.choice(['[1,2,3]', '"hello"', '5'])),
                         "output": str(random.randint(1, 100)),
-                        "explanation": f"Example for {question.title}"
+                        "explanation": f"Example for {title}"
                     }
                 ],
                 "test_cases": [
                     {
                         "input": str(random.randint(1, 100)),
                         "expected_output": str(random.randint(1, 100)),
-                        "description": f"Test case for {question.title}",
+                        "description": f"Test case for {title}",
                         "hidden": False
                     }
                 ]

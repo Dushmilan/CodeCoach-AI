@@ -9,6 +9,15 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
     exclude: ['**/node_modules/**', '**/e2e/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      lines: 80,
+      functions: 75,
+      branches: 75,
+      statements: 80,
+      exclude: ['node_modules/', 'e2e/', '*.config.*', 'src/test-setup.ts', 'src/mocks/'],
+    },
     typecheck: {
       tsconfig: './tsconfig.test.json',
     },

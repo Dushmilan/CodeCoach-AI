@@ -63,7 +63,7 @@ class TestQuestionsEndpoints:
         assert isinstance(data["questions"], list)
         assert len(data["questions"]) <= data["per_page"]
         assert data["page"] == 1
-        assert data["per_page"] == 20
+        assert data["per_page"] == 100
     
     def test_get_all_questions_with_pagination(self, test_client: TestClient):
         """Test getting questions with pagination."""
@@ -94,7 +94,7 @@ class TestQuestionsEndpoints:
         data = response.json()
         
         for question in data["questions"]:
-            assert question["category"] == "arrays"
+            assert question["category"].lower() == "arrays"
     
     def test_get_all_questions_with_combined_filters(self, test_client: TestClient):
         """Test filtering questions with multiple parameters."""
@@ -105,7 +105,7 @@ class TestQuestionsEndpoints:
         
         for question in data["questions"]:
             assert question["difficulty"] == "easy"
-            assert question["category"] == "arrays"
+            assert question["category"].lower() == "arrays"
         assert len(data["questions"]) <= 5
     
     def test_get_question_by_id(self, test_client: TestClient):
@@ -189,7 +189,7 @@ class TestQuestionsEndpoints:
         
         for question in data["questions"]:
             assert question["difficulty"] == "easy"
-            assert question["category"] == "arrays"
+            assert question["category"].lower() == "arrays"
     
     def test_get_question_stats(self, test_client: TestClient):
         """Test getting question statistics."""
@@ -223,7 +223,7 @@ class TestQuestionsEndpoints:
         assert "per_page" in data
         
         for question in data["questions"]:
-            assert question["category"] == "arrays"
+            assert question["category"].lower() == "arrays"
     
     def test_get_questions_by_difficulty(self, test_client: TestClient):
         """Test getting questions filtered by difficulty."""

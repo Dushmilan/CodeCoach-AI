@@ -90,12 +90,12 @@ class TestQuestionValidatorService:
         assert order[0] == ValidationUseCase.STRUCTURE
         assert order[-1] == ValidationUseCase.SOLUTION
 
-    def test_get_validation_summary(self, valid_question, mock_executor):
+    @pytest.mark.asyncio
+    async def test_get_validation_summary(self, valid_question, mock_executor):
         from app.services.question_validator import QuestionValidatorService
-        import asyncio
         service = QuestionValidatorService(executor=mock_executor)
 
-        result = asyncio.run(service.validate_question(valid_question))
+        result = await service.validate_question(valid_question)
         summary = service.get_validation_summary(result)
 
         assert summary["question_id"] == "test-q"

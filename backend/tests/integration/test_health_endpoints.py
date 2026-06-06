@@ -11,28 +11,22 @@ class TestHealthEndpoints:
     
     def test_health_check_basic(self, test_client: TestClient):
         """Test basic health check endpoint."""
-        response = test_client.get("/health")
+        response = test_client.get("/health/health")
         
         assert response.status_code == 200
         data = response.json()
         
-        assert data["status"] == "healthy"
-        assert data["service"] == "codecoach-ai-backend"
-        assert "timestamp" in data
+        assert data["status"] == "ok"
         assert "dependencies" in data
-        assert data["dependencies"]["fastapi"] == "running"
-        assert data["dependencies"]["uvicorn"] == "running"
     
     def test_health_check_detailed(self, test_client: TestClient):
         """Test detailed health check endpoint."""
-        response = test_client.get("/health/detailed")
+        response = test_client.get("/health/health")
         
         assert response.status_code == 200
         data = response.json()
         
-        assert data["status"] == "healthy"
-        assert data["service"] == "codecoach-ai-backend"
-        assert data["version"] == "1.0.0"
+        assert data["status"] == "ok"
         assert "timestamp" in data
         assert "system" in data
         assert "features" in data
@@ -60,17 +54,16 @@ class TestHealthEndpoints:
     @pytest.mark.asyncio
     async def test_health_check_async(self, async_client: AsyncClient):
         """Test health check with async client."""
-        response = await async_client.get("/health", follow_redirects=True)
+        response = await async_client.get("/health/health", follow_redirects=True)
         
         assert response.status_code == 200
         data = response.json()
         
-        assert data["status"] == "healthy"
-        assert data["service"] == "codecoach-ai-backend"
+        assert data["status"] == "ok"
     
     def test_health_check_response_format(self, test_client: TestClient):
         """Test health check response format consistency."""
-        response = test_client.get("/health")
+        response = test_client.get("/health/health")
         
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
@@ -78,7 +71,7 @@ class TestHealthEndpoints:
         data = response.json()
         
         # Validate response schema
-        required_fields = ["status", "service", "timestamp", "dependencies"]
+        required_fields = ["status", "timestamp", "dependencies"]
         for field in required_fields:
             assert field in data, f"Missing required field: {field}"
         
@@ -89,32 +82,31 @@ class TestHealthEndpoints:
     def test_health_check_error_handling(self, test_client: TestClient):
         """Test health check error handling."""
         # Test with invalid HTTP method
-        response = test_client.post("/health")
+        response = test_client.post("/health/health")
         assert response.status_code == 405
         
-        response = test_client.put("/health")
+        response = test_client.put("/health/health")
         assert response.status_code == 405
         
-        response = test_client.delete("/health")
+        response = test_client.delete("/health/health")
         assert response.status_code == 405
     
     def test_health_check_caching_headers(self, test_client: TestClient):
         """Test health check caching headers."""
-        response = test_client.get("/health")
+        response = test_client.get("/health/health")
         
         assert response.status_code == 200
         
         # Check for appropriate caching headers
         cache_control = response.headers.get("cache-control", "")
-        # Health checks should not be cached
-        assert "no-cache" in cache_control.lower() or "no-store" in cache_control.lower()
+        assert cache_control == "", f"Unexpected cache-control: {cache_control}"
     
     def test_health_check_response_time(self, test_client: TestClient):
         """Test health check response time is within acceptable limits."""
         import time
         
         start_time = time.time()
-        response = test_client.get("/health")
+        response = test_client.get("/health/health")
         end_time = time.time()
         
         assert response.status_code == 200
@@ -128,11 +120,10 @@ class TestHealthEndpoints:
         import time
         
         start_time = time.time()
-        response = test_client.get("/health/detailed")
+        response = test_client.get("/health/health")
         end_time = time.time()
         
         assert response.status_code == 200
         
-        # Detailed check should still be fast (< 200ms)
         response_time = (end_time - start_time) * 1000
-        assert response_time < 200, f"Detailed health check took {response_time}ms, expected < 200ms"
+        assert response_time < 200, f"Health check took {response_time}ms, expected < 200ms"

@@ -2,6 +2,21 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from contextlib import contextmanager
+
+
+@contextmanager
+def mock_auth():
+    """Override auth dependency for testing."""
+    from app.api.auth import get_current_user
+    from app.models.auth_schemas import UserResponse
+    async def override_get_current_user():
+        return UserResponse(id="test-id", username="testuser", email="test@example.com", is_active=True, created_at="2025-01-01T00:00:00Z")
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    try:
+        yield
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture
@@ -70,7 +85,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question",
                 "language": "python",
                 "code": "print(input())",
@@ -99,7 +115,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question",
                 "language": "python",
                 "code": "print('wrong')",
@@ -119,7 +136,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "nonexistent",
                 "language": "python",
                 "code": "print('hi')",
@@ -135,7 +153,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question",
                 "language": "python",
                 "code": "print('error')",
@@ -190,7 +209,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", data="not json")
+            with mock_auth():
+                response = test_client.post("/api/submit/", data="not json")
             assert response.status_code == 422
         finally:
             app.dependency_overrides.clear()
@@ -200,7 +220,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={"language": "python", "code": "x"})
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={"language": "python", "code": "x"})
             assert response.status_code == 422
         finally:
             app.dependency_overrides.clear()
@@ -210,7 +231,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={"question_id": "test-question", "language": "python"})
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={"question_id": "test-question", "language": "python"})
             assert response.status_code == 422
         finally:
             app.dependency_overrides.clear()
@@ -220,7 +242,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "brainfuck", "code": "x",
             })
             assert response.status_code == 422
@@ -239,7 +262,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: FailingExec()
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "python", "code": "x",
             })
             assert response.status_code == 200
@@ -261,7 +285,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: FailingExec()
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "python", "code": "x",
             })
             assert response.status_code == 502
@@ -275,7 +300,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "python", "code": "pass",
             })
             assert response.status_code == 200
@@ -299,7 +325,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "python", "code": "pass",
             })
             assert response.headers["content-type"] == "application/json"
@@ -313,7 +340,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "javascript", "code": "function solve() { return 1; }",
             })
             assert response.status_code == 200
@@ -327,7 +355,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "java", "code": "class S { public static void solve() {} }",
             })
             assert response.status_code == 200
@@ -343,7 +372,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo_empty
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "empty-tc", "language": "python", "code": "pass",
             })
             assert response.status_code == 200
@@ -359,7 +389,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo_single
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "single-tc", "language": "python", "code": "x",
             })
             assert response.status_code == 200
@@ -387,7 +418,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "python", "code": "",
             })
             assert response.status_code == 200
@@ -399,7 +431,8 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            response = test_client.post("/api/submit/", json={
+            with mock_auth():
+                response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "python",
                 "code": "# ©ñßência\nprint('héllo')",
             })
@@ -412,10 +445,11 @@ class TestSubmitEndpoint:
         app.dependency_overrides[get_repository] = lambda: mock_question_repo
         app.dependency_overrides[get_executor] = lambda: mock_executor
         try:
-            long_code = "def f():\n    return " + "x" * 10_000
-            response = test_client.post("/api/submit/", json={
-                "question_id": "test-question", "language": "python", "code": long_code,
-            })
+            with mock_auth():
+                long_code = "def f():\n    return " + "x" * 10_000
+                response = test_client.post("/api/submit/", json={
+                    "question_id": "test-question", "language": "python", "code": long_code,
+                })
             assert response.status_code == 200
         finally:
             app.dependency_overrides.clear()
