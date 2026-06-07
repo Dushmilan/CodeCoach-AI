@@ -24,7 +24,7 @@ repos:
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
-        types_or: [javascript, jsx, typescript, tsx, json, css, markdown]
+        types_or: [javascript, jsx, ts, tsx, json, css, markdown]
         args: ['--print-width=100', '--single-quote', '--trailing-comma=all']
         additional_dependencies:
           - prettier@3.0.0
