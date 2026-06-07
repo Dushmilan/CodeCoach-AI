@@ -58,7 +58,8 @@ async def migrate_users(session: AsyncSession, base_dir: Path) -> int:
     count = 0
     for item in data:
         try:
-            item["created_at"] = datetime.fromisoformat(item["created_at"])
+            dt = datetime.fromisoformat(item["created_at"])
+            item["created_at"] = dt.replace(tzinfo=None)
             session.add(UserORM(**item))
             count += 1
         except Exception as e:
@@ -103,30 +104,37 @@ async def migrate_questions(session: AsyncSession, base_dir: Path) -> int:
     return count
 
 
-async def migrate_courses(session: AsyncSession, base_dir: Path) -> Dict[str, int]:
-    counts = {"courses": 0, "modules": 0, "lessons": 0}
+async def _migrate_courses_only(session: AsyncSession, base_dir: Path) -> int:
+    count = 0
     courses_dir = base_dir / "data" / "courses"
-
     if not courses_dir.exists():
-        return counts
-
+        return count
     for lang_dir in courses_dir.iterdir():
         if not lang_dir.is_dir():
             continue
         for course_dir in lang_dir.iterdir():
             if not course_dir.is_dir():
                 continue
-
-            cols = _ORM_COLUMNS[CourseORM]
             course_data = _load_json(course_dir / "course.json")
             if course_data:
                 try:
-                    session.add(CourseORM(**{k: v for k, v in course_data.items() if k in cols}))
-                    counts["courses"] += 1
+                    session.add(CourseORM(**{k: v for k, v in course_data.items() if k in _ORM_COLUMNS[CourseORM]}))
+                    count += 1
                 except Exception as e:
                     print(f"  ERROR migrating course {course_dir.name}: {e}")
+    return count
 
-            cols = _ORM_COLUMNS[ModuleORM]
+async def _migrate_modules_only(session: AsyncSession, base_dir: Path) -> int:
+    count = 0
+    courses_dir = base_dir / "data" / "courses"
+    if not courses_dir.exists():
+        return count
+    for lang_dir in courses_dir.iterdir():
+        if not lang_dir.is_dir():
+            continue
+        for course_dir in lang_dir.iterdir():
+            if not course_dir.is_dir():
+                continue
             modules_data = _load_json(course_dir / "modules.json")
             if modules_data:
                 items = modules_data.get("items", [modules_data]) if isinstance(modules_data, dict) else modules_data
@@ -134,12 +142,23 @@ async def migrate_courses(session: AsyncSession, base_dir: Path) -> Dict[str, in
                     items = [items]
                 for m in items:
                     try:
-                        session.add(ModuleORM(**{k: v for k, v in m.items() if k in cols}))
-                        counts["modules"] += 1
+                        session.add(ModuleORM(**{k: v for k, v in m.items() if k in _ORM_COLUMNS[ModuleORM]}))
+                        count += 1
                     except Exception as e:
                         print(f"  ERROR migrating module {m.get('id', '?')}: {e}")
+    return count
 
-            cols = _ORM_COLUMNS[LessonORM]
+async def _migrate_lessons_only(session: AsyncSession, base_dir: Path) -> int:
+    count = 0
+    courses_dir = base_dir / "data" / "courses"
+    if not courses_dir.exists():
+        return count
+    for lang_dir in courses_dir.iterdir():
+        if not lang_dir.is_dir():
+            continue
+        for course_dir in lang_dir.iterdir():
+            if not course_dir.is_dir():
+                continue
             lessons_data = _load_json(course_dir / "lessons.json")
             if lessons_data:
                 items = lessons_data.get("items", [lessons_data]) if isinstance(lessons_data, dict) else lessons_data
@@ -147,18 +166,17 @@ async def migrate_courses(session: AsyncSession, base_dir: Path) -> Dict[str, in
                     items = [items]
                 for l in items:
                     try:
-                        ldata = {k: v for k, v in l.items() if k in cols}
+                        ldata = {k: v for k, v in l.items() if k in _ORM_COLUMNS[LessonORM]}
                         if ldata.get("test_cases") and isinstance(ldata["test_cases"], list):
                             ldata["test_cases"] = [
                                 tc.model_dump() if hasattr(tc, "model_dump") else tc
                                 for tc in ldata["test_cases"]
                             ]
                         session.add(LessonORM(**ldata))
-                        counts["lessons"] += 1
+                        count += 1
                     except Exception as e:
                         print(f"  ERROR migrating lesson {l.get('id', '?')}: {e}")
-
-    return counts
+    return count
 
 
 async def migrate_progress(session: AsyncSession, base_dir: Path) -> int:
@@ -171,13 +189,25 @@ async def migrate_progress(session: AsyncSession, base_dir: Path) -> int:
     if isinstance(items, dict):
         items = [items]
 
+    # Validate referenced users exist
+    users_path = base_dir / "data" / "users.json"
+    users_data = _load_json(users_path)
+    valid_user_ids = {u["id"] for u in users_data} if users_data else set()
+
     count = 0
     for item in items:
         try:
+            if item["user_id"] not in valid_user_ids:
+                print(f"  SKIP: progress references unknown user {item['user_id']}")
+                continue
+
             if "started_at" in item and isinstance(item["started_at"], str):
-                item["started_at"] = datetime.fromisoformat(item["started_at"])
+                dt = datetime.fromisoformat(item["started_at"])
+                item["started_at"] = dt.replace(tzinfo=None)
             if "last_accessed_at" in item and isinstance(item["last_accessed_at"], str):
-                item["last_accessed_at"] = datetime.fromisoformat(item["last_accessed_at"])
+                dt = datetime.fromisoformat(item["last_accessed_at"])
+                item["last_accessed_at"] = dt.replace(tzinfo=None)
+
             item["id"] = f"{item['user_id']}:{item['course_id']}"
             session.add(CourseProgressORM(**item))
             count += 1
@@ -205,14 +235,23 @@ async def migrate():
     async with async_session() as session:
         users = await migrate_users(session, base_dir)
         print(f"  Users: {users}")
+        await session.flush()
 
         questions = await migrate_questions(session, base_dir)
         print(f"  Questions: {questions}")
+        await session.flush()
 
-        course_counts = await migrate_courses(session, base_dir)
-        print(f"  Courses: {course_counts['courses']}")
-        print(f"  Modules: {course_counts['modules']}")
-        print(f"  Lessons: {course_counts['lessons']}")
+        courses = await _migrate_courses_only(session, base_dir)
+        print(f"  Courses: {courses}")
+        await session.flush()
+
+        modules = await _migrate_modules_only(session, base_dir)
+        print(f"  Modules: {modules}")
+        await session.flush()
+
+        lessons = await _migrate_lessons_only(session, base_dir)
+        print(f"  Lessons: {lessons}")
+        await session.flush()
 
         progress = await migrate_progress(session, base_dir)
         print(f"  Progress records: {progress}")

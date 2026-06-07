@@ -21,7 +21,7 @@ class UserORM(Base):
 
 class QuestionORM(Base):
     __tablename__ = "questions"
-    id = Column(String(36), primary_key=True)
+    id = Column(String(64), primary_key=True)
     title = Column(String(255), nullable=False)
     difficulty = Column(String(10), nullable=False)  # easy/medium/hard
     category = Column(String(100), nullable=False, index=True)
@@ -32,8 +32,8 @@ class QuestionORM(Base):
     test_cases = Column(JSONType, default=list, nullable=False)
     hints = Column(JSONType, default=list, nullable=False)
     solution = Column(Text, nullable=True)
-    time_complexity = Column(String(100), nullable=True)
-    space_complexity = Column(String(100), nullable=True)
+    time_complexity = Column(String(200), nullable=True)
+    space_complexity = Column(String(200), nullable=True)
     constraints = Column(JSONType, default=list, nullable=False)
     is_interactive = Column(Integer, default=0, nullable=False)
 
@@ -68,17 +68,17 @@ class LessonORM(Base):
     order = Column(Integer, nullable=False)
     starter_code = Column(Text, nullable=True)
     test_cases = Column(JSONType, default=list, nullable=True)
-    question_id = Column(String(36), ForeignKey("questions.id", ondelete="SET NULL"), nullable=True, index=True)
+    question_id = Column(String(64), ForeignKey("questions.id", ondelete="SET NULL"), nullable=True, index=True)
     language = Column(String(50), nullable=False)
 
 class CourseProgressORM(Base):
     __tablename__ = "course_progress"
-    id = Column(String(36), primary_key=True)
+    id = Column(String(64), primary_key=True)
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     course_id = Column(String(36), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
     completed_lessons = Column(JSONType, default=list, nullable=False)
     last_accessed_lesson_id = Column(String(36), nullable=True)
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_accessed_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    
+
     __table_args__ = (Index("ix_progress_user_course", "user_id", "course_id", unique=True),)
