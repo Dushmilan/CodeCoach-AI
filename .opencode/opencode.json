@@ -1,8 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    ".opencode/plugins/graphify.js"
-  ],
+  "plugin": [".opencode/plugins/graphify.js", "rishav-antigravity-auth@1.2.8"],
   "mcp": {
     "playwright": {
       "type": "local",
