@@ -2,15 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
 
 from app.models.course_schemas import Course, Lesson
+from app.ports.course_repository import CourseRepository
+from app.ports.progress_repository import ProgressRepository
 from app.services.course_service import CourseService
 from app.api.auth import get_current_user, get_optional_current_user
+from app.api.dependencies import get_course_repo, get_progress_repo
 from app.models.auth_schemas import UserResponse
 
 router = APIRouter()
 
 
-def get_course_service() -> CourseService:
-    return CourseService()
+def get_course_service(
+    course_repo: CourseRepository = Depends(get_course_repo),
+    progress_repo: ProgressRepository = Depends(get_progress_repo),
+) -> CourseService:
+    return CourseService(course_repo=course_repo, progress_repo=progress_repo)
 
 
 @router.get("/")

@@ -22,39 +22,10 @@ def get_nim_service(
     api_key = x_nvidia_api_key or os.getenv("NVIDIA_API_KEY")
     environment = os.getenv("ENVIRONMENT", "production")
 
-    # Force load environment variables in get_nim_service
-    from dotenv import load_dotenv
-    from pathlib import Path
-
-    env_path = Path(__file__).parent.parent.parent.parent / ".env"
-    load_dotenv(env_path)
-
-    # Fall back to env var if header was not provided
     if not api_key:
         api_key = os.getenv("NVIDIA_API_KEY")
 
-    logger.info(f"Environment: {environment}")
-    logger.info(f"Forced .env reload from: {env_path}")
-    logger.info(f"NVIDIA_API_KEY present: {bool(api_key)}")
-    if api_key:
-        logger.info(
-            f"NVIDIA_API_KEY format check: starts with {api_key[:8] if len(api_key) >= 8 else 'too short'}... ends with ...{api_key[-4:] if api_key else 'N/A'}"
-        )
-        logger.info(
-            f"NVIDIA_API_KEY length: {len(api_key) if api_key else 0} characters"
-        )
-    else:
-        logger.error("NVIDIA_API_KEY is None - checking all environment variables:")
-        logger.error(
-            f"All NVIDIA-related vars: {[k for k in os.environ.keys() if 'NVIDIA' in k.upper()]}"
-        )
-        logger.error(
-            f"All KEY-related vars: {[k for k in os.environ.keys() if 'KEY' in k.upper()]}"
-        )
-        logger.error(f"All environment variables: {list(os.environ.keys())}")
-
     if environment == "testing":
-        # Create a simple mock service for testing
         class MockNIMService:
             responses = {
                 "hint": "Consider using a hash map to solve this problem.",
@@ -102,31 +73,8 @@ def get_nim_service(
         return MockNIMService()
 
     if not api_key:
-        logger.error("NVIDIA_API_KEY environment variable is not set")
-        logger.error(
-            "Available environment variables: %s",
-            [
-                k
-                for k in os.environ.keys()
-                if "NVIDIA" in k.upper() or "KEY" in k.upper()
-            ],
-        )
+        raise HTTPException(status_code=500, detail="NVIDIA API key not configured")
 
-        # Force load environment variables for debugging
-        from dotenv import load_dotenv
-        from pathlib import Path
-
-        env_path = Path(__file__).parent.parent.parent.parent / ".env"
-        load_dotenv(env_path)
-
-        # Check again after forced reload
-        api_key = os.getenv("NVIDIA_API_KEY")
-        logger.error(f"After forced reload, NVIDIA_API_KEY: {api_key}")
-
-        if not api_key:
-            raise HTTPException(status_code=500, detail="NVIDIA API key not configured")
-
-    logger.info("Successfully initializing NIMService with provided API key")
     return NIMService(api_key=api_key)
 
 

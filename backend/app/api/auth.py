@@ -10,17 +10,25 @@ from app.models.auth_schemas import (
     TokenResponse,
     UserResponse,
 )
+from app.ports.user_repository import UserRepository
 from app.services.auth_service import AuthService
+from app.api.dependencies import get_user_repo
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=True)
 security_optional = HTTPBearer(auto_error=False)
 
 
+def _get_auth_service(
+    user_repo: UserRepository = Depends(get_user_repo),
+) -> AuthService:
+    return AuthService(repository=user_repo)
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
+    auth_service: AuthService = Depends(_get_auth_service),
 ) -> UserResponse:
-    auth_service = AuthService()
     try:
         user = await auth_service.get_current_user(credentials.credentials)
         return user
@@ -35,10 +43,10 @@ async def get_current_user(
 
 async def get_optional_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security_optional),
+    auth_service: AuthService = Depends(_get_auth_service),
 ) -> Optional[UserResponse]:
     if credentials is None:
         return None
-    auth_service = AuthService()
     try:
         return await auth_service.get_current_user(credentials.credentials)
     except ValueError:
@@ -50,8 +58,10 @@ router = APIRouter()
 @router.post(
     "/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
 )
-async def register(request: UserRegisterRequest):
-    auth_service = AuthService()
+async def register(
+    request: UserRegisterRequest,
+    auth_service: AuthService = Depends(_get_auth_service),
+):
     try:
         return await auth_service.register(request)
     except ValueError as e:
@@ -59,8 +69,10 @@ async def register(request: UserRegisterRequest):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(request: UserLoginRequest):
-    auth_service = AuthService()
+async def login(
+    request: UserLoginRequest,
+    auth_service: AuthService = Depends(_get_auth_service),
+):
     try:
         return await auth_service.login(request)
     except ValueError as e:
@@ -72,8 +84,10 @@ async def login(request: UserLoginRequest):
 
 
 @router.post("/supabase", response_model=TokenResponse)
-async def login_with_supabase(request: SupabaseAuthRequest):
-    auth_service = AuthService()
+async def login_with_supabase(
+    request: SupabaseAuthRequest,
+    auth_service: AuthService = Depends(_get_auth_service),
+):
     try:
         return await auth_service.login_with_supabase(request.access_token)
     except ValueError as e:

@@ -6,7 +6,6 @@ Provides endpoints for validating questions before they are made available to us
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from functools import lru_cache
 
 from app.models.schemas import Question
 from app.models.question_validation_schemas import (
@@ -20,15 +19,13 @@ from app.services.piston_service import PistonService
 router = APIRouter()
 
 
-@lru_cache()
 def get_executor() -> CodeExecutor:
-    """Get or create code executor instance (cached)."""
+    """Get or create code executor instance."""
     return PistonService()
 
 
-@lru_cache()
 def get_validator_service() -> QuestionValidatorService:
-    """Get or create validator service instance (cached)."""
+    """Get or create validator service instance."""
     return QuestionValidatorService(executor=get_executor())
 
 

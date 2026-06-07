@@ -266,11 +266,7 @@ class TestSubmitEndpoint:
                 response = test_client.post("/api/submit/", json={
                 "question_id": "test-question", "language": "python", "code": "x",
             })
-            assert response.status_code == 200
-            data = response.json()
-            assert data["passed"] is False
-            assert data["total"] == 0
-            assert data["results"] == []
+            assert response.status_code == 500
         finally:
             app.dependency_overrides.clear()
 

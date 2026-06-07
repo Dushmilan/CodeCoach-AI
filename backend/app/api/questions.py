@@ -2,14 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 
 from app.models.schemas import Question, QuestionsListResponse, Difficulty
+from app.ports.question_repository import QuestionRepository
 from app.services.questions_service import QuestionsService
+from app.api.dependencies import get_question_repo
 
 router = APIRouter()
 
 
-def get_questions_service() -> QuestionsService:
-    """Create a new QuestionsService instance (reads from disk each call)."""
-    return QuestionsService()
+def get_questions_service(
+    question_repo: QuestionRepository = Depends(get_question_repo),
+) -> QuestionsService:
+    return QuestionsService(repository=question_repo)
 
 
 @router.get("/", response_model=QuestionsListResponse)

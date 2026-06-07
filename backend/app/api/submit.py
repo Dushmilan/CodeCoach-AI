@@ -1,6 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from functools import lru_cache
-
 from app.models.schemas import SubmitRequest, SubmitResponse, SubmitResult
 from app.ports.code_executor import CodeExecutor
 from app.ports.question_repository import QuestionRepository
@@ -15,12 +13,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
-@lru_cache()
 def get_repository() -> QuestionRepository:
     return FileQuestionRepository("questions/sample_questions.json")
 
 
-@lru_cache()
 def get_executor() -> CodeExecutor:
     return PistonService()
 
@@ -56,7 +52,9 @@ async def submit_code(
         raise
     except Exception as e:
         logger.error(f"Submit evaluation error: {e}")
-        results = []
+        raise HTTPException(
+            status_code=500, detail=f"Evaluation failed: {str(e)}"
+        )
 
     passed_count = sum(1 for r in results if r.passed)
     return SubmitResponse(

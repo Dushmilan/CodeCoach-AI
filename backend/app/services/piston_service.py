@@ -58,7 +58,6 @@ class PistonService(CodeExecutor):
         version_to_use = version or lang_config["version"]
         wrapper = get_wrapper(language)
         code_to_run = wrapper.wrap(code) if wrapper else code
-        logger.info(f"[{language}] code_to_run (first 300 chars): {code_to_run[:300]}")
 
         piston_language = self._PISTON_LANGUAGE_MAP.get(language, language)
 

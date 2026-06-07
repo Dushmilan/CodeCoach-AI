@@ -20,7 +20,8 @@ export function useCoaching(): CoachingFeature {
       problem: string,
       code: string,
       language: string,
-      lessonContext?: string
+      lessonContext?: string,
+      difficulty?: string
     ) => {
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -47,7 +48,7 @@ export function useCoaching(): CoachingFeature {
           code,
           message,
           mode,
-          'medium',
+          difficulty || 'medium',
           lessonContext,
           chatHistory
         );

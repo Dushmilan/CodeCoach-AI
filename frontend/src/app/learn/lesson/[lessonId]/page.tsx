@@ -18,7 +18,7 @@ import { HydrationGuard } from '@/components/ui/HydrationGuard';
 import { useLesson } from '@/features/curriculum/use-curriculum.hook';
 import { useCoaching } from '@/features/coaching/coaching.hook';
 import { useAuth } from '@/providers';
-import { FetchClient } from '@/lib/fetch-client';
+import { FetchClient, HttpError } from '@/lib/fetch-client';
 import { Language, LessonSummary, CourseDetail, Question } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -101,10 +101,11 @@ export default function LessonPage() {
         lesson?.title || 'Coding exercise',
         currentCode,
         language,
-        lessonContext
+        lessonContext,
+        linkedQuestion?.difficulty
       );
     },
-    [lesson, currentCode, language, sendMessage]
+    [lesson, currentCode, language, sendMessage, linkedQuestion?.difficulty]
   );
 
   const handleMarkComplete = async () => {
@@ -133,7 +134,11 @@ export default function LessonPage() {
       setOutput(res.stdout || '');
       setRunError(res.stderr || '');
     } catch (err) {
-      setRunError('Execution failed');
+      if (err instanceof HttpError) {
+        setRunError(`Execution failed (${err.status}): ${err.body || err.message}`);
+      } else {
+        setRunError(err instanceof Error ? err.message : 'Execution failed');
+      }
     } finally {
       setIsRunning(false);
     }
@@ -225,7 +230,7 @@ export default function LessonPage() {
 
   useEffect(() => {
     codeInitialized.current = false;
-  }, [lesson?.id]);
+  }, [lesson?.id, linkedQuestion?.id]);
 
   useEffect(() => {
     const starter = (linkedQuestion?.starter as any)?.[language] || lesson?.starter_code || '';
@@ -233,7 +238,7 @@ export default function LessonPage() {
       setCurrentCode(starter);
       codeInitialized.current = true;
     }
-  }, [lesson?.id, linkedQuestion?.id, language]);
+  }, [lesson?.id, linkedQuestion?.id, language, linkedQuestion?.starter]);
 
   if (isLoading) return <div>Loading...</div>;
   if (error || !lesson) return <div>Error</div>;

@@ -23,7 +23,7 @@ export interface CoachingState {
 }
 
 export interface CoachingActions {
-  sendMessage: (message: string, mode: CoachingMode, problem: string, code: string, language: string, lessonContext?: string) => Promise<void>;
+  sendMessage: (message: string, mode: CoachingMode, problem: string, code: string, language: string, lessonContext?: string, difficulty?: string) => Promise<void>;
   clearMessages: () => void;
   clearError: () => void;
 }

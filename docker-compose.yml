@@ -11,7 +11,8 @@ services:
     environment:
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - DATABASE_URL=sqlite:///./codecoach.db
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./codecoach.db}
+      - USE_DATABASE=${USE_DATABASE:-false}
       - PISTON_API_URL=http://piston:2000/api/v2
     volumes:
       - ./backend:/app
@@ -45,6 +46,22 @@ services:
     networks:
       - codecoach-network
 
+  # PostgreSQL Database — enable when USE_DATABASE=true (Supabase or local PG)
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: codecoach-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: codecoach
+  #     POSTGRES_USER: codecoach
+  #     POSTGRES_PASSWORD: codecoach
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - codecoach-network
+
   # Piston Code Execution Engine
   piston:
     image: ghcr.io/engineer-man/piston:latest
@@ -72,3 +89,4 @@ networks:
 volumes:
   piston-data:
     external: true
+  postgres-data:

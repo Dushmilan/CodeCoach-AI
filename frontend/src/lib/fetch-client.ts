@@ -63,7 +63,7 @@ export class FetchClient implements HttpClient {
 
       const response = await fetch(`${this.baseUrl}${path}`, {
         method,
-        headers: body !== undefined ? headers : { ...headers, ...(options?.headers || {}) },
+        headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal,
         cache: options?.cache,

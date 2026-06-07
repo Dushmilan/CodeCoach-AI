@@ -4,6 +4,18 @@ from typing import List, Dict, Any, Optional, Union
 from enum import Enum
 
 
+def _json_to_str(v: Any, compact: bool = False) -> str:
+    if isinstance(v, dict):
+        return json.dumps(v, separators=(",", ":") if compact else None)
+    if isinstance(v, (list, int, float)):
+        return json.dumps(v, separators=(",", ":") if compact else None)
+    if isinstance(v, bool):
+        return str(v).lower()
+    if v is None:
+        return ""
+    return v
+
+
 class CoachingMode(str, Enum):
     HINT = "hint"
     REVIEW = "review"
@@ -109,13 +121,7 @@ class TestCase(BaseModel):
     @field_validator("input", "expected_output", mode="before")
     @classmethod
     def normalize_to_string(cls, v):
-        if isinstance(v, dict):
-            return json.dumps(v, separators=(",", ":"))
-        if isinstance(v, (list, int, float, bool)):
-            return json.dumps(v, separators=(",", ":")) if not isinstance(v, bool) else str(v).lower()
-        if v is None:
-            return ""
-        return v
+        return _json_to_str(v, compact=True)
 
 
 class CodeValidationRequest(BaseModel):
@@ -148,13 +154,7 @@ class Example(BaseModel):
     @field_validator("input", "output", mode="before")
     @classmethod
     def normalize_field_to_string(cls, v):
-        if isinstance(v, dict):
-            return json.dumps(v)
-        if isinstance(v, (list, int, float, bool)):
-            return json.dumps(v) if not isinstance(v, bool) else str(v).lower()
-        if v is None:
-            return ""
-        return v
+        return _json_to_str(v)
 
     @model_validator(mode="before")
     @classmethod
@@ -217,11 +217,7 @@ class Question(BaseModel):
     @field_validator("solution", mode="before")
     @classmethod
     def normalize_solution(cls, v):
-        if isinstance(v, dict):
-            return json.dumps(v)
-        if isinstance(v, (list, int, float, bool)):
-            return json.dumps(v) if not isinstance(v, bool) else str(v).lower()
-        return v
+        return _json_to_str(v)
 
     @model_validator(mode="before")
     @classmethod

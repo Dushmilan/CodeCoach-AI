@@ -40,6 +40,10 @@ from app.api import (  # noqa: E402
     courses,
     progress,
 )
+from app.core.config import get_settings  # noqa: E402
+from app.core.database import init_db  # noqa: E402
+
+settings = get_settings()
 
 app = FastAPI(
     title="CodeCoach AI Backend",
@@ -53,16 +57,11 @@ app = FastAPI(
 # Add validation error handler for detailed error messages
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger.error("=== VALIDATION ERROR ===")
-    logger.error(f"Request URL: {request.url}")
-    logger.error(f"Request method: {request.method}")
-    logger.error(f"Validation errors: {exc.errors()}")
-    logger.error("========================")
-    body = exc.body.decode("utf-8", errors="replace") if isinstance(exc.body, bytes) else exc.body
     errors = _sanitize_errors(exc.errors())
+    logger.error("Validation error on %s %s: %s", request.method, request.url.path, errors)
     return JSONResponse(
         status_code=422,
-        content={"detail": errors, "body": body},
+        content={"detail": errors},
     )
 
 
@@ -106,14 +105,16 @@ app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
 app.include_router(progress.router, prefix="/api/progress", tags=["progress"])
 
 
+@app.on_event("startup")
+async def on_startup():
+    if settings.USE_DATABASE:
+        await init_db()
+        logger.info("Database tables created/verified")
+
+
 @app.get("/")
 async def root():
     return {"message": "CodeCoach AI Backend is running"}
-
-
-@app.get("/docs")
-async def docs():
-    return {"message": "API documentation available at /docs"}
 
 
 if __name__ == "__main__":

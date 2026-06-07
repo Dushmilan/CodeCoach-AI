@@ -23,7 +23,7 @@ class TestGetCurrentUser:
             mock_auth.get_current_user = AsyncMock(return_value=expected_user)
 
             from app.api.auth import get_current_user
-            result = await get_current_user(creds)
+            result = await get_current_user(creds, mock_auth)
 
             assert result.username == "testuser"
             assert result.email == "test@test.com"
@@ -42,7 +42,7 @@ class TestGetCurrentUser:
 
             from app.api.auth import get_current_user
             with pytest.raises(HTTPException) as exc:
-                await get_current_user(creds)
+                await get_current_user(creds, mock_auth)
 
             assert exc.value.status_code == status.HTTP_401_UNAUTHORIZED
             assert "Invalid or expired token" in exc.value.detail
@@ -60,7 +60,7 @@ class TestGetCurrentUser:
 
             from app.api.auth import get_current_user
             with pytest.raises(HTTPException) as exc:
-                await get_current_user(creds)
+                await get_current_user(creds, mock_auth)
 
             assert exc.value.status_code == status.HTTP_401_UNAUTHORIZED
             assert "deactivated" in exc.value.detail
@@ -89,7 +89,7 @@ class TestGetOptionalCurrentUser:
             mock_auth.get_current_user = AsyncMock(return_value=expected_user)
 
             from app.api.auth import get_optional_current_user
-            result = await get_optional_current_user(creds)
+            result = await get_optional_current_user(creds, mock_auth)
             assert result.username == "testuser"
 
     @pytest.mark.asyncio
@@ -104,5 +104,5 @@ class TestGetOptionalCurrentUser:
             )
 
             from app.api.auth import get_optional_current_user
-            result = await get_optional_current_user(creds)
+            result = await get_optional_current_user(creds, mock_auth)
             assert result is None
