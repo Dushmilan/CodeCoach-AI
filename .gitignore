@@ -230,3 +230,7 @@ debug_creative_raw.txt
 
 # Graphify
 graphify-out/
+
+# Playwright test output
+frontend/test-results/
+frontend/e2e-report/
