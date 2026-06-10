@@ -12,13 +12,21 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        const { createBrowserClient } = await import('@supabase/ssr');
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error(
+            'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+          );
+        }
 
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { createBrowserClient } = await import('@supabase/ssr');
+        const supabase = createBrowserClient(supabaseUrl, supabaseKey);
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
         if (!session?.access_token) throw new Error('No session returned');
 

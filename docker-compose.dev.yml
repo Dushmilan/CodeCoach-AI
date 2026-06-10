@@ -12,8 +12,11 @@ services:
       - "8000:8000"
     environment:
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DATABASE_URL=sqlite:///./codecoach.db
       - PISTON_API_URL=http://piston:2000/api/v2/piston
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
     volumes:
       - backend-data:/app/data
     depends_on:
@@ -38,6 +41,8 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:8000
       - NEXT_PUBLIC_WS_URL=ws://backend:8000
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     depends_on:
       - backend
     networks:

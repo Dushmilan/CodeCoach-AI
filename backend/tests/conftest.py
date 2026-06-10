@@ -54,8 +54,8 @@ def mock_nim_service():
 
         def __init__(self, api_key: str = "test_key"):
             self.api_key = api_key
-            
-        async def get_coaching_response(self, problem: str, code: str, language: str, 
+
+        async def get_coaching_response(self, problem: str, code: str, language: str,
                                       message: str, mode: str, difficulty: str,
                                       **kwargs):
             """Mock coaching response generation."""
@@ -77,7 +77,7 @@ def mock_nim_service():
                 "explanation": None,
                 "debug_help": None,
             }
-    
+
     return MockNIMService
 
 
@@ -176,36 +176,36 @@ def mock_questions_service():
                     ]
                 }
             ]
-        
+
         def get_all_questions(self, difficulty=None, category=None, page=1, per_page=20):
             questions = self.questions
             if difficulty:
                 questions = [q for q in questions if q["difficulty"] == difficulty]
             if category:
                 questions = [q for q in questions if q["category"] == category]
-            
+
             start = (page - 1) * per_page
             end = start + per_page
             return questions[start:end]
-        
+
         def get_question_by_id(self, question_id):
             for question in self.questions:
                 if question["id"] == question_id:
                     return question
             raise ValueError(f"Question {question_id} not found")
-        
+
         def get_categories(self):
             return list(set(q["category"] for q in self.questions))
-        
+
         def get_company_tags(self):
             companies = set()
             for question in self.questions:
                 companies.update(question["company_tags"])
             return list(companies)
-        
+
         def get_total_count(self):
             return len(self.questions)
-        
+
         def search_questions(self, query, difficulty=None, category=None):
             results = []
             for question in self.questions:
@@ -214,7 +214,7 @@ def mock_questions_service():
                        (not category or question["category"] == category):
                         results.append(question)
             return results
-    
+
     return MockQuestionsService
 
 
@@ -227,17 +227,20 @@ def test_env_vars():
         "QUESTIONS_FILE_PATH": "tests/fixtures/test_questions.json",
         "RATE_LIMIT_PER_MINUTE": "100",
         "RATE_LIMIT_PER_HOUR": "1000",
-        "ENVIRONMENT": "testing"
+        "ENVIRONMENT": "testing",
+        "JWT_SECRET_KEY": "test-secret-key-for-testing-only-32chars!!",
+        "COACH_RATE_LIMIT": "1000/minute",
+        "RUN_RATE_LIMIT": "1000/minute",
     }
-    
+
     # Store original values
     original_values = {}
     for key, value in env_vars.items():
         original_values[key] = os.environ.get(key)
         os.environ[key] = value
-    
+
     yield
-    
+
     # Restore original values
     for key, original_value in original_values.items():
         if original_value is None:
@@ -337,12 +340,12 @@ def temp_questions_file():
             "test_cases": [{"input": "'hello'", "expected_output": "'olleh'", "description": "Test"}]
         }
     ]
-    
+
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
         json.dump(test_questions, f, indent=2)
         temp_path = f.name
-    
+
     yield temp_path
-    
+
     # Cleanup
     os.unlink(temp_path)

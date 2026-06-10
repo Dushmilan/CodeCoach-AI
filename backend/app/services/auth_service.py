@@ -30,13 +30,10 @@ _USERS_FILE = str(Path(__file__).parent.parent.parent / "data" / "users.json")
 def _get_secret_key() -> str:
     key = os.getenv("JWT_SECRET_KEY")
     if not key:
-        environment = os.getenv("ENVIRONMENT", "development")
-        if environment != "development":
-            raise RuntimeError(
-                "JWT_SECRET_KEY environment variable is required in production"
-            )
-        key = "dev-secret-key-change-in-production"
-        logger.warning("JWT_SECRET_KEY not set, using insecure default")
+        raise RuntimeError(
+            "JWT_SECRET_KEY environment variable is required. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
     return key
 
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from app.models.schemas import SubmitRequest, SubmitResponse, SubmitResult
 from app.ports.code_executor import CodeExecutor
 from app.ports.question_repository import QuestionRepository
@@ -6,6 +6,7 @@ from app.repositories.file_question_repository import FileQuestionRepository
 from app.services.piston_service import PistonService
 from app.api.auth import get_current_user
 from app.models.auth_schemas import UserResponse
+from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,15 +23,17 @@ def get_executor() -> CodeExecutor:
 
 
 @router.post("/", response_model=SubmitResponse)
+@limiter.limit(RUN_RATE_LIMIT)
 async def submit_code(
-    request: SubmitRequest,
+    request: Request,
+    submit_request: SubmitRequest,
     repository: QuestionRepository = Depends(get_repository),
     executor: CodeExecutor = Depends(get_executor),
 ):
-    question = await repository.get_by_id(request.question_id)
+    question = await repository.get_by_id(submit_request.question_id)
     if not question:
         raise HTTPException(
-            status_code=404, detail=f"Question not found: {request.question_id}"
+            status_code=404, detail=f"Question not found: {submit_request.question_id}"
         )
 
     test_cases = [
@@ -44,8 +47,8 @@ async def submit_code(
 
     try:
         results = await executor.evaluate_suite(
-            language=request.language.value,
-            code=request.code,
+            language=submit_request.language.value,
+            code=submit_request.code,
             test_cases=test_cases,
         )
     except HTTPException:

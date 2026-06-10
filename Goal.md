@@ -25,13 +25,13 @@ All majors welcome. Multi-institution, drop-in, voluntary.
 
 ## What makes it different from alternatives?
 
-| | CodeCoach AI | LeetCode | Hackerrank | Exercism |
-|---|---|---|---|---|
-| **Free** | Yes (BYO API key) | Freemium | Freemium | Free |
-| **AI Coaching** | Built-in (NVIDIA NIM) | No | Limited | No |
-| **Language Curriculum** | C, Python, Java lessons + exercises | No | Limited tracks | Yes, exercises only |
-| **Open Source** | Yes | No | No | Yes |
-| **Professor-Ready** | Curriculum mapping, privacy-first | No | Enterprise only | No |
+|                         | CodeCoach AI                        | LeetCode | Hackerrank      | Exercism            |
+| ----------------------- | ----------------------------------- | -------- | --------------- | ------------------- |
+| **Free**                | Yes (BYO API key)                   | Freemium | Freemium        | Free                |
+| **AI Coaching**         | Built-in (NVIDIA NIM)               | No       | Limited         | No                  |
+| **Language Curriculum** | C, Python, Java lessons + exercises | No       | Limited tracks  | Yes, exercises only |
+| **Open Source**         | Yes                                 | No       | No              | Yes                 |
+| **Professor-Ready**     | Curriculum mapping, privacy-first   | No       | Enterprise only | No                  |
 
 ## In one sentence, what does this website do?
 
@@ -39,17 +39,20 @@ A free AI-powered coding platform where university students practice DSA problem
 
 ## Scope
 
-### Phase 1 — DSA Practice (current)
+### Phase 1 — DSA Practice (36/100 questions generated)
+
 - 100 coding questions (30 Easy / 50 Medium / 20 Hard) across 14 standard topics
 - AI coaching with BYO NVIDIA API key
-- Email/password + Google OAuth
+- Email/password + Google OAuth (Supabase)
 
-### Phase 2 — Programming Language Curriculum
-- C, Python, Java — each with ~15-20 interleaved theory + coding exercise lessons
+### Phase 2 — Programming Language Curriculum ✅ (Complete)
+
+- C, Python, Java — 3 courses, 9 modules, 27 lessons (18 theory + 9 exercises)
 - Context-aware AI coaching per lesson
 - `/learn` navigation
 
 ### Phase 3 — Future Modules
+
 - DBMS / SQL
 - OOP & Design Patterns
 - Web Development (React, Node)

@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 import logging
 import os
@@ -42,6 +44,7 @@ from app.api import (  # noqa: E402
 )
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import init_db  # noqa: E402
+from app.middleware.rate_limit import limiter  # noqa: E402
 
 settings = get_settings()
 
@@ -52,6 +55,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # Add validation error handler for detailed error messages
@@ -77,12 +83,13 @@ def _sanitize_errors(errors):
 
 
 # Configure CORS
+cors_origins = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:3000,https://codecoach-ai-frontend.vercel.app",
+).split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://codecoach-ai-frontend.vercel.app",
-    ],  # Configure properly for production
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from fastapi.responses import StreamingResponse
 from typing import AsyncIterator, Optional
 import asyncio
@@ -10,6 +10,7 @@ from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, 
 from app.services.nim_service import NIMService
 from app.api.auth import get_current_user
 from app.models.auth_schemas import UserResponse
+from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -79,8 +80,10 @@ def get_nim_service(
 
 
 @router.post("/", response_model=CoachingResponse)
+@limiter.limit(COACH_RATE_LIMIT)
 async def get_coaching(
-    request: CoachingRequest,
+    request: Request,
+    coaching_request: CoachingRequest,
     nim_service: NIMService = Depends(get_nim_service),
     user: UserResponse = Depends(get_current_user),
 ):
@@ -90,33 +93,31 @@ async def get_coaching(
     This endpoint provides structured AI coaching using NVIDIA NIM API.
     Returns both raw text response and structured JSON response.
     """
-    # DEBUG: Log incoming request details
     logger.debug("=== COACH API REQUEST (structured) ===")
     logger.debug(
-        f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}..."
+        f"Problem (first 100 chars): {coaching_request.problem[:100] if coaching_request.problem else 'EMPTY'}..."
     )
     logger.debug(
-        f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}..."
+        f"Code (first 100 chars): {coaching_request.code[:100] if coaching_request.code else 'EMPTY'}..."
     )
-    logger.debug(f"Language: {request.language.value}")
-    logger.debug(f"Message: {request.message}")
-    logger.debug(f"Mode: {request.mode.value}")
-    logger.debug(f"Difficulty: {request.difficulty.value}")
+    logger.debug(f"Language: {coaching_request.language.value}")
+    logger.debug(f"Message: {coaching_request.message}")
+    logger.debug(f"Mode: {coaching_request.mode.value}")
+    logger.debug(f"Difficulty: {coaching_request.difficulty.value}")
     logger.debug(f"NIM Service initialized: {nim_service is not None}")
     logger.debug("=========================================")
 
     try:
-        # Get structured response
-        chat_history_list = [m.model_dump() for m in request.chat_history] if request.chat_history else []
+        chat_history_list = [m.model_dump() for m in coaching_request.chat_history] if coaching_request.chat_history else []
 
         structured_data = await nim_service.get_structured_coaching_response(
-            problem=request.problem,
-            code=request.code,
-            language=request.language.value,
-            message=request.message,
-            mode=request.mode.value,
-            difficulty=request.difficulty.value,
-            lesson_context=request.lesson_context,
+            problem=coaching_request.problem,
+            code=coaching_request.code,
+            language=coaching_request.language.value,
+            message=coaching_request.message,
+            mode=coaching_request.mode.value,
+            difficulty=coaching_request.difficulty.value,
+            lesson_context=coaching_request.lesson_context,
             chat_history=chat_history_list,
         )
 
@@ -131,8 +132,8 @@ async def get_coaching(
         return CoachingResponse(
             response=raw_response,
             structured=structured_data,
-            mode=request.mode,
-            language=request.language,
+            mode=coaching_request.mode,
+            language=coaching_request.language,
         )
 
     except Exception as e:
@@ -203,8 +204,10 @@ def _format_structured_as_text(structured_data: dict) -> str:
 
 
 @router.post("/stream")
+@limiter.limit(COACH_RATE_LIMIT)
 async def get_coaching_stream(
-    request: CoachingRequest,
+    request: Request,
+    coaching_request: CoachingRequest,
     nim_service: NIMService = Depends(get_nim_service),
     user: UserResponse = Depends(get_current_user),
 ):
@@ -214,18 +217,17 @@ async def get_coaching_stream(
     Returns a streaming response with Server-Sent Events format.
     Each chunk is sent as a separate SSE event.
     """
-    # DEBUG: Log incoming request details for streaming endpoint
     logger.debug("=== COACH API STREAM REQUEST ===")
     logger.debug(
-        f"Problem (first 100 chars): {request.problem[:100] if request.problem else 'EMPTY'}..."
+        f"Problem (first 100 chars): {coaching_request.problem[:100] if coaching_request.problem else 'EMPTY'}..."
     )
     logger.debug(
-        f"Code (first 100 chars): {request.code[:100] if request.code else 'EMPTY'}..."
+        f"Code (first 100 chars): {coaching_request.code[:100] if coaching_request.code else 'EMPTY'}..."
     )
-    logger.debug(f"Language: {request.language.value}")
-    logger.debug(f"Message: {request.message}")
-    logger.debug(f"Mode: {request.mode.value}")
-    logger.debug(f"Difficulty: {request.difficulty.value}")
+    logger.debug(f"Language: {coaching_request.language.value}")
+    logger.debug(f"Message: {coaching_request.message}")
+    logger.debug(f"Mode: {coaching_request.mode.value}")
+    logger.debug(f"Difficulty: {coaching_request.difficulty.value}")
     logger.debug(f"NIM Service initialized: {nim_service is not None}")
     logger.debug("================================")
 
@@ -233,16 +235,16 @@ async def get_coaching_stream(
         chunk_count = 0
         try:
             logger.debug("Starting to stream chunks from NIM service...")
-            chat_history_list = [m.model_dump() for m in request.chat_history] if request.chat_history else []
+            chat_history_list = [m.model_dump() for m in coaching_request.chat_history] if coaching_request.chat_history else []
 
             async for chunk in nim_service.get_coaching_response(
-                problem=request.problem,
-                code=request.code,
-                language=request.language.value,
-                message=request.message,
-                mode=request.mode.value,
-                difficulty=request.difficulty.value,
-                lesson_context=request.lesson_context,
+                problem=coaching_request.problem,
+                code=coaching_request.code,
+                language=coaching_request.language.value,
+                message=coaching_request.message,
+                mode=coaching_request.mode.value,
+                difficulty=coaching_request.difficulty.value,
+                lesson_context=coaching_request.lesson_context,
                 chat_history=chat_history_list,
             ):
                 chunk_count += 1

@@ -1,10 +1,13 @@
 import json
 import os
+import logging
 from typing import Optional
 from datetime import datetime
 
 from app.models.auth_schemas import UserInDB
 from app.ports.user_repository import UserRepository
+
+logger = logging.getLogger(__name__)
 
 
 class FileUserRepository(UserRepository):
@@ -19,9 +22,12 @@ class FileUserRepository(UserRepository):
         with open(self.file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         for item in data:
-            item["created_at"] = datetime.fromisoformat(item["created_at"])
-            u = UserInDB(**item)
-            self._users[u.id] = u
+            try:
+                item["created_at"] = datetime.fromisoformat(item["created_at"])
+                u = UserInDB(**item)
+                self._users[u.id] = u
+            except (KeyError, ValueError, TypeError) as e:
+                logger.warning("Skipping malformed user entry: %s", e)
 
     def _save(self):
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
