@@ -49,25 +49,46 @@ class SqlCourseRepository(CourseRepository):
             language=orm.language,
         )
 
-    async def get_all_courses(self) -> List[Course]:
-        result = await self.session.execute(
-            select(CourseORM).order_by(CourseORM.order)
+    async def _hydrate_course(self, orm: CourseORM) -> Course:
+        course = self._course_to_model(orm)
+        module_rows = await self.session.execute(
+            select(ModuleORM.id)
+            .where(ModuleORM.course_id == orm.id)
+            .order_by(ModuleORM.order)
         )
-        return [self._course_to_model(c) for c in result.scalars().all()]
+        course.modules = [row[0] for row in module_rows.all()]
+        return course
+
+    async def _hydrate_module(self, orm: ModuleORM) -> Module:
+        module = self._module_to_model(orm)
+        lesson_rows = await self.session.execute(
+            select(LessonORM.id)
+            .where(LessonORM.module_id == orm.id)
+            .order_by(LessonORM.order)
+        )
+        module.lessons = [row[0] for row in lesson_rows.all()]
+        return module
+
+    async def get_all_courses(self) -> List[Course]:
+        result = await self.session.execute(select(CourseORM).order_by(CourseORM.order))
+        courses = []
+        for orm in result.scalars().all():
+            courses.append(await self._hydrate_course(orm))
+        return courses
 
     async def get_course_by_id(self, course_id: str) -> Optional[Course]:
         result = await self.session.execute(
             select(CourseORM).where(CourseORM.id == course_id)
         )
         orm = result.scalar_one_or_none()
-        return self._course_to_model(orm) if orm else None
+        return await self._hydrate_course(orm) if orm else None
 
     async def get_module_by_id(self, module_id: str) -> Optional[Module]:
         result = await self.session.execute(
             select(ModuleORM).where(ModuleORM.id == module_id)
         )
         orm = result.scalar_one_or_none()
-        return self._module_to_model(orm) if orm else None
+        return await self._hydrate_module(orm) if orm else None
 
     async def get_lesson_by_id(self, lesson_id: str) -> Optional[Lesson]:
         result = await self.session.execute(
@@ -82,7 +103,7 @@ class SqlCourseRepository(CourseRepository):
             .where(LessonORM.module_id == module_id)
             .order_by(LessonORM.order)
         )
-        return [self._lesson_to_model(l) for l in result.scalars().all()]
+        return [self._lesson_to_model(row) for row in result.scalars().all()]
 
     async def get_modules_by_course(self, course_id: str) -> List[Module]:
         result = await self.session.execute(
@@ -90,4 +111,7 @@ class SqlCourseRepository(CourseRepository):
             .where(ModuleORM.course_id == course_id)
             .order_by(ModuleORM.order)
         )
-        return [self._module_to_model(m) for m in result.scalars().all()]
+        modules = []
+        for orm in result.scalars().all():
+            modules.append(await self._hydrate_module(orm))
+        return modules

@@ -2,7 +2,6 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.models.orm import Base
-from app.models.course_schemas import Course, Module, Lesson
 
 
 @pytest_asyncio.fixture
@@ -24,6 +23,7 @@ async def test_db():
 @pytest_asyncio.fixture
 async def repo(test_db):
     from app.repositories.sql_course_repository import SqlCourseRepository
+
     return SqlCourseRepository(test_db)
 
 
@@ -31,29 +31,79 @@ async def repo(test_db):
 async def seeded_db(repo):
     session = repo.session
 
-    course = Course(id="c-1", title="Python", description="Learn Python", language="python", icon="python", order=1, modules=[])
     from app.models.orm import CourseORM
-    session.add(CourseORM(
-        id="c-1", title="Python", description="Learn Python", language="python", icon="python", order=1
-    ))
+
+    session.add(
+        CourseORM(
+            id="c-1",
+            title="Python",
+            description="Learn Python",
+            language="python",
+            icon="python",
+            order=1,
+        )
+    )
 
     from app.models.orm import ModuleORM
-    session.add(ModuleORM(id="m-1", course_id="c-1", title="Basics", description="Basic concepts", order=1))
-    session.add(ModuleORM(id="m-2", course_id="c-1", title="Advanced", description="Advanced topics", order=2))
+
+    session.add(
+        ModuleORM(
+            id="m-1",
+            course_id="c-1",
+            title="Basics",
+            description="Basic concepts",
+            order=1,
+        )
+    )
+    session.add(
+        ModuleORM(
+            id="m-2",
+            course_id="c-1",
+            title="Advanced",
+            description="Advanced topics",
+            order=2,
+        )
+    )
 
     from app.models.orm import LessonORM
-    session.add(LessonORM(
-        id="l-1", course_id="c-1", module_id="m-1", title="Intro", type="theory",
-        content="# Intro", order=1, language="python"
-    ))
-    session.add(LessonORM(
-        id="l-2", course_id="c-1", module_id="m-1", title="Variables", type="theory",
-        content="# Variables", order=2, language="python"
-    ))
-    session.add(LessonORM(
-        id="l-3", course_id="c-1", module_id="m-2", title="Functions", type="exercise",
-        content="# Functions", order=1, language="python", question_id="q-1"
-    ))
+
+    session.add(
+        LessonORM(
+            id="l-1",
+            course_id="c-1",
+            module_id="m-1",
+            title="Intro",
+            type="theory",
+            content="# Intro",
+            order=1,
+            language="python",
+        )
+    )
+    session.add(
+        LessonORM(
+            id="l-2",
+            course_id="c-1",
+            module_id="m-1",
+            title="Variables",
+            type="theory",
+            content="# Variables",
+            order=2,
+            language="python",
+        )
+    )
+    session.add(
+        LessonORM(
+            id="l-3",
+            course_id="c-1",
+            module_id="m-2",
+            title="Functions",
+            type="exercise",
+            content="# Functions",
+            order=1,
+            language="python",
+            question_id="q-1",
+        )
+    )
 
     await session.commit()
     return repo
@@ -146,5 +196,30 @@ class TestSqlCourseRepository:
     @pytest.mark.asyncio
     async def test_lesson_order(self, seeded_db):
         lessons = await seeded_db.get_lessons_by_module("m-1")
-        orders = [l.order for l in lessons]
+        orders = [lesson.order for lesson in lessons]
         assert orders == sorted(orders)
+
+    @pytest.mark.asyncio
+    async def test_course_hydrates_module_ids(self, seeded_db):
+        course = await seeded_db.get_course_by_id("c-1")
+        assert course is not None
+        assert course.modules == ["m-1", "m-2"]
+
+    @pytest.mark.asyncio
+    async def test_module_hydrates_lesson_ids(self, seeded_db):
+        module = await seeded_db.get_module_by_id("m-1")
+        assert module is not None
+        assert module.lessons == ["l-1", "l-2"]
+
+    @pytest.mark.asyncio
+    async def test_get_all_courses_hydrates_modules(self, seeded_db):
+        courses = await seeded_db.get_all_courses()
+        assert len(courses) == 1
+        assert courses[0].modules == ["m-1", "m-2"]
+
+    @pytest.mark.asyncio
+    async def test_get_modules_by_course_hydrates_lessons(self, seeded_db):
+        modules = await seeded_db.get_modules_by_course("c-1")
+        assert len(modules) == 2
+        assert modules[0].lessons == ["l-1", "l-2"]
+        assert modules[1].lessons == ["l-3"]

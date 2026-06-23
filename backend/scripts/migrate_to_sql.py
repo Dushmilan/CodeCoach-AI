@@ -6,20 +6,29 @@ Usage:
 
 Defaults to DATABASE_URL from .env or sqlite+aiosqlite:///./codecoach.db
 """
+
 import asyncio
 import json
 import os
 import sys
 from pathlib import Path
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.inspection import inspect
 
-from app.models.orm import Base, UserORM, QuestionORM, CourseORM, ModuleORM, LessonORM, CourseProgressORM
+from app.models.orm import (
+    Base,
+    UserORM,
+    QuestionORM,
+    CourseORM,
+    ModuleORM,
+    LessonORM,
+    CourseProgressORM,
+)
 from app.models.schemas import Question
 
 
@@ -78,30 +87,51 @@ async def migrate_questions(session: AsyncSession, base_dir: Path) -> int:
     for item in questions:
         try:
             question = Question(**item)
-            session.add(QuestionORM(
-                id=question.id,
-                title=question.title,
-                difficulty=question.difficulty.value,
-                category=question.category,
-                company_tags=question.company_tags,
-                description=question.description,
-                starter_code=question.starter.model_dump()
-                if hasattr(question.starter, "model_dump")
-                else question.starter,
-                examples=[e.model_dump() if hasattr(e, "model_dump") else e for e in question.examples],
-                test_cases=[tc.model_dump() if hasattr(tc, "model_dump") else tc for tc in question.test_cases],
-                hints=question.hints,
-                solution=question.solution,
-                time_complexity=question.time_complexity,
-                space_complexity=question.space_complexity,
-                constraints=question.constraints,
-                is_interactive=1 if question.is_interactive else 0,
-            ))
+            session.add(
+                QuestionORM(
+                    id=question.id,
+                    title=question.title,
+                    difficulty=question.difficulty.value,
+                    category=question.category,
+                    company_tags=question.company_tags,
+                    description=question.description,
+                    starter_code=question.starter.model_dump()
+                    if hasattr(question.starter, "model_dump")
+                    else question.starter,
+                    examples=[
+                        e.model_dump() if hasattr(e, "model_dump") else e
+                        for e in question.examples
+                    ],
+                    test_cases=[
+                        tc.model_dump() if hasattr(tc, "model_dump") else tc
+                        for tc in question.test_cases
+                    ],
+                    hints=question.hints,
+                    solution=question.solution,
+                    time_complexity=question.time_complexity,
+                    space_complexity=question.space_complexity,
+                    constraints=question.constraints,
+                    is_interactive=1 if question.is_interactive else 0,
+                )
+            )
             count += 1
         except Exception as e:
             title = item.get("title", "?")
             print(f"  ERROR migrating question '{title}': {e}")
     return count
+
+
+async def clear_all(session: AsyncSession):
+    """Delete all existing data to allow re-migration."""
+    for table in [
+        CourseProgressORM,
+        LessonORM,
+        ModuleORM,
+        CourseORM,
+        QuestionORM,
+        UserORM,
+    ]:
+        await session.execute(table.__table__.delete())
 
 
 async def _migrate_courses_only(session: AsyncSession, base_dir: Path) -> int:
@@ -118,11 +148,20 @@ async def _migrate_courses_only(session: AsyncSession, base_dir: Path) -> int:
             course_data = _load_json(course_dir / "course.json")
             if course_data:
                 try:
-                    session.add(CourseORM(**{k: v for k, v in course_data.items() if k in _ORM_COLUMNS[CourseORM]}))
+                    session.add(
+                        CourseORM(
+                            **{
+                                k: v
+                                for k, v in course_data.items()
+                                if k in _ORM_COLUMNS[CourseORM]
+                            }
+                        )
+                    )
                     count += 1
                 except Exception as e:
                     print(f"  ERROR migrating course {course_dir.name}: {e}")
     return count
+
 
 async def _migrate_modules_only(session: AsyncSession, base_dir: Path) -> int:
     count = 0
@@ -137,16 +176,29 @@ async def _migrate_modules_only(session: AsyncSession, base_dir: Path) -> int:
                 continue
             modules_data = _load_json(course_dir / "modules.json")
             if modules_data:
-                items = modules_data.get("items", [modules_data]) if isinstance(modules_data, dict) else modules_data
+                items = (
+                    modules_data.get("items", [modules_data])
+                    if isinstance(modules_data, dict)
+                    else modules_data
+                )
                 if isinstance(items, dict):
                     items = [items]
                 for m in items:
                     try:
-                        session.add(ModuleORM(**{k: v for k, v in m.items() if k in _ORM_COLUMNS[ModuleORM]}))
+                        session.add(
+                            ModuleORM(
+                                **{
+                                    k: v
+                                    for k, v in m.items()
+                                    if k in _ORM_COLUMNS[ModuleORM]
+                                }
+                            )
+                        )
                         count += 1
                     except Exception as e:
                         print(f"  ERROR migrating module {m.get('id', '?')}: {e}")
     return count
+
 
 async def _migrate_lessons_only(session: AsyncSession, base_dir: Path) -> int:
     count = 0
@@ -161,13 +213,23 @@ async def _migrate_lessons_only(session: AsyncSession, base_dir: Path) -> int:
                 continue
             lessons_data = _load_json(course_dir / "lessons.json")
             if lessons_data:
-                items = lessons_data.get("items", [lessons_data]) if isinstance(lessons_data, dict) else lessons_data
+                items = (
+                    lessons_data.get("items", [lessons_data])
+                    if isinstance(lessons_data, dict)
+                    else lessons_data
+                )
                 if isinstance(items, dict):
                     items = [items]
-                for l in items:
+                for item in items:
                     try:
-                        ldata = {k: v for k, v in l.items() if k in _ORM_COLUMNS[LessonORM]}
-                        if ldata.get("test_cases") and isinstance(ldata["test_cases"], list):
+                        ldata = {
+                            k: v
+                            for k, v in item.items()
+                            if k in _ORM_COLUMNS[LessonORM]
+                        }
+                        if ldata.get("test_cases") and isinstance(
+                            ldata["test_cases"], list
+                        ):
                             ldata["test_cases"] = [
                                 tc.model_dump() if hasattr(tc, "model_dump") else tc
                                 for tc in ldata["test_cases"]
@@ -175,7 +237,7 @@ async def _migrate_lessons_only(session: AsyncSession, base_dir: Path) -> int:
                         session.add(LessonORM(**ldata))
                         count += 1
                     except Exception as e:
-                        print(f"  ERROR migrating lesson {l.get('id', '?')}: {e}")
+                        print(f"  ERROR migrating lesson {item.get('id', '?')}: {e}")
     return count
 
 
@@ -216,7 +278,7 @@ async def migrate_progress(session: AsyncSession, base_dir: Path) -> int:
     return count
 
 
-async def migrate():
+async def migrate(clear: bool = False):
     database_url = _get_database_url()
     base_dir = Path(__file__).parent.parent
 
@@ -230,9 +292,18 @@ async def migrate():
     print("Tables created/verified.")
     print()
 
-    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     async with async_session() as session:
+        if clear:
+            print("Clearing existing data...")
+            await clear_all(session)
+            await session.flush()
+            print("Cleared.")
+            print()
+
         users = await migrate_users(session, base_dir)
         print(f"  Users: {users}")
         await session.flush()
@@ -265,4 +336,21 @@ async def migrate():
 
 
 if __name__ == "__main__":
-    asyncio.run(migrate())
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Migrate JSON data to SQL database")
+    parser.add_argument(
+        "--clear", action="store_true", help="Clear existing data before migration"
+    )
+    parser.add_argument(
+        "--url",
+        type=str,
+        default=None,
+        help="Database URL (overrides DATABASE_URL env var)",
+    )
+    args = parser.parse_args()
+
+    if args.url:
+        os.environ["DATABASE_URL"] = args.url
+
+    asyncio.run(migrate(clear=args.clear))
