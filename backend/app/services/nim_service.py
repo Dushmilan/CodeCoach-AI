@@ -1,7 +1,7 @@
 import os
 import httpx
 import logging
-from typing import AsyncIterator, Dict, Any
+from typing import AsyncIterator, Dict, Any, Optional
 from fastapi import HTTPException
 
 from app.adapters.coaching_prompts import (
@@ -11,6 +11,7 @@ from app.adapters.coaching_prompts import (
     build_structured_user_prompt,
 )
 from app.adapters.coaching_response_parser import CoachingResponseParser
+from app.services.redis_service import RedisCache, _content_hash
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +19,15 @@ logger = logging.getLogger(__name__)
 class NIMService:
     """Service for interacting with NVIDIA NIM API for AI coaching."""
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, cache: Optional[RedisCache] = None):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         if not self.api_key:
-            logger.error("NVIDIA_API_KEY environment variable is required but not found")
+            logger.error(
+                "NVIDIA_API_KEY environment variable is required but not found"
+            )
             raise ValueError("NVIDIA_API_KEY environment variable is required")
 
+        self.cache = cache
         self.base_url = "https://integrate.api.nvidia.com/v1"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -51,9 +55,21 @@ class NIMService:
     ) -> Dict[str, Any]:
         from app.models.schemas import StructuredCoachingResponse
 
+        cache_key = None
+        if self.cache and not chat_history:
+            content_hash = _content_hash(
+                problem, code, message, mode, difficulty, lesson_context or ""
+            )
+            cache_key = RedisCache.key("nim", "coaching", content_hash)
+            cached = await self.cache.get(cache_key)
+            if cached is not None:
+                return cached
+
         model = self.models.get(difficulty, self.models["medium"])
 
-        system_prompt = build_structured_system_prompt(mode, language, lesson_context=lesson_context)
+        system_prompt = build_structured_system_prompt(
+            mode, language, lesson_context=lesson_context
+        )
         user_prompt = build_structured_user_prompt(problem, code, message, mode)
 
         messages = [
@@ -92,6 +108,9 @@ class NIMService:
                 structured_data = self.parser.parse_structured(content)
                 StructuredCoachingResponse(**structured_data)
 
+                if self.cache and cache_key:
+                    await self.cache.set(cache_key, structured_data, ttl=86400)
+
                 return structured_data
 
         except httpx.TimeoutException:
@@ -99,7 +118,9 @@ class NIMService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error calling NVIDIA NIM API for structured response: {str(e)}")
+            logger.error(
+                f"Error calling NVIDIA NIM API for structured response: {str(e)}"
+            )
             raise HTTPException(
                 status_code=500,
                 detail=f"Error generating structured response: {str(e)}",
@@ -119,7 +140,9 @@ class NIMService:
     ) -> AsyncIterator[str]:
         model = self.models.get(difficulty, self.models["medium"])
 
-        system_prompt = build_system_prompt(mode, language, lesson_context=lesson_context)
+        system_prompt = build_system_prompt(
+            mode, language, lesson_context=lesson_context
+        )
         user_prompt = build_user_prompt(problem, code, message, mode)
 
         messages = [

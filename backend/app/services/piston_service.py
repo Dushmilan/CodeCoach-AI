@@ -8,7 +8,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import httpx
 from fastapi import HTTPException
@@ -17,26 +17,28 @@ from app.ports.code_executor import CodeExecutor, ExecutionResult, TestCaseResul
 from app.adapters.code_wrappers import build_runner, get_wrapper
 from app.adapters.execution_result_formatter import ExecutionResultFormatter
 from app.services.static_code_validator import StaticCodeValidator, get_file_extension
+from app.services.redis_service import RedisCache, _content_hash
 
 logger = logging.getLogger(__name__)
 
 
 # ── Piston Service ─────────────────────────────────────────────────────
 
+
 class PistonService(CodeExecutor):
     """Executes code via Piston (Docker) sandbox. This is the deep module
     — wrapping, formatting, and validation are internal details."""
 
-    # Piston API uses different language names than our internal names
     _PISTON_LANGUAGE_MAP = {
         "c": "gcc",
     }
 
-    def __init__(self):
+    def __init__(self, cache: Optional[RedisCache] = None):
         self.base_url = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
         self.timeout = 30.0
         self.formatter = ExecutionResultFormatter()
         self.validator = StaticCodeValidator()
+        self.cache = cache
         self.languages = {
             "python": {"version": "3.10.0", "aliases": ["py", "python3"]},
             "javascript": {"version": "18.15.0", "aliases": ["js", "node"]},
@@ -52,7 +54,18 @@ class PistonService(CodeExecutor):
         self, language: str, code: str, stdin: str = "", version: Optional[str] = None
     ) -> ExecutionResult:
         if language not in self.languages:
-            raise HTTPException(status_code=400, detail=f"Unsupported language: {language}. Supported: {list(self.languages.keys())}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported language: {language}. Supported: {list(self.languages.keys())}",
+            )
+
+        cache_key = None
+        if self.cache:
+            content_hash = _content_hash(language, code, stdin, version or "")
+            cache_key = RedisCache.key("exec", "run", content_hash)
+            cached = await self.cache.get(cache_key)
+            if cached is not None:
+                return ExecutionResult(**cached)
 
         lang_config = self.languages[language]
         version_to_use = version or lang_config["version"]
@@ -64,37 +77,73 @@ class PistonService(CodeExecutor):
         payload = {
             "language": piston_language,
             "version": version_to_use,
-            "files": [{"name": f"main.{get_file_extension(language)}", "content": code_to_run}],
-            "stdin": stdin, "args": [],
-            "compile_timeout": 10000, "run_timeout": 3000,
+            "files": [
+                {"name": f"main.{get_file_extension(language)}", "content": code_to_run}
+            ],
+            "stdin": stdin,
+            "args": [],
+            "compile_timeout": 10000,
+            "run_timeout": 3000,
         }
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(f"{self.base_url}/execute", json=payload, headers={"Content-Type": "application/json"})
+                response = await client.post(
+                    f"{self.base_url}/execute",
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                )
                 if response.status_code != 200:
-                    raise HTTPException(status_code=response.status_code, detail=f"Piston API error: {response.text}")
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail=f"Piston API error: {response.text}",
+                    )
                 raw = response.json()
                 processed = self.formatter.format(raw)
-                return ExecutionResult(**processed)
+                result = ExecutionResult(**processed)
+
+                if self.cache and cache_key:
+                    await self.cache.set(cache_key, result.model_dump(), ttl=3600)
+
+                return result
         except httpx.TimeoutException:
             raise HTTPException(status_code=504, detail="Code execution timeout")
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Error executing code: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Internal server error during code execution: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error during code execution: {str(e)}",
+            )
 
     async def get_runtimes(self) -> List[dict]:
+        if self.cache:
+            cached = await self.cache.get(RedisCache.key("piston", "runtimes"))
+            if cached is not None:
+                return cached
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(f"{self.base_url}/runtimes")
                 if response.status_code != 200:
-                    raise HTTPException(status_code=response.status_code, detail="Failed to fetch runtimes")
-                return response.json()
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail="Failed to fetch runtimes",
+                    )
+                result = response.json()
+
+                if self.cache:
+                    await self.cache.set(
+                        RedisCache.key("piston", "runtimes"), result, ttl=3600
+                    )
+
+                return result
         except Exception as e:
             logger.error(f"Error fetching runtimes: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to fetch available runtimes")
+            raise HTTPException(
+                status_code=500, detail="Failed to fetch available runtimes"
+            )
 
     # ── Batch Test Suite Execution ────────────────────────────────────────
 
@@ -106,9 +155,20 @@ class PistonService(CodeExecutor):
     ) -> List[TestCaseResult]:
         """Execute all test cases in a single Piston request using a generated runner."""
         if language not in self.languages:
-            raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+            raise HTTPException(
+                status_code=400, detail=f"Unsupported language: {language}"
+            )
         if not test_cases:
             return []
+
+        cache_key = None
+        if self.cache:
+            test_cases_json = json.dumps(test_cases, sort_keys=True)
+            content_hash = _content_hash(language, code, test_cases_json)
+            cache_key = RedisCache.key("exec", "submit", content_hash)
+            cached = await self.cache.get(cache_key)
+            if cached is not None:
+                return [TestCaseResult(**r) for r in cached]
 
         runner_code = build_runner(language, code, test_cases)
         exec_result = await self.execute(
@@ -117,7 +177,12 @@ class PistonService(CodeExecutor):
             stdin="",
         )
 
-        return self._parse_suite_output(exec_result, test_cases)
+        results = self._parse_suite_output(exec_result, test_cases)
+
+        if self.cache and cache_key:
+            await self.cache.set(cache_key, [r.model_dump() for r in results], ttl=3600)
+
+        return results
 
     def _parse_suite_output(
         self, exec_result: ExecutionResult, test_cases: List[dict]
@@ -177,12 +242,18 @@ class PistonService(CodeExecutor):
             elif r:
                 # Re-verify: compare normalized actual vs expected to catch runner bugs
                 runner_passed = r.get("passed", False)
-                re_verified = self._normalize(actual) == self._normalize(tc.get("expected_output", ""))
+                re_verified = self._normalize(actual) == self._normalize(
+                    tc.get("expected_output", "")
+                )
                 if runner_passed != re_verified:
                     logger.warning(
                         "Runner mismatch for test case %d: runner=%s re-verify=%s "
                         "actual=%r expected=%r",
-                        idx, runner_passed, re_verified, actual[:100], tc.get("expected_output", "")[:100],
+                        idx,
+                        runner_passed,
+                        re_verified,
+                        actual[:100],
+                        tc.get("expected_output", "")[:100],
                     )
             out.append(
                 TestCaseResult(
@@ -198,8 +269,7 @@ class PistonService(CodeExecutor):
 
     @staticmethod
     def _normalize(s: str) -> str:
-        import re
-        return re.sub(r'\s+', '', s.strip())
+        return re.sub(r"\s+", "", s.strip())
 
     def validate_code(self, language: str, code: str) -> dict:
         return self.validator.validate(language, code)

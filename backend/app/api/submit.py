@@ -1,11 +1,13 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.models.schemas import SubmitRequest, SubmitResponse, SubmitResult
 from app.ports.code_executor import CodeExecutor
 from app.ports.question_repository import QuestionRepository
 from app.repositories.file_question_repository import FileQuestionRepository
 from app.services.piston_service import PistonService
+from app.services.redis_service import RedisCache
 from app.api.auth import get_current_user
-from app.models.auth_schemas import UserResponse
+from app.api.dependencies import get_redis_cache
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
 import logging
 
@@ -18,8 +20,10 @@ def get_repository() -> QuestionRepository:
     return FileQuestionRepository("questions/sample_questions.json")
 
 
-def get_executor() -> CodeExecutor:
-    return PistonService()
+def get_executor(
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+) -> CodeExecutor:
+    return PistonService(cache=cache)
 
 
 @router.post("/", response_model=SubmitResponse)
@@ -55,9 +59,7 @@ async def submit_code(
         raise
     except Exception as e:
         logger.error(f"Submit evaluation error: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Evaluation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
 
     passed_count = sum(1 for r in results if r.passed)
     return SubmitResponse(

@@ -1,7 +1,7 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from pathlib import Path
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings, Settings
@@ -18,8 +18,18 @@ from app.repositories.file_question_repository import FileQuestionRepository
 from app.repositories.file_course_repository import FileCourseRepository
 from app.repositories.file_progress_repository import FileProgressRepository
 from app.repositories.file_user_repository import FileUserRepository
+from app.services.redis_service import RedisCache
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+
+async def get_redis_cache(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+) -> Optional[RedisCache]:
+    if settings.REDIS_ENABLED and hasattr(request.app.state, "redis_cache"):
+        return request.app.state.redis_cache
+    return None
 
 
 async def get_question_repo(
@@ -41,9 +51,7 @@ async def get_course_repo(
     if settings.USE_DATABASE:
         yield SqlCourseRepository(db)
     else:
-        yield FileCourseRepository(
-            courses_dir=str(BASE_DIR / "data" / "courses")
-        )
+        yield FileCourseRepository(courses_dir=str(BASE_DIR / "data" / "courses"))
 
 
 async def get_progress_repo(
@@ -65,6 +73,4 @@ async def get_user_repo(
     if settings.USE_DATABASE:
         yield SqlUserRepository(db)
     else:
-        yield FileUserRepository(
-            file_path=str(BASE_DIR / "data" / "users.json")
-        )
+        yield FileUserRepository(file_path=str(BASE_DIR / "data" / "users.json"))

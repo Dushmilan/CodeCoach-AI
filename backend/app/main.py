@@ -45,6 +45,7 @@ from app.api import (  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import init_db  # noqa: E402
 from app.middleware.rate_limit import limiter  # noqa: E402
+from app.services.redis_service import RedisCache  # noqa: E402
 
 settings = get_settings()
 
@@ -64,7 +65,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = _sanitize_errors(exc.errors())
-    logger.error("Validation error on %s %s: %s", request.method, request.url.path, errors)
+    logger.error(
+        "Validation error on %s %s: %s", request.method, request.url.path, errors
+    )
     return JSONResponse(
         status_code=422,
         content={"detail": errors},
@@ -117,6 +120,26 @@ async def on_startup():
     if settings.USE_DATABASE:
         await init_db()
         logger.info("Database tables created/verified")
+
+    if settings.REDIS_ENABLED:
+        try:
+            app.state.redis_cache = RedisCache(settings.REDIS_URL)
+            logger.info("Redis cache initialized at %s", settings.REDIS_URL)
+        except Exception as e:
+            logger.warning(
+                "Redis cache initialization failed: %s — caching disabled", e
+            )
+            app.state.redis_cache = None
+    else:
+        app.state.redis_cache = None
+        logger.info("Redis caching disabled via config")
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    if hasattr(app.state, "redis_cache") and app.state.redis_cache:
+        await app.state.redis_cache.close()
+        logger.info("Redis cache connection closed")
 
 
 @app.get("/")

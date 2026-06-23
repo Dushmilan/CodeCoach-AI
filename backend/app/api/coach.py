@@ -8,7 +8,9 @@ import os
 
 from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language
 from app.services.nim_service import NIMService
+from app.services.redis_service import RedisCache
 from app.api.auth import get_current_user
+from app.api.dependencies import get_redis_cache
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
 
@@ -18,6 +20,7 @@ router = APIRouter()
 
 def get_nim_service(
     x_nvidia_api_key: Optional[str] = Header(None, alias="X-NVIDIA-API-Key"),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ) -> NIMService:
     """Dependency injection for NIM service."""
     api_key = x_nvidia_api_key or os.getenv("NVIDIA_API_KEY")
@@ -27,6 +30,7 @@ def get_nim_service(
         api_key = os.getenv("NVIDIA_API_KEY")
 
     if environment == "testing":
+
         class MockNIMService:
             responses = {
                 "hint": "Consider using a hash map to solve this problem.",
@@ -60,7 +64,9 @@ def get_nim_service(
                 **kwargs,
             ):
                 return {
-                    "summary": self.responses.get(mode, "Here's some guidance for your problem."),
+                    "summary": self.responses.get(
+                        mode, "Here's some guidance for your problem."
+                    ),
                     "hints": [],
                     "code_review": None,
                     "complexity_analysis": None,
@@ -76,7 +82,7 @@ def get_nim_service(
     if not api_key:
         raise HTTPException(status_code=500, detail="NVIDIA API key not configured")
 
-    return NIMService(api_key=api_key)
+    return NIMService(api_key=api_key, cache=cache)
 
 
 @router.post("/", response_model=CoachingResponse)
@@ -108,7 +114,11 @@ async def get_coaching(
     logger.debug("=========================================")
 
     try:
-        chat_history_list = [m.model_dump() for m in coaching_request.chat_history] if coaching_request.chat_history else []
+        chat_history_list = (
+            [m.model_dump() for m in coaching_request.chat_history]
+            if coaching_request.chat_history
+            else []
+        )
 
         structured_data = await nim_service.get_structured_coaching_response(
             problem=coaching_request.problem,
@@ -235,7 +245,11 @@ async def get_coaching_stream(
         chunk_count = 0
         try:
             logger.debug("Starting to stream chunks from NIM service...")
-            chat_history_list = [m.model_dump() for m in coaching_request.chat_history] if coaching_request.chat_history else []
+            chat_history_list = (
+                [m.model_dump() for m in coaching_request.chat_history]
+                if coaching_request.chat_history
+                else []
+            )
 
             async for chunk in nim_service.get_coaching_response(
                 problem=coaching_request.problem,

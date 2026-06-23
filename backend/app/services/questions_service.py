@@ -10,6 +10,7 @@ from app.models.question_validation_schemas import (
 from app.ports.question_repository import QuestionRepository
 from app.repositories.file_question_repository import FileQuestionRepository
 from app.services.question_validator import QuestionValidatorService
+from app.services.redis_service import RedisCache
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +22,13 @@ class QuestionsService:
         self,
         repository: Optional[QuestionRepository] = None,
         validator: Optional[QuestionValidatorService] = None,
+        cache: Optional[RedisCache] = None,
     ):
         self.repository = repository or FileQuestionRepository(
             "questions/sample_questions.json"
         )
         self.validator = validator
+        self.cache = cache
 
     async def validate_question(
         self, question_id: str, use_cases: Optional[List[str]] = None
@@ -69,6 +72,10 @@ class QuestionsService:
             return QuestionValidationStatus(is_validated=False)
 
         await self.repository.add(question)
+
+        if self.cache:
+            await self.cache.delete("codecoach:questions:*")
+
         return QuestionValidationStatus(is_validated=True, validation_passed=True)
 
     async def get_all_questions(
@@ -86,11 +93,22 @@ class QuestionsService:
         return summaries[start_idx:end_idx]
 
     async def get_question_by_id(self, question_id: str) -> Question:
+        if self.cache:
+            cache_key = RedisCache.key("questions", "detail", question_id)
+            cached = await self.cache.get(cache_key)
+            if cached is not None:
+                return Question(**cached)
+
         question = await self.repository.get_by_id(question_id)
         if not question:
             raise HTTPException(
                 status_code=404, detail=f"Question not found: {question_id}"
             )
+
+        if self.cache:
+            cache_key = RedisCache.key("questions", "detail", question_id)
+            await self.cache.set(cache_key, question.model_dump(), ttl=300)
+
         return question
 
     async def get_questions_by_category(self, category: str) -> List[QuestionSummary]:
@@ -102,10 +120,28 @@ class QuestionsService:
         return await self.repository.get_summaries(difficulty=difficulty)
 
     async def get_categories(self) -> List[str]:
-        return await self.repository.get_categories()
+        if self.cache:
+            cached = await self.cache.get(RedisCache.key("questions", "categories"))
+            if cached is not None:
+                return cached
+        result = await self.repository.get_categories()
+        if self.cache:
+            await self.cache.set(
+                RedisCache.key("questions", "categories"), result, ttl=300
+            )
+        return result
 
     async def get_company_tags(self) -> List[str]:
-        return await self.repository.get_company_tags()
+        if self.cache:
+            cached = await self.cache.get(RedisCache.key("questions", "companies"))
+            if cached is not None:
+                return cached
+        result = await self.repository.get_company_tags()
+        if self.cache:
+            await self.cache.set(
+                RedisCache.key("questions", "companies"), result, ttl=300
+            )
+        return result
 
     async def search_questions(
         self,
@@ -118,21 +154,52 @@ class QuestionsService:
         )
 
     async def get_total_count(self) -> int:
+        if self.cache:
+            cached = await self.cache.get(RedisCache.key("questions", "total_count"))
+            if cached is not None:
+                return cached
         questions = await self.repository.get_all()
-        return len(questions)
+        result = len(questions)
+        if self.cache:
+            await self.cache.set(
+                RedisCache.key("questions", "total_count"), result, ttl=300
+            )
+        return result
 
     async def get_difficulty_counts(self) -> Dict[str, int]:
+        if self.cache:
+            cached = await self.cache.get(
+                RedisCache.key("questions", "stats", "difficulty_counts")
+            )
+            if cached is not None:
+                return cached
         questions = await self.repository.get_all()
         counts = {"easy": 0, "medium": 0, "hard": 0}
         for q in questions:
             counts[q.difficulty.value] += 1
+        if self.cache:
+            await self.cache.set(
+                RedisCache.key("questions", "stats", "difficulty_counts"),
+                counts,
+                ttl=300,
+            )
         return counts
 
     async def get_category_counts(self) -> Dict[str, int]:
+        if self.cache:
+            cached = await self.cache.get(
+                RedisCache.key("questions", "stats", "category_counts")
+            )
+            if cached is not None:
+                return cached
         questions = await self.repository.get_all()
         counts = {}
         for q in questions:
             counts[q.category] = counts.get(q.category, 0) + 1
+        if self.cache:
+            await self.cache.set(
+                RedisCache.key("questions", "stats", "category_counts"), counts, ttl=300
+            )
         return counts
 
     async def _persist_validation_status(

@@ -1,13 +1,13 @@
 from typing import List, Optional
 
-from app.models.course_schemas import Course, CourseSummary, Module, Lesson
+from app.models.course_schemas import Course, CourseSummary, Lesson
 from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
 from app.repositories.file_course_repository import FileCourseRepository
 from app.repositories.file_progress_repository import FileProgressRepository
+from app.services.redis_service import RedisCache
 
 from pathlib import Path
-import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -18,6 +18,7 @@ class CourseService:
         self,
         course_repo: Optional[CourseRepository] = None,
         progress_repo: Optional[ProgressRepository] = None,
+        cache: Optional[RedisCache] = None,
     ):
         self.course_repo = course_repo or FileCourseRepository(
             courses_dir=str(DATA_DIR / "courses"),
@@ -25,6 +26,7 @@ class CourseService:
         self.progress_repo = progress_repo or FileProgressRepository(
             file_path=f"{DATA_DIR}/user_progress.json",
         )
+        self.cache = cache
 
     async def list_courses(self, user_id: Optional[str] = None) -> List[CourseSummary]:
         courses = await self.course_repo.get_all_courses()
@@ -65,9 +67,13 @@ class CourseService:
     async def get_course(self, course_id: str) -> Optional[Course]:
         return await self.course_repo.get_course_by_id(course_id)
 
-    async def get_course_with_modules(
-        self, course_id: str
-    ) -> Optional[dict]:
+    async def get_course_with_modules(self, course_id: str) -> Optional[dict]:
+        if self.cache:
+            cache_key = RedisCache.key("courses", "detail", course_id)
+            cached = await self.cache.get(cache_key)
+            if cached is not None:
+                return cached
+
         course = await self.course_repo.get_course_by_id(course_id)
         if not course:
             return None
@@ -78,17 +84,38 @@ class CourseService:
         for mod in modules:
             mod_dict = mod.model_dump()
             lessons = await self.course_repo.get_lessons_by_module(mod.id)
-            lessons.sort(key=lambda l: l.order)
-            mod_dict["lessons"] = [l.model_dump() for l in lessons]
+            lessons.sort(key=lambda le: le.order)
+            mod_dict["lessons"] = [le.model_dump() for le in lessons]
             result["modules"].append(mod_dict)
+
+        if self.cache:
+            await self.cache.set(
+                RedisCache.key("courses", "detail", course_id),
+                result,
+                ttl=3600,
+            )
+
         return result
 
     async def get_lesson(self, lesson_id: str) -> Optional[Lesson]:
-        return await self.course_repo.get_lesson_by_id(lesson_id)
+        if self.cache:
+            cache_key = RedisCache.key("courses", "lesson", lesson_id)
+            cached = await self.cache.get(cache_key)
+            if cached is not None:
+                return Lesson(**cached)
 
-    async def mark_lesson_complete(
-        self, user_id: str, course_id: str, lesson_id: str
-    ):
+        lesson = await self.course_repo.get_lesson_by_id(lesson_id)
+
+        if self.cache and lesson is not None:
+            await self.cache.set(
+                RedisCache.key("courses", "lesson", lesson_id),
+                lesson.model_dump(),
+                ttl=3600,
+            )
+
+        return lesson
+
+    async def mark_lesson_complete(self, user_id: str, course_id: str, lesson_id: str):
         return await self.progress_repo.mark_lesson_complete(
             user_id, course_id, lesson_id
         )

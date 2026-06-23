@@ -14,12 +14,15 @@ services:
       - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./codecoach.db}
       - USE_DATABASE=${USE_DATABASE:-false}
       - PISTON_API_URL=http://piston:2000/api/v2
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
     volumes:
       - ./backend:/app
     depends_on:
       - piston
+      - redis
     networks:
       - codecoach-network
     healthcheck:
@@ -66,6 +69,24 @@ services:
   #   networks:
   #     - codecoach-network
 
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: codecoach-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    networks:
+      - codecoach-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # Piston Code Execution Engine
   piston:
     image: ghcr.io/engineer-man/piston:latest
@@ -93,4 +114,5 @@ networks:
 volumes:
   piston-data:
     external: true
+  redis-data:
   postgres-data:

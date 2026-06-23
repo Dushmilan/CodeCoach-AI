@@ -1,12 +1,13 @@
 from dataclasses import asdict
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
-from functools import lru_cache
 
 from app.models.schemas import CodeExecutionRequest, CodeExecutionResult, Language
 from app.ports.code_executor import CodeExecutor
 from app.services.piston_service import PistonService
+from app.services.redis_service import RedisCache
 from app.api.auth import get_current_user
-from app.models.auth_schemas import UserResponse
+from app.api.dependencies import get_redis_cache
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
 import logging
 
@@ -15,10 +16,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
-@lru_cache()
-def get_executor() -> CodeExecutor:
-    """Get or create Piston service instance (cached)."""
-    return PistonService()
+def get_executor(
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+) -> CodeExecutor:
+    return PistonService(cache=cache)
 
 
 @router.post("/", response_model=CodeExecutionResult)

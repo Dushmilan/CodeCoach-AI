@@ -14,10 +14,9 @@ repos:
     rev: v0.6.0
     hooks:
       - id: ruff
-        args: [--fix, --config, backend/pyproject.toml]
+        args: [--fix]
         types_or: [python]
       - id: ruff-format
-        args: [--config, backend/pyproject.toml]
         types_or: [python]
 
   - repo: https://github.com/pre-commit/mirrors-prettier

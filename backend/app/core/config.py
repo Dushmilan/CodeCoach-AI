@@ -2,19 +2,29 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from typing import Optional
 
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-    
+
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./codecoach.db"
     USE_DATABASE: bool = False
-    
+
     # Auth
     JWT_SECRET_KEY: str = "dev-secret-key-change-in-production"
     NVIDIA_API_KEY: Optional[str] = None
-    
+
     # Piston
     PISTON_API_URL: str = "http://piston:2000/api/v2"
+
+    # Redis
+    REDIS_URL: str = "redis://redis:6379/0"
+    REDIS_TTL_DEFAULT: int = 300
+    REDIS_TTL_STATIC: int = 3600
+    REDIS_TTL_AI: int = 86400
+    REDIS_TTL_EXECUTION: int = 3600
+    REDIS_ENABLED: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -4,15 +4,17 @@ from typing import Optional
 from app.models.schemas import Question, QuestionsListResponse, Difficulty
 from app.ports.question_repository import QuestionRepository
 from app.services.questions_service import QuestionsService
-from app.api.dependencies import get_question_repo
+from app.services.redis_service import RedisCache
+from app.api.dependencies import get_question_repo, get_redis_cache
 
 router = APIRouter()
 
 
 def get_questions_service(
     question_repo: QuestionRepository = Depends(get_question_repo),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ) -> QuestionsService:
-    return QuestionsService(repository=question_repo)
+    return QuestionsService(repository=question_repo, cache=cache)
 
 
 @router.get("/", response_model=QuestionsListResponse)
