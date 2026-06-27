@@ -19,7 +19,7 @@ interface LogEntry {
 }
 
 export default function AuditLogsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,6 @@ export default function AuditLogsPage() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('auth_token');
       const params = new URLSearchParams({
         skip: String((filter.page - 1) * filter.per_page),
         limit: String(filter.per_page),
@@ -56,14 +55,13 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, token]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
 
   const exportCsv = async () => {
-    const token = localStorage.getItem('auth_token');
     const res = await fetch('/api/admin/audit-logs/export', {
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Settings as SettingsIcon, Save, RotateCcw, Globe, Clock, Cpu, Code } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [settings, setSettings] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -16,18 +16,17 @@ export default function SettingsPage() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/admin/settings', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed');
-      setSettings((await res.json()).settings || {});
+      setSettings(await res.json());
     } catch {
       /* */
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     fetchSettings();
@@ -37,7 +36,6 @@ export default function SettingsPage() {
     setSaving(true);
     setMsg('');
     try {
-      const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/admin/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

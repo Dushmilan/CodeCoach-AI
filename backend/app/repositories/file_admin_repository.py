@@ -71,7 +71,13 @@ class FileAdminRepository(AdminRepository):
         for path in self._courses_dir.rglob("*.json"):
             try:
                 with open(path) as f:
-                    tree["courses"].append(json.load(f))
+                    data = json.load(f)
+                if path.name == "course.json":
+                    tree["courses"].append(data)
+                elif path.name == "modules.json":
+                    tree["modules"].extend(data.get("items", []))
+                elif path.name == "lessons.json":
+                    tree["lessons"].extend(data.get("items", []))
             except (json.JSONDecodeError, OSError) as e:
                 logger.warning("Skipping %s: %s", path, e)
         return tree

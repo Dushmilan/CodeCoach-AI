@@ -34,14 +34,13 @@ interface CourseTree {
 }
 
 export default function CurriculumPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [tree, setTree] = useState<CourseTree>({ courses: [], modules: [], lessons: [] });
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const fetchTree = useCallback(async () => {
     try {
-      const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/admin/courses/tree', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -53,7 +52,7 @@ export default function CurriculumPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     fetchTree();
@@ -61,7 +60,6 @@ export default function CurriculumPage() {
 
   const del = async (type: string, id: string) => {
     if (!confirm(`Delete this ${type}?`)) return;
-    const token = localStorage.getItem('auth_token');
     const endpoints: Record<string, string> = {
       course: `/api/admin/courses/${id}`,
       module: `/api/admin/modules/${id}`,

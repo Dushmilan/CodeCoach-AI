@@ -7,16 +7,7 @@ import { useAuth } from '@/providers';
 import { useSettings } from '@/hooks/use-settings';
 import { useTheme } from 'next-themes';
 
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  Settings,
-  Shield,
-  BarChart3,
-  Database,
-  Play,
-} from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, BarChart3, Database } from 'lucide-react';
 
 interface NavItem {
   title: string;
@@ -56,21 +47,9 @@ export default function AdminSidebar({ open, onClose }: { open: boolean; onClose
       permission: 'admin',
     },
     {
-      title: 'Generation',
-      href: '/admin/generation',
-      icon: Play,
-      permission: 'admin',
-    },
-    {
       title: 'Analytics',
       href: '/admin/analytics',
       icon: BarChart3,
-      permission: 'admin',
-    },
-    {
-      title: 'Feature Flags',
-      href: '/admin/feature-flags',
-      icon: Shield,
       permission: 'admin',
     },
     {

@@ -188,3 +188,26 @@ Programming language curriculum (C, Python, Java) for CodeCoach AI:
 - `backend/tests/unit/test_piston_service.py` — +15 tests
 - `backend/tests/unit/test_execution_result_formatter.py` — +4 tests
 - `backend/tests/integration/test_submit_endpoints.py` — +18 tests
+
+### Session Context — June 27, 2026 (Admin Panel Bug Fixes)
+
+**Problem:** Admin panel showed empty data (0 users, 0 questions) and some pages loading forever.
+
+**Root causes (2 interacting bugs):**
+
+1. **Token format mismatch:** `AuthProvider` stores token with `JSON.stringify()` but admin pages read with bare `localStorage.getItem()` (no `JSON.parse()`) → JWT had literal surrounding quotes → backend rejected with 401 → silent catch blocks → empty UI. Fixed by replacing all `localStorage.getItem('auth_token')` with `token` from `useAuth()` context across 9 admin pages plus adding `token` to relevant dependency arrays.
+
+2. **Next.js rewrite resolution in Docker:** `next.config.js` rewrites `http://localhost:8000/api/:path*` → `localhost:8000` resolves to the frontend container itself inside Docker (not the backend). Next.js serializes rewrite destinations at **build time** into `routes-manifest.json`, so runtime `API_URL` env var was ignored. Fixed by adding `ENV API_URL=http://backend:8000` to Dockerfile **before** `npm run build`.
+
+**Other fixes:**
+
+- `file_admin_repository.py: _load_courses()`: routes `course.json`→courses, `modules.json(items)`→modules, `lessons.json(items)`→lessons (was dumping all JSON files into courses array)
+- `admin.py: get_course_tree()`: removed double-wrap `{"courses": tree}` → returns `tree` directly
+- Settings page: `setSettings(await res.json())` instead of `setSettings((await res.json()).settings || {})`
+- Removed Generation and Feature Flags nav items + unused `Play`/`Shield` icons from `AdminSidebar.tsx`
+- Deleted `backend/data/courses/` directory (preserved `users.json`, `user_progress.json`)
+- Added `API_URL=http://backend:8000` runtime env to `docker-compose.yml` frontend service
+
+**Validation:** `curl http://localhost:3000/api/admin/stats` returns valid JSON with correct user question counts. All admin pages return HTTP 200.
+
+**Key lesson:** Next.js serializes rewrite destinations from `next.config.js` at build time into `routes-manifest.json`. Runtime `process.env` values are not used for rewrites after build. Dockerfile must set `ENV API_URL=http://backend:8000` before `npm run build`.

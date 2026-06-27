@@ -18,7 +18,7 @@ interface UserItem {
 }
 
 export default function UsersPage() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, token } = useAuth();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,6 @@ export default function UsersPage() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const token = localStorage.getItem('auth_token');
       const params = new URLSearchParams({ page: String(page), per_page: String(pageSize) });
       if (search) params.set('search', search);
       const res = await fetch(`/api/admin/users?${params}`, {
@@ -43,14 +42,13 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, token]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   const updateRole = async (userId: string, role: string) => {
-    const token = localStorage.getItem('auth_token');
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -60,7 +58,6 @@ export default function UsersPage() {
   };
 
   const toggleStatus = async (userId: string, current: boolean) => {
-    const token = localStorage.getItem('auth_token');
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

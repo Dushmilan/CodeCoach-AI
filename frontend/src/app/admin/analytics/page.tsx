@@ -21,14 +21,13 @@ interface QuestionProgress {
 }
 
 export default function AnalyticsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [userAnalytics, setUserAnalytics] = useState<UserAnalytics | null>(null);
   const [qProgress, setQProgress] = useState<QuestionProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const token = localStorage.getItem('auth_token');
       const headers = { Authorization: `Bearer ${token}` };
       try {
         const [uRes, qRes] = await Promise.all([
@@ -44,7 +43,7 @@ export default function AnalyticsPage() {
       }
     };
     load();
-  }, []);
+  }, [token]);
 
   if (loading)
     return (

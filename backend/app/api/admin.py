@@ -361,7 +361,7 @@ async def get_course_tree(
     """Get courses tree structure (admins only)."""
     try:
         tree = await admin_repo.get_course_tree()
-        return {"courses": tree}
+        return tree
     except Exception as e:
         logger.error(f"Error fetching course tree: {e}")
         raise HTTPException(

@@ -15,14 +15,13 @@ interface Flag {
 }
 
 export default function FeatureFlagsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [flags, setFlags] = useState<Record<string, Flag>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
   const fetchFlags = useCallback(async () => {
     try {
-      const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/admin/feature-flags', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -34,7 +33,7 @@ export default function FeatureFlagsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     fetchFlags();
@@ -43,7 +42,6 @@ export default function FeatureFlagsPage() {
   const updateFlag = async (key: string, updates: Partial<Flag>) => {
     setSaving(key);
     try {
-      const token = localStorage.getItem('auth_token');
       const res = await fetch(`/api/admin/feature-flags/${key}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

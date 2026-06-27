@@ -16,7 +16,7 @@ interface QBrief {
 }
 
 export default function QuestionsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [questions, setQuestions] = useState<QBrief[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,6 @@ export default function QuestionsPage() {
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('auth_token');
       const params = new URLSearchParams({
         page: String(filter.page),
         per_page: String(filter.per_page),
@@ -47,7 +46,7 @@ export default function QuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, token]);
 
   useEffect(() => {
     fetchQuestions();
@@ -55,7 +54,6 @@ export default function QuestionsPage() {
 
   const deleteQ = async (id: string) => {
     if (!confirm('Delete this question?')) return;
-    const token = localStorage.getItem('auth_token');
     const res = await fetch(`/api/admin/questions/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
@@ -66,7 +64,6 @@ export default function QuestionsPage() {
   const doImport = async () => {
     try {
       const data = JSON.parse(importJson);
-      const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/admin/questions/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

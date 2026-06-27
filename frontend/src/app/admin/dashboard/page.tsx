@@ -14,7 +14,7 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [stats, setStats] = useState<AdminStats>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
         const res = await fetch('/api/admin/stats', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -36,7 +35,7 @@ export default function AdminDashboard() {
       }
     };
     fetchStats();
-  }, []);
+  }, [token]);
 
   return (
     <div className="space-y-6">

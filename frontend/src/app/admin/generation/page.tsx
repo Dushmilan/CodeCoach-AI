@@ -17,7 +17,7 @@ interface GenJob {
 }
 
 export default function GenerationPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [jobs, setJobs] = useState<GenJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
@@ -30,7 +30,6 @@ export default function GenerationPage() {
 
   const fetchJobs = useCallback(async () => {
     try {
-      const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/admin/generation/jobs', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -41,7 +40,7 @@ export default function GenerationPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     fetchJobs();
@@ -50,7 +49,6 @@ export default function GenerationPage() {
   const triggerGen = async () => {
     setTriggering(true);
     try {
-      const token = localStorage.getItem('auth_token');
       const body: any = {};
       if (triggerForm.topic) body.topic = triggerForm.topic;
       if (triggerForm.difficulty) body.difficulty = triggerForm.difficulty;
