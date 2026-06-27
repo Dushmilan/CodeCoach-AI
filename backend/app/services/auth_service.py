@@ -32,7 +32,7 @@ def _get_secret_key() -> str:
     if not key:
         raise RuntimeError(
             "JWT_SECRET_KEY environment variable is required. "
-            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            'Generate one with: python -c "import secrets; print(secrets.token_hex(32))"'
         )
     return key
 
@@ -80,6 +80,7 @@ def _user_to_response(user: UserInDB) -> UserResponse:
         email=user.email,
         created_at=user.created_at,
         is_active=user.is_active,
+        role=user.role,
     )
 
 

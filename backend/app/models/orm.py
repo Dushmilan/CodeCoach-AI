@@ -8,6 +8,7 @@ Base = declarative_base()
 # Use JSONB for PostgreSQL, JSON for SQLite
 JSONType = JSONB().with_variant(JSON, "sqlite")
 
+
 class UserORM(Base):
     __tablename__ = "users"
     id = Column(String(36), primary_key=True)
@@ -18,6 +19,10 @@ class UserORM(Base):
     is_active = Column(Integer, default=1, nullable=False)
     oauth_provider = Column(String(50), nullable=True)
     oauth_id = Column(String(255), nullable=True)
+    role = Column(String(20), server_default="user", nullable=False)
+
+    __table_args__ = (Index("ix_users_role", "role"),)
+
 
 class QuestionORM(Base):
     __tablename__ = "questions"
@@ -27,7 +32,9 @@ class QuestionORM(Base):
     category = Column(String(100), nullable=False, index=True)
     company_tags = Column(JSONType, default=list, nullable=False)
     description = Column(Text, nullable=False)
-    starter_code = Column(JSONType, default=dict, nullable=False)  # {"python": "...", "javascript": "..."}
+    starter_code = Column(
+        JSONType, default=dict, nullable=False
+    )  # {"python": "...", "javascript": "..."}
     examples = Column(JSONType, default=list, nullable=False)
     test_cases = Column(JSONType, default=list, nullable=False)
     hints = Column(JSONType, default=list, nullable=False)
@@ -37,7 +44,10 @@ class QuestionORM(Base):
     constraints = Column(JSONType, default=list, nullable=False)
     is_interactive = Column(Integer, default=0, nullable=False)
 
-    __table_args__ = (Index("ix_questions_company_tags", "company_tags", postgresql_using="gin"),)
+    __table_args__ = (
+        Index("ix_questions_company_tags", "company_tags", postgresql_using="gin"),
+    )
+
 
 class CourseORM(Base):
     __tablename__ = "courses"
@@ -48,37 +58,74 @@ class CourseORM(Base):
     icon = Column(String(50), default="code")
     order = Column(Integer, nullable=False)
 
+
 class ModuleORM(Base):
     __tablename__ = "modules"
     id = Column(String(36), primary_key=True)
-    course_id = Column(String(36), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+    course_id = Column(
+        String(36),
+        ForeignKey("courses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     order = Column(Integer, nullable=False)
     course = relationship("CourseORM", backref="modules")
 
+
 class LessonORM(Base):
     __tablename__ = "lessons"
     id = Column(String(36), primary_key=True)
-    course_id = Column(String(36), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
-    module_id = Column(String(36), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False, index=True)
+    course_id = Column(
+        String(36),
+        ForeignKey("courses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    module_id = Column(
+        String(36),
+        ForeignKey("modules.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     title = Column(String(255), nullable=False)
     type = Column(String(20), nullable=False)  # theory/exercise
     content = Column(Text, nullable=False)
     order = Column(Integer, nullable=False)
     starter_code = Column(Text, nullable=True)
     test_cases = Column(JSONType, default=list, nullable=True)
-    question_id = Column(String(64), ForeignKey("questions.id", ondelete="SET NULL"), nullable=True, index=True)
+    question_id = Column(
+        String(64),
+        ForeignKey("questions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     language = Column(String(50), nullable=False)
+
 
 class CourseProgressORM(Base):
     __tablename__ = "course_progress"
     id = Column(String(64), primary_key=True)
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    course_id = Column(String(36), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    course_id = Column(
+        String(36),
+        ForeignKey("courses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     completed_lessons = Column(JSONType, default=list, nullable=False)
     last_accessed_lesson_id = Column(String(36), nullable=True)
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    last_accessed_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_accessed_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
-    __table_args__ = (Index("ix_progress_user_course", "user_id", "course_id", unique=True),)
+    __table_args__ = (
+        Index("ix_progress_user_course", "user_id", "course_id", unique=True),
+    )

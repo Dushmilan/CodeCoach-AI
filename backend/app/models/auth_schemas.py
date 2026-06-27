@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     email: str
     created_at: datetime
     is_active: bool = True
+    role: str = "user"
 
 
 class TokenResponse(BaseModel):
@@ -47,3 +48,4 @@ class UserInDB(BaseModel):
     is_active: bool = True
     oauth_provider: Optional[str] = None
     oauth_id: Optional[str] = None
+    role: str = "user"

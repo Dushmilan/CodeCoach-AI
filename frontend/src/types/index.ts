@@ -72,7 +72,15 @@ export interface UserProgress {
   attempts: number;
 }
 
-export type Language = 'python' | 'javascript' | 'java' | 'cpp' | 'c' | 'go' | 'rust' | 'typescript';
+export type Language =
+  | 'python'
+  | 'javascript'
+  | 'java'
+  | 'cpp'
+  | 'c'
+  | 'go'
+  | 'rust'
+  | 'typescript';
 
 export interface CourseSummary {
   id: string;
@@ -136,6 +144,7 @@ export interface User {
   email: string;
   created_at: string;
   is_active: boolean;
+  role?: string;
 }
 
 export interface AuthState {

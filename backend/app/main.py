@@ -41,6 +41,7 @@ from app.api import (  # noqa: E402
     auth,
     courses,
     progress,
+    admin,  # Add admin router
 )
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import init_db  # noqa: E402
@@ -94,7 +95,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
     allow_headers=["*"],
 )
 
@@ -113,6 +114,7 @@ app.include_router(
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
 app.include_router(progress.router, prefix="/api/progress", tags=["progress"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 
 @app.on_event("startup")
