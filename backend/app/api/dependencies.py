@@ -36,7 +36,7 @@ async def get_redis_cache(
 
 
 async def get_question_repo(
-    db: AsyncSession = Depends(get_db),
+    db: Optional[AsyncSession] = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> AsyncGenerator[QuestionRepository, None]:
     if settings.USE_DATABASE:
@@ -48,7 +48,7 @@ async def get_question_repo(
 
 
 async def get_course_repo(
-    db: AsyncSession = Depends(get_db),
+    db: Optional[AsyncSession] = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> AsyncGenerator[CourseRepository, None]:
     if settings.USE_DATABASE:
@@ -58,7 +58,7 @@ async def get_course_repo(
 
 
 async def get_progress_repo(
-    db: AsyncSession = Depends(get_db),
+    db: Optional[AsyncSession] = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> AsyncGenerator[ProgressRepository, None]:
     if settings.USE_DATABASE:
@@ -70,7 +70,7 @@ async def get_progress_repo(
 
 
 async def get_user_repo(
-    db: AsyncSession = Depends(get_db),
+    db: Optional[AsyncSession] = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> AsyncGenerator[UserRepository, None]:
     if settings.USE_DATABASE:
@@ -80,7 +80,7 @@ async def get_user_repo(
 
 
 async def get_admin_repo(
-    db: AsyncSession = Depends(get_db),
+    db: Optional[AsyncSession] = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> AsyncGenerator[AdminRepository, None]:
     if settings.USE_DATABASE:
