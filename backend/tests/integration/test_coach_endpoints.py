@@ -1,14 +1,11 @@
 """
 Integration tests for coach endpoints.
 """
+
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
-import json
-from unittest.mock import patch
 from contextlib import contextmanager
 
-from app.models.schemas import CoachingMode, Language, Difficulty
 from app.main import app
 
 
@@ -16,8 +13,10 @@ from app.main import app
 def mock_auth(user_id: str = "test-id", username: str = "testuser"):
     """Override auth dependency for testing."""
     from app.api.auth import get_current_user
+
     async def override_get_current_user():
         from app.models.auth_schemas import UserResponse
+
         return UserResponse(
             id=user_id,
             username=username,
@@ -25,17 +24,18 @@ def mock_auth(user_id: str = "test-id", username: str = "testuser"):
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
         )
+
     app.dependency_overrides[get_current_user] = override_get_current_user
     try:
         yield
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.mark.usefixtures("test_env_vars")
 class TestCoachEndpoints:
     """Test cases for coach endpoints."""
-    
+
     def test_get_coaching_basic(self, test_client: TestClient, test_env_vars):
         """Test basic coaching endpoint."""
         coaching_request = {
@@ -44,7 +44,7 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "Is this the most efficient solution?",
             "mode": "review",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
 
         with mock_auth():
@@ -59,7 +59,9 @@ class TestCoachEndpoints:
         assert len(data["response"]) > 0
 
     @pytest.mark.usefixtures("test_env_vars")
-    def test_get_coaching_with_lesson_context(self, test_client: TestClient, test_env_vars):
+    def test_get_coaching_with_lesson_context(
+        self, test_client: TestClient, test_env_vars
+    ):
         """Coaching endpoint accepts optional lesson_context field."""
         coaching_request = {
             "problem": "Write a for loop that prints 1 to 5",
@@ -68,7 +70,7 @@ class TestCoachEndpoints:
             "message": "How can I modify this to only print even numbers?",
             "mode": "hint",
             "difficulty": "easy",
-            "lesson_context": "Python Lesson 4: For Loops"
+            "lesson_context": "Python Lesson 4: For Loops",
         }
 
         with mock_auth():
@@ -87,22 +89,24 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "Is this the most efficient solution?",
             "mode": "review",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/stream", json=coaching_request)
-        
+
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
-        
+
         # Check for SSE format
         content = response.text
         assert "data:" in content
         assert "done" in content
 
     @pytest.mark.usefixtures("test_env_vars")
-    def test_get_coaching_streaming_with_lesson_context(self, test_client: TestClient, test_env_vars):
+    def test_get_coaching_streaming_with_lesson_context(
+        self, test_client: TestClient, test_env_vars
+    ):
         """Streaming coaching endpoint accepts optional lesson_context."""
         coaching_request = {
             "problem": "Print numbers 1 to 10",
@@ -111,7 +115,7 @@ class TestCoachEndpoints:
             "message": "How do I print only odd numbers?",
             "mode": "hint",
             "difficulty": "easy",
-            "lesson_context": "Python Lesson 4: For Loops"
+            "lesson_context": "Python Lesson 4: For Loops",
         }
 
         with mock_auth():
@@ -126,23 +130,23 @@ class TestCoachEndpoints:
     def test_get_coaching_modes(self, test_client: TestClient):
         """Test getting available coaching modes."""
         response = test_client.get("/api/coach/modes")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "modes" in data
         assert "descriptions" in data
-        
+
         expected_modes = ["hint", "review", "explain", "debug", "freeform"]
         assert set(data["modes"]) == set(expected_modes)
-        
+
         # Check descriptions
         descriptions = data["descriptions"]
         assert "hint" in descriptions
         assert "review" in descriptions
         assert "explain" in descriptions
         assert "debug" in descriptions
-    
+
     def test_get_supported_languages(self, test_client: TestClient):
         """Test getting supported programming languages."""
         response = test_client.get("/api/coach/languages")
@@ -155,7 +159,7 @@ class TestCoachEndpoints:
 
         expected_languages = ["python"]
         assert set(data["languages"]) >= set(expected_languages)
-    
+
     def test_coaching_invalid_language(self, test_client: TestClient):
         """Test coaching with invalid language."""
         coaching_request = {
@@ -164,14 +168,14 @@ class TestCoachEndpoints:
             "language": "invalid_language",
             "message": "test message",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
-        
+
         assert response.status_code == 422  # Validation error
-    
+
     def test_coaching_invalid_mode(self, test_client: TestClient):
         """Test coaching with invalid mode."""
         coaching_request = {
@@ -180,14 +184,14 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "test message",
             "mode": "invalid_mode",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
-        
+
         assert response.status_code == 422  # Validation error
-    
+
     def test_coaching_missing_required_fields(self, test_client: TestClient):
         """Test coaching with missing required fields."""
         # Missing problem
@@ -196,26 +200,26 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "test message",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
         assert response.status_code == 422
-        
+
         # Missing code
         coaching_request = {
             "problem": "Test problem",
             "language": "python",
             "message": "test message",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
         assert response.status_code == 422
-    
+
     def test_coaching_all_modes(self, test_client: TestClient):
         """Test coaching with all available modes."""
         base_request = {
@@ -223,37 +227,33 @@ class TestCoachEndpoints:
             "code": "def max_element(arr):\n    return max(arr)",
             "language": "python",
             "message": "Please provide guidance",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         modes = ["hint", "review", "explain", "debug"]
-        
+
         for mode in modes:
             request = {**base_request, "mode": mode}
             with mock_auth():
                 response = test_client.post("/api/coach/", json=request)
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["mode"] == mode
             assert len(data["response"]) > 0
-    
+
     def test_coaching_python(self, test_client: TestClient):
         """Test coaching with Python."""
         base_request = {
             "problem": "Find the maximum element in an array",
             "message": "Please provide guidance",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
 
         code = "def solution(arr):\n    return max(arr)"
 
-        request = {
-            **base_request,
-            "language": "python",
-            "code": code
-        }
+        request = {**base_request, "language": "python", "code": code}
 
         with mock_auth():
             response = test_client.post("/api/coach/", json=request)
@@ -262,7 +262,7 @@ class TestCoachEndpoints:
         data = response.json()
         assert data["language"] == "python"
         assert len(data["response"]) > 0
-    
+
     def test_coaching_boundary_conditions(self, test_client: TestClient):
         """Test coaching with boundary conditions."""
         # Very long problem description
@@ -273,13 +273,13 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "short",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
         assert response.status_code == 200
-        
+
         # Very long code
         long_code = "x" * 2000
         coaching_request = {
@@ -288,13 +288,13 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "short",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
         assert response.status_code == 200
-    
+
     def test_coaching_empty_strings(self, test_client: TestClient):
         """Test coaching with empty strings."""
         coaching_request = {
@@ -303,13 +303,13 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
         assert response.status_code == 200  # Should handle gracefully
-    
+
     @pytest.mark.asyncio
     async def test_coaching_async(self, async_client):
         """Test coaching with async client."""
@@ -319,24 +319,32 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "Is this the most efficient solution?",
             "mode": "review",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         from app.api.auth import get_current_user
         from app.models.auth_schemas import UserResponse
+
         async def override_get_current_user():
-            return UserResponse(id="test-id", username="testuser", email="test@example.com", is_active=True, created_at="2025-01-01T00:00:00Z")
+            return UserResponse(
+                id="test-id",
+                username="testuser",
+                email="test@example.com",
+                is_active=True,
+                created_at="2025-01-01T00:00:00Z",
+            )
+
         app.dependency_overrides[get_current_user] = override_get_current_user
         try:
             response = await async_client.post("/api/coach/", json=coaching_request)
         finally:
-            app.dependency_overrides.clear()
-        
+            app.dependency_overrides.pop(get_current_user, None)
+
         assert response.status_code == 200
         data = response.json()
         assert "response" in data
         assert data["mode"] == "review"
-    
+
     def test_coaching_response_format(self, test_client: TestClient):
         """Test coaching response format consistency."""
         coaching_request = {
@@ -345,33 +353,33 @@ class TestCoachEndpoints:
             "language": "python",
             "message": "Test message",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
-        
+
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
-        
+
         data = response.json()
         required_fields = ["response", "mode", "language"]
         for field in required_fields:
             assert field in data, f"Missing required field: {field}"
-    
+
     def test_coaching_error_handling(self, test_client: TestClient):
         """Test coaching error handling."""
         # Test invalid JSON
         with mock_auth():
             response = test_client.post("/api/coach/", data="invalid json")
         assert response.status_code in [401, 422]
-        
+
         # Test with wrong HTTP method
         response = test_client.get("/api/coach/")
         assert response.status_code == 405
-        
+
         response = test_client.put("/api/coach/")
         assert response.status_code == 405
-        
+
         response = test_client.delete("/api/coach/")
         assert response.status_code == 405

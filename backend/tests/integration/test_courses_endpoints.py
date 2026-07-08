@@ -1,42 +1,49 @@
-import pytest
 from fastapi.testclient import TestClient
 
 
 class TestCoursesEndpoints:
-    def test_list_courses_unauthenticated(self, test_client: TestClient):
+    def test_list_courses_empty(self, test_client: TestClient):
+        """With no seed data, courses list returns empty array."""
         response = test_client.get("/api/courses/")
         assert response.status_code == 200
         data = response.json()
         assert "courses" in data
-
-    def test_get_course_detail(self, test_client: TestClient):
-        response = test_client.get("/api/courses/python-fundamentals")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["id"] == "python-fundamentals"
-        assert "modules" in data
+        assert data["courses"] == []
 
     def test_get_course_not_found(self, test_client: TestClient):
+        """Non-existent course returns 404."""
         response = test_client.get("/api/courses/nonexistent-course")
         assert response.status_code == 404
 
-    def test_get_lesson(self, test_client: TestClient):
-        response = test_client.get("/api/courses/lessons/py-hello-world")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["id"] == "py-hello-world"
-        assert "content" in data
-
     def test_get_lesson_not_found(self, test_client: TestClient):
+        """Non-existent lesson returns 404."""
         response = test_client.get("/api/courses/lessons/nonexistent-lesson")
         assert response.status_code == 404
 
+    def test_get_adjacent_not_found(self, test_client: TestClient):
+        """Non-existent lesson returns 404 for adjacent endpoint."""
+        response = test_client.get("/api/courses/lessons/nonexistent/adjacent")
+        assert response.status_code == 404
+
     def test_mark_complete_unauthenticated(self, test_client: TestClient):
-        response = test_client.post("/api/progress/py-hello-world/complete?course_id=python-fundamentals")
+        """Unauthenticated requests to progress endpoints return 401."""
+        response = test_client.post(
+            "/api/progress/nonexistent-lesson/complete?course_id=nonexistent"
+        )
         assert response.status_code == 401
 
     def test_track_access_unauthenticated(self, test_client: TestClient):
-        response = test_client.post("/api/progress/py-hello-world/access?course_id=python-fundamentals")
+        response = test_client.post(
+            "/api/progress/nonexistent-lesson/access?course_id=nonexistent"
+        )
+        assert response.status_code == 401
+
+    def test_get_progress_unauthenticated(self, test_client: TestClient):
+        response = test_client.get("/api/progress/")
+        assert response.status_code == 401
+
+    def test_get_course_progress_unauthenticated(self, test_client: TestClient):
+        response = test_client.get("/api/progress/nonexistent")
         assert response.status_code == 401
 
 
@@ -44,7 +51,11 @@ class TestCoursesEndpointsAuthenticated:
     def _get_auth_headers(self, test_client: TestClient):
         response = test_client.post(
             "/api/auth/register",
-            json={"username": "coursetestuser", "email": "coursetest@example.com", "password": "testpass123"},
+            json={
+                "username": "coursetestuser",
+                "email": "coursetest@example.com",
+                "password": "testpass123",
+            },
         )
         if response.status_code == 201:
             token = response.json()["access_token"]
@@ -56,61 +67,33 @@ class TestCoursesEndpointsAuthenticated:
             token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
 
-    def test_list_courses_authenticated(self, test_client: TestClient):
+    def test_list_courses_authenticated_empty(self, test_client: TestClient):
         headers = self._get_auth_headers(test_client)
         response = test_client.get("/api/courses/", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert "courses" in data
+        assert data["courses"] == []
 
-    def test_mark_complete_authenticated(self, test_client: TestClient):
+    def test_mark_complete_nonexistent_lesson(self, test_client: TestClient):
         headers = self._get_auth_headers(test_client)
         response = test_client.post(
-            "/api/progress/py-hello-world/complete?course_id=python-fundamentals",
+            "/api/progress/nonexistent/complete?course_id=nonexistent",
             headers=headers,
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "completed_lessons" in data
-        assert "py-hello-world" in data["completed_lessons"]
+        assert response.status_code == 404
 
-    def test_track_access_authenticated(self, test_client: TestClient):
-        headers = self._get_auth_headers(test_client)
-        response = test_client.post(
-            "/api/progress/py-hello-world/access?course_id=python-fundamentals",
-            headers=headers,
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["last_accessed_lesson_id"] == "py-hello-world"
-
-    def test_get_progress(self, test_client: TestClient):
-        headers = self._get_auth_headers(test_client)
-        response = test_client.get("/api/progress/python-fundamentals", headers=headers)
-        assert response.status_code == 200
-        data = response.json()
-        assert "completed_lessons" in data
-
-    def test_get_all_progress(self, test_client: TestClient):
+    def test_get_progress_empty(self, test_client: TestClient):
         headers = self._get_auth_headers(test_client)
         response = test_client.get("/api/progress/", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert "progress" in data
 
-    def test_mark_complete_wrong_course(self, test_client: TestClient):
+    def test_track_access_nonexistent(self, test_client: TestClient):
         headers = self._get_auth_headers(test_client)
         response = test_client.post(
-            "/api/progress/py-hello-world/complete?course_id=wrong-course",
-            headers=headers,
-        )
-        assert response.status_code == 400
-
-    def test_mark_complete_nonexistent_lesson(self, test_client: TestClient):
-        headers = self._get_auth_headers(test_client)
-        response = test_client.post(
-            "/api/progress/nonexistent/complete?course_id=python-fundamentals",
+            "/api/progress/nonexistent/access?course_id=nonexistent",
             headers=headers,
         )
         assert response.status_code == 404

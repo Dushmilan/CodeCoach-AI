@@ -73,7 +73,7 @@ async def validate_code(
             "valid": validation["valid"],
             "warnings": validation["warnings"],
             "errors": validation["errors"],
-            "language": request.language.value,
+            "language": execution_request.language.value,
         }
 
     except Exception as e:

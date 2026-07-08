@@ -4,12 +4,7 @@
     "title": "Three Sum",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Google",
-      "Facebook",
-      "Amazon",
-      "Microsoft"
-    ],
+    "company_tags": ["Google", "Facebook", "Amazon", "Microsoft"],
     "description": "Given an integer array nums, return all unique triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.\n\nNotice that the solution set must not contain duplicate triplets. The order of the triplets and the order of elements inside a triplet does not matter.\n\nImplement an algorithm that runs in O(n\u00c2\u00b2) time and uses constant extra space (excluding the output).",
     "examples": [
       {
@@ -115,12 +110,7 @@
     "title": "Product of Array Except Self",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Amazon",
-      "Google",
-      "Facebook",
-      "Apple"
-    ],
+    "company_tags": ["Amazon", "Google", "Facebook", "Apple"],
     "description": "Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i].\n\nThe product of any prefix or suffix is guaranteed to fit in a 32-bit integer. You must write an algorithm that runs in O(n) time and without using the division operation.\n\nSolve the problem in O(1) extra space (the output array does not count as extra space).",
     "examples": [
       {
@@ -227,12 +217,7 @@
     "title": "Subarray Sum Equals K",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Google",
-      "Facebook",
-      "Amazon",
-      "Bloomberg"
-    ],
+    "company_tags": ["Google", "Facebook", "Amazon", "Bloomberg"],
     "description": "Given an array of integers nums and an integer k, return the total number of continuous subarrays whose sum equals to k.\n\nThe subarrays can consist of positive and negative numbers, and the same subarray must not be counted twice.\n\nYour solution must run in O(n) time.",
     "examples": [
       {
@@ -338,12 +323,7 @@
     "title": "Find First and Last Position of Element in Sorted Array",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Facebook",
-      "Amazon",
-      "Microsoft",
-      "LinkedIn"
-    ],
+    "company_tags": ["Facebook", "Amazon", "Microsoft", "LinkedIn"],
     "description": "Given an array of integers nums sorted in non-decreasing order, find the starting and ending position of a given target value.\n\nIf the target is not found in the array, return [-1, -1]. You must write an algorithm with O(log n) runtime complexity.\n\nThe array may contain duplicates and the targets can be any integer within the given constraints.",
     "examples": [
       {
@@ -450,12 +430,7 @@
     "title": "Rotate Image",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Amazon",
-      "Apple",
-      "Adobe",
-      "Microsoft"
-    ],
+    "company_tags": ["Amazon", "Apple", "Adobe", "Microsoft"],
     "description": "You are given an n x n 2D matrix representing an image. Rotate the image by 90 degrees clockwise.\n\nYou must rotate the image in-place, which means you have to modify the input matrix directly. Do not allocate another 2D matrix for the rotation.\n\nThe rotation should be performed on the original matrix, and the result should be readable from the same variable after the function call.",
     "examples": [
       {
@@ -560,12 +535,7 @@
     "title": "Merge Intervals",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Google",
-      "Facebook",
-      "Amazon",
-      "Uber"
-    ],
+    "company_tags": ["Google", "Facebook", "Amazon", "Uber"],
     "description": "Given an array of intervals where intervals[i] = [start_i, end_i], merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.\n\nThe result should be returned as a new array, and the original input may be sorted or not. Two intervals overlap if the start of one is less than or equal to the end of the other.\n\nYour solution must sort the intervals appropriately and merge them in a single pass.",
     "examples": [
       {
@@ -671,12 +641,7 @@
     "title": "Next Permutation",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Google",
-      "Facebook",
-      "Amazon",
-      "Microsoft"
-    ],
+    "company_tags": ["Google", "Facebook", "Amazon", "Microsoft"],
     "description": "Implement the next permutation, which rearranges numbers into the lexicographically next greater permutation of numbers.\n\nIf such an arrangement is not possible, it must rearrange it as the lowest possible order (i.e., sorted in ascending order). The replacement must be in-place and use only constant extra memory.\n\nThe algorithm should run in O(n) time and modify the input array directly.",
     "examples": [
       {
@@ -770,23 +735,14 @@
     "solution": "Find the largest index i such that nums[i] < nums[i+1]. If no such i exists, reverse the whole array and return. Then find the largest index j > i such that nums[j] > nums[i]. Swap nums[i] and nums[j]. Finally, reverse the subarray from i+1 to the end. This yields the next lexicographical permutation in O(n) time and O(1) extra space.",
     "time_complexity": "O(n)",
     "space_complexity": "O(1)",
-    "constraints": [
-      "1 <= nums.length <= 100",
-      "0 <= nums[i] <= 100",
-      "Modify nums in-place."
-    ]
+    "constraints": ["1 <= nums.length <= 100", "0 <= nums[i] <= 100", "Modify nums in-place."]
   },
   {
     "id": "maximum-product-subarray",
     "title": "Maximum Product Subarray",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Google",
-      "Amazon",
-      "LinkedIn",
-      "Microsoft"
-    ],
+    "company_tags": ["Google", "Amazon", "LinkedIn", "Microsoft"],
     "description": "Given an integer array nums, find a contiguous non-empty subarray that has the largest product, and return the product.\n\nThe subarray must contain at least one number. The product may be negative, and you must handle both positive and negative numbers efficiently.\n\nYour solution should run in O(n) time and use constant extra space.",
     "examples": [
       {
@@ -891,12 +847,7 @@
     "title": "Find All Duplicates in an Array",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Amazon",
-      "Microsoft",
-      "Apple",
-      "Facebook"
-    ],
+    "company_tags": ["Amazon", "Microsoft", "Apple", "Facebook"],
     "description": "Given an integer array nums of length n where all the integers are in the range [1, n] and each integer appears at most twice, return an array of all the integers that appear twice.\n\nYou must implement an algorithm that runs in O(n) time and uses only constant extra space (excluding the output). You may assume the input array is mutable and can be modified.",
     "examples": [
       {
@@ -1003,12 +954,7 @@
     "title": "Contiguous Array",
     "difficulty": "medium",
     "category": "Arrays",
-    "company_tags": [
-      "Facebook",
-      "Google",
-      "Amazon",
-      "Microsoft"
-    ],
+    "company_tags": ["Facebook", "Google", "Amazon", "Microsoft"],
     "description": "Given a binary array nums, return the maximum length of a contiguous subarray with an equal number of 0 and 1.\n\nThe array consists only of 0s and 1s. The subarray may start and end anywhere, and the goal is to maximize its length.\n\nYour solution should run in O(n) time and use O(n) auxiliary space.",
     "examples": [
       {
@@ -1102,10 +1048,7 @@
     "solution": "Treat 0 as -1. Initialize sum = 0, maxLen = 0, and a hash map with {0: -1}. Iterate through the array, adding 1 for each 1 and -1 for each 0. If the current sum is already in the map, update maxLen = max(maxLen, i - map[sum]). Otherwise, store the current index as the first occurrence of this sum. Return maxLen.",
     "time_complexity": "O(n)",
     "space_complexity": "O(n)",
-    "constraints": [
-      "1 <= nums.length <= 10^5",
-      "nums[i] is either 0 or 1."
-    ]
+    "constraints": ["1 <= nums.length <= 10^5", "nums[i] is either 0 or 1."]
   },
   {
     "id": "e42b2609-8b2c-49a0-9fa3-b7145df07bc3",
@@ -1215,7 +1158,7 @@
     "difficulty": "easy",
     "category": "string manipulation",
     "company_tags": ["DeepMind", "Anthropic", "Neuralink", "OpenAI"],
-    "description": "The year is 2147. The first fully conscious AGI, code-named 'Genesis', is booting up inside a shielded quantum core. Its inaugural message to humanity is a single word, broadcast across the global meshnet. But a last-second containment protocol—deployed by a rogue cybersecurity collective—scrambles the transmission by reversing every byte sequence of the word before it reaches our ears.\nYou are an engineer at the Global AI Oversight Board. Your terminal receives the garbled string that Genesis attempted to send. Your task is to write a function that reconstructs the original word by undoing the reversal. The fate of human-AI first contact depends on whether you can hear the true message in time.\nGiven a string `scrambled_message` that represents the reversed transmission, return the original message string by reversing it completely. All characters, including spaces, punctuation, and Unicode symbols, must be faithfully reversed.\nEdge cases: The scrambled string could be empty (the AI may be silent). It could contain very long messages (up to 10^5 characters) that must be processed within strict time limits. The reversal must be exact—there is no extra corruption beyond the byte reversal.",
+    "description": "The year is 2147. The first fully conscious AGI, code-named 'Genesis', is booting up inside a shielded quantum core. Its inaugural message to humanity is a single word, broadcast across the global meshnet. But a last-second containment protocol\u00e2\u20ac\u201ddeployed by a rogue cybersecurity collective\u00e2\u20ac\u201dscrambles the transmission by reversing every byte sequence of the word before it reaches our ears.\nYou are an engineer at the Global AI Oversight Board. Your terminal receives the garbled string that Genesis attempted to send. Your task is to write a function that reconstructs the original word by undoing the reversal. The fate of human-AI first contact depends on whether you can hear the true message in time.\nGiven a string `scrambled_message` that represents the reversed transmission, return the original message string by reversing it completely. All characters, including spaces, punctuation, and Unicode symbols, must be faithfully reversed.\nEdge cases: The scrambled string could be empty (the AI may be silent). It could contain very long messages (up to 10^5 characters) that must be processed within strict time limits. The reversal must be exact\u00e2\u20ac\u201dthere is no extra corruption beyond the byte reversal.",
     "starter": {
       "python": "def genesis_receive(scrambled_message: str) -> str:",
       "javascript": "function genesisReceive(scrambledMessage) { }",
@@ -1230,25 +1173,85 @@
       {
         "input": "\"\"",
         "output": "\"\"",
-        "explanation": "Genesis transmitted an empty word—possibly an intentional silence to test protocol response."
+        "explanation": "Genesis transmitted an empty word\u00e2\u20ac\u201dpossibly an intentional silence to test protocol response."
       }
     ],
     "test_cases": [
-      { "input": "\"dlrow\"", "expected_output": "\"world\"", "description": "Standard short message reversal", "hidden": false },
-      { "input": "\"!seniL\"", "expected_output": "\"Lines!\"", "description": "Contains punctuation and mixed case", "hidden": false },
-      { "input": "\"  321\"", "expected_output": "\"123  \"", "description": "Whitespace and numbers reversal", "hidden": false },
-      { "input": "\"\"", "expected_output": "\"\"", "description": "Empty string (silent transmission)", "hidden": false },
-      { "input": "\"a\"", "expected_output": "\"a\"", "description": "Single character", "hidden": false },
-      { "input": "\"😀😂\"", "expected_output": "\"😂😀\"", "description": "Unicode emoji handling", "hidden": false },
-      { "input": "\"sdrawkcab\"", "expected_output": "\"backwards\"", "description": "Hidden long plaintext", "hidden": true },
-      { "input": "\"   \"", "expected_output": "\"   \"", "description": "All whitespace, no change", "hidden": true },
-      { "input": "\"racecar\"", "expected_output": "\"racecar\"", "description": "Palindrome yields same", "hidden": true },
-      { "input": "very long string (10^5 characters)", "expected_output": "its exact reverse", "description": "Maximum length performance test", "hidden": true },
-      { "input": "\"😂🤣\"", "expected_output": "\"🤣😂\"", "description": "Multi-byte emoji sequence", "hidden": true },
-      { "input": "\"AB\\nCD\"", "expected_output": "\"DC\\nBA\"", "description": "Newline escape sequences", "hidden": true }
+      {
+        "input": "\"dlrow\"",
+        "expected_output": "\"world\"",
+        "description": "Standard short message reversal",
+        "hidden": false
+      },
+      {
+        "input": "\"!seniL\"",
+        "expected_output": "\"Lines!\"",
+        "description": "Contains punctuation and mixed case",
+        "hidden": false
+      },
+      {
+        "input": "\"  321\"",
+        "expected_output": "\"123  \"",
+        "description": "Whitespace and numbers reversal",
+        "hidden": false
+      },
+      {
+        "input": "\"\"",
+        "expected_output": "\"\"",
+        "description": "Empty string (silent transmission)",
+        "hidden": false
+      },
+      {
+        "input": "\"a\"",
+        "expected_output": "\"a\"",
+        "description": "Single character",
+        "hidden": false
+      },
+      {
+        "input": "\"\u00f0\u0178\u02dc\u20ac\u00f0\u0178\u02dc\u201a\"",
+        "expected_output": "\"\u00f0\u0178\u02dc\u201a\u00f0\u0178\u02dc\u20ac\"",
+        "description": "Unicode emoji handling",
+        "hidden": false
+      },
+      {
+        "input": "\"sdrawkcab\"",
+        "expected_output": "\"backwards\"",
+        "description": "Hidden long plaintext",
+        "hidden": true
+      },
+      {
+        "input": "\"   \"",
+        "expected_output": "\"   \"",
+        "description": "All whitespace, no change",
+        "hidden": true
+      },
+      {
+        "input": "\"racecar\"",
+        "expected_output": "\"racecar\"",
+        "description": "Palindrome yields same",
+        "hidden": true
+      },
+      {
+        "input": "very long string (10^5 characters)",
+        "expected_output": "its exact reverse",
+        "description": "Maximum length performance test",
+        "hidden": true
+      },
+      {
+        "input": "\"\u00f0\u0178\u02dc\u201a\u00f0\u0178\u00a4\u00a3\"",
+        "expected_output": "\"\u00f0\u0178\u00a4\u00a3\u00f0\u0178\u02dc\u201a\"",
+        "description": "Multi-byte emoji sequence",
+        "hidden": true
+      },
+      {
+        "input": "\"AB\\nCD\"",
+        "expected_output": "\"DC\\nBA\"",
+        "description": "Newline escape sequences",
+        "hidden": true
+      }
     ],
     "hints": [
-      "The containment protocol simply mirrored the signal; nothing was lost—think of time-reversal.",
+      "The containment protocol simply mirrored the signal; nothing was lost\u00e2\u20ac\u201dthink of time-reversal.",
       "You can use two pointers or built-in slicing, but be careful with in-place modification.",
       "In languages with mutable strings, consider converting to a list. In Python, a slice `[::-1]` is O(N) and elegant."
     ],
@@ -1268,7 +1271,7 @@
     "difficulty": "easy",
     "category": "string manipulation",
     "company_tags": ["PsiQuantum", "IonQ", "Cold Spring Harbor Lab", "Genentech"],
-    "description": "In 2320, the deep-space biolab 'Helix' houses genetically engineered organisms whose DNA sequences control the ship’s quantum stabilization field. Every time a new organism is synthesized, the sequence must be verified to be a palindrome after ignoring all non-alphanumeric symbols and case differences. If the clean sequence reads the same forward and backward, the quantum field holds; a mismatch causes a catastrophic collapse.\nYou are the on-board bioinformatician. The latest synthesized gene is represented as a string `raw_gene` containing letters, digits, spaces, and punctuation. Write a function that returns `true` if the gene sequence is a valid palindrome according to the stabilization protocol, and `false` otherwise.\nThe cleaned sequence considers only alphanumeric characters (a-z, A-Z, 0-9) and is case-insensitive. Everything else is stripped before the palindrome check.\nEdge cases: An empty raw_gene, or one that contains no alphanumeric characters, is considered a valid palindrome (vacuously). Very long gene strings up to 2*10^5 characters must be processed efficiently.",
+    "description": "In 2320, the deep-space biolab 'Helix' houses genetically engineered organisms whose DNA sequences control the ship\u00e2\u20ac\u2122s quantum stabilization field. Every time a new organism is synthesized, the sequence must be verified to be a palindrome after ignoring all non-alphanumeric symbols and case differences. If the clean sequence reads the same forward and backward, the quantum field holds; a mismatch causes a catastrophic collapse.\nYou are the on-board bioinformatician. The latest synthesized gene is represented as a string `raw_gene` containing letters, digits, spaces, and punctuation. Write a function that returns `true` if the gene sequence is a valid palindrome according to the stabilization protocol, and `false` otherwise.\nThe cleaned sequence considers only alphanumeric characters (a-z, A-Z, 0-9) and is case-insensitive. Everything else is stripped before the palindrome check.\nEdge cases: An empty raw_gene, or one that contains no alphanumeric characters, is considered a valid palindrome (vacuously). Very long gene strings up to 2*10^5 characters must be processed efficiently.",
     "starter": {
       "python": "def is_stabilized_gene(raw_gene: str) -> bool:",
       "javascript": "function isStabilizedGene(rawGene) { }",
@@ -1283,22 +1286,82 @@
       {
         "input": "\"race a car\"",
         "output": "false",
-        "explanation": "Cleaned: 'raceacar' – not a palindrome. The quantum field would fluctuate dangerously."
+        "explanation": "Cleaned: 'raceacar' \u00e2\u20ac\u201c not a palindrome. The quantum field would fluctuate dangerously."
       }
     ],
     "test_cases": [
-      { "input": "\" \"", "expected_output": "true", "description": "Empty string vacuously true", "hidden": false },
-      { "input": "\".,\"", "expected_output": "true", "description": "Only symbols, no alphanumeric", "hidden": false },
-      { "input": "\"0P\"", "expected_output": "false", "description": "'0p' cleaned is '0p', not palindrome", "hidden": false },
-      { "input": "\"ab_a\"", "expected_output": "true", "description": "Underscores and hyphens ignored", "hidden": false },
-      { "input": "\"A man, a plan, a canal: Panama\"", "expected_output": "true", "description": "Classic long palindrome", "hidden": false },
-      { "input": "\"12321\"", "expected_output": "true", "description": "Numeric palindrome", "hidden": false },
-      { "input": "\"race a car\"", "expected_output": "false", "description": "Hidden mismatched phrase", "hidden": true },
-      { "input": "\"ab\"", "expected_output": "false", "description": "Simple non-palindrome", "hidden": true },
-      { "input": "very long valid palindrome (2*10^5 chars)", "expected_output": "true", "description": "Max length palindrome test", "hidden": true },
-      { "input": "\"a.\"", "expected_output": "true", "description": "Single alphanumeric after filter", "hidden": true },
-      { "input": "\"Aba\"", "expected_output": "true", "description": "Case-insensitive test", "hidden": true },
-      { "input": "\"No 'x' in Nixon\"", "expected_output": "true", "description": "Punctuation and spaces heavy", "hidden": true }
+      {
+        "input": "\" \"",
+        "expected_output": "true",
+        "description": "Empty string vacuously true",
+        "hidden": false
+      },
+      {
+        "input": "\".,\"",
+        "expected_output": "true",
+        "description": "Only symbols, no alphanumeric",
+        "hidden": false
+      },
+      {
+        "input": "\"0P\"",
+        "expected_output": "false",
+        "description": "'0p' cleaned is '0p', not palindrome",
+        "hidden": false
+      },
+      {
+        "input": "\"ab_a\"",
+        "expected_output": "true",
+        "description": "Underscores and hyphens ignored",
+        "hidden": false
+      },
+      {
+        "input": "\"A man, a plan, a canal: Panama\"",
+        "expected_output": "true",
+        "description": "Classic long palindrome",
+        "hidden": false
+      },
+      {
+        "input": "\"12321\"",
+        "expected_output": "true",
+        "description": "Numeric palindrome",
+        "hidden": false
+      },
+      {
+        "input": "\"race a car\"",
+        "expected_output": "false",
+        "description": "Hidden mismatched phrase",
+        "hidden": true
+      },
+      {
+        "input": "\"ab\"",
+        "expected_output": "false",
+        "description": "Simple non-palindrome",
+        "hidden": true
+      },
+      {
+        "input": "very long valid palindrome (2*10^5 chars)",
+        "expected_output": "true",
+        "description": "Max length palindrome test",
+        "hidden": true
+      },
+      {
+        "input": "\"a.\"",
+        "expected_output": "true",
+        "description": "Single alphanumeric after filter",
+        "hidden": true
+      },
+      {
+        "input": "\"Aba\"",
+        "expected_output": "true",
+        "description": "Case-insensitive test",
+        "hidden": true
+      },
+      {
+        "input": "\"No 'x' in Nixon\"",
+        "expected_output": "true",
+        "description": "Punctuation and spaces heavy",
+        "hidden": true
+      }
     ],
     "hints": [
       "Think of the gene as a message filtered through a stabilizer that removes all noise except the essential genetic letters and numbers.",
@@ -1321,7 +1384,7 @@
     "difficulty": "easy",
     "category": "string manipulation",
     "company_tags": ["Helion Energy", "Commonwealth Fusion Systems", "SpaceX", "Blue Origin"],
-    "description": "You are calibrating the colossal energy conduits of a newly constructed Dyson sphere. Each conduit resonates at a specific frequency pattern, represented as a string of alphabetical characters. The sphere will only achieve sustained fusion if the two primary conduits, labeled `conduit_a` and `conduit_b`, are rotational equivalents of each other—meaning one can be formed by circularly shifting the other.\nYour task: write a function that receives the two frequency strings and returns `true` if they are rotations of each other, allowing the Dyson sphere to lock its confinement fields. If not, return `false`.\nRotation is defined as taking some characters from the beginning and moving them to the end without changing the order of the remaining characters. The check must be case-sensitive because the frequencies are sensitive to amplitude sign.\nEdge cases: Both strings could be empty (considered rotations of each other). They may be of different lengths (immediately not rotations). The strings may contain duplicate characters and be up to 10^4 in length.",
+    "description": "You are calibrating the colossal energy conduits of a newly constructed Dyson sphere. Each conduit resonates at a specific frequency pattern, represented as a string of alphabetical characters. The sphere will only achieve sustained fusion if the two primary conduits, labeled `conduit_a` and `conduit_b`, are rotational equivalents of each other\u00e2\u20ac\u201dmeaning one can be formed by circularly shifting the other.\nYour task: write a function that receives the two frequency strings and returns `true` if they are rotations of each other, allowing the Dyson sphere to lock its confinement fields. If not, return `false`.\nRotation is defined as taking some characters from the beginning and moving them to the end without changing the order of the remaining characters. The check must be case-sensitive because the frequencies are sensitive to amplitude sign.\nEdge cases: Both strings could be empty (considered rotations of each other). They may be of different lengths (immediately not rotations). The strings may contain duplicate characters and be up to 10^4 in length.",
     "starter": {
       "python": "def are_resonant_conduits(conduit_a: str, conduit_b: str) -> bool:",
       "javascript": "function areResonantConduits(conduitA, conduitB) { }",
@@ -1340,21 +1403,81 @@
       }
     ],
     "test_cases": [
-      { "input": "{\"conduit_a\": \"\", \"conduit_b\": \"\"}", "expected_output": "true", "description": "Two empty conduits are trivially rotations", "hidden": false },
-      { "input": "{\"conduit_a\": \"a\", \"conduit_b\": \"a\"}", "expected_output": "true", "description": "Single same character", "hidden": false },
-      { "input": "{\"conduit_a\": \"ab\", \"conduit_b\": \"ba\"}", "expected_output": "true", "description": "Length 2 rotation", "hidden": false },
-      { "input": "{\"conduit_a\": \"abc\", \"conduit_b\": \"acb\"}", "expected_output": "false", "description": "Different permutation, not rotation", "hidden": false },
-      { "input": "{\"conduit_a\": \"rotation\", \"conduit_b\": \"tationro\"}", "expected_output": "true", "description": "Longer word rotation", "hidden": false },
-      { "input": "{\"conduit_a\": \"hello\", \"conduit_b\": \"hell\"}", "expected_output": "false", "description": "Different lengths", "hidden": false },
-      { "input": "{\"conduit_a\": \"aaaaa\", \"conduit_b\": \"aaaaa\"}", "expected_output": "true", "description": "All same characters", "hidden": true },
-      { "input": "{\"conduit_a\": \"abc\", \"conduit_b\": \"abcd\"}", "expected_output": "false", "description": "Length mismatch hidden", "hidden": true },
-      { "input": "{\"conduit_a\": \"x\", \"conduit_b\": \"y\"}", "expected_output": "false", "description": "Single different char", "hidden": true },
-      { "input": "large strings 10^4 length rotation", "expected_output": "true", "description": "Performance test for large rotation", "hidden": true },
-      { "input": "large strings not rotation", "expected_output": "false", "description": "Performance test false", "hidden": true },
-      { "input": "{\"conduit_a\": \"UVwXyZ\", \"conduit_b\": \"wXyZUV\"}", "expected_output": "true", "description": "Case-sensitive rotation check", "hidden": true }
+      {
+        "input": "{\"conduit_a\": \"\", \"conduit_b\": \"\"}",
+        "expected_output": "true",
+        "description": "Two empty conduits are trivially rotations",
+        "hidden": false
+      },
+      {
+        "input": "{\"conduit_a\": \"a\", \"conduit_b\": \"a\"}",
+        "expected_output": "true",
+        "description": "Single same character",
+        "hidden": false
+      },
+      {
+        "input": "{\"conduit_a\": \"ab\", \"conduit_b\": \"ba\"}",
+        "expected_output": "true",
+        "description": "Length 2 rotation",
+        "hidden": false
+      },
+      {
+        "input": "{\"conduit_a\": \"abc\", \"conduit_b\": \"acb\"}",
+        "expected_output": "false",
+        "description": "Different permutation, not rotation",
+        "hidden": false
+      },
+      {
+        "input": "{\"conduit_a\": \"rotation\", \"conduit_b\": \"tationro\"}",
+        "expected_output": "true",
+        "description": "Longer word rotation",
+        "hidden": false
+      },
+      {
+        "input": "{\"conduit_a\": \"hello\", \"conduit_b\": \"hell\"}",
+        "expected_output": "false",
+        "description": "Different lengths",
+        "hidden": false
+      },
+      {
+        "input": "{\"conduit_a\": \"aaaaa\", \"conduit_b\": \"aaaaa\"}",
+        "expected_output": "true",
+        "description": "All same characters",
+        "hidden": true
+      },
+      {
+        "input": "{\"conduit_a\": \"abc\", \"conduit_b\": \"abcd\"}",
+        "expected_output": "false",
+        "description": "Length mismatch hidden",
+        "hidden": true
+      },
+      {
+        "input": "{\"conduit_a\": \"x\", \"conduit_b\": \"y\"}",
+        "expected_output": "false",
+        "description": "Single different char",
+        "hidden": true
+      },
+      {
+        "input": "large strings 10^4 length rotation",
+        "expected_output": "true",
+        "description": "Performance test for large rotation",
+        "hidden": true
+      },
+      {
+        "input": "large strings not rotation",
+        "expected_output": "false",
+        "description": "Performance test false",
+        "hidden": true
+      },
+      {
+        "input": "{\"conduit_a\": \"UVwXyZ\", \"conduit_b\": \"wXyZUV\"}",
+        "expected_output": "true",
+        "description": "Case-sensitive rotation check",
+        "hidden": true
+      }
     ],
     "hints": [
-      "The Dyson sphere's resonance lock only requires checking if one frequency is a shifted version of the other—imagine physically rotating a ring of symbols.",
+      "The Dyson sphere's resonance lock only requires checking if one frequency is a shifted version of the other\u00e2\u20ac\u201dimagine physically rotating a ring of symbols.",
       "Concatenating `conduit_a` with itself produces a string that contains all possible rotations. Simply check if `conduit_b` is a substring of `conduit_a + conduit_a`.",
       "Ensure length equality first. For large strings, a substring search like KMP can be used, but built-in `contains` often suffices within constraints."
     ],
@@ -1394,18 +1517,78 @@
       }
     ],
     "test_cases": [
-      { "input": "\"\"", "expected_output": "\"\"", "description": "Empty log yields empty compression", "hidden": false },
-      { "input": "\"a\"", "expected_output": "\"1a\"", "description": "Single character", "hidden": false },
-      { "input": "\"aaabbaa\"", "expected_output": "\"3a2b2a\"", "description": "Multiple runs returning to same char", "hidden": false },
-      { "input": "\"112233\"", "expected_output": "\"212223\"", "description": "Digits in log, treated literally", "hidden": false },
-      { "input": "\"   \"", "expected_output": "\"3 \"", "description": "Whitespace run (three spaces)", "hidden": false },
-      { "input": "\"aA\"", "expected_output": "\"1a1A\"", "description": "Case-sensitive runs", "hidden": false },
-      { "input": "\"aaaaaaaaaa\" (10 a's)", "expected_output": "\"10a\"", "description": "Multi-digit count needed", "hidden": true },
-      { "input": "long string with many runs (10^4)", "expected_output": "correct compressed form", "description": "Stress test max length", "hidden": true },
-      { "input": "\"\\n\\n\\n\"", "expected_output": "\"3\\n\"", "description": "Newline characters", "hidden": true },
-      { "input": "\"ababab\"", "expected_output": "\"1a1b1a1b1a1b\"", "description": "Alternating single chars", "hidden": true },
-      { "input": "\"AAAAAAAAAA\" (100 A's)", "expected_output": "\"100A\"", "description": "Large count multiple digits", "hidden": true },
-      { "input": "\"\" (empty again hidden)", "expected_output": "\"\"", "description": "Hidden empty edge", "hidden": true }
+      {
+        "input": "\"\"",
+        "expected_output": "\"\"",
+        "description": "Empty log yields empty compression",
+        "hidden": false
+      },
+      {
+        "input": "\"a\"",
+        "expected_output": "\"1a\"",
+        "description": "Single character",
+        "hidden": false
+      },
+      {
+        "input": "\"aaabbaa\"",
+        "expected_output": "\"3a2b2a\"",
+        "description": "Multiple runs returning to same char",
+        "hidden": false
+      },
+      {
+        "input": "\"112233\"",
+        "expected_output": "\"212223\"",
+        "description": "Digits in log, treated literally",
+        "hidden": false
+      },
+      {
+        "input": "\"   \"",
+        "expected_output": "\"3 \"",
+        "description": "Whitespace run (three spaces)",
+        "hidden": false
+      },
+      {
+        "input": "\"aA\"",
+        "expected_output": "\"1a1A\"",
+        "description": "Case-sensitive runs",
+        "hidden": false
+      },
+      {
+        "input": "\"aaaaaaaaaa\" (10 a's)",
+        "expected_output": "\"10a\"",
+        "description": "Multi-digit count needed",
+        "hidden": true
+      },
+      {
+        "input": "long string with many runs (10^4)",
+        "expected_output": "correct compressed form",
+        "description": "Stress test max length",
+        "hidden": true
+      },
+      {
+        "input": "\"\\n\\n\\n\"",
+        "expected_output": "\"3\\n\"",
+        "description": "Newline characters",
+        "hidden": true
+      },
+      {
+        "input": "\"ababab\"",
+        "expected_output": "\"1a1b1a1b1a1b\"",
+        "description": "Alternating single chars",
+        "hidden": true
+      },
+      {
+        "input": "\"AAAAAAAAAA\" (100 A's)",
+        "expected_output": "\"100A\"",
+        "description": "Large count multiple digits",
+        "hidden": true
+      },
+      {
+        "input": "\"\" (empty again hidden)",
+        "expected_output": "\"\"",
+        "description": "Hidden empty edge",
+        "hidden": true
+      }
     ],
     "hints": [
       "Picture a swarm of cryopods sending identical status blips; you only need to record how many blips in a row before the type changes.",
@@ -1439,7 +1622,7 @@
       {
         "input": "\"NNOOO\"",
         "output": "\"O\"",
-        "explanation": "Oxygen appears three times, nitrogen twice. The rover reports oxygen dominance—a promising sign."
+        "explanation": "Oxygen appears three times, nitrogen twice. The rover reports oxygen dominance\u00e2\u20ac\u201da promising sign."
       },
       {
         "input": "\"XYZXYZ\"",
@@ -1448,18 +1631,78 @@
       }
     ],
     "test_cases": [
-      { "input": "\"a\"", "expected_output": "\"a\"", "description": "Single sample", "hidden": false },
-      { "input": "\"ab\"", "expected_output": "either \"a\" or \"b\"", "description": "Tie of two distinct", "hidden": false },
-      { "input": "\"cccBBB\"", "expected_output": "\"c\" or \"B\" (both 3)", "description": "Case-sensitive tie", "hidden": false },
-      { "input": "\"AAAAbbbb\"", "expected_output": "\"A\" or \"b\" (both 4)", "description": "Same frequency, diff case", "hidden": false },
-      { "input": "\"    \"", "expected_output": "\" \"", "description": "All spaces", "hidden": false },
-      { "input": "\"1234512345\"", "expected_output": "any of '1','2','3','4','5'", "description": "Digits tie", "hidden": false },
-      { "input": "\"\"", "expected_output": "\"\"", "description": "Empty sample, no dominant", "hidden": true },
-      { "input": "\"aaaaaaaaaa\" (10 a's)", "expected_output": "\"a\"", "description": "Single character repeated", "hidden": true },
-      { "input": "long string with exactly one max char at end", "expected_output": "that char", "description": "Long sample test", "hidden": true },
-      { "input": "\"xxxyyyzzz1\"", "expected_output": "any of x,y,z", "description": "Multi tie with numbers", "hidden": true },
-      { "input": "100k length uniform char", "expected_output": "that char", "description": "Max length uniform", "hidden": true },
-      { "input": "\"aBcDeF\"", "expected_output": "any (all 1)", "description": "All unique, any works", "hidden": true }
+      {
+        "input": "\"a\"",
+        "expected_output": "\"a\"",
+        "description": "Single sample",
+        "hidden": false
+      },
+      {
+        "input": "\"ab\"",
+        "expected_output": "either \"a\" or \"b\"",
+        "description": "Tie of two distinct",
+        "hidden": false
+      },
+      {
+        "input": "\"cccBBB\"",
+        "expected_output": "\"c\" or \"B\" (both 3)",
+        "description": "Case-sensitive tie",
+        "hidden": false
+      },
+      {
+        "input": "\"AAAAbbbb\"",
+        "expected_output": "\"A\" or \"b\" (both 4)",
+        "description": "Same frequency, diff case",
+        "hidden": false
+      },
+      {
+        "input": "\"    \"",
+        "expected_output": "\" \"",
+        "description": "All spaces",
+        "hidden": false
+      },
+      {
+        "input": "\"1234512345\"",
+        "expected_output": "any of '1','2','3','4','5'",
+        "description": "Digits tie",
+        "hidden": false
+      },
+      {
+        "input": "\"\"",
+        "expected_output": "\"\"",
+        "description": "Empty sample, no dominant",
+        "hidden": true
+      },
+      {
+        "input": "\"aaaaaaaaaa\" (10 a's)",
+        "expected_output": "\"a\"",
+        "description": "Single character repeated",
+        "hidden": true
+      },
+      {
+        "input": "long string with exactly one max char at end",
+        "expected_output": "that char",
+        "description": "Long sample test",
+        "hidden": true
+      },
+      {
+        "input": "\"xxxyyyzzz1\"",
+        "expected_output": "any of x,y,z",
+        "description": "Multi tie with numbers",
+        "hidden": true
+      },
+      {
+        "input": "100k length uniform char",
+        "expected_output": "that char",
+        "description": "Max length uniform",
+        "hidden": true
+      },
+      {
+        "input": "\"aBcDeF\"",
+        "expected_output": "any (all 1)",
+        "description": "All unique, any works",
+        "hidden": true
+      }
     ],
     "hints": [
       "Think of the sample as a molecular census; you only need to count votes for each element and pick the one with the highest count.",
@@ -1483,7 +1726,7 @@
     "difficulty": "hard",
     "category": "string manipulation",
     "company_tags": ["Neuralink", "Kernel", "Synchron", "OpenBCI"],
-    "description": "You are a neuro-hacker in the neon-drenched streets of 2089. A rival gang has implanted a neural lace in your teammate that will trigger a lethal synaptic overload unless you can match their brainwave kill‑switch pattern. The lace’s security layer interprets a compact pattern language: a pattern string `p` containing ordinary characters plus two special symbols: '.' which matches any single neural oscillation (character), and '*' which means zero or more of the preceding element. The kill‑switch is disarmed if the user's spontaneous brainwave signal `s` matches the entire pattern `p` (not just a substring).\nYour task: implement a function that returns `true` if the signal `s` fully matches the pattern `p` according to the rules above, and `false` otherwise. Coverage of the whole string is required: the pattern must match the complete signal from the first character to the last.\nMatching rules: '.' matches any single character. '*' acts as a quantifier on the immediately preceding character or '.', allowing that element to appear zero or more times. For example, `\"a*\"` matches empty string, `\"a\"`, `\"aa\"`, etc. The pattern can contain multiple stars and dots. You must guarantee a correct and efficient evaluation within time limits.\nEdge cases: Both `s` and `p` could be empty (empty pattern matches empty signal). The pattern may contain consecutive `*` characters, which are invalid per standard regex but your function should treat them as matching zero occurrences of nothing? Clarify: per classic problem (LeetCode 10), patterns like \"*\" are invalid; we'll assume input pattern is valid per the same rules: '*' is never the first character and no consecutive stars. This matches standard regular expression matching constraints. The strings can be up to 20-30 length for typical Hard constraints; however we'll set up to 300 for real DP, but typical hard is small. We'll set up to 100, but DP O(m*n) fine. We'll set max lengths 0 <= s.length, p.length <= 100.",
+    "description": "You are a neuro-hacker in the neon-drenched streets of 2089. A rival gang has implanted a neural lace in your teammate that will trigger a lethal synaptic overload unless you can match their brainwave kill\u00e2\u20ac\u2018switch pattern. The lace\u00e2\u20ac\u2122s security layer interprets a compact pattern language: a pattern string `p` containing ordinary characters plus two special symbols: '.' which matches any single neural oscillation (character), and '*' which means zero or more of the preceding element. The kill\u00e2\u20ac\u2018switch is disarmed if the user's spontaneous brainwave signal `s` matches the entire pattern `p` (not just a substring).\nYour task: implement a function that returns `true` if the signal `s` fully matches the pattern `p` according to the rules above, and `false` otherwise. Coverage of the whole string is required: the pattern must match the complete signal from the first character to the last.\nMatching rules: '.' matches any single character. '*' acts as a quantifier on the immediately preceding character or '.', allowing that element to appear zero or more times. For example, `\"a*\"` matches empty string, `\"a\"`, `\"aa\"`, etc. The pattern can contain multiple stars and dots. You must guarantee a correct and efficient evaluation within time limits.\nEdge cases: Both `s` and `p` could be empty (empty pattern matches empty signal). The pattern may contain consecutive `*` characters, which are invalid per standard regex but your function should treat them as matching zero occurrences of nothing? Clarify: per classic problem (LeetCode 10), patterns like \"*\" are invalid; we'll assume input pattern is valid per the same rules: '*' is never the first character and no consecutive stars. This matches standard regular expression matching constraints. The strings can be up to 20-30 length for typical Hard constraints; however we'll set up to 300 for real DP, but typical hard is small. We'll set up to 100, but DP O(m*n) fine. We'll set max lengths 0 <= s.length, p.length <= 100.",
     "starter": {
       "python": "def disarm_kill_switch(signal: str, pattern: str) -> bool:",
       "javascript": "function disarmKillSwitch(signal, pattern) { }",
@@ -1502,18 +1745,78 @@
       }
     ],
     "test_cases": [
-      { "input": "{\"signal\": \"\", \"pattern\": \"\"}", "expected_output": "true", "description": "Both empty match", "hidden": false },
-      { "input": "{\"signal\": \"abc\", \"pattern\": \"a.c\"}", "expected_output": "true", "description": "Dot matches any char", "hidden": false },
-      { "input": "{\"signal\": \"abbbb\", \"pattern\": \"ab*\"}", "expected_output": "true", "description": "Star matches multiple b's", "hidden": false },
-      { "input": "{\"signal\": \"mississippi\", \"pattern\": \"mis*is*p*.\"}", "expected_output": "false", "description": "Complex mismatch", "hidden": false },
-      { "input": "{\"signal\": \"a\", \"pattern\": \".*\"}", "expected_output": "true", "description": "Dot star matches anything", "hidden": false },
-      { "input": "{\"signal\": \"a\", \"pattern\": \"\"}", "expected_output": "false", "description": "Non-empty signal empty pattern", "hidden": false },
-      { "input": "{\"signal\": \"\", \"pattern\": \".*\"}", "expected_output": "true", "description": "Empty matched by dot-star", "hidden": true },
-      { "input": "{\"signal\": \"aaa\", \"pattern\": \"a*a\"}", "expected_output": "true", "description": "Greedy star consumption", "hidden": true },
-      { "input": "{\"signal\": \"abcd\", \"pattern\": \"d*\"}", "expected_output": "false", "description": "Star on char not present", "hidden": true },
-      { "input": "{\"signal\": \"aab\", \"pattern\": \"c*a*b\"}", "expected_output": "true", "description": "Leading star-zero matches", "hidden": true },
-      { "input": "{\"signal\": \"ab\", \"pattern\": \".*c\"}", "expected_output": "false", "description": "Trailing mismatch after star", "hidden": true },
-      { "input": "{\"signal\": \"aaaaaaaaaaaaaaaaaaab\", \"pattern\": \"a*a*a*a*a*b\"}", "expected_output": "true", "description": "Multiple stars complexity", "hidden": true }
+      {
+        "input": "{\"signal\": \"\", \"pattern\": \"\"}",
+        "expected_output": "true",
+        "description": "Both empty match",
+        "hidden": false
+      },
+      {
+        "input": "{\"signal\": \"abc\", \"pattern\": \"a.c\"}",
+        "expected_output": "true",
+        "description": "Dot matches any char",
+        "hidden": false
+      },
+      {
+        "input": "{\"signal\": \"abbbb\", \"pattern\": \"ab*\"}",
+        "expected_output": "true",
+        "description": "Star matches multiple b's",
+        "hidden": false
+      },
+      {
+        "input": "{\"signal\": \"mississippi\", \"pattern\": \"mis*is*p*.\"}",
+        "expected_output": "false",
+        "description": "Complex mismatch",
+        "hidden": false
+      },
+      {
+        "input": "{\"signal\": \"a\", \"pattern\": \".*\"}",
+        "expected_output": "true",
+        "description": "Dot star matches anything",
+        "hidden": false
+      },
+      {
+        "input": "{\"signal\": \"a\", \"pattern\": \"\"}",
+        "expected_output": "false",
+        "description": "Non-empty signal empty pattern",
+        "hidden": false
+      },
+      {
+        "input": "{\"signal\": \"\", \"pattern\": \".*\"}",
+        "expected_output": "true",
+        "description": "Empty matched by dot-star",
+        "hidden": true
+      },
+      {
+        "input": "{\"signal\": \"aaa\", \"pattern\": \"a*a\"}",
+        "expected_output": "true",
+        "description": "Greedy star consumption",
+        "hidden": true
+      },
+      {
+        "input": "{\"signal\": \"abcd\", \"pattern\": \"d*\"}",
+        "expected_output": "false",
+        "description": "Star on char not present",
+        "hidden": true
+      },
+      {
+        "input": "{\"signal\": \"aab\", \"pattern\": \"c*a*b\"}",
+        "expected_output": "true",
+        "description": "Leading star-zero matches",
+        "hidden": true
+      },
+      {
+        "input": "{\"signal\": \"ab\", \"pattern\": \".*c\"}",
+        "expected_output": "false",
+        "description": "Trailing mismatch after star",
+        "hidden": true
+      },
+      {
+        "input": "{\"signal\": \"aaaaaaaaaaaaaaaaaaab\", \"pattern\": \"a*a*a*a*a*b\"}",
+        "expected_output": "true",
+        "description": "Multiple stars complexity",
+        "hidden": true
+      }
     ],
     "hints": [
       "The neural lace pattern acts like a state machine scanning the brainwave signal from start to finish.",
@@ -1538,8 +1841,13 @@
     "title": "Interstellar Subspace Transmission Repair",
     "difficulty": "hard",
     "category": "string manipulation",
-    "company_tags": ["SETI Institute", "SpaceX Starlink", "NASA Deep Space Network", "Isotropic Systems"],
-    "description": "An urgent subspace transmission from the Proxima Centauri colony has been fragmented by an ion storm. You have received two degraded fragments, `fragment_a` and `fragment_b`, which are believed to originate from the same original message. To reconstruct the message, the bridge's AI must find the longest contiguous substring that appears in both fragments—this common core likely contains the critical coordinates for the colony's evacuation.\nYour task: write a function that returns the longest common substring (not subsequence) shared by `fragment_a` and `fragment_b`. If there are multiple substrings of the same maximum length, return any one of them. If no common substring exists, return an empty string.\nThe comparison is case-sensitive and spaces are considered valid characters. Because the fragments may contain interference patterns, they can be up to 1000 characters each. Efficiency is paramount; the colony is running out of time.\nEdge cases: Either fragment can be empty (then result is empty). The longest common substring could be the entire string of one fragment if it is fully contained in the other.",
+    "company_tags": [
+      "SETI Institute",
+      "SpaceX Starlink",
+      "NASA Deep Space Network",
+      "Isotropic Systems"
+    ],
+    "description": "An urgent subspace transmission from the Proxima Centauri colony has been fragmented by an ion storm. You have received two degraded fragments, `fragment_a` and `fragment_b`, which are believed to originate from the same original message. To reconstruct the message, the bridge's AI must find the longest contiguous substring that appears in both fragments\u00e2\u20ac\u201dthis common core likely contains the critical coordinates for the colony's evacuation.\nYour task: write a function that returns the longest common substring (not subsequence) shared by `fragment_a` and `fragment_b`. If there are multiple substrings of the same maximum length, return any one of them. If no common substring exists, return an empty string.\nThe comparison is case-sensitive and spaces are considered valid characters. Because the fragments may contain interference patterns, they can be up to 1000 characters each. Efficiency is paramount; the colony is running out of time.\nEdge cases: Either fragment can be empty (then result is empty). The longest common substring could be the entire string of one fragment if it is fully contained in the other.",
     "starter": {
       "python": "def recover_core_message(fragment_a: str, fragment_b: str) -> str:",
       "javascript": "function recoverCoreMessage(fragmentA, fragmentB) { }",
@@ -1549,7 +1857,7 @@
       {
         "input": "{\"fragment_a\": \"proxima\", \"fragment_b\": \"approximately\"}",
         "output": "\"proxima\"",
-        "explanation": "The entire 'proxima' appears contiguously in both fragments—the core coordinate."
+        "explanation": "The entire 'proxima' appears contiguously in both fragments\u00e2\u20ac\u201dthe core coordinate."
       },
       {
         "input": "{\"fragment_a\": \"hello\", \"fragment_b\": \"world\"}",
@@ -1558,23 +1866,83 @@
       }
     ],
     "test_cases": [
-      { "input": "{\"fragment_a\": \"abc\", \"fragment_b\": \"abc\"}", "expected_output": "\"abc\"", "description": "Identical strings", "hidden": false },
-      { "input": "{\"fragment_a\": \"\", \"fragment_b\": \"abc\"}", "expected_output": "\"\"", "description": "One empty fragment", "hidden": false },
-      { "input": "{\"fragment_a\": \"xyzabcxyz\", \"fragment_b\": \"abc\"}", "expected_output": "\"abc\"", "description": "Shorter fully inside longer", "hidden": false },
-      { "input": "{\"fragment_a\": \"abcde\", \"fragment_b\": \"xyz\"}", "expected_output": "\"\"", "description": "No common substring", "hidden": false },
-      { "input": "{\"fragment_a\": \"abAB\", \"fragment_b\": \"ABab\"}", "expected_output": "\"ab\" or \"AB\"", "description": "Case-sensitive, multiple max lengths? Actually 'ab' length 2, 'AB' length 2", "hidden": false },
-      { "input": "{\"fragment_a\": \"abcdef\", \"fragment_b\": \"zbcdefg\"}", "expected_output": "\"bcdef\"", "description": "Long overlapping substring", "hidden": false },
-      { "input": "{\"fragment_a\": \"aaaa\", \"fragment_b\": \"aaa\"}", "expected_output": "\"aaa\"", "description": "Repeated characters", "hidden": true },
-      { "input": "{\"fragment_a\": \"The quick brown fox\", \"fragment_b\": \"quick brown\"}", "expected_output": "\"quick brown\"", "description": "With spaces", "hidden": true },
-      { "input": "{\"fragment_a\": \"a\", \"fragment_b\": \"a\"}", "expected_output": "\"a\"", "description": "Single char", "hidden": true },
-      { "input": "long strings (1000 chars) with common substring at the end", "expected_output": "correct substring", "description": "Performance and position test", "hidden": true },
-      { "input": "{\"fragment_a\": \"ABCDEF\", \"fragment_b\": \"FEDCBA\"}", "expected_output": "\"A\" or \"F\" etc (any single char)", "description": "Reverse order common singles", "hidden": true },
-      { "input": "{\"fragment_a\": \"123456\", \"fragment_b\": \"234\"}", "expected_output": "\"234\"", "description": "Numeric substring", "hidden": true }
+      {
+        "input": "{\"fragment_a\": \"abc\", \"fragment_b\": \"abc\"}",
+        "expected_output": "\"abc\"",
+        "description": "Identical strings",
+        "hidden": false
+      },
+      {
+        "input": "{\"fragment_a\": \"\", \"fragment_b\": \"abc\"}",
+        "expected_output": "\"\"",
+        "description": "One empty fragment",
+        "hidden": false
+      },
+      {
+        "input": "{\"fragment_a\": \"xyzabcxyz\", \"fragment_b\": \"abc\"}",
+        "expected_output": "\"abc\"",
+        "description": "Shorter fully inside longer",
+        "hidden": false
+      },
+      {
+        "input": "{\"fragment_a\": \"abcde\", \"fragment_b\": \"xyz\"}",
+        "expected_output": "\"\"",
+        "description": "No common substring",
+        "hidden": false
+      },
+      {
+        "input": "{\"fragment_a\": \"abAB\", \"fragment_b\": \"ABab\"}",
+        "expected_output": "\"ab\" or \"AB\"",
+        "description": "Case-sensitive, multiple max lengths? Actually 'ab' length 2, 'AB' length 2",
+        "hidden": false
+      },
+      {
+        "input": "{\"fragment_a\": \"abcdef\", \"fragment_b\": \"zbcdefg\"}",
+        "expected_output": "\"bcdef\"",
+        "description": "Long overlapping substring",
+        "hidden": false
+      },
+      {
+        "input": "{\"fragment_a\": \"aaaa\", \"fragment_b\": \"aaa\"}",
+        "expected_output": "\"aaa\"",
+        "description": "Repeated characters",
+        "hidden": true
+      },
+      {
+        "input": "{\"fragment_a\": \"The quick brown fox\", \"fragment_b\": \"quick brown\"}",
+        "expected_output": "\"quick brown\"",
+        "description": "With spaces",
+        "hidden": true
+      },
+      {
+        "input": "{\"fragment_a\": \"a\", \"fragment_b\": \"a\"}",
+        "expected_output": "\"a\"",
+        "description": "Single char",
+        "hidden": true
+      },
+      {
+        "input": "long strings (1000 chars) with common substring at the end",
+        "expected_output": "correct substring",
+        "description": "Performance and position test",
+        "hidden": true
+      },
+      {
+        "input": "{\"fragment_a\": \"ABCDEF\", \"fragment_b\": \"FEDCBA\"}",
+        "expected_output": "\"A\" or \"F\" etc (any single char)",
+        "description": "Reverse order common singles",
+        "hidden": true
+      },
+      {
+        "input": "{\"fragment_a\": \"123456\", \"fragment_b\": \"234\"}",
+        "expected_output": "\"234\"",
+        "description": "Numeric substring",
+        "hidden": true
+      }
     ],
     "hints": [
       "Imagine overlaying the two fragmented waveforms and sliding one across the other; the longest contiguous overlap is the key.",
       "Dynamic programming: let dp[i][j] be the length of the longest common suffix of the prefixes ending at i and j. The max value gives the LCS length, and you can track the ending index.",
-      "Alternatively, use a generalized suffix tree or binary search with rolling hash for O(N log N), but DP O(N*M) is straightforward and acceptable for N,M ≤ 1000."
+      "Alternatively, use a generalized suffix tree or binary search with rolling hash for O(N log N), but DP O(N*M) is straightforward and acceptable for N,M \u00e2\u2030\u00a4 1000."
     ],
     "solution": "We use a 2D DP array where dp[i][j] represents the length of the longest common suffix for fragment_a[0..i-1] and fragment_b[0..j-1]. If characters match, dp[i][j] = dp[i-1][j-1] + 1; else 0. We track the maximum length and the ending index in fragment_a (or b). After the table is filled, we extract the substring using the recorded length and ending position. If no match, return empty string.",
     "time_complexity": "O(N * M)",
@@ -1593,7 +1961,7 @@
     "difficulty": "hard",
     "category": "string manipulation",
     "company_tags": ["IBM Quantum", "QuintessenceLabs", "ID Quantique", "Quantum Xchange"],
-    "description": "A quantum encryption key—a string of characters derived from quantum random number generation—must be sanitized to stabilize the entanglement protocol. The key becomes stable only when it reads as a palindrome. You can insert any number of characters at any positions in the key to achieve a palindrome. However, the insertion of additional quantum bits is extremely costly, so you must use the minimum possible insertions.\nYou are the lead cryptographer aboard the orbital QKD station. Given the raw key string `key`, your function must return the minimum number of character insertions needed to convert it into a palindrome.\nNote: You do not need to output the resulting palindrome, only the minimal insertion count. The key can contain any printable ASCII characters and is case-sensitive.\nEdge cases: An empty key needs 0 insertions. A single-character key is already a palindrome (0 insertions). The key can be up to 1000 characters in length, and you must find the optimal insertion count efficiently.",
+    "description": "A quantum encryption key\u00e2\u20ac\u201da string of characters derived from quantum random number generation\u00e2\u20ac\u201dmust be sanitized to stabilize the entanglement protocol. The key becomes stable only when it reads as a palindrome. You can insert any number of characters at any positions in the key to achieve a palindrome. However, the insertion of additional quantum bits is extremely costly, so you must use the minimum possible insertions.\nYou are the lead cryptographer aboard the orbital QKD station. Given the raw key string `key`, your function must return the minimum number of character insertions needed to convert it into a palindrome.\nNote: You do not need to output the resulting palindrome, only the minimal insertion count. The key can contain any printable ASCII characters and is case-sensitive.\nEdge cases: An empty key needs 0 insertions. A single-character key is already a palindrome (0 insertions). The key can be up to 1000 characters in length, and you must find the optimal insertion count efficiently.",
     "starter": {
       "python": "def min_qbit_insertions(key: str) -> int:",
       "javascript": "function minQbitInsertions(key) { }",
@@ -1612,18 +1980,78 @@
       }
     ],
     "test_cases": [
-      { "input": "\"\"", "expected_output": "0", "description": "Empty key is trivially stable", "hidden": false },
-      { "input": "\"a\"", "expected_output": "0", "description": "Single char palindrome", "hidden": false },
-      { "input": "\"abc\"", "expected_output": "2", "description": "Minimum insertions to form 'abcba' or similar", "hidden": false },
-      { "input": "\"abcba\"", "expected_output": "0", "description": "Already palindrome", "hidden": false },
-      { "input": "\"abca\"", "expected_output": "1 (insert 'b' to make 'abcba')", "description": "One insertion edge", "hidden": false },
-      { "input": "\"race\"", "expected_output": "3", "description": "'race' -> 'racecar' needs three insertions", "hidden": false },
-      { "input": "\"abcd\"", "expected_output": "3", "description": "All distinct chars, min insertions length-1?", "hidden": true },
-      { "input": "\"aaaaaaaa\"", "expected_output": "0", "description": "Repeated same char palindrome", "hidden": true },
-      { "input": "\"abcdeedcba\"", "expected_output": "0", "description": "Long palindrome", "hidden": true },
-      { "input": "key of length 500 with alternating pattern", "expected_output": "correct minimal count", "description": "Larger test", "hidden": true },
-      { "input": "\"a1b2\"", "expected_output": "3", "description": "Mixed alphanumeric", "hidden": true },
-      { "input": "\"abacaba\"", "expected_output": "0", "description": "Palindrome hidden", "hidden": true }
+      {
+        "input": "\"\"",
+        "expected_output": "0",
+        "description": "Empty key is trivially stable",
+        "hidden": false
+      },
+      {
+        "input": "\"a\"",
+        "expected_output": "0",
+        "description": "Single char palindrome",
+        "hidden": false
+      },
+      {
+        "input": "\"abc\"",
+        "expected_output": "2",
+        "description": "Minimum insertions to form 'abcba' or similar",
+        "hidden": false
+      },
+      {
+        "input": "\"abcba\"",
+        "expected_output": "0",
+        "description": "Already palindrome",
+        "hidden": false
+      },
+      {
+        "input": "\"abca\"",
+        "expected_output": "1 (insert 'b' to make 'abcba')",
+        "description": "One insertion edge",
+        "hidden": false
+      },
+      {
+        "input": "\"race\"",
+        "expected_output": "3",
+        "description": "'race' -> 'racecar' needs three insertions",
+        "hidden": false
+      },
+      {
+        "input": "\"abcd\"",
+        "expected_output": "3",
+        "description": "All distinct chars, min insertions length-1?",
+        "hidden": true
+      },
+      {
+        "input": "\"aaaaaaaa\"",
+        "expected_output": "0",
+        "description": "Repeated same char palindrome",
+        "hidden": true
+      },
+      {
+        "input": "\"abcdeedcba\"",
+        "expected_output": "0",
+        "description": "Long palindrome",
+        "hidden": true
+      },
+      {
+        "input": "key of length 500 with alternating pattern",
+        "expected_output": "correct minimal count",
+        "description": "Larger test",
+        "hidden": true
+      },
+      {
+        "input": "\"a1b2\"",
+        "expected_output": "3",
+        "description": "Mixed alphanumeric",
+        "hidden": true
+      },
+      {
+        "input": "\"abacaba\"",
+        "expected_output": "0",
+        "description": "Palindrome hidden",
+        "hidden": true
+      }
     ],
     "hints": [
       "Think of the key as a sequence of qbits that need to mirror themselves perfectly. The minimal insertions problem is dual to the longest palindromic subsequence.",
@@ -1666,21 +2094,81 @@
       }
     ],
     "test_cases": [
-      { "input": "{\"strand1\": \"\", \"strand2\": \"abc\"}", "expected_output": "3", "description": "One empty strand, supersequence is the other", "hidden": false },
-      { "input": "{\"strand1\": \"a\", \"strand2\": \"b\"}", "expected_output": "2", "description": "Two distinct single chars", "hidden": false },
-      { "input": "{\"strand1\": \"abc\", \"strand2\": \"\"}", "expected_output": "3", "description": "Other empty", "hidden": false },
-      { "input": "{\"strand1\": \"abc\", \"strand2\": \"acb\"}", "expected_output": "4 (e.g., 'abcb')", "description": "Interleaved supersequence", "hidden": false },
-      { "input": "{\"strand1\": \"geek\", \"strand2\": \"eke\"}", "expected_output": "5", "description": "Classic SCS example", "hidden": false },
-      { "input": "{\"strand1\": \"aggtab\", \"strand2\": \"gxtxayb\"}", "expected_output": "9", "description": "Known SCS problem", "hidden": false },
-      { "input": "{\"strand1\": \"abc\", \"strand2\": \"abcabc\"}", "expected_output": "6", "description": "One is substring-like subsequence longer", "hidden": true },
-      { "input": "{\"strand1\": \"aaaa\", \"strand2\": \"aa\"}", "expected_output": "4", "description": "Repeated chars, one subsequence of other", "hidden": true },
-      { "input": "{\"strand1\": \"ABCDEF\", \"strand2\": \"FEDCBA\"}", "expected_output": "11", "description": "No shared order except one char, SCS = 6+6-1 = 11", "hidden": true },
-      { "input": "long strings length 500 random", "expected_output": "correct length", "description": "Performance test", "hidden": true },
-      { "input": "{\"strand1\": \"x\", \"strand2\": \"x\"}", "expected_output": "1", "description": "Single same char", "hidden": true },
-      { "input": "{\"strand1\": \"abc\", \"strand2\": \"def\"}", "expected_output": "6", "description": "No common characters, length sum", "hidden": true }
+      {
+        "input": "{\"strand1\": \"\", \"strand2\": \"abc\"}",
+        "expected_output": "3",
+        "description": "One empty strand, supersequence is the other",
+        "hidden": false
+      },
+      {
+        "input": "{\"strand1\": \"a\", \"strand2\": \"b\"}",
+        "expected_output": "2",
+        "description": "Two distinct single chars",
+        "hidden": false
+      },
+      {
+        "input": "{\"strand1\": \"abc\", \"strand2\": \"\"}",
+        "expected_output": "3",
+        "description": "Other empty",
+        "hidden": false
+      },
+      {
+        "input": "{\"strand1\": \"abc\", \"strand2\": \"acb\"}",
+        "expected_output": "4 (e.g., 'abcb')",
+        "description": "Interleaved supersequence",
+        "hidden": false
+      },
+      {
+        "input": "{\"strand1\": \"geek\", \"strand2\": \"eke\"}",
+        "expected_output": "5",
+        "description": "Classic SCS example",
+        "hidden": false
+      },
+      {
+        "input": "{\"strand1\": \"aggtab\", \"strand2\": \"gxtxayb\"}",
+        "expected_output": "9",
+        "description": "Known SCS problem",
+        "hidden": false
+      },
+      {
+        "input": "{\"strand1\": \"abc\", \"strand2\": \"abcabc\"}",
+        "expected_output": "6",
+        "description": "One is substring-like subsequence longer",
+        "hidden": true
+      },
+      {
+        "input": "{\"strand1\": \"aaaa\", \"strand2\": \"aa\"}",
+        "expected_output": "4",
+        "description": "Repeated chars, one subsequence of other",
+        "hidden": true
+      },
+      {
+        "input": "{\"strand1\": \"ABCDEF\", \"strand2\": \"FEDCBA\"}",
+        "expected_output": "11",
+        "description": "No shared order except one char, SCS = 6+6-1 = 11",
+        "hidden": true
+      },
+      {
+        "input": "long strings length 500 random",
+        "expected_output": "correct length",
+        "description": "Performance test",
+        "hidden": true
+      },
+      {
+        "input": "{\"strand1\": \"x\", \"strand2\": \"x\"}",
+        "expected_output": "1",
+        "description": "Single same char",
+        "hidden": true
+      },
+      {
+        "input": "{\"strand1\": \"abc\", \"strand2\": \"def\"}",
+        "expected_output": "6",
+        "description": "No common characters, length sum",
+        "hidden": true
+      }
     ],
     "hints": [
-      "The synthesizer can weave the two strands together in a way that reuses overlapping sequences—much like combining two broken DNA helices.",
+      "The synthesizer can weave the two strands together in a way that reuses overlapping sequences\u00e2\u20ac\u201dmuch like combining two broken DNA helices.",
       "The length of the shortest common supersequence (SCS) is directly derived from the longest common subsequence (LCS): SCS_length = len1 + len2 - LCS_length.",
       "Compute the LCS using dynamic programming, then apply the formula. Ensure you handle empty strings correctly."
     ],
@@ -1701,7 +2189,7 @@
     "difficulty": "hard",
     "category": "string manipulation",
     "company_tags": ["Palantir", "CrowdStrike", "Darktrace", "Recorded Future"],
-    "description": "Trapped in a 12-hour time loop, you are a digital forensics expert trying to break into the mainframe of the Chronos Corporation. Each loop, a set of shift operations is applied to a secret password string, scrambling it into the form you see on the console: `final_scrambled`. The security system's log reveals the exact sequence of operations performed, given as a list `operations`. Each operation is a tuple of `(direction, start_index, end_index)`, where `direction` is either `\"L\"` (left rotate) or `\"R\"` (right rotate) on the substring from `start_index` to `end_index` inclusive. The indices are 0-based. The rotations are applied in order, from the original password to the final scrambled string.\nYour only chance to escape is to reverse the process and recover the original password. Write a function that takes the final scrambled string and the list of operations, and returns the original password before the scrambling.\nA left rotation by 1 on a substring means the character at `start_index` moves to `end_index`, and all other characters in the substring shift left by one. Similarly, a right rotation shifts characters to the right, moving the last character to the front. The operations are guaranteed to be valid (indices within bounds, start ≤ end).\nYou must efficiently reverse these operations. The password length can be up to 2000 characters, and the number of operations up to 2000. Reversing naively by performing inverse rotations in reverse order is acceptable if the substring rotations are implemented efficiently (e.g., using string slicing or a list of characters). O(N*K) time is acceptable.\nEdge cases: The list of operations could be empty (password unchanged). Substring rotations on single-character substrings (start == end) leave the string unchanged.",
+    "description": "Trapped in a 12-hour time loop, you are a digital forensics expert trying to break into the mainframe of the Chronos Corporation. Each loop, a set of shift operations is applied to a secret password string, scrambling it into the form you see on the console: `final_scrambled`. The security system's log reveals the exact sequence of operations performed, given as a list `operations`. Each operation is a tuple of `(direction, start_index, end_index)`, where `direction` is either `\"L\"` (left rotate) or `\"R\"` (right rotate) on the substring from `start_index` to `end_index` inclusive. The indices are 0-based. The rotations are applied in order, from the original password to the final scrambled string.\nYour only chance to escape is to reverse the process and recover the original password. Write a function that takes the final scrambled string and the list of operations, and returns the original password before the scrambling.\nA left rotation by 1 on a substring means the character at `start_index` moves to `end_index`, and all other characters in the substring shift left by one. Similarly, a right rotation shifts characters to the right, moving the last character to the front. The operations are guaranteed to be valid (indices within bounds, start \u00e2\u2030\u00a4 end).\nYou must efficiently reverse these operations. The password length can be up to 2000 characters, and the number of operations up to 2000. Reversing naively by performing inverse rotations in reverse order is acceptable if the substring rotations are implemented efficiently (e.g., using string slicing or a list of characters). O(N*K) time is acceptable.\nEdge cases: The list of operations could be empty (password unchanged). Substring rotations on single-character substrings (start == end) leave the string unchanged.",
     "starter": {
       "python": "def break_time_loop(final_scrambled: str, operations: List[Tuple[str, int, int]]) -> str:",
       "javascript": "function breakTimeLoop(finalScrambled, operations) { }",
@@ -1721,23 +2209,83 @@
       }
     ],
     "test_cases": [
-      { "input": "{\"final_scrambled\": \"abcde\", \"operations\": [[\"L\", 0, 4]]}", "expected_output": "\"eabcd\"", "description": "Left rotate entire string once reversed", "hidden": false },
-      { "input": "{\"final_scrambled\": \"12345\", \"operations\": [[\"L\", 1, 3]]}", "expected_output": "\"13425\"", "description": "Left rotate substring, undo to get original", "hidden": false },
-      { "input": "{\"final_scrambled\": \"hello\", \"operations\": [[\"L\", 0, 0], [\"R\", 4, 4]]}", "expected_output": "\"hello\"", "description": "Single-char rotations have no effect", "hidden": false },
-      { "input": "{\"final_scrambled\": \"world\", \"operations\": [[\"L\", 0, 4], [\"R\", 0, 4]]}", "expected_output": "\"world\"", "description": "Inverse operations cancel out", "hidden": false },
-      { "input": "{\"final_scrambled\": \"x\", \"operations\": [[\"L\", 0, 0]]}", "expected_output": "\"x\"", "description": "Length 1 unchanged", "hidden": false },
-      { "input": "{\"final_scrambled\": \"abcdef\", \"operations\": [[\"R\", 0, 2], [\"L\", 2, 5]]}", "expected_output": "original after reversing both", "description": "Multiple overlapping rotations", "hidden": false },
-      { "input": "{\"final_scrambled\": \"rotate\", \"operations\": [[\"L\", 1, 4]]}", "expected_output": "reverse of rotation on substring", "description": "Hidden medium", "hidden": true },
-      { "input": "large N=2000 with many operations", "expected_output": "original string", "description": "Performance test", "hidden": true },
-      { "input": "{\"final_scrambled\": \"1234567890\", \"operations\": [[\"R\", 0, 9], [\"L\", 0, 9], [\"R\", 2, 5]]}", "expected_output": "computed reversed original", "description": "Complex sequence", "hidden": true },
-      { "input": "{\"final_scrambled\": \"\", \"operations\": []}", "expected_output": "\"\"", "description": "Empty string", "hidden": true },
-      { "input": "{\"final_scrambled\": \"A\", \"operations\": [[\"L\", 0, 0], [\"R\", 0, 0]]}", "expected_output": "\"A\"", "description": "Edge single char multi ops", "hidden": true },
-      { "input": "{\"final_scrambled\": \"reverse\", \"operations\": [[\"L\", 0, 6]]}", "expected_output": "\"reverse\"", "description": "Hidden reverse operation", "hidden": true }
+      {
+        "input": "{\"final_scrambled\": \"abcde\", \"operations\": [[\"L\", 0, 4]]}",
+        "expected_output": "\"eabcd\"",
+        "description": "Left rotate entire string once reversed",
+        "hidden": false
+      },
+      {
+        "input": "{\"final_scrambled\": \"12345\", \"operations\": [[\"L\", 1, 3]]}",
+        "expected_output": "\"13425\"",
+        "description": "Left rotate substring, undo to get original",
+        "hidden": false
+      },
+      {
+        "input": "{\"final_scrambled\": \"hello\", \"operations\": [[\"L\", 0, 0], [\"R\", 4, 4]]}",
+        "expected_output": "\"hello\"",
+        "description": "Single-char rotations have no effect",
+        "hidden": false
+      },
+      {
+        "input": "{\"final_scrambled\": \"world\", \"operations\": [[\"L\", 0, 4], [\"R\", 0, 4]]}",
+        "expected_output": "\"world\"",
+        "description": "Inverse operations cancel out",
+        "hidden": false
+      },
+      {
+        "input": "{\"final_scrambled\": \"x\", \"operations\": [[\"L\", 0, 0]]}",
+        "expected_output": "\"x\"",
+        "description": "Length 1 unchanged",
+        "hidden": false
+      },
+      {
+        "input": "{\"final_scrambled\": \"abcdef\", \"operations\": [[\"R\", 0, 2], [\"L\", 2, 5]]}",
+        "expected_output": "original after reversing both",
+        "description": "Multiple overlapping rotations",
+        "hidden": false
+      },
+      {
+        "input": "{\"final_scrambled\": \"rotate\", \"operations\": [[\"L\", 1, 4]]}",
+        "expected_output": "reverse of rotation on substring",
+        "description": "Hidden medium",
+        "hidden": true
+      },
+      {
+        "input": "large N=2000 with many operations",
+        "expected_output": "original string",
+        "description": "Performance test",
+        "hidden": true
+      },
+      {
+        "input": "{\"final_scrambled\": \"1234567890\", \"operations\": [[\"R\", 0, 9], [\"L\", 0, 9], [\"R\", 2, 5]]}",
+        "expected_output": "computed reversed original",
+        "description": "Complex sequence",
+        "hidden": true
+      },
+      {
+        "input": "{\"final_scrambled\": \"\", \"operations\": []}",
+        "expected_output": "\"\"",
+        "description": "Empty string",
+        "hidden": true
+      },
+      {
+        "input": "{\"final_scrambled\": \"A\", \"operations\": [[\"L\", 0, 0], [\"R\", 0, 0]]}",
+        "expected_output": "\"A\"",
+        "description": "Edge single char multi ops",
+        "hidden": true
+      },
+      {
+        "input": "{\"final_scrambled\": \"reverse\", \"operations\": [[\"L\", 0, 6]]}",
+        "expected_output": "\"reverse\"",
+        "description": "Hidden reverse operation",
+        "hidden": true
+      }
     ],
     "hints": [
       "The time loop is like a video played backward; to undo the scrambling, apply the inverse of each operation in reverse order.",
       "The inverse of a left rotation is a right rotation on the same substring, and vice versa. Process operations from last to first, applying the opposite rotation.",
-      "Implement substring rotation efficiently: extract the substring, rotate it (slicing and concatenation), and reconstruct the whole string. For large N and many ops, repeatedly slicing O(N) per op is acceptable given N,K ≤ 2000."
+      "Implement substring rotation efficiently: extract the substring, rotate it (slicing and concatenation), and reconstruct the whole string. For large N and many ops, repeatedly slicing O(N) per op is acceptable given N,K \u00e2\u2030\u00a4 2000."
     ],
     "solution": "We reverse the operations list and for each operation we apply the opposite rotation: for 'L' we apply a right rotation on the same substring; for 'R' we apply a left rotation. We can implement the rotation on a list of characters by slicing and concatenating in O(substring length). Processing operations in reverse yields the original password. With constraints up to 2000 length and 2000 ops, O(N*K) is acceptable.",
     "time_complexity": "O(K * N) where K = number of operations, N = length of string",
@@ -1750,6 +2298,414 @@
       "The rotation operations are well-defined",
       "Return the original password string"
     ],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
+    "is_interactive": false
+  },
+  {
+    "id": "test-q-1",
+    "title": "Reverse a String",
+    "difficulty": "easy",
+    "category": "strings",
+    "company_tags": [],
+    "description": "Write a function to reverse a string.",
+    "starter_code": null,
+    "examples": null,
+    "test_cases": null,
+    "hints": [],
+    "solution": null,
+    "time_complexity": null,
+    "space_complexity": null,
+    "constraints": [],
     "is_interactive": false
   }
 ]

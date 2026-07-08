@@ -1,6 +1,7 @@
 """
 Integration tests for code execution endpoints.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
@@ -14,33 +15,41 @@ def mock_auth():
     """Override auth dependency for testing."""
     from app.api.auth import get_current_user
     from app.models.auth_schemas import UserResponse
+
     async def override_get_current_user():
-        return UserResponse(id="test-id", username="testuser", email="test@example.com", is_active=True, created_at="2025-01-01T00:00:00Z")
+        return UserResponse(
+            id="test-id",
+            username="testuser",
+            email="test@example.com",
+            is_active=True,
+            created_at="2025-01-01T00:00:00Z",
+        )
+
     app.dependency_overrides[get_current_user] = override_get_current_user
     try:
         yield
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 class TestRunEndpoints:
     """Test cases for code execution endpoints."""
-    
+
     def test_execute_code_python(self, test_client: TestClient):
         """Test executing Python code."""
         code_request = {
             "language": "python",
             "code": "print('Hello, World!')\nprint(2 + 2)",
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "stdout" in data
         assert "stderr" in data
         assert "exit_code" in data
@@ -60,76 +69,76 @@ class TestRunEndpoints:
             "language": "python",
             "code": "user_input = input()\nprint(f'Hello, {user_input}!')",
             "stdin": "Alice",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["exit_code"] == 0
         assert "Hello, Alice!" in data["stdout"]
-    
+
     def test_execute_code_with_error(self, test_client: TestClient):
         """Test executing code that produces an error."""
         code_request = {
             "language": "python",
             "code": "print(undefined_variable)",
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["exit_code"] != 0
         assert "NameError" in data["stderr"] or "undefined" in data["stderr"]
-    
+
     def test_validate_code_python(self, test_client: TestClient):
         """Test validating Python code."""
         code_request = {
             "language": "python",
             "code": "def hello():\n    return 'Hello, World!'",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/validate", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "valid" in data
         assert "warnings" in data
         assert "errors" in data
         assert "language" in data
-        
+
         assert data["valid"] is True
         assert data["language"] == "python"
-    
+
     def test_validate_code_with_syntax_error(self, test_client: TestClient):
         """Test validating code with syntax errors."""
         code_request = {
             "language": "python",
             "code": "def hello(\n    return 'Hello, World!'",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/validate", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Mock service doesn't validate syntax deeply
         if not data["valid"]:
             assert len(data["errors"]) > 0
-    
+
     def test_get_supported_languages(self, test_client: TestClient):
         """Test getting supported programming languages."""
         with mock_auth():
@@ -149,55 +158,55 @@ class TestRunEndpoints:
 
         for lang in expected_languages:
             assert lang in actual_languages, f"Missing expected language: {lang}"
-    
+
     def test_get_runtimes(self, test_client: TestClient):
         """Test getting all available runtimes."""
         with mock_auth():
             response = test_client.get("/api/run/runtimes")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "runtimes" in data
         assert isinstance(data["runtimes"], list)
         assert len(data["runtimes"]) > 0
-    
+
     def test_execute_code_invalid_language(self, test_client: TestClient):
         """Test executing code with invalid language."""
         code_request = {
             "language": "invalid_language",
             "code": "print('Hello')",
             "stdin": "",
-            "version": "1.0.0"
+            "version": "1.0.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code in [200, 422]  # Should handle gracefully
         if response.status_code == 200:
             data = response.json()
             assert data["exit_code"] != 0
             assert "not supported" in data["stderr"].lower()
-    
+
     def test_execute_code_empty(self, test_client: TestClient):
         """Test executing empty code."""
         code_request = {
             "language": "python",
             "code": "",
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["exit_code"] == 0
         assert data["stdout"] == ""
-    
+
     def test_execute_code_complex(self, test_client: TestClient):
         """Test executing complex code."""
         code_request = {
@@ -212,114 +221,107 @@ for i in range(10):
     print(f"F({i}) = {fibonacci(i)}")
             """.strip(),
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["exit_code"] == 0
         assert "F(0) = 0" in data["stdout"]
         assert "F(9) = 34" in data["stdout"]
-    
+
     def test_execute_code_memory_limit(self, test_client: TestClient):
         """Test executing code that might hit memory limits."""
         code_request = {
             "language": "python",
             "code": "large_list = [i for i in range(100000)]\nprint(len(large_list))",
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Should execute successfully or handle gracefully
         assert data["exit_code"] == 0 or "memory" in data["stderr"].lower()
-    
+
     def test_execute_code_timeout(self, test_client: TestClient):
         """Test executing code that might timeout."""
         code_request = {
             "language": "python",
             "code": "import time\ntime.sleep(1)\nprint('Done')",
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Should execute successfully or timeout gracefully
         assert data["exit_code"] == 0 or "timeout" in data["stderr"].lower()
-    
-    def test_validate_code_python(self, test_client: TestClient):
-        """Test validating Python code."""
-        code_request = {
-            "language": "python",
-            "code": "print('Hello')"
-        }
 
-        with mock_auth():
-            response = test_client.post("/api/run/validate", json=code_request)
-
-        assert response.status_code == 200
-        data = response.json()
-
-        assert data["language"] == "python"
-        assert "valid" in data
         assert "warnings" in data
         assert "errors" in data
-    
+
     def test_run_endpoints_response_format(self, test_client: TestClient):
         """Test response format consistency."""
         code_request = {
             "language": "python",
             "code": "print('Hello')",
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
-        
+
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
-        
+
         data = response.json()
-        required_fields = ["stdout", "stderr", "exit_code", "execution_time", "memory_usage", "language", "version"]
+        required_fields = [
+            "stdout",
+            "stderr",
+            "exit_code",
+            "execution_time",
+            "memory_usage",
+            "language",
+            "version",
+        ]
         for field in required_fields:
             assert field in data, f"Missing required field: {field}"
-    
+
     def test_run_endpoints_error_handling(self, test_client: TestClient):
         """Test run endpoints error handling."""
         # Test invalid JSON
         with mock_auth():
             response = test_client.post("/api/run/", data="invalid json")
         assert response.status_code in [401, 422]
-        
+
         with mock_auth():
             response = test_client.post("/api/run/validate", data="invalid json")
         assert response.status_code in [401, 422]
-        
+
         # Test with wrong HTTP method
         response = test_client.get("/api/run/")
         assert response.status_code == 405
-        
+
         response = test_client.put("/api/run/")
         assert response.status_code == 405
-        
+
         response = test_client.delete("/api/run/")
         assert response.status_code == 405
-    
+
     @pytest.mark.asyncio
     async def test_run_endpoints_async(self, async_client: AsyncClient):
         """Test run endpoints with async client."""
@@ -327,43 +329,67 @@ for i in range(10):
             "language": "python",
             "code": "print('Hello, World!')",
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         from app.api.auth import get_current_user
         from app.models.auth_schemas import UserResponse
+
         async def override_get_current_user():
-            return UserResponse(id="test-id", username="testuser", email="test@example.com", is_active=True, created_at="2025-01-01T00:00:00Z")
+            return UserResponse(
+                id="test-id",
+                username="testuser",
+                email="test@example.com",
+                is_active=True,
+                created_at="2025-01-01T00:00:00Z",
+            )
+
         app.dependency_overrides[get_current_user] = override_get_current_user
         try:
             response = await async_client.post("/api/run/", json=code_request)
         finally:
-            app.dependency_overrides.clear()
-        
+            app.dependency_overrides.pop(get_current_user, None)
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["exit_code"] == 0
         assert "Hello, World!" in data["stdout"]
-    
+
     def test_dependency_override_injects_mock(self, test_client: TestClient):
         """Test that executor dependency can be overridden via app.dependency_overrides."""
 
         class MockPiston:
             async def execute(self, language, code, stdin="", version=None):
                 from app.ports.code_executor import ExecutionResult
+
                 return ExecutionResult(stdout="mock-output", language=language)
+
             def validate_code(self, language, code):
                 return {"valid": True, "warnings": [], "errors": []}
+
             async def get_runtimes(self):
-                return [{"language": "python", "version": "99.0", "aliases": ["py"], "runtime": "mock"}]
+                return [
+                    {
+                        "language": "python",
+                        "version": "99.0",
+                        "aliases": ["py"],
+                        "runtime": "mock",
+                    }
+                ]
 
         from app.api.run import get_executor
         from app.api.auth import get_current_user
         from app.models.auth_schemas import UserResponse
 
         async def override_get_current_user():
-            return UserResponse(id="test-id", username="testuser", email="test@example.com", is_active=True, created_at="2025-01-01T00:00:00Z")
+            return UserResponse(
+                id="test-id",
+                username="testuser",
+                email="test@example.com",
+                is_active=True,
+                created_at="2025-01-01T00:00:00Z",
+            )
 
         app.dependency_overrides[get_executor] = lambda: MockPiston()
         app.dependency_overrides[get_current_user] = override_get_current_user
@@ -373,19 +399,20 @@ for i in range(10):
             data = response.json()
             assert data["languages"][0]["version"] == "99.0"
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_executor, None)
+            app.dependency_overrides.pop(get_current_user, None)
 
     def test_run_endpoints_response_time(self, test_client: TestClient):
         """Test run endpoints response time."""
         import time
-        
+
         code_request = {
             "language": "python",
             "code": "print('Hello')",
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
-        
+
         start_time = time.time()
         with mock_auth():
             response = test_client.post("/api/run/", json=code_request)
@@ -395,4 +422,6 @@ for i in range(10):
 
         # Response should be reasonably fast (< 2s for simple code)
         response_time = (end_time - start_time) * 1000
-        assert response_time < 2000, f"Code execution took {response_time}ms, expected < 2000ms"
+        assert (
+            response_time < 2000
+        ), f"Code execution took {response_time}ms, expected < 2000ms"

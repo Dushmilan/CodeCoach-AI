@@ -53,12 +53,15 @@ class RedisCache:
             if raw is None:
                 return None
             return json.loads(raw)
-        except aioredis.RedisError as e:
-            logger.warning("Redis get failed for key %s: %s", key, e)
+        except Exception as e:
+            logger.debug("Redis get failed for key %s: %s", key, e)
             self.disable()
             return None
         finally:
-            await client.aclose()
+            try:
+                await client.aclose()
+            except Exception:
+                pass
 
     async def set(self, key: str, value: Any, ttl: int = 300) -> None:
         """Serialize and store value with TTL (seconds). Silently skip on error."""
@@ -68,11 +71,14 @@ class RedisCache:
         try:
             raw = json.dumps(value, default=str)
             await client.setex(key, ttl, raw)
-        except aioredis.RedisError as e:
-            logger.warning("Redis set failed for key %s: %s", key, e)
+        except Exception as e:
+            logger.debug("Redis set failed for key %s: %s", key, e)
             self.disable()
         finally:
-            await client.aclose()
+            try:
+                await client.aclose()
+            except Exception:
+                pass
 
     async def delete(self, pattern: str) -> int:
         """Delete all keys matching glob pattern. Returns number deleted."""
@@ -85,12 +91,15 @@ class RedisCache:
                 count = await client.delete(*keys)
                 return count
             return 0
-        except aioredis.RedisError as e:
-            logger.warning("Redis delete failed for pattern %s: %s", pattern, e)
+        except Exception as e:
+            logger.debug("Redis delete failed for pattern %s: %s", pattern, e)
             self.disable()
             return 0
         finally:
-            await client.aclose()
+            try:
+                await client.aclose()
+            except Exception:
+                pass
 
     async def exists(self, key: str) -> bool:
         """Check if key exists in cache."""
@@ -99,11 +108,14 @@ class RedisCache:
             return False
         try:
             return await client.exists(key) > 0
-        except aioredis.RedisError as e:
-            logger.warning("Redis exists check failed for key %s: %s", key, e)
+        except Exception as e:
+            logger.debug("Redis exists check failed for key %s: %s", key, e)
             return False
         finally:
-            await client.aclose()
+            try:
+                await client.aclose()
+            except Exception:
+                pass
 
     async def ttl(self, key: str) -> int:
         """Return remaining TTL in seconds. -1 if no TTL, -2 if key missing."""
@@ -112,11 +124,14 @@ class RedisCache:
             return -2
         try:
             return await client.ttl(key)
-        except aioredis.RedisError as e:
-            logger.warning("Redis ttl check failed for key %s: %s", key, e)
+        except Exception as e:
+            logger.debug("Redis ttl check failed for key %s: %s", key, e)
             return -2
         finally:
-            await client.aclose()
+            try:
+                await client.aclose()
+            except Exception:
+                pass
 
     async def close(self) -> None:
         """Close the connection pool."""

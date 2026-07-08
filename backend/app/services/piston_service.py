@@ -4,6 +4,7 @@ Encapsulates code wrapping per language, execution via Piston API,
 result formatting, and static validation.
 """
 
+import dataclasses
 import json
 import logging
 import os
@@ -103,7 +104,9 @@ class PistonService(CodeExecutor):
                 result = ExecutionResult(**processed)
 
                 if self.cache and cache_key:
-                    await self.cache.set(cache_key, result.model_dump(), ttl=3600)
+                    await self.cache.set(
+                        cache_key, dataclasses.asdict(result), ttl=3600
+                    )
 
                 return result
         except httpx.TimeoutException:

@@ -5,7 +5,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/providers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Trash2, Upload, Download, Search } from 'lucide-react';
+import { showToast } from '@/components/ui/Toast';
+import QuestionForm from '@/components/admin/QuestionForm';
+import { FileText, Trash2, Upload, Download, Search, Plus, Code2 } from 'lucide-react';
 
 interface QBrief {
   id: string;
@@ -24,6 +26,7 @@ export default function QuestionsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [importJson, setImportJson] = useState('');
   const [importResult, setImportResult] = useState<any>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -99,11 +102,33 @@ export default function QuestionsPage() {
           <p className="text-muted-foreground text-sm mt-1">{total} total</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setShowCreateForm(!showCreateForm)}>
+            <Code2 className="h-4 w-4 mr-1" /> Add Question
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setImportOpen(!importOpen)}>
             <Upload className="h-4 w-4 mr-1" /> Import JSON
           </Button>
         </div>
       </div>
+
+      {/* Create Question Form */}
+      {showCreateForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Create New Question</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <QuestionForm
+              token={token || ''}
+              onSaved={() => {
+                setShowCreateForm(false);
+                fetchQuestions();
+              }}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex gap-3">

@@ -1,13 +1,10 @@
 from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update, delete, func, or_, select
 
 from app.models.orm import UserORM, QuestionORM, CourseORM, ModuleORM, LessonORM
 from app.models.admin_models import (
-    FeatureFlagUpdate,
     QuestionFilter,
-    AuditLogFilter,
     CourseProgressDetail,
 )
 from app.ports.admin_repository import AdminRepository
@@ -18,6 +15,8 @@ class SqlAdminRepository(AdminRepository):
 
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    # ── Users ───────────────────────────────────────────
 
     async def get_user_by_id(self, user_id: str) -> Optional[UserORM]:
         query = select(UserORM).where(UserORM.id == user_id)
@@ -67,6 +66,8 @@ class SqlAdminRepository(AdminRepository):
         total = count_result.scalar_one()
 
         return users, total
+
+    # ── Questions ───────────────────────────────────────
 
     async def get_question_by_id(self, question_id: str) -> Optional[Dict[str, Any]]:
         query = select(QuestionORM).where(QuestionORM.id == question_id)
@@ -129,7 +130,7 @@ class SqlAdminRepository(AdminRepository):
 
         query = query.offset((filter.page - 1) * filter.per_page).limit(filter.per_page)
 
-        count_query = select(func.count())
+        count_query = select(func.count()).select_from(QuestionORM)
         if conditions:
             count_query = count_query.where(or_(*conditions))
         count_result = await self.session.execute(count_query)
@@ -138,9 +139,9 @@ class SqlAdminRepository(AdminRepository):
         result = await self.session.execute(query)
         questions = result.scalars().all()
 
-        formatted_questions = []
+        formatted = []
         for q in questions:
-            formatted_questions.append(
+            formatted.append(
                 {
                     "id": q.id,
                     "title": q.title,
@@ -154,7 +155,7 @@ class SqlAdminRepository(AdminRepository):
                 }
             )
 
-        return formatted_questions, total
+        return formatted, total
 
     async def import_questions(
         self, questions: List[Dict[str, Any]], dry_run: bool = False
@@ -212,44 +213,59 @@ class SqlAdminRepository(AdminRepository):
             "errors": errors,
         }
 
+    # ── Course tree (flat format: {courses, modules, lessons}) ──
+
     async def get_course_tree(self) -> Dict[str, Any]:
-        query = select(CourseORM, ModuleORM, LessonORM)
-        result = await self.session.execute(query)
-
-        courses = {}
-        for course, module, lesson in result.all():
-            if course.id not in courses:
-                courses[course.id] = {
-                    "id": course.id,
-                    "title": course.title,
-                    "description": course.description,
-                    "language": course.language,
-                    "icon": course.icon,
-                    "order": course.order,
-                    "modules": {},
-                }
-
-            if module.id not in courses[course.id]["modules"]:
-                courses[course.id]["modules"][module.id] = {
-                    "id": module.id,
-                    "title": module.title,
-                    "description": module.description,
-                    "order": module.order,
-                    "lessons": [],
-                }
-
-            courses[course.id]["modules"][module.id]["lessons"].append(
+        courses_result = await self.session.execute(
+            select(CourseORM).order_by(CourseORM.order)
+        )
+        courses = []
+        for c in courses_result.scalars().all():
+            courses.append(
                 {
-                    "id": lesson.id,
-                    "title": lesson.title,
-                    "type": lesson.type,
-                    "order": lesson.order,
-                    "question_id": lesson.question_id,
-                    "language": lesson.language,
+                    "id": c.id,
+                    "title": c.title,
+                    "description": c.description,
+                    "language": c.language,
+                    "icon": c.icon,
+                    "order": c.order,
                 }
             )
 
-        return list(courses.values())
+        modules_result = await self.session.execute(
+            select(ModuleORM).order_by(ModuleORM.order)
+        )
+        modules = []
+        for m in modules_result.scalars().all():
+            modules.append(
+                {
+                    "id": m.id,
+                    "course_id": m.course_id,
+                    "title": m.title,
+                    "description": m.description,
+                    "order": m.order,
+                }
+            )
+
+        lessons_result = await self.session.execute(
+            select(LessonORM).order_by(LessonORM.order)
+        )
+        lessons = []
+        for les in lessons_result.scalars().all():
+            lessons.append(
+                {
+                    "id": les.id,
+                    "course_id": les.course_id,
+                    "module_id": les.module_id,
+                    "title": les.title,
+                    "type": les.type,
+                    "order": les.order,
+                    "question_id": les.question_id,
+                    "language": les.language,
+                }
+            )
+
+        return {"courses": courses, "modules": modules, "lessons": lessons}
 
     async def delete_course(self, course_id: str) -> bool:
         stmt = delete(CourseORM).where(CourseORM.id == course_id)
@@ -269,117 +285,160 @@ class SqlAdminRepository(AdminRepository):
         await self.session.commit()
         return result.rowcount > 0
 
-    async def get_generation_jobs(
-        self, status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        query = select(QuestionORM).where(
-            QuestionORM.create_date >= datetime.utcnow() - timedelta(days=30)
+    # ── Curriculum CRUD ─────────────────────────────────
+
+    async def create_course(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        orm = CourseORM(
+            id=data["id"],
+            title=data["title"],
+            description=data.get("description", ""),
+            language=data.get("language", ""),
+            icon=data.get("icon", "code"),
+            order=data.get("order", 1),
         )
-
-        if status:
-            query = select(QuestionORM).where(QuestionORM.status == status)
-
-        result = await self.session.execute(query)
-        questions = result.scalars().all()
-
-        jobs = []
-        for q in questions:
-            job = {
-                "id": q.id,
-                "topic": q.category,
-                "difficulty": q.difficulty,
-                "status": q.is_interactive,
-                "created_at": q.created_at,
-            }
-            jobs.append(job)
-
-        return jobs
-
-    async def get_generation_job_by_id(self, job_id: str) -> Optional[Dict[str, Any]]:
-        return await self.get_question_by_id(job_id)
-
-    async def update_generation_job(self, job_id: str, updates: Dict[str, Any]) -> bool:
-        return await self.update_question(job_id, updates)
-
-    async def get_feature_flags(self) -> Dict[str, Any]:
-        flags = {
-            "new_dashboard": {"enabled": False, "rollout_pct": 10},
-            "ai_coaching_v2": {"enabled": True, "rollout_pct": 100},
-            "experimental_languages": {"enabled": False, "rollout_pct": 0},
+        self.session.add(orm)
+        await self.session.commit()
+        return {
+            "id": orm.id,
+            "title": orm.title,
+            "description": orm.description,
+            "language": orm.language,
+            "icon": orm.icon,
+            "order": orm.order,
         }
-        return flags
 
-    async def update_feature_flag(self, key: str, updates: FeatureFlagUpdate) -> bool:
-        return True
+    async def update_course(self, course_id: str, data: Dict[str, Any]) -> bool:
+        stmt = (
+            update(CourseORM)
+            .where(CourseORM.id == course_id)
+            .values(**data)
+            .execution_options(synchronize_session=False)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount > 0
 
-    async def get_audit_logs(
-        self, filter: AuditLogFilter, skip: int = 0, limit: int = 50
-    ) -> Tuple[List[Dict[str, Any]], int]:
-        base_query = select(QuestionORM)
-        conditions = []
+    async def create_module(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        orm = ModuleORM(
+            id=data["id"],
+            course_id=data["course_id"],
+            title=data["title"],
+            description=data.get("description", ""),
+            order=data.get("order", 1),
+        )
+        self.session.add(orm)
+        await self.session.commit()
+        return {
+            "id": orm.id,
+            "course_id": orm.course_id,
+            "title": orm.title,
+            "description": orm.description,
+            "order": orm.order,
+        }
 
-        if filter.user_id:
-            conditions.append(QuestionORM.id == filter.user_id)
-        if filter.action:
-            conditions.append(QuestionORM.title.like("%{filter.action}%", escape=None))
-        if filter.resource_type:
-            conditions.append(QuestionORM.category == filter.resource_type)
-        if filter.level:
-            conditions.append(
-                QuestionORM.description.like("%{filter.level}%", escape=None)
-            )
-        if filter.start_date:
-            conditions.append(QuestionORM.created_at >= filter.start_date)
-        if filter.end_date:
-            conditions.append(QuestionORM.created_at <= filter.end_date)
+    async def update_module(self, module_id: str, data: Dict[str, Any]) -> bool:
+        stmt = (
+            update(ModuleORM)
+            .where(ModuleORM.id == module_id)
+            .values(**data)
+            .execution_options(synchronize_session=False)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount > 0
 
-        query = base_query
-        if conditions:
-            query = query.where(or_(*conditions))
+    async def create_lesson(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        from app.models.course_schemas import LessonType
 
-        query = query.offset(skip).limit(limit)
+        lesson_type = data.get("type", LessonType.THEORY.value)
+        orm = LessonORM(
+            id=data["id"],
+            course_id=data["course_id"],
+            module_id=data["module_id"],
+            title=data["title"],
+            type=lesson_type,
+            content=data.get("content", ""),
+            order=data.get("order", 1),
+            starter_code=data.get("starter_code"),
+            test_cases=data.get("test_cases"),
+            question_id=data.get("question_id"),
+            language=data.get("language", ""),
+        )
+        self.session.add(orm)
+        await self.session.commit()
+        return {
+            "id": orm.id,
+            "course_id": orm.course_id,
+            "module_id": orm.module_id,
+            "title": orm.title,
+            "type": orm.type,
+            "content": orm.content,
+            "order": orm.order,
+            "language": orm.language,
+        }
 
-        result = await self.session.execute(query)
-        questions = result.scalars().all()
+    async def update_lesson(self, lesson_id: str, data: Dict[str, Any]) -> bool:
+        stmt = (
+            update(LessonORM)
+            .where(LessonORM.id == lesson_id)
+            .values(**data)
+            .execution_options(synchronize_session=False)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount > 0
 
-        count_query = select(func.count())
-        if conditions:
-            count_query = count_query.where(or_(*conditions))
-        count_result = await self.session.execute(count_query)
-        total = count_result.scalar_one()
+    async def create_question(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        orm = QuestionORM(
+            id=data["id"],
+            title=data["title"],
+            difficulty=data.get("difficulty", "medium"),
+            category=data.get("category", ""),
+            company_tags=data.get("company_tags", []),
+            description=data.get("description", ""),
+            starter_code=data.get(
+                "starter_code", {"python": "", "javascript": "", "java": ""}
+            ),
+            examples=data.get("examples", []),
+            test_cases=data.get("test_cases", []),
+            hints=data.get("hints", []),
+            solution=data.get("solution", None),
+            time_complexity=data.get("time_complexity", ""),
+            space_complexity=data.get("space_complexity", ""),
+            constraints=data.get("constraints", []),
+            is_interactive=1 if data.get("is_interactive", False) else 0,
+        )
+        self.session.add(orm)
+        await self.session.commit()
+        return {
+            "id": orm.id,
+            "title": orm.title,
+            "difficulty": orm.difficulty,
+            "category": orm.category,
+        }
 
-        logs = []
-        for q in questions:
-            logs.append(
-                {
-                    "id": q.id,
-                    "user_id": q.category,
-                    "action": "viewed",
-                    "resource_type": QuestionORM.__name__,
-                    "resource_id": q.id,
-                    "level": "info",
-                    "created_at": q.created_at,
-                }
-            )
-
-        return logs, total
+    # ── Stats ───────────────────────────────────────────
 
     async def get_system_stats(self) -> Dict[str, Any]:
-        query = select(func.count()).select_from(UserORM)
-        result = await self.session.execute(query)
-        total_users = result.scalar_one()
+        users_count = await self.session.execute(
+            select(func.count()).select_from(UserORM)
+        )
+        total_users = users_count.scalar_one()
 
-        query = select(func.count()).select_from(QuestionORM)
-        result = await self.session.execute(query)
-        total_questions = result.scalar_one()
+        questions_count = await self.session.execute(
+            select(func.count()).select_from(QuestionORM)
+        )
+        total_questions = questions_count.scalar_one()
 
-        query = select(func.count()).select_from(CourseORM)
-        result = await self.session.execute(query)
-        total_courses = result.scalar_one()
+        courses_count = await self.session.execute(
+            select(func.count()).select_from(CourseORM)
+        )
+        total_courses = courses_count.scalar_one()
 
-        query = select(func.count()).select_from(LessonORM)
-        result = await self.session.execute(query)
-        total_lessons = result.scalar_one()
+        lessons_count = await self.session.execute(
+            select(func.count()).select_from(LessonORM)
+        )
+        total_lessons = lessons_count.scalar_one()
 
         return {
             "users": total_users,
@@ -392,46 +451,4 @@ class SqlAdminRepository(AdminRepository):
     async def get_course_progress_by_user(
         self, user_id: str
     ) -> List[CourseProgressDetail]:
-        query = select(CourseORM, LessonORM)
-        result = await self.session.execute(query)
-
-        progress = []
-        for course, lesson in result.all():
-            progress.append(
-                {
-                    "course_id": course.id,
-                    "completed_lessons": [],
-                    "last_accessed_lesson_id": None,
-                    "progress": 0.0,
-                }
-            )
-
-        return progress
-
-    async def generate_user_role_grant_report(
-        self, start_date: datetime, end_date: datetime
-    ) -> List[Dict[str, Any]]:
-        query = select(
-            UserORM.id,
-            UserORM.username,
-            UserORM.email,
-            UserORM.created_at,
-            UserORM.role,
-        ).where(UserORM.created_at >= start_date and UserORM.created_at <= end_date)
-
-        result = await self.session.execute(query)
-        users = result.all()
-
-        report = []
-        for user in users:
-            report.append(
-                {
-                    "user_id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "created_at": user.created_at,
-                    "role": user.role,
-                }
-            )
-
-        return report
+        return []

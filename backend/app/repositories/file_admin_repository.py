@@ -3,7 +3,7 @@
 import json
 import logging
 import uuid
-from datetime import datetime
+import shutil
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 
@@ -12,9 +12,7 @@ from app.models.admin_models import (
     StatsResponse,
     QuestionFilter,
     QuestionImportResult,
-    FeatureFlagUpdate,
     CourseProgressDetail,
-    AuditLogFilter,
 )
 from app.ports.admin_repository import AdminRepository
 
@@ -41,6 +39,8 @@ class FileAdminRepository(AdminRepository):
         self._progress_file = Path(
             progress_file or BASE_DIR / "data" / "user_progress.json"
         )
+
+    # ── Internal helpers ─────────────────────────────────
 
     def _load_users(self) -> List[Dict[str, Any]]:
         if not self._users_file.exists():
@@ -88,6 +88,22 @@ class FileAdminRepository(AdminRepository):
         with open(self._progress_file) as f:
             return json.load(f)
 
+    def _course_dir(self, course_id: str) -> Path:
+        return self._courses_dir / course_id
+
+    def _read_json(self, path: Path) -> Dict[str, Any]:
+        if not path.exists():
+            return {}
+        with open(path) as f:
+            return json.load(f)
+
+    def _write_json(self, path: Path, data: Any):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2)
+
+    # ── User operations ──────────────────────────────────
+
     async def get_user_by_id(self, user_id: str) -> Optional[UserInDB]:
         for u in self._load_users():
             if u.get("id") == user_id:
@@ -132,6 +148,8 @@ class FileAdminRepository(AdminRepository):
         users = self._load_users()
         parsed = [UserInDB(**u) for u in users]
         return parsed[skip : skip + limit], len(parsed)
+
+    # ── Question operations ──────────────────────────────
 
     async def get_question_by_id(self, question_id: str) -> Optional[Dict[str, Any]]:
         for q in self._load_questions():
@@ -190,70 +208,249 @@ class FileAdminRepository(AdminRepository):
         self._save_questions(existing)
         return result
 
+    # ── Course tree ──────────────────────────────────────
+
     async def get_course_tree(self) -> Dict[str, Any]:
         return self._load_courses()
 
     async def delete_course(self, course_id: str) -> bool:
-        tree = self._load_courses()
-        for i, c in enumerate(tree["courses"]):
-            if c.get("id") == course_id:
-                tree["courses"].pop(i)
-                return True
-        return False
+        course_dir = self._course_dir(course_id)
+        if not course_dir.exists():
+            return False
+        shutil.rmtree(course_dir)
+        return True
 
     async def delete_module(self, module_id: str) -> bool:
         tree = self._load_courses()
-        for i, m in enumerate(tree.get("modules", [])):
+        module_to_del = None
+        for m in tree.get("modules", []):
             if m.get("id") == module_id:
-                tree["modules"].pop(i)
-                return True
-        return False
+                module_to_del = m
+                break
+        if not module_to_del:
+            return False
+
+        course_id = module_to_del.get("course_id")
+        course_dir = self._course_dir(course_id)
+        if not course_dir.exists():
+            return False
+
+        # Remove from modules.json
+        modules_path = course_dir / "modules.json"
+        modules_data = self._read_json(modules_path)
+        modules_data["items"] = [
+            m for m in modules_data.get("items", []) if m.get("id") != module_id
+        ]
+        self._write_json(modules_path, modules_data)
+
+        # Remove associated lessons
+        lessons_path = course_dir / "lessons.json"
+        if lessons_path.exists():
+            lessons_data = self._read_json(lessons_path)
+            lessons_data["items"] = [
+                les
+                for les in lessons_data.get("items", [])
+                if les.get("module_id") != module_id
+            ]
+            self._write_json(lessons_path, lessons_data)
+
+        return True
 
     async def delete_lesson(self, lesson_id: str) -> bool:
         tree = self._load_courses()
-        for i, lesson in enumerate(tree.get("lessons", [])):
-            if lesson.get("id") == lesson_id:
-                tree["lessons"].pop(i)
+        lesson_to_del = None
+        for les in tree.get("lessons", []):
+            if les.get("id") == lesson_id:
+                lesson_to_del = les
+                break
+        if not lesson_to_del:
+            return False
+
+        course_id = lesson_to_del.get("course_id")
+        course_dir = self._course_dir(course_id)
+        if not course_dir.exists():
+            return False
+
+        lessons_path = course_dir / "lessons.json"
+        lessons_data = self._read_json(lessons_path)
+        lessons_data["items"] = [
+            les for les in lessons_data.get("items", []) if les.get("id") != lesson_id
+        ]
+        self._write_json(lessons_path, lessons_data)
+
+        return True
+
+    # ── Curriculum CRUD ──────────────────────────────────
+
+    async def create_course(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        course_id = data["id"]
+        course_dir = self._course_dir(course_id)
+        if course_dir.exists():
+            raise FileExistsError(f"Course '{course_id}' already exists")
+
+        course_dir.mkdir(parents=True, exist_ok=True)
+
+        course = {
+            "id": course_id,
+            "title": data["title"],
+            "description": data.get("description", ""),
+            "language": data.get("language", ""),
+            "icon": data.get("icon", "code"),
+            "order": data.get("order", 1),
+        }
+        self._write_json(course_dir / "course.json", course)
+        self._write_json(course_dir / "modules.json", {"items": []})
+        self._write_json(course_dir / "lessons.json", {"items": []})
+        return course
+
+    async def update_course(self, course_id: str, data: Dict[str, Any]) -> bool:
+        course_dir = self._course_dir(course_id)
+        course_path = course_dir / "course.json"
+        if not course_path.exists():
+            return False
+
+        course = self._read_json(course_path)
+        for key in ("title", "description", "language", "icon", "order"):
+            if key in data:
+                course[key] = data[key]
+        self._write_json(course_path, course)
+        return True
+
+    async def create_module(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        course_id = data["course_id"]
+        course_dir = self._course_dir(course_id)
+        if not course_dir.exists():
+            raise FileNotFoundError(f"Course '{course_id}' not found")
+
+        module = {
+            "id": data["id"],
+            "course_id": course_id,
+            "title": data["title"],
+            "description": data.get("description", ""),
+            "order": data.get("order", 1),
+        }
+
+        modules_path = course_dir / "modules.json"
+        modules_data = self._read_json(modules_path)
+        modules_data.setdefault("items", []).append(module)
+        self._write_json(modules_path, modules_data)
+        return module
+
+    async def update_module(self, module_id: str, data: Dict[str, Any]) -> bool:
+        tree = self._load_courses()
+        module = None
+        for m in tree.get("modules", []):
+            if m.get("id") == module_id:
+                module = m
+                break
+        if not module:
+            return False
+
+        course_dir = self._course_dir(module["course_id"])
+        modules_path = course_dir / "modules.json"
+        if not modules_path.exists():
+            return False
+
+        modules_data = self._read_json(modules_path)
+        for m in modules_data.get("items", []):
+            if m["id"] == module_id:
+                for key in ("title", "description", "order"):
+                    if key in data:
+                        m[key] = data[key]
+                self._write_json(modules_path, modules_data)
                 return True
         return False
 
-    async def get_generation_jobs(
-        self, status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        return []
+    async def create_lesson(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        course_id = data["course_id"]
+        course_dir = self._course_dir(course_id)
+        if not course_dir.exists():
+            raise FileNotFoundError(f"Course '{course_id}' not found")
 
-    async def get_generation_job_by_id(self, job_id: str) -> Optional[Dict[str, Any]]:
-        return None
-
-    async def update_generation_job(self, job_id: str, updates: Dict[str, Any]) -> bool:
-        return True
-
-    async def get_feature_flags(self) -> Dict[str, Any]:
-        return {
-            "question_generation": {
-                "enabled": True,
-                "rollout_pct": 100,
-                "target_roles": ["admin", "super_admin"],
-            },
-            "audit_logging": {
-                "enabled": True,
-                "rollout_pct": 100,
-                "target_roles": ["super_admin"],
-            },
-            "experimental_languages": {
-                "enabled": False,
-                "rollout_pct": 0,
-                "target_roles": ["admin", "super_admin"],
-            },
+        lesson = {
+            "id": data["id"],
+            "course_id": course_id,
+            "module_id": data["module_id"],
+            "title": data["title"],
+            "type": data.get("type", "theory"),
+            "content": data.get("content", ""),
+            "order": data.get("order", 1),
+            "language": data.get("language", ""),
         }
+        if "starter_code" in data and data["starter_code"]:
+            lesson["starter_code"] = data["starter_code"]
+        if "test_cases" in data and data["test_cases"]:
+            lesson["test_cases"] = data["test_cases"]
+        if "question_id" in data and data["question_id"]:
+            lesson["question_id"] = data["question_id"]
 
-    async def update_feature_flag(self, key: str, updates: FeatureFlagUpdate) -> bool:
-        return True
+        lessons_path = course_dir / "lessons.json"
+        lessons_data = self._read_json(lessons_path)
+        lessons_data.setdefault("items", []).append(lesson)
+        self._write_json(lessons_path, lessons_data)
+        return lesson
 
-    async def get_audit_logs(
-        self, filter: AuditLogFilter, skip: int = 0, limit: int = 50
-    ) -> Tuple[List[Dict[str, Any]], int]:
-        return [], 0
+    async def update_lesson(self, lesson_id: str, data: Dict[str, Any]) -> bool:
+        tree = self._load_courses()
+        lesson = None
+        for les in tree.get("lessons", []):
+            if les.get("id") == lesson_id:
+                lesson = les
+                break
+        if not lesson:
+            return False
+
+        course_dir = self._course_dir(lesson["course_id"])
+        lessons_path = course_dir / "lessons.json"
+        if not lessons_path.exists():
+            return False
+
+        lessons_data = self._read_json(lessons_path)
+        for les in lessons_data.get("items", []):
+            if les["id"] == lesson_id:
+                for key in (
+                    "title",
+                    "type",
+                    "content",
+                    "order",
+                    "starter_code",
+                    "test_cases",
+                    "question_id",
+                    "language",
+                ):
+                    if key in data:
+                        les[key] = data[key]
+                self._write_json(lessons_path, lessons_data)
+                return True
+        return False
+
+    async def create_question(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        questions = self._load_questions()
+
+        question = {
+            "id": data["id"],
+            "title": data["title"],
+            "difficulty": data.get("difficulty", "medium"),
+            "category": data.get("category", ""),
+            "company_tags": data.get("company_tags", []),
+            "description": data.get("description", ""),
+            "starter_code": data.get(
+                "starter_code", {"python": "", "javascript": "", "java": ""}
+            ),
+            "examples": data.get("examples", []),
+            "test_cases": data.get("test_cases", []),
+            "hints": data.get("hints", []),
+            "solution": data.get("solution", None),
+            "time_complexity": data.get("time_complexity", ""),
+            "space_complexity": data.get("space_complexity", ""),
+            "constraints": data.get("constraints", []),
+            "is_interactive": data.get("is_interactive", False),
+        }
+        questions.append(question)
+        self._save_questions(questions)
+        return question
+
+    # ── Stats ────────────────────────────────────────────
 
     async def get_system_stats(self) -> StatsResponse:
         users = self._load_users()
@@ -304,8 +501,3 @@ class FileAdminRepository(AdminRepository):
             if p.get("user_id") == user_id:
                 results.append(CourseProgressDetail(**p))
         return results
-
-    async def generate_user_role_grant_report(
-        self, start_date: datetime, end_date: datetime
-    ) -> List[Dict[str, Any]]:
-        return []

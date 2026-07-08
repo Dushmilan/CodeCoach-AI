@@ -1,15 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime
 
 from app.models.auth_schemas import UserInDB
 from app.models.admin_models import (
     StatsResponse,
     QuestionFilter,
     QuestionImportResult,
-    FeatureFlagUpdate,
     CourseProgressDetail,
-    AuditLogFilter,
 )
 
 
@@ -73,34 +70,6 @@ class AdminRepository(ABC):
     async def delete_lesson(self, lesson_id: str) -> bool: ...
 
     @abstractmethod
-    async def get_generation_jobs(
-        self, status: Optional[str] = None
-    ) -> List[Dict[str, Any]]: ...
-
-    @abstractmethod
-    async def get_generation_job_by_id(
-        self, job_id: str
-    ) -> Optional[Dict[str, Any]]: ...
-
-    @abstractmethod
-    async def update_generation_job(
-        self, job_id: str, updates: Dict[str, Any]
-    ) -> bool: ...
-
-    @abstractmethod
-    async def get_feature_flags(self) -> Dict[str, Any]: ...
-
-    @abstractmethod
-    async def update_feature_flag(
-        self, key: str, updates: FeatureFlagUpdate
-    ) -> bool: ...
-
-    @abstractmethod
-    async def get_audit_logs(
-        self, filter: AuditLogFilter, skip: int = 0, limit: int = 50
-    ) -> Tuple[List[Dict[str, Any]], int]: ...
-
-    @abstractmethod
     async def get_system_stats(self) -> StatsResponse: ...
 
     @abstractmethod
@@ -108,7 +77,25 @@ class AdminRepository(ABC):
         self, user_id: str
     ) -> List[CourseProgressDetail]: ...
 
+    # ── Curriculum CRUD ─────────────────────────────────
+
     @abstractmethod
-    async def generate_user_role_grant_report(
-        self, start_date: datetime, end_date: datetime
-    ) -> List[Dict[str, Any]]: ...
+    async def create_course(self, data: Dict[str, Any]) -> Dict[str, Any]: ...
+
+    @abstractmethod
+    async def update_course(self, course_id: str, data: Dict[str, Any]) -> bool: ...
+
+    @abstractmethod
+    async def create_module(self, data: Dict[str, Any]) -> Dict[str, Any]: ...
+
+    @abstractmethod
+    async def update_module(self, module_id: str, data: Dict[str, Any]) -> bool: ...
+
+    @abstractmethod
+    async def create_lesson(self, data: Dict[str, Any]) -> Dict[str, Any]: ...
+
+    @abstractmethod
+    async def update_lesson(self, lesson_id: str, data: Dict[str, Any]) -> bool: ...
+
+    @abstractmethod
+    async def create_question(self, data: Dict[str, Any]) -> Dict[str, Any]: ...

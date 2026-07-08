@@ -58,12 +58,6 @@ export default function AdminSidebar({ open, onClose }: { open: boolean; onClose
       icon: Settings,
       permission: 'admin',
     },
-    {
-      title: 'Audit Logs',
-      href: '/admin/audit-logs',
-      icon: FileText,
-      permission: 'super_admin',
-    },
   ];
 
   const hasPermission = (permission: 'admin' | 'super_admin' | undefined) => {

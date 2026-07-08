@@ -101,5 +101,7 @@ async def get_adjacent_lessons(
             if current_idx < len(flat_ids) - 1
             else None,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

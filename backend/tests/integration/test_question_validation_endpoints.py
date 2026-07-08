@@ -1,6 +1,4 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -20,14 +18,12 @@ VALID_QUESTION = {
     "category": "arrays",
     "company_tags": ["TestCompany"],
     "description": "Find two numbers that sum to target.",
-    "starter": {
-        "python": "def two_sum(nums, target):\n    pass"
-    },
+    "starter": {"python": "def two_sum(nums, target):\n    pass"},
     "examples": [
         {
             "input": "nums = [2, 7, 11, 15], target = 9",
             "output": "[0, 1]",
-            "explanation": "nums[0] + nums[1] = 9"
+            "explanation": "nums[0] + nums[1] = 9",
         }
     ],
     "test_cases": [
@@ -35,14 +31,14 @@ VALID_QUESTION = {
             "input": "[2, 7, 11, 15], 9",
             "expected_output": "[0, 1]",
             "description": "Basic test case",
-            "hidden": False
+            "hidden": False,
         }
     ],
     "hints": ["Use a hash map"],
     "solution": "Use a hash map to store complements",
     "time_complexity": "O(n)",
     "space_complexity": "O(n)",
-    "constraints": ["2 <= nums.length <= 10^4"]
+    "constraints": ["2 <= nums.length <= 10^4"],
 }
 
 
@@ -65,6 +61,7 @@ class TestQuestionValidationValidate:
         )
 
         from app.api.question_validation import get_validator_service
+
         app.dependency_overrides[get_validator_service] = lambda: mock_validator
         try:
             response = test_client.post(
@@ -76,7 +73,7 @@ class TestQuestionValidationValidate:
             assert data["valid"] is True
             assert data["question_id"] == "test-question"
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_validator_service, None)
 
     def test_validate_full_failure(self, test_client: TestClient):
         mock_validator = MagicMock()
@@ -98,6 +95,7 @@ class TestQuestionValidationValidate:
         mock_validator.validate_question = AsyncMock(return_value=result)
 
         from app.api.question_validation import get_validator_service
+
         app.dependency_overrides[get_validator_service] = lambda: mock_validator
         try:
             response = test_client.post(
@@ -109,7 +107,7 @@ class TestQuestionValidationValidate:
             assert data["valid"] is False
             assert data["error_count"] == 1
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_validator_service, None)
 
     def test_validate_invalid_input(self, test_client: TestClient):
         response = test_client.post(
@@ -127,6 +125,7 @@ class TestQuestionValidationQuick:
         )
 
         from app.api.question_validation import get_validator_service
+
         app.dependency_overrides[get_validator_service] = lambda: mock_validator
         try:
             response = test_client.post(
@@ -137,7 +136,7 @@ class TestQuestionValidationQuick:
             data = response.json()
             assert data["valid"] is True
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_validator_service, None)
 
 
 class TestQuestionValidationUseCases:
@@ -148,30 +147,38 @@ class TestQuestionValidationUseCases:
         )
 
         from app.api.question_validation import get_validator_service
+
         app.dependency_overrides[get_validator_service] = lambda: mock_validator
         try:
             response = test_client.post(
                 "/api/question-validation/validate/use-cases",
-                json={"question": VALID_QUESTION, "use_cases": ["structure", "output_format"]},
+                json={
+                    "question": VALID_QUESTION,
+                    "use_cases": ["structure", "output_format"],
+                },
             )
             assert response.status_code == 200
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_validator_service, None)
 
     def test_validate_with_invalid_use_case_name(self, test_client: TestClient):
         mock_validator = MagicMock()
 
         from app.api.question_validation import get_validator_service
+
         app.dependency_overrides[get_validator_service] = lambda: mock_validator
         try:
             response = test_client.post(
                 "/api/question-validation/validate/use-cases",
-                json={"question": VALID_QUESTION, "use_cases": ["nonexistent_use_case"]},
+                json={
+                    "question": VALID_QUESTION,
+                    "use_cases": ["nonexistent_use_case"],
+                },
             )
             assert response.status_code == 400
             assert "Invalid use case" in response.json()["detail"]
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_validator_service, None)
 
 
 class TestQuestionValidationBatch:
@@ -182,6 +189,7 @@ class TestQuestionValidationBatch:
         )
 
         from app.api.question_validation import get_validator_service
+
         app.dependency_overrides[get_validator_service] = lambda: mock_validator
         try:
             response = test_client.post(
@@ -194,7 +202,7 @@ class TestQuestionValidationBatch:
             assert data["valid_count"] == 1
             assert data["invalid_count"] == 1
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_validator_service, None)
 
 
 class TestQuestionValidationInfo:
@@ -237,6 +245,7 @@ class TestQuestionValidationSummary:
         )
 
         from app.api.question_validation import get_validator_service
+
         app.dependency_overrides[get_validator_service] = lambda: mock_validator
         try:
             response = test_client.post(

@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta, timezone
-import uuid
 import logging
 
 from app.ports.admin_repository import AdminRepository
@@ -14,9 +12,14 @@ from app.models.admin_models import (
     StatsResponse,
     QuestionFilter,
     QuestionImportResult,
-    FeatureFlagUpdate,
-    GenerationJobCreate,
-    AuditLogFilter,
+    CourseCreate,
+    CourseUpdate,
+    ModuleCreate,
+    ModuleUpdate,
+    LessonCreate,
+    LessonUpdate,
+    QuestionCreate,
+    QuestionUpdate,
 )
 
 router = APIRouter()
@@ -451,345 +454,198 @@ async def delete_lesson(
         )
 
 
-# Generation Pipeline Management Endpoints
-@router.get("/generation/jobs", response_model=dict)
-async def list_generation_jobs(
-    status: Optional[str] = None,
+# ── Curriculum CRUD Endpoints ───────────────────────────
+
+
+@router.post("/courses", response_model=dict)
+async def create_course(
+    data: CourseCreate,
     admin_repo: AdminRepository = Depends(get_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """List generation jobs (admins only)."""
+    """Create a new course (admins only)."""
     try:
-        jobs = await admin_repo.get_generation_jobs(status)
-
-        return {
-            "jobs": jobs,
-            "total": len(jobs),
-            "status": status or "all",
-        }
+        result = await admin_repo.create_course(data.model_dump())
+        logger.info(f"Course '{data.id}' created by {current_user.id}")
+        return result
+    except FileExistsError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        logger.error(f"Error listing generation jobs: {e}")
+        logger.error(f"Error creating course: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error listing generation jobs: {str(e)}",
+            detail=f"Error creating course: {str(e)}",
         )
 
 
-@router.get("/generation/jobs/{job_id}", response_model=dict)
-async def get_generation_job(
-    job_id: str,
+@router.put("/courses/{course_id}", response_model=dict)
+async def update_course(
+    course_id: str,
+    data: CourseUpdate,
     admin_repo: AdminRepository = Depends(get_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """Get generation job details (admins only)."""
+    """Update a course (admins only)."""
     try:
-        job = await admin_repo.get_generation_job_by_id(job_id)
-        if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Generation job not found",
-            )
-
-        return job
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching generation job {job_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching generation job: {str(e)}",
+        success = await admin_repo.update_course(
+            course_id, data.model_dump(exclude_none=True)
         )
-
-
-@router.post("/generation/trigger", response_model=dict)
-async def trigger_generation(
-    job_data: GenerationJobCreate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
-):
-    """Trigger a new question generation job (admins only)."""
-    try:
-        # TODO: Implement actual job submission to generation service
-        job = {
-            "id": "job_" + uuid.uuid4().hex[:12],
-            "topic": job_data.topic or "general",
-            "difficulty": job_data.difficulty or "all",
-            "count": job_data.count or 10,
-            "model": job_data.model or "gemini-2.5-flash-lite",
-            "status": "pending",
-            "created_by": current_user.id,
-            "created_at": datetime.now(timezone.utc),
-        }
-
-        logger.info(f"Generation job triggered by {current_user.id}: {job['id']}")
-
-        return {"message": "Generation job submitted", "job": job}
-    except Exception as e:
-        logger.error(f"Error triggering generation: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error triggering generation: {str(e)}",
-        )
-
-
-# Feature Flags Management
-@router.get("/feature-flags", response_model=dict)
-async def get_feature_flags(
-    admin_repo: AdminRepository = Depends(get_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
-):
-    """Get all feature flags (admins only)."""
-    try:
-        flags = await admin_repo.get_feature_flags()
-        return {"flags": flags}
-    except Exception as e:
-        logger.error(f"Error fetching feature flags: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching feature flags: {str(e)}",
-        )
-
-
-@router.patch("/feature-flags/{key}")
-async def update_feature_flag(
-    key: str,
-    updates: FeatureFlagUpdate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
-):
-    """Update a feature flag (admins only)."""
-    try:
-        success = await admin_repo.update_feature_flag(key, updates)
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Feature flag not found",
+                status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
             )
-
-        logger.info(f"Feature flag {key} updated by {current_user.id}")
-        return {"message": "Feature flag updated successfully"}
+        logger.info(f"Course '{course_id}' updated by {current_user.id}")
+        return {"message": "Course updated successfully"}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating feature flag {key}: {e}")
+        logger.error(f"Error updating course {course_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating feature flag: {str(e)}",
+            detail=f"Error updating course: {str(e)}",
         )
 
 
-# Audit Logs
-@router.get("/audit-logs", response_model=dict)
-async def get_audit_logs(
-    user_id: Optional[str] = None,
-    action: Optional[str] = None,
-    resource_type: Optional[str] = None,
-    level: Optional[str] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
-    page: int = 1,
-    per_page: int = 50,
+@router.post("/modules", response_model=dict)
+async def create_module(
+    data: ModuleCreate,
     admin_repo: AdminRepository = Depends(get_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """Get audit logs with filtering and pagination (admins only)."""
+    """Create a new module (admins only)."""
     try:
-        filter = AuditLogFilter(
-            user_id=user_id,
-            action=action,
-            resource_type=resource_type,
-            level=level,
-            start_date=start_date,
-            end_date=end_date,
-            page=page,
-            per_page=per_page,
-        )
-
-        logs, total = await admin_repo.get_audit_logs(
-            filter, (page - 1) * per_page, per_page
-        )
-
-        return {
-            "logs": logs,
-            "total": total,
-            "page": page,
-            "per_page": per_page,
-            "pages": (total + per_page - 1) // per_page,
-        }
+        result = await admin_repo.create_module(data.model_dump())
+        logger.info(f"Module '{data.id}' created by {current_user.id}")
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        logger.error(f"Error fetching audit logs: {e}")
+        logger.error(f"Error creating module: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching audit logs: {str(e)}",
+            detail=f"Error creating module: {str(e)}",
         )
 
 
-@router.get("/audit-logs/export")
-async def export_audit_logs(
-    user_id: Optional[str] = None,
-    action: Optional[str] = None,
-    resource_type: Optional[str] = None,
-    level: Optional[str] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+@router.put("/modules/{module_id}", response_model=dict)
+async def update_module(
+    module_id: str,
+    data: ModuleUpdate,
     admin_repo: AdminRepository = Depends(get_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """Export audit logs as CSV (admins only)."""
+    """Update a module (admins only)."""
     try:
-        from fastapi.responses import StreamingResponse
-        import io
-        import csv
-
-        filter = AuditLogFilter(
-            user_id=user_id,
-            action=action,
-            resource_type=resource_type,
-            level=level,
-            start_date=start_date,
-            end_date=end_date,
-            page=1,
-            per_page=10000,
+        success = await admin_repo.update_module(
+            module_id, data.model_dump(exclude_none=True)
         )
-
-        logs, _ = await admin_repo.get_audit_logs(filter, 0, 10000)
-
-        csv_buffer = io.StringIO()
-        writer = csv.DictWriter(
-            csv_buffer,
-            fieldnames=[
-                "id",
-                "user_id",
-                "action",
-                "resource_type",
-                "resource_id",
-                "level",
-                "created_at",
-            ],
-        )
-        writer.writeheader()
-        for log in logs:
-            writer.writerow(log)
-
-        csv_buffer.seek(0)
-
-        return StreamingResponse(
-            iter([csv_buffer.getvalue()]),
-            media_type="text/csv",
-            headers={
-                "Content-Disposition": f"attachment; filename=audit_logs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
-            },
-        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Module not found"
+            )
+        logger.info(f"Module '{module_id}' updated by {current_user.id}")
+        return {"message": "Module updated successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error exporting audit logs: {e}")
+        logger.error(f"Error updating module {module_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error exporting audit logs: {str(e)}",
+            detail=f"Error updating module: {str(e)}",
         )
 
 
-# System Settings
-@router.get("/settings", response_model=dict)
-async def get_system_settings(
+@router.post("/lessons", response_model=dict)
+async def create_lesson(
+    data: LessonCreate,
     admin_repo: AdminRepository = Depends(get_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """Get system settings (admins only)."""
+    """Create a new lesson (admins only)."""
     try:
-        settings = {
-            "piston": {
-                "url": "http://localhost:2215",
-                "timeout_ms": 30000,
-                "memory_limit_mb": 256,
-                "cpu_limit": 1,
-                "enabled_languages": ["python", "javascript", "java"],
-            },
-            "rate_limits": {
-                "auth": 10,
-                "coach": 30,
-                "submit": 20,
-            },
-            "maintenance_mode": False,
-            "ai_provider": "google",
-        }
-
-        return settings
+        result = await admin_repo.create_lesson(data.model_dump())
+        logger.info(f"Lesson '{data.id}' created by {current_user.id}")
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        logger.error(f"Error fetching system settings: {e}")
+        logger.error(f"Error creating lesson: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching system settings: {str(e)}",
+            detail=f"Error creating lesson: {str(e)}",
         )
 
 
-@router.patch("/settings")
-async def update_system_settings(
-    updates: dict,
+@router.put("/lessons/{lesson_id}", response_model=dict)
+async def update_lesson(
+    lesson_id: str,
+    data: LessonUpdate,
     admin_repo: AdminRepository = Depends(get_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """Update system settings (admins only)."""
+    """Update a lesson (admins only)."""
     try:
-        # TODO: Implement actual settings update logic
-        logger.info(f"System settings updated by {current_user.id}")
-
-        return {"message": "System settings updated successfully"}
+        success = await admin_repo.update_lesson(
+            lesson_id, data.model_dump(exclude_none=True)
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found"
+            )
+        logger.info(f"Lesson '{lesson_id}' updated by {current_user.id}")
+        return {"message": "Lesson updated successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error updating system settings: {e}")
+        logger.error(f"Error updating lesson {lesson_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating system settings: {str(e)}",
+            detail=f"Error updating lesson: {str(e)}",
         )
 
 
-# User Analytics
-@router.get("/analytics/users", response_model=dict)
-async def get_user_analytics(
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+@router.post("/questions", response_model=dict)
+async def create_question(
+    data: QuestionCreate,
     admin_repo: AdminRepository = Depends(get_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """Get user analytics and reports (admins only)."""
+    """Create a new question (admins only)."""
     try:
-        # Default to last 30 days
-        if start_date is None:
-            start_date = datetime.utcnow() - timedelta(days=30)
-        if end_date is None:
-            end_date = datetime.utcnow()
-
-        report = await admin_repo.generate_user_role_grant_report(start_date, end_date)
-
-        return {
-            "report": report,
-            "start_date": start_date,
-            "end_date": end_date,
-            "total_users": len(report),
-        }
+        result = await admin_repo.create_question(data.model_dump())
+        logger.info(f"Question '{data.id}' created by {current_user.id}")
+        return result
     except Exception as e:
-        logger.error(f"Error fetching user analytics: {e}")
+        logger.error(f"Error creating question: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching user analytics: {str(e)}",
+            detail=f"Error creating question: {str(e)}",
         )
 
 
-@router.get("/analytics/question-progress")
-async def get_question_progress(
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+@router.put("/questions/{question_id}", response_model=dict)
+async def update_question(
+    question_id: str,
+    data: QuestionUpdate,
     admin_repo: AdminRepository = Depends(get_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """Get question progress analytics (admins only)."""
+    """Update a question (admins only)."""
     try:
-        # TODO: Implement question progress analytics
-        progress = []
-
-        return {"progress": progress, "start_date": start_date, "end_date": end_date}
+        success = await admin_repo.update_question(
+            question_id, data.model_dump(exclude_none=True)
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Question not found"
+            )
+        logger.info(f"Question '{question_id}' updated by {current_user.id}")
+        return {"message": "Question updated successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error fetching question progress: {e}")
+        logger.error(f"Error updating question {question_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching question progress: {str(e)}",
+            detail=f"Error updating question: {str(e)}",
         )
