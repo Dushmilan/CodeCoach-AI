@@ -21,23 +21,36 @@ class FileCourseRepository(CourseRepository):
     def _load(self):
         for root, _, files in os.walk(self.courses_dir):
             if "course.json" in files:
-                self._load_file(os.path.join(root, "course.json"), self._courses, Course)
+                self._load_file(
+                    os.path.join(root, "course.json"), self._courses, Course
+                )
             if "modules.json" in files:
-                self._load_file(os.path.join(root, "modules.json"), self._modules, Module)
+                self._load_file(
+                    os.path.join(root, "modules.json"), self._modules, Module
+                )
             if "lessons.json" in files:
-                self._load_file(os.path.join(root, "lessons.json"), self._lessons, Lesson)
+                self._load_file(
+                    os.path.join(root, "lessons.json"), self._lessons, Lesson
+                )
+
+    def reload(self):
+        """Re-read all data from disk. Call after admin mutations."""
+        self._courses.clear()
+        self._modules.clear()
+        self._lessons.clear()
+        self._load()
 
     def _load_file(self, path: str, target: Dict, model):
         if not os.path.exists(path):
             return
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        
+
         if "items" in data:
             items = data["items"]
         else:
             items = [data]
-            
+
         for item in items:
             try:
                 obj = model(**item)

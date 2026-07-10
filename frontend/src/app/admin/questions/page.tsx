@@ -119,7 +119,6 @@ export default function QuestionsPage() {
           </CardHeader>
           <CardContent>
             <QuestionForm
-              token={token || ''}
               onSaved={() => {
                 setShowCreateForm(false);
                 fetchQuestions();

@@ -103,21 +103,6 @@ export default function AdminDashboard() {
                 </p>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Generation Jobs
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{stats.generation?.total_jobs ?? 0}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.generation?.pending ?? 0} pending, {stats.generation?.completed ?? 0}{' '}
-                  completed
-                </p>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Quick Actions */}

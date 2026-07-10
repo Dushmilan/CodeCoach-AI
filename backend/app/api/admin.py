@@ -4,7 +4,7 @@ import logging
 
 from app.ports.admin_repository import AdminRepository
 from app.api.admin_middleware import require_admin, require_super_admin
-from app.api.dependencies import get_admin_repo
+from app.api.dependencies import get_admin_repo, get_file_course_repo
 from app.models.auth_schemas import UserResponse
 from app.models.admin_models import (
     UserAdminUpdate,
@@ -24,6 +24,13 @@ from app.models.admin_models import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _reload_course_repo():
+    """Reload the shared FileCourseRepository after admin mutations."""
+    repo = get_file_course_repo()
+    if repo is not None:
+        repo.reload()
 
 
 # Dashboard and Analytics Endpoints
@@ -387,7 +394,7 @@ async def delete_course(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Course not found",
             )
-
+        _reload_course_repo()
         logger.info(f"Course {course_id} deleted by {current_user.id}")
         return {"message": "Course deleted successfully"}
     except HTTPException:
@@ -414,7 +421,7 @@ async def delete_module(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Module not found",
             )
-
+        _reload_course_repo()
         logger.info(f"Module {module_id} deleted by {current_user.id}")
         return {"message": "Module deleted successfully"}
     except HTTPException:
@@ -441,7 +448,7 @@ async def delete_lesson(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Lesson not found",
             )
-
+        _reload_course_repo()
         logger.info(f"Lesson {lesson_id} deleted by {current_user.id}")
         return {"message": "Lesson deleted successfully"}
     except HTTPException:
@@ -457,6 +464,25 @@ async def delete_lesson(
 # ── Curriculum CRUD Endpoints ───────────────────────────
 
 
+@router.get("/check-id")
+async def check_id_exists(
+    entity_type: str,
+    entity_id: str,
+    admin_repo: AdminRepository = Depends(get_admin_repo),
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Check if an entity ID already exists."""
+    tree = await admin_repo.get_course_tree()
+    exists = False
+    if entity_type == "course":
+        exists = any(c.get("id") == entity_id for c in tree.get("courses", []))
+    elif entity_type == "module":
+        exists = any(m.get("id") == entity_id for m in tree.get("modules", []))
+    elif entity_type == "lesson":
+        exists = any(les.get("id") == entity_id for les in tree.get("lessons", []))
+    return {"exists": exists}
+
+
 @router.post("/courses", response_model=dict)
 async def create_course(
     data: CourseCreate,
@@ -466,6 +492,7 @@ async def create_course(
     """Create a new course (admins only)."""
     try:
         result = await admin_repo.create_course(data.model_dump())
+        _reload_course_repo()
         logger.info(f"Course '{data.id}' created by {current_user.id}")
         return result
     except FileExistsError as e:
@@ -494,6 +521,7 @@ async def update_course(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
             )
+        _reload_course_repo()
         logger.info(f"Course '{course_id}' updated by {current_user.id}")
         return {"message": "Course updated successfully"}
     except HTTPException:
@@ -515,6 +543,7 @@ async def create_module(
     """Create a new module (admins only)."""
     try:
         result = await admin_repo.create_module(data.model_dump())
+        _reload_course_repo()
         logger.info(f"Module '{data.id}' created by {current_user.id}")
         return result
     except FileNotFoundError as e:
@@ -543,6 +572,7 @@ async def update_module(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Module not found"
             )
+        _reload_course_repo()
         logger.info(f"Module '{module_id}' updated by {current_user.id}")
         return {"message": "Module updated successfully"}
     except HTTPException:
@@ -564,6 +594,7 @@ async def create_lesson(
     """Create a new lesson (admins only)."""
     try:
         result = await admin_repo.create_lesson(data.model_dump())
+        _reload_course_repo()
         logger.info(f"Lesson '{data.id}' created by {current_user.id}")
         return result
     except FileNotFoundError as e:
@@ -592,6 +623,7 @@ async def update_lesson(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found"
             )
+        _reload_course_repo()
         logger.info(f"Lesson '{lesson_id}' updated by {current_user.id}")
         return {"message": "Lesson updated successfully"}
     except HTTPException:

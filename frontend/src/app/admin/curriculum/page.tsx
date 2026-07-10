@@ -2,11 +2,14 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '@/providers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { showToast } from '@/components/ui/Toast';
-import QuestionForm from '@/components/admin/QuestionForm';
+import { FetchClient } from '@/lib/fetch-client';
+import CourseForm from '@/components/admin/CourseForm';
+import ModuleForm from '@/components/admin/ModuleForm';
+import LessonForm from '@/components/admin/LessonForm';
+import EntityDrawer from '@/components/admin/EntityDrawer';
 import {
   Database,
   BookOpen,
@@ -16,9 +19,9 @@ import {
   Edit3,
   ChevronRight,
   ChevronDown,
-  X,
-  Code2,
 } from 'lucide-react';
+
+const api = new FetchClient();
 
 interface Course {
   id: string;
@@ -34,6 +37,7 @@ interface Module {
   title: string;
   description?: string;
   order?: number;
+  lessons?: string[];
 }
 interface Lesson {
   id: string;
@@ -50,47 +54,57 @@ interface CourseTree {
   modules: Module[];
   lessons: Lesson[];
 }
-type EntityType = 'course' | 'module' | 'lesson' | 'question';
+type EntityType = 'course' | 'module' | 'lesson';
 
 export default function CurriculumPage() {
-  const { user, token } = useAuth();
   const [tree, setTree] = useState<CourseTree>({ courses: [], modules: [], lessons: [] });
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  // Form state
-  const [formEntity, setFormEntity] = useState<{
+  // Drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerEntity, setDrawerEntity] = useState<{
     type: EntityType;
     initial?: any;
+    initialQuestion?: any;
     parentId?: string;
   } | null>(null);
-  const [questionFormForLesson, setQuestionFormForLesson] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const fetchTree = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/courses/tree', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
+      const data = await api.get<CourseTree>('/api/admin/courses/tree');
       setTree(data);
     } catch {
       showToast('Failed to load curriculum', 'error');
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchTree();
   }, [fetchTree]);
 
   const toggle = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
-  const openForm = (type: EntityType, initial?: any, parentId?: string) => {
-    setFormEntity({ type, initial, parentId });
+
+  const openDrawer = async (type: EntityType, initial?: any, parentId?: string) => {
+    let initialQuestion = undefined;
+    if (type === 'lesson' && initial?.question_id) {
+      try {
+        initialQuestion = await api.get(`/api/admin/questions/${initial.question_id}`);
+      } catch {
+        // Question might not exist yet — that's fine
+      }
+    }
+    setDrawerEntity({ type, initial, initialQuestion, parentId });
+    setDrawerOpen(true);
   };
-  const closeForm = () => setFormEntity(null);
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setDrawerEntity(null);
+  };
 
   const del = async (type: string, id: string) => {
     if (!confirm(`Delete this ${type}?`)) return;
@@ -99,14 +113,11 @@ export default function CurriculumPage() {
       module: `/api/admin/modules/${id}`,
       lesson: `/api/admin/lessons/${id}`,
     };
-    const res = await fetch(endpoints[type], {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
+    try {
+      await api.delete(endpoints[type]);
       showToast(`${type} deleted`, 'success');
       fetchTree();
-    } else {
+    } catch {
       showToast(`Failed to delete ${type}`, 'error');
     }
   };
@@ -114,7 +125,7 @@ export default function CurriculumPage() {
   const handleFormSave = async (formData: Record<string, any>) => {
     setSaving(true);
     try {
-      const { type, initial, parentId } = formEntity || {};
+      const { type, initial, parentId } = drawerEntity || {};
       const isEdit = !!initial;
 
       let url = '';
@@ -137,314 +148,20 @@ export default function CurriculumPage() {
         }
       }
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(isEdit ? body : body),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Failed to save ${type}`);
+      if (method === 'PUT') {
+        await api.put(url, body);
+      } else {
+        await api.post(url, body);
       }
 
       showToast(`${type} saved`, 'success');
-      closeForm();
+      closeDrawer();
       fetchTree();
     } catch (e: any) {
-      showToast(e.message, 'error');
+      showToast(e.message || 'Failed to save', 'error');
     } finally {
       setSaving(false);
     }
-  };
-
-  // ── Form components ──────────────────────────────────
-
-  const CourseForm = ({ initial }: { initial?: any }) => {
-    const [f, setF] = useState({
-      id: initial?.id || '',
-      title: initial?.title || '',
-      description: initial?.description || '',
-      language: initial?.language || '',
-      icon: initial?.icon || 'code',
-      order: initial?.order ?? 1,
-    });
-    const set = (k: string, v: any) => setF((p) => ({ ...p, [k]: v }));
-    return (
-      <div className="space-y-3 p-4 bg-muted/20 rounded-lg border border-border/50 ml-0 mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">ID *</label>
-            <input
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none font-mono"
-              value={f.id}
-              onChange={(e) => set('id', e.target.value)}
-              disabled={!!initial}
-              placeholder="python-fundamentals"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Title *</label>
-            <input
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-              value={f.title}
-              onChange={(e) => set('title', e.target.value)}
-              placeholder="Python Fundamentals"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Language</label>
-            <input
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-              value={f.language}
-              onChange={(e) => set('language', e.target.value)}
-              placeholder="python"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Order</label>
-            <input
-              type="number"
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-              value={f.order}
-              onChange={(e) => set('order', Number(e.target.value))}
-            />
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground block mb-1">Description</label>
-          <textarea
-            className="w-full h-20 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y"
-            value={f.description}
-            onChange={(e) => set('description', e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => handleFormSave(f)} disabled={saving}>
-            {saving ? 'Saving...' : initial ? 'Update' : 'Create'}
-          </Button>
-          <Button variant="outline" size="sm" onClick={closeForm}>
-            Cancel
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const ModuleForm = ({ initial, courseId }: { initial?: any; courseId?: string }) => {
-    const [f, setF] = useState({
-      id: initial?.id || '',
-      title: initial?.title || '',
-      description: initial?.description || '',
-      order: initial?.order ?? 1,
-    });
-    const set = (k: string, v: any) => setF((p) => ({ ...p, [k]: v }));
-    return (
-      <div className="space-y-3 p-4 bg-muted/20 rounded-lg border border-border/50 ml-8 mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">ID *</label>
-            <input
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none font-mono"
-              value={f.id}
-              onChange={(e) => set('id', e.target.value)}
-              disabled={!!initial}
-              placeholder="getting-started"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Order</label>
-            <input
-              type="number"
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-              value={f.order}
-              onChange={(e) => set('order', Number(e.target.value))}
-            />
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground block mb-1">Title *</label>
-          <input
-            className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-            value={f.title}
-            onChange={(e) => set('title', e.target.value)}
-            placeholder="Getting Started"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground block mb-1">Description</label>
-          <textarea
-            className="w-full h-16 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y"
-            value={f.description}
-            onChange={(e) => set('description', e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={() => {
-              const d = { ...f };
-              if (courseId) (d as any).course_id = courseId;
-              handleFormSave(d);
-            }}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : initial ? 'Update' : 'Create'}
-          </Button>
-          <Button variant="outline" size="sm" onClick={closeForm}>
-            Cancel
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const LessonForm = ({ initial, moduleId }: { initial?: any; moduleId?: string }) => {
-    const [f, setF] = useState({
-      id: initial?.id || '',
-      title: initial?.title || '',
-      type: initial?.type || 'theory',
-      content: initial?.content || '',
-      order: initial?.order ?? 1,
-      language: initial?.language || '',
-      starter_code: initial?.starter_code || '',
-      question_id: initial?.question_id || '',
-    });
-    const set = (k: string, v: any) => setF((p) => ({ ...p, [k]: v }));
-
-    return (
-      <div className="space-y-3 p-4 bg-muted/20 rounded-lg border border-border/50 ml-16 mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">ID *</label>
-            <input
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none font-mono"
-              value={f.id}
-              onChange={(e) => set('id', e.target.value)}
-              disabled={!!initial}
-              placeholder="hello-world"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Order</label>
-            <input
-              type="number"
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-              value={f.order}
-              onChange={(e) => set('order', Number(e.target.value))}
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Type</label>
-            <select
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-              value={f.type}
-              onChange={(e) => set('type', e.target.value)}
-            >
-              <option value="theory">Theory</option>
-              <option value="exercise">Exercise</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground block mb-1">Title *</label>
-          <input
-            className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-            value={f.title}
-            onChange={(e) => set('title', e.target.value)}
-            placeholder="Hello, World!"
-          />
-        </div>
-        {f.type === 'exercise' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Starter Code</label>
-              <textarea
-                className="w-full h-24 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y font-mono"
-                value={f.starter_code}
-                onChange={(e) => set('starter_code', e.target.value)}
-                placeholder="def solution():&#10;    pass"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                Question ID (linked)
-              </label>
-              <input
-                className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none font-mono"
-                value={f.question_id}
-                onChange={(e) => set('question_id', e.target.value)}
-                placeholder="optional-linked-question-id"
-              />
-            </div>
-          </div>
-        )}
-        <div>
-          <label className="text-xs text-muted-foreground block mb-1">
-            Content (Markdown)
-            {f.type === 'exercise' && !f.question_id && (
-              <span className="ml-2 text-yellow-400">
-                No question linked — you can create one below
-              </span>
-            )}
-          </label>
-          <textarea
-            className="w-full h-40 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y font-mono"
-            value={f.content}
-            onChange={(e) => set('content', e.target.value)}
-            placeholder="# Lesson title&#10;&#10;Content here..."
-          />
-        </div>
-        {f.type === 'exercise' && (
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Language</label>
-            <input
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
-              value={f.language}
-              onChange={(e) => set('language', e.target.value)}
-              placeholder="python"
-            />
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => handleFormSave(f)} disabled={saving}>
-              {saving ? 'Saving...' : initial ? 'Update' : 'Create'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={closeForm}>
-              Cancel
-            </Button>
-          </div>
-          {f.type === 'exercise' && !initial && (
-            <Button variant="outline" size="sm" onClick={() => setQuestionFormForLesson(f.id)}>
-              <Code2 className="h-3.5 w-3.5 mr-1" /> Create Question
-            </Button>
-          )}
-        </div>
-        {questionFormForLesson === f.id && (
-          <div className="mt-4 p-4 bg-muted/20 rounded-lg border border-primary/20">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium">
-                New Question for lesson &quot;{f.id}&quot;
-              </span>
-              <button
-                onClick={() => setQuestionFormForLesson(null)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <QuestionForm
-              token={token || ''}
-              onSaved={() => {
-                setQuestionFormForLesson(null);
-              }}
-              onCancel={() => setQuestionFormForLesson(null)}
-            />
-          </div>
-        )}
-      </div>
-    );
   };
 
   // ── Render ───────────────────────────────────────────
@@ -456,6 +173,14 @@ export default function CurriculumPage() {
       </div>
     );
 
+  const drawerTitle = drawerEntity
+    ? drawerEntity.initial
+      ? `Edit ${drawerEntity.type}`
+      : `New ${drawerEntity.type}`
+    : '';
+
+  const drawerSubtitle = drawerEntity?.initial?.title || undefined;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -466,15 +191,12 @@ export default function CurriculumPage() {
             lessons
           </p>
         </div>
-        <Button size="sm" onClick={() => openForm('course')}>
+        <Button size="sm" onClick={() => openDrawer('course')}>
           <Plus className="h-4 w-4 mr-1" /> Add Course
         </Button>
       </div>
 
-      {/* Inline course creation form */}
-      {formEntity?.type === 'course' && !formEntity.initial && <CourseForm />}
-
-      {tree.courses.length === 0 && !formEntity ? (
+      {tree.courses.length === 0 && !drawerOpen ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             No courses found. Click &ldquo;Add Course&rdquo; to create one.
@@ -500,7 +222,7 @@ export default function CurriculumPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => openForm('course', course)}
+                      onClick={() => openDrawer('course', course)}
                       className="text-xs p-1.5 rounded hover:bg-muted transition-colors"
                       title="Edit course"
                     >
@@ -527,34 +249,17 @@ export default function CurriculumPage() {
                 </div>
               </CardHeader>
 
-              {/* Inline course edit form */}
-              {formEntity?.type === 'course' && formEntity.initial?.id === course.id && (
-                <CardContent className="pt-0 pb-3">
-                  <CourseForm initial={formEntity.initial} />
-                </CardContent>
-              )}
-
               {expanded[course.id] && (
                 <CardContent className="pt-0 space-y-3">
-                  {/* Add Module button */}
                   <div className="ml-6">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => openForm('module', undefined, course.id)}
+                      onClick={() => openDrawer('module', undefined, course.id)}
                     >
                       <Plus className="h-3.5 w-3.5 mr-1" /> Add Module
                     </Button>
                   </div>
-
-                  {/* Inline module creation form */}
-                  {formEntity?.type === 'module' &&
-                    formEntity.parentId === course.id &&
-                    !formEntity.initial && (
-                      <div className="ml-6">
-                        <ModuleForm courseId={course.id} />
-                      </div>
-                    )}
 
                   {tree.modules.filter((m) => m.course_id === course.id).length === 0 ? (
                     <p className="text-xs text-muted-foreground pl-13 ml-6">No modules</p>
@@ -576,7 +281,7 @@ export default function CurriculumPage() {
                             </div>
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={() => openForm('module', mod)}
+                                onClick={() => openDrawer('module', mod)}
                                 className="text-xs p-1 rounded hover:bg-muted transition-colors"
                                 title="Edit module"
                               >
@@ -602,32 +307,15 @@ export default function CurriculumPage() {
                             </div>
                           </div>
 
-                          {/* Inline module edit form */}
-                          {formEntity?.type === 'module' && formEntity.initial?.id === mod.id && (
-                            <div className="mt-2">
-                              <ModuleForm initial={formEntity.initial} />
-                            </div>
-                          )}
-
                           {expanded[mod.id] && (
                             <div className="ml-6 mt-2 space-y-1">
-                              {/* Add Lesson button */}
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openForm('lesson', undefined, mod.id)}
+                                onClick={() => openDrawer('lesson', undefined, mod.id)}
                               >
                                 <Plus className="h-3 h-3.5 w-3.5 mr-1" /> Add Lesson
                               </Button>
-
-                              {/* Inline lesson creation form */}
-                              {formEntity?.type === 'lesson' &&
-                                formEntity.parentId === mod.id &&
-                                !formEntity.initial && (
-                                  <div className="mt-2">
-                                    <LessonForm moduleId={mod.id} />
-                                  </div>
-                                )}
 
                               {tree.lessons.filter((l) => l.module_id === mod.id).length === 0 ? (
                                 <p className="text-xs text-muted-foreground py-1">No lessons</p>
@@ -655,7 +343,7 @@ export default function CurriculumPage() {
                                         </div>
                                         <div className="flex items-center gap-1">
                                           <button
-                                            onClick={() => openForm('lesson', les)}
+                                            onClick={() => openDrawer('lesson', les)}
                                             className="text-xs p-1 rounded hover:bg-muted transition-colors"
                                             title="Edit lesson"
                                           >
@@ -670,14 +358,6 @@ export default function CurriculumPage() {
                                           </button>
                                         </div>
                                       </div>
-
-                                      {/* Inline lesson edit form */}
-                                      {formEntity?.type === 'lesson' &&
-                                        formEntity.initial?.id === les.id && (
-                                          <div className="mt-2">
-                                            <LessonForm initial={formEntity.initial} />
-                                          </div>
-                                        )}
                                     </div>
                                   ))
                               )}
@@ -692,6 +372,43 @@ export default function CurriculumPage() {
           ))}
         </div>
       )}
+
+      {/* Side Panel Drawer */}
+      <EntityDrawer
+        open={drawerOpen}
+        onClose={closeDrawer}
+        title={drawerTitle}
+        subtitle={drawerSubtitle}
+        wide={drawerEntity?.type === 'lesson'}
+      >
+        {drawerEntity?.type === 'course' && (
+          <CourseForm
+            initial={drawerEntity.initial}
+            saving={saving}
+            onSave={handleFormSave}
+            onCancel={closeDrawer}
+          />
+        )}
+        {drawerEntity?.type === 'module' && (
+          <ModuleForm
+            initial={drawerEntity.initial}
+            courseId={drawerEntity.parentId}
+            saving={saving}
+            onSave={handleFormSave}
+            onCancel={closeDrawer}
+          />
+        )}
+        {drawerEntity?.type === 'lesson' && (
+          <LessonForm
+            initial={drawerEntity.initial}
+            initialQuestion={drawerEntity.initialQuestion}
+            moduleId={drawerEntity.parentId}
+            saving={saving}
+            onSave={handleFormSave}
+            onCancel={closeDrawer}
+          />
+        )}
+      </EntityDrawer>
     </div>
   );
 }

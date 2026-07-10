@@ -243,6 +243,14 @@ class FileAdminRepository(AdminRepository):
         ]
         self._write_json(modules_path, modules_data)
 
+        # Remove module ID from parent course's modules list
+        course_path = course_dir / "course.json"
+        course_data = self._read_json(course_path)
+        course_data["modules"] = [
+            mid for mid in course_data.get("modules", []) if mid != module_id
+        ]
+        self._write_json(course_path, course_data)
+
         # Remove associated lessons
         lessons_path = course_dir / "lessons.json"
         if lessons_path.exists():
@@ -267,6 +275,7 @@ class FileAdminRepository(AdminRepository):
             return False
 
         course_id = lesson_to_del.get("course_id")
+        module_id = lesson_to_del.get("module_id")
         course_dir = self._course_dir(course_id)
         if not course_dir.exists():
             return False
@@ -277,6 +286,18 @@ class FileAdminRepository(AdminRepository):
             les for les in lessons_data.get("items", []) if les.get("id") != lesson_id
         ]
         self._write_json(lessons_path, lessons_data)
+
+        # Remove lesson ID from parent module's lessons list
+        if module_id:
+            modules_path = course_dir / "modules.json"
+            modules_data = self._read_json(modules_path)
+            for mod in modules_data.get("items", []):
+                if mod.get("id") == module_id:
+                    mod["lessons"] = [
+                        lid for lid in mod.get("lessons", []) if lid != lesson_id
+                    ]
+                    break
+            self._write_json(modules_path, modules_data)
 
         return True
 
@@ -328,12 +349,20 @@ class FileAdminRepository(AdminRepository):
             "title": data["title"],
             "description": data.get("description", ""),
             "order": data.get("order", 1),
+            "lessons": [],
         }
 
         modules_path = course_dir / "modules.json"
         modules_data = self._read_json(modules_path)
         modules_data.setdefault("items", []).append(module)
         self._write_json(modules_path, modules_data)
+
+        # Add module ID to parent course's modules list
+        course_path = course_dir / "course.json"
+        course_data = self._read_json(course_path)
+        course_data.setdefault("modules", []).append(data["id"])
+        self._write_json(course_path, course_data)
+
         return module
 
     async def update_module(self, module_id: str, data: Dict[str, Any]) -> bool:
@@ -388,6 +417,17 @@ class FileAdminRepository(AdminRepository):
         lessons_data = self._read_json(lessons_path)
         lessons_data.setdefault("items", []).append(lesson)
         self._write_json(lessons_path, lessons_data)
+
+        # Add lesson ID to parent module's lessons list in modules.json
+        module_id = data["module_id"]
+        modules_path = course_dir / "modules.json"
+        modules_data = self._read_json(modules_path)
+        for mod in modules_data.get("items", []):
+            if mod.get("id") == module_id:
+                mod.setdefault("lessons", []).append(data["id"])
+                break
+        self._write_json(modules_path, modules_data)
+
         return lesson
 
     async def update_lesson(self, lesson_id: str, data: Dict[str, Any]) -> bool:
