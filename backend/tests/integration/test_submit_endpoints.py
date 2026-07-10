@@ -113,7 +113,10 @@ def _teardown_overrides(get_repository, get_executor):
 
 class TestSubmitEndpoint:
     def test_submit_all_pass(self, test_client, mock_question_repo, mock_executor):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -147,7 +150,10 @@ class TestSubmitEndpoint:
             _teardown_overrides(get_repository, get_executor)
 
     def test_submit_partial_pass(self, test_client, mock_question_repo, mock_executor):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -174,7 +180,10 @@ class TestSubmitEndpoint:
     def test_submit_question_not_found(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -197,7 +206,10 @@ class TestSubmitEndpoint:
     def test_submit_code_error_handling(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -283,7 +295,10 @@ class TestSubmitEndpoint:
     def test_submit_invalid_json_body(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -298,7 +313,10 @@ class TestSubmitEndpoint:
     def test_submit_missing_question_id(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -313,7 +331,10 @@ class TestSubmitEndpoint:
             _teardown_overrides(get_repository, get_executor)
 
     def test_submit_missing_code(self, test_client, mock_question_repo, mock_executor):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -331,7 +352,10 @@ class TestSubmitEndpoint:
     def test_submit_invalid_language_enum(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -353,7 +377,10 @@ class TestSubmitEndpoint:
     # ── Executor exception handling ─────────────────────────────────────
 
     def test_submit_executor_generic_exception(self, test_client, mock_question_repo):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         class FailingExec:
             async def evaluate_suite(self, language, code, test_cases):
@@ -380,7 +407,10 @@ class TestSubmitEndpoint:
             _teardown_overrides(get_repository, get_executor)
 
     def test_submit_executor_http_exception(self, test_client, mock_question_repo):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
         from fastapi import HTTPException
 
         class FailingExec:
@@ -412,7 +442,10 @@ class TestSubmitEndpoint:
     def test_submit_response_all_fields_present(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -446,7 +479,10 @@ class TestSubmitEndpoint:
     def test_submit_response_content_type(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -468,7 +504,10 @@ class TestSubmitEndpoint:
     # ── Multi-language tests ────────────────────────────────────────────
 
     def test_submit_javascript(self, test_client, mock_question_repo, mock_executor):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -490,7 +529,10 @@ class TestSubmitEndpoint:
             _teardown_overrides(get_repository, get_executor)
 
     def test_submit_java(self, test_client, mock_question_repo, mock_executor):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -516,7 +558,10 @@ class TestSubmitEndpoint:
     def test_submit_empty_test_cases(
         self, test_client, mock_question_repo_empty, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo_empty, mock_executor
@@ -542,7 +587,10 @@ class TestSubmitEndpoint:
     def test_submit_single_test_case(
         self, test_client, mock_question_repo_single, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo_single, mock_executor
@@ -569,7 +617,10 @@ class TestSubmitEndpoint:
     def test_submit_wrong_http_methods(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -584,7 +635,10 @@ class TestSubmitEndpoint:
     def test_submit_empty_code_string(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -606,7 +660,10 @@ class TestSubmitEndpoint:
     def test_submit_unicode_in_code(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor
@@ -628,7 +685,10 @@ class TestSubmitEndpoint:
     def test_submit_very_long_code(
         self, test_client, mock_question_repo, mock_executor
     ):
-        from app.api.submit import get_repository, get_executor
+        from app.api.dependencies import (
+            get_question_repo as get_repository,
+            get_executor,
+        )
 
         _setup_overrides(
             get_repository, get_executor, mock_question_repo, mock_executor

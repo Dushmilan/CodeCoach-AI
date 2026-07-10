@@ -1,13 +1,9 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.models.schemas import SubmitRequest, SubmitResponse, SubmitResult
 from app.ports.code_executor import CodeExecutor
 from app.ports.question_repository import QuestionRepository
-from app.repositories.file_question_repository import FileQuestionRepository
-from app.services.piston_service import PistonService
-from app.services.redis_service import RedisCache
 from app.api.auth import get_current_user
-from app.api.dependencies import get_redis_cache
+from app.api.dependencies import get_executor, get_question_repo
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
 import logging
 
@@ -16,22 +12,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
-def get_repository() -> QuestionRepository:
-    return FileQuestionRepository("questions/sample_questions.json")
-
-
-def get_executor(
-    cache: Optional[RedisCache] = Depends(get_redis_cache),
-) -> CodeExecutor:
-    return PistonService(cache=cache)
-
-
 @router.post("/", response_model=SubmitResponse)
 @limiter.limit(RUN_RATE_LIMIT)
 async def submit_code(
     request: Request,
     submit_request: SubmitRequest,
-    repository: QuestionRepository = Depends(get_repository),
+    repository: QuestionRepository = Depends(get_question_repo),
     executor: CodeExecutor = Depends(get_executor),
 ):
     question = await repository.get_by_id(submit_request.question_id)

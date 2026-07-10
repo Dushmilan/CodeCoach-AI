@@ -22,8 +22,18 @@ from app.repositories.file_course_repository import FileCourseRepository
 from app.repositories.file_progress_repository import FileProgressRepository
 from app.repositories.file_user_repository import FileUserRepository
 from app.services.redis_service import RedisCache
+from app.ports.code_executor import CodeExecutor
+from app.services.piston_service import PistonService
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Shared file-based course repository instance (for cache invalidation)
+_file_course_repo: Optional[FileCourseRepository] = None
+
+
+def get_file_course_repo() -> Optional[FileCourseRepository]:
+    """Get the shared FileCourseRepository instance (None if using SQL)."""
+    return _file_course_repo
 
 
 async def get_redis_cache(
@@ -51,10 +61,15 @@ async def get_course_repo(
     db: Optional[AsyncSession] = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> AsyncGenerator[CourseRepository, None]:
+    global _file_course_repo
     if settings.USE_DATABASE:
         yield SqlCourseRepository(db)
     else:
-        yield FileCourseRepository(courses_dir=str(BASE_DIR / "data" / "courses"))
+        if _file_course_repo is None:
+            _file_course_repo = FileCourseRepository(
+                courses_dir=str(BASE_DIR / "data" / "courses")
+            )
+        yield _file_course_repo
 
 
 async def get_progress_repo(
@@ -87,3 +102,9 @@ async def get_admin_repo(
         yield SqlAdminRepository(db)
     else:
         yield FileAdminRepository()
+
+
+def get_executor(
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+) -> CodeExecutor:
+    return PistonService(cache=cache)

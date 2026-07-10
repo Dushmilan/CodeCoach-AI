@@ -378,7 +378,7 @@ for i in range(10):
                     }
                 ]
 
-        from app.api.run import get_executor
+        from app.api.dependencies import get_executor
         from app.api.auth import get_current_user
         from app.models.auth_schemas import UserResponse
 
