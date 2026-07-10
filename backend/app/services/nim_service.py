@@ -11,13 +11,14 @@ from app.adapters.coaching_prompts import (
     build_structured_user_prompt,
 )
 from app.adapters.coaching_response_parser import CoachingResponseParser
+from app.ports.coaching_provider import CoachingProvider
 from app.services.redis_service import RedisCache, _content_hash
 
 logger = logging.getLogger(__name__)
 
 
-class NIMService:
-    """Service for interacting with NVIDIA NIM API for AI coaching."""
+class NIMService(CoachingProvider):
+    """NVIDIA NIM adapter for AI coaching."""
 
     def __init__(self, api_key: str = None, cache: Optional[RedisCache] = None):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
@@ -190,3 +191,50 @@ class NIMService:
         except Exception as e:
             logger.error(f"Error calling NVIDIA NIM API: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal server error")
+
+    # ── CoachingProvider port ──────────────────────────────────────────
+
+    async def get_structured(
+        self,
+        problem: str,
+        code: str,
+        language: str,
+        message: str,
+        mode: str = "hint",
+        difficulty: str = "medium",
+        lesson_context: Optional[str] = None,
+        chat_history: Optional[list] = None,
+    ) -> Dict[str, Any]:
+        return await self.get_structured_coaching_response(
+            problem=problem,
+            code=code,
+            language=language,
+            message=message,
+            mode=mode,
+            difficulty=difficulty,
+            lesson_context=lesson_context,
+            chat_history=chat_history,
+        )
+
+    async def stream(
+        self,
+        problem: str,
+        code: str,
+        language: str,
+        message: str,
+        mode: str = "hint",
+        difficulty: str = "medium",
+        lesson_context: Optional[str] = None,
+        chat_history: Optional[list] = None,
+    ) -> AsyncIterator[str]:
+        async for chunk in self.get_coaching_response(
+            problem=problem,
+            code=code,
+            language=language,
+            message=message,
+            mode=mode,
+            difficulty=difficulty,
+            lesson_context=lesson_context,
+            chat_history=chat_history,
+        ):
+            yield chunk

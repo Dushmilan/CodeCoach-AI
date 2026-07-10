@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from contextlib import contextmanager
 
 from app.main import app
+from app.api.coach import get_coaching_provider
+from tests.fixtures.mock_coaching_provider import MockCoachingProvider
 
 
 @contextmanager
@@ -30,6 +32,14 @@ def mock_auth(user_id: str = "test-id", username: str = "testuser"):
         yield
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture(autouse=True)
+def _override_coaching_provider():
+    """Auto-override coaching provider for all coach tests."""
+    app.dependency_overrides[get_coaching_provider] = MockCoachingProvider
+    yield
+    app.dependency_overrides.pop(get_coaching_provider, None)
 
 
 @pytest.mark.usefixtures("test_env_vars")
