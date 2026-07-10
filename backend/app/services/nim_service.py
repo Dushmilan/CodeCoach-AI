@@ -4,12 +4,7 @@ import logging
 from typing import AsyncIterator, Dict, Any, Optional
 from fastapi import HTTPException
 
-from app.adapters.coaching_prompts import (
-    build_system_prompt,
-    build_structured_system_prompt,
-    build_user_prompt,
-    build_structured_user_prompt,
-)
+from app.adapters.coaching_prompts import PromptBuilder
 from app.adapters.coaching_response_parser import CoachingResponseParser
 from app.ports.coaching_provider import CoachingProvider
 from app.services.redis_service import RedisCache, _content_hash
@@ -42,6 +37,7 @@ class NIMService(CoachingProvider):
         }
 
         self.parser = CoachingResponseParser()
+        self.prompts = PromptBuilder()
 
     async def get_structured_coaching_response(
         self,
@@ -68,10 +64,15 @@ class NIMService(CoachingProvider):
 
         model = self.models.get(difficulty, self.models["medium"])
 
-        system_prompt = build_structured_system_prompt(
-            mode, language, lesson_context=lesson_context
+        system_prompt, user_prompt = self.prompts.build(
+            mode=mode,
+            language=language,
+            problem=problem,
+            code=code,
+            message=message,
+            structured=True,
+            lesson_context=lesson_context,
         )
-        user_prompt = build_structured_user_prompt(problem, code, message, mode)
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -141,10 +142,15 @@ class NIMService(CoachingProvider):
     ) -> AsyncIterator[str]:
         model = self.models.get(difficulty, self.models["medium"])
 
-        system_prompt = build_system_prompt(
-            mode, language, lesson_context=lesson_context
+        system_prompt, user_prompt = self.prompts.build(
+            mode=mode,
+            language=language,
+            problem=problem,
+            code=code,
+            message=message,
+            structured=False,
+            lesson_context=lesson_context,
         )
-        user_prompt = build_user_prompt(problem, code, message, mode)
 
         messages = [
             {"role": "system", "content": system_prompt},
