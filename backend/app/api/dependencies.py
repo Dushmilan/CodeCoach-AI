@@ -24,6 +24,7 @@ from app.repositories.file_user_repository import FileUserRepository
 from app.services.redis_service import RedisCache
 from app.ports.code_executor import CodeExecutor
 from app.services.piston_service import PistonService
+from app.services.question_bank import QuestionBank
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -108,3 +109,10 @@ def get_executor(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ) -> CodeExecutor:
     return PistonService(cache=cache)
+
+
+async def get_question_bank(
+    question_repo: QuestionRepository = Depends(get_question_repo),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+) -> QuestionBank:
+    return QuestionBank(repository=question_repo, cache=cache)
