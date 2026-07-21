@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.models.schemas import CodeExecutionRequest, CodeExecutionResult, Language
 from app.ports.code_executor import CodeExecutor
-from app.api.auth import get_current_user
+from app.api.auth_deps import get_current_user
 from app.api.dependencies import get_executor
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
 import logging

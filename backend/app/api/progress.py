@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from datetime import datetime, timezone
 
 from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
 from app.services.course_service import CourseService
-from app.api.auth import get_current_user
+from app.api.auth_deps import get_current_user
 from app.api.dependencies import get_course_repo, get_progress_repo
 from app.models.auth_schemas import UserResponse
-from app.models.course_schemas import CourseProgress
 
 router = APIRouter()
 
@@ -96,19 +94,7 @@ async def track_lesson_access(
                 detail="Lesson does not belong to the specified course",
             )
 
-        progress = await course_service.get_progress(current_user.id, course_id)
-        if progress is None:
-            progress = CourseProgress(
-                user_id=current_user.id,
-                course_id=course_id,
-                completed_lessons=[],
-                last_accessed_lesson_id=lesson_id,
-            )
-            await course_service.progress_repo.save(progress)
-        else:
-            progress.last_accessed_lesson_id = lesson_id
-            progress.last_accessed_at = datetime.now(timezone.utc)
-            await course_service.progress_repo.save(progress)
+        await course_service.track_lesson_access(current_user.id, course_id, lesson_id)
 
         return {"status": "ok", "last_accessed_lesson_id": lesson_id}
     except HTTPException:

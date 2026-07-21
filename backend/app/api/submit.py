@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.models.schemas import SubmitRequest, SubmitResponse, SubmitResult
 from app.ports.code_executor import CodeExecutor
 from app.ports.question_repository import QuestionRepository
-from app.api.auth import get_current_user
+from app.api.auth_deps import get_current_user
 from app.api.dependencies import get_executor, get_question_repo
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
 import logging

@@ -14,7 +14,7 @@ from tests.fixtures.mock_coaching_provider import MockCoachingProvider
 @contextmanager
 def mock_auth(user_id: str = "test-id", username: str = "testuser"):
     """Override auth dependency for testing."""
-    from app.api.auth import get_current_user
+    from app.api.auth_deps import get_current_user
 
     async def override_get_current_user():
         from app.models.auth_schemas import UserResponse
@@ -332,7 +332,7 @@ class TestCoachEndpoints:
             "difficulty": "easy",
         }
 
-        from app.api.auth import get_current_user
+        from app.api.auth_deps import get_current_user
         from app.models.auth_schemas import UserResponse
 
         async def override_get_current_user():

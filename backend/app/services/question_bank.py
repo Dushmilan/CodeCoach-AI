@@ -178,8 +178,7 @@ class QuestionBank:
     # ── Internal: stats computation ───────────────────────────────────
 
     async def _compute_total(self) -> int:
-        questions = await self._repo.get_all()
-        return len(questions)
+        return await self._repo.count()
 
     async def _compute_difficulty_counts(self) -> Dict[str, int]:
         questions = await self._repo.get_all()

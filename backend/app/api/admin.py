@@ -3,8 +3,17 @@ from typing import Optional, List, Dict, Any
 import logging
 
 from app.ports.admin_repository import AdminRepository
-from app.api.admin_middleware import require_admin, require_super_admin
-from app.api.dependencies import get_admin_repo, get_file_course_repo
+from app.ports.user_admin_repository import UserAdminRepository
+from app.ports.question_admin_repository import QuestionAdminRepository
+from app.ports.course_admin_repository import CourseAdminRepository
+from app.api.auth_deps import require_admin, require_super_admin
+from app.api.dependencies import (
+    get_admin_repo,
+    get_user_admin_repo,
+    get_question_admin_repo,
+    get_course_admin_repo,
+    get_file_course_repo,
+)
 from app.models.auth_schemas import UserResponse
 from app.models.admin_models import (
     UserAdminUpdate,
@@ -37,6 +46,7 @@ def _reload_course_repo():
 @router.get("/stats", response_model=StatsResponse)
 async def get_admin_stats(
     admin_repo: AdminRepository = Depends(get_admin_repo),
+    current_user: UserResponse = Depends(require_admin),
 ):
     """Get system statistics and dashboard metrics."""
     try:
@@ -51,7 +61,10 @@ async def get_admin_stats(
 
 
 @router.get("/stats/users", response_model=dict)
-async def get_user_stats(admin_repo: AdminRepository = Depends(get_admin_repo)):
+async def get_user_stats(
+    admin_repo: UserAdminRepository = Depends(get_user_admin_repo),
+    current_user: UserResponse = Depends(require_admin),
+):
     """Get user statistics (admins only)."""
     try:
         # Get all users
@@ -81,7 +94,7 @@ async def list_users(
     page: int = 1,
     per_page: int = 20,
     search: Optional[str] = None,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: UserAdminRepository = Depends(get_user_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """List all users with pagination and filtering (admins only)."""
@@ -128,7 +141,7 @@ async def list_users(
 @router.get("/users/{user_id}", response_model=UserDetailResponse)
 async def get_user_detail(
     user_id: str,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: UserAdminRepository = Depends(get_user_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Get detailed user information (admins only)."""
@@ -164,7 +177,7 @@ async def get_user_detail(
 async def update_user(
     user_id: str,
     user_data: UserAdminUpdate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: UserAdminRepository = Depends(get_user_admin_repo),
     current_user: UserResponse = Depends(require_super_admin),
 ):
     """Update user role or status (super-admins only)."""
@@ -220,7 +233,7 @@ async def list_questions(
     has_solution: Optional[bool] = None,
     page: int = 1,
     per_page: int = 20,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """List questions with filtering and pagination (admins only)."""
@@ -253,7 +266,7 @@ async def list_questions(
 @router.get("/questions/{question_id}", response_model=dict)
 async def get_question(
     question_id: str,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Get question details (admins only)."""
@@ -279,7 +292,7 @@ async def get_question(
 @router.delete("/questions/{question_id}")
 async def delete_question(
     question_id: str,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Delete a question (admins only)."""
@@ -307,7 +320,7 @@ async def delete_question(
 async def import_questions(
     questions: List[Dict[str, Any]],
     dry_run: bool = False,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Import questions from JSON (admins only)."""
@@ -339,7 +352,7 @@ async def import_questions(
 @router.post("/questions/validate/{question_id}")
 async def validate_question(
     question_id: str,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Validate question test cases (admins only)."""
@@ -365,7 +378,7 @@ async def validate_question(
 # Course Management Endpoints
 @router.get("/courses/tree", response_model=dict)
 async def get_course_tree(
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Get courses tree structure (admins only)."""
@@ -383,7 +396,7 @@ async def get_course_tree(
 @router.delete("/courses/{course_id}")
 async def delete_course(
     course_id: str,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Delete a course (admins only)."""
@@ -410,7 +423,7 @@ async def delete_course(
 @router.delete("/modules/{module_id}")
 async def delete_module(
     module_id: str,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Delete a module (admins only)."""
@@ -437,7 +450,7 @@ async def delete_module(
 @router.delete("/lessons/{lesson_id}")
 async def delete_lesson(
     lesson_id: str,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Delete a lesson (admins only)."""
@@ -468,7 +481,7 @@ async def delete_lesson(
 async def check_id_exists(
     entity_type: str,
     entity_id: str,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Check if an entity ID already exists."""
@@ -486,7 +499,7 @@ async def check_id_exists(
 @router.post("/courses", response_model=dict)
 async def create_course(
     data: CourseCreate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Create a new course (admins only)."""
@@ -509,7 +522,7 @@ async def create_course(
 async def update_course(
     course_id: str,
     data: CourseUpdate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Update a course (admins only)."""
@@ -537,7 +550,7 @@ async def update_course(
 @router.post("/modules", response_model=dict)
 async def create_module(
     data: ModuleCreate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Create a new module (admins only)."""
@@ -560,7 +573,7 @@ async def create_module(
 async def update_module(
     module_id: str,
     data: ModuleUpdate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Update a module (admins only)."""
@@ -588,7 +601,7 @@ async def update_module(
 @router.post("/lessons", response_model=dict)
 async def create_lesson(
     data: LessonCreate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Create a new lesson (admins only)."""
@@ -611,7 +624,7 @@ async def create_lesson(
 async def update_lesson(
     lesson_id: str,
     data: LessonUpdate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Update a lesson (admins only)."""
@@ -639,7 +652,7 @@ async def update_lesson(
 @router.post("/questions", response_model=dict)
 async def create_question(
     data: QuestionCreate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Create a new question (admins only)."""
@@ -659,7 +672,7 @@ async def create_question(
 async def update_question(
     question_id: str,
     data: QuestionUpdate,
-    admin_repo: AdminRepository = Depends(get_admin_repo),
+    admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
     current_user: UserResponse = Depends(require_admin),
 ):
     """Update a question (admins only)."""

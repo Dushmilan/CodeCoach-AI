@@ -31,6 +31,14 @@ class CourseService:
     async def list_courses(self, user_id: Optional[str] = None) -> List[CourseSummary]:
         courses = await self.course_repo.get_all_courses()
         courses.sort(key=lambda c: c.order)
+
+        all_modules_by_id = {}
+        if user_id and courses:
+            all_modules = await self.course_repo.get_modules_by_course_batch(
+                [c.id for c in courses]
+            )
+            all_modules_by_id = {m.id: m for m in all_modules}
+
         summaries = []
         for course in courses:
             progress = 0.0
@@ -41,7 +49,7 @@ class CourseService:
                 if user_progress:
                     module_lesson_count = 0
                     for module_id in course.modules:
-                        module = await self.course_repo.get_module_by_id(module_id)
+                        module = all_modules_by_id.get(module_id)
                         if module:
                             module_lesson_count += len(module.lessons)
                     if module_lesson_count > 0:
@@ -125,3 +133,21 @@ class CourseService:
 
     async def get_all_progress(self, user_id: str):
         return await self.progress_repo.get_all_progress(user_id)
+
+    async def track_lesson_access(self, user_id: str, course_id: str, lesson_id: str):
+        from datetime import datetime, timezone
+
+        progress = await self.progress_repo.get_progress(user_id, course_id)
+        if progress is None:
+            from app.models.course_schemas import CourseProgress
+
+            progress = CourseProgress(
+                user_id=user_id,
+                course_id=course_id,
+                completed_lessons=[],
+                last_accessed_lesson_id=lesson_id,
+            )
+        else:
+            progress.last_accessed_lesson_id = lesson_id
+            progress.last_accessed_at = datetime.now(timezone.utc)
+        await self.progress_repo.save(progress)

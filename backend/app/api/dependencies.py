@@ -10,6 +10,9 @@ from app.ports.question_repository import QuestionRepository
 from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
 from app.ports.admin_repository import AdminRepository
+from app.ports.user_admin_repository import UserAdminRepository
+from app.ports.question_admin_repository import QuestionAdminRepository
+from app.ports.course_admin_repository import CourseAdminRepository
 from app.ports.user_repository import UserRepository
 from app.repositories.sql_question_repository import SqlQuestionRepository
 from app.repositories.sql_course_repository import SqlCourseRepository
@@ -103,6 +106,56 @@ async def get_admin_repo(
         yield SqlAdminRepository(db)
     else:
         yield FileAdminRepository()
+
+
+async def get_user_admin_repo(
+    db: Optional[AsyncSession] = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> AsyncGenerator[UserAdminRepository, None]:
+    if settings.USE_DATABASE:
+        from app.repositories.sql_user_admin_repository import SqlUserAdminRepository
+
+        yield SqlUserAdminRepository(db)
+    else:
+        from app.repositories.file_user_admin_repository import FileUserAdminRepository
+
+        yield FileUserAdminRepository()
+
+
+async def get_question_admin_repo(
+    db: Optional[AsyncSession] = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> AsyncGenerator[QuestionAdminRepository, None]:
+    if settings.USE_DATABASE:
+        from app.repositories.sql_question_admin_repository import (
+            SqlQuestionAdminRepository,
+        )
+
+        yield SqlQuestionAdminRepository(db)
+    else:
+        from app.repositories.file_question_admin_repository import (
+            FileQuestionAdminRepository,
+        )
+
+        yield FileQuestionAdminRepository()
+
+
+async def get_course_admin_repo(
+    db: Optional[AsyncSession] = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> AsyncGenerator[CourseAdminRepository, None]:
+    if settings.USE_DATABASE:
+        from app.repositories.sql_course_admin_repository import (
+            SqlCourseAdminRepository,
+        )
+
+        yield SqlCourseAdminRepository(db)
+    else:
+        from app.repositories.file_course_admin_repository import (
+            FileCourseAdminRepository,
+        )
+
+        yield FileCourseAdminRepository()
 
 
 def get_executor(

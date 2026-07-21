@@ -13,6 +13,7 @@ def mock_course_repo():
     repo.get_module_by_id = AsyncMock(return_value=None)
     repo.get_lesson_by_id = AsyncMock(return_value=None)
     repo.get_modules_by_course = AsyncMock(return_value=[])
+    repo.get_modules_by_course_batch = AsyncMock(return_value=[])
     repo.get_lessons_by_module = AsyncMock(return_value=[])
     return repo
 
@@ -69,41 +70,62 @@ def sample_lesson():
 class TestCourseService:
     @pytest.mark.asyncio
     async def test_list_courses_empty(self, mock_course_repo, mock_progress_repo):
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.list_courses()
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_list_courses_with_progress(self, mock_course_repo, mock_progress_repo, sample_course):
+    async def test_list_courses_with_progress(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
         mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
-        mock_course_repo.get_module_by_id = AsyncMock(return_value=MagicMock(lessons=["py-hello-world"]))
-        mock_progress_repo.get_progress = AsyncMock(return_value=CourseProgress(
-            user_id="user1",
-            course_id="python-fundamentals",
-            completed_lessons=["py-hello-world"],
-        ))
+        mock_module = MagicMock()
+        mock_module.id = "python-intro"
+        mock_module.lessons = ["py-hello-world"]
+        mock_course_repo.get_modules_by_course_batch = AsyncMock(
+            return_value=[mock_module]
+        )
+        mock_progress_repo.get_progress = AsyncMock(
+            return_value=CourseProgress(
+                user_id="user1",
+                course_id="python-fundamentals",
+                completed_lessons=["py-hello-world"],
+            )
+        )
 
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.list_courses(user_id="user1")
 
         assert len(result) == 1
         assert result[0].progress == 100.0
 
     @pytest.mark.asyncio
-    async def test_list_courses_unauthenticated(self, mock_course_repo, mock_progress_repo, sample_course):
+    async def test_list_courses_unauthenticated(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
         mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
 
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.list_courses(user_id=None)
 
         assert len(result) == 1
         assert result[0].progress == 0.0
 
     @pytest.mark.asyncio
-    async def test_get_course_by_id(self, mock_course_repo, mock_progress_repo, sample_course):
+    async def test_get_course_by_id(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
         mock_course_repo.get_course_by_id = AsyncMock(return_value=sample_course)
 
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.get_course("python-fundamentals")
 
         assert result is not None
@@ -111,29 +133,37 @@ class TestCourseService:
 
     @pytest.mark.asyncio
     async def test_get_course_not_found(self, mock_course_repo, mock_progress_repo):
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.get_course("nonexistent")
 
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_course_with_modules(self, mock_course_repo, mock_progress_repo, sample_course, sample_module):
+    async def test_get_course_with_modules(
+        self, mock_course_repo, mock_progress_repo, sample_course, sample_module
+    ):
         mock_course_repo.get_course_by_id = AsyncMock(return_value=sample_course)
         mock_course_repo.get_modules_by_course = AsyncMock(return_value=[sample_module])
-        mock_course_repo.get_lessons_by_module = AsyncMock(return_value=[
-            Lesson(
-                id="py-hello-world",
-                course_id="python-fundamentals",
-                module_id="python-intro",
-                title="Hello, World!",
-                type=LessonType.THEORY,
-                content="# Hello, World!",
-                order=1,
-                language="python",
-            )
-        ])
+        mock_course_repo.get_lessons_by_module = AsyncMock(
+            return_value=[
+                Lesson(
+                    id="py-hello-world",
+                    course_id="python-fundamentals",
+                    module_id="python-intro",
+                    title="Hello, World!",
+                    type=LessonType.THEORY,
+                    content="# Hello, World!",
+                    order=1,
+                    language="python",
+                )
+            ]
+        )
 
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.get_course_with_modules("python-fundamentals")
 
         assert result is not None
@@ -141,10 +171,14 @@ class TestCourseService:
         assert len(result["modules"][0]["lessons"]) == 1
 
     @pytest.mark.asyncio
-    async def test_get_lesson(self, mock_course_repo, mock_progress_repo, sample_lesson):
+    async def test_get_lesson(
+        self, mock_course_repo, mock_progress_repo, sample_lesson
+    ):
         mock_course_repo.get_lesson_by_id = AsyncMock(return_value=sample_lesson)
 
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.get_lesson("py-hello-world")
 
         assert result is not None
@@ -152,7 +186,9 @@ class TestCourseService:
 
     @pytest.mark.asyncio
     async def test_get_lesson_not_found(self, mock_course_repo, mock_progress_repo):
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.get_lesson("nonexistent")
 
         assert result is None
@@ -166,8 +202,12 @@ class TestCourseService:
         )
         mock_progress_repo.mark_lesson_complete = AsyncMock(return_value=expected)
 
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
-        result = await service.mark_lesson_complete("user1", "python-fundamentals", "py-hello-world")
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
+        result = await service.mark_lesson_complete(
+            "user1", "python-fundamentals", "py-hello-world"
+        )
 
         assert result is not None
         assert "py-hello-world" in result.completed_lessons
@@ -181,7 +221,9 @@ class TestCourseService:
         )
         mock_progress_repo.get_progress = AsyncMock(return_value=expected)
 
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.get_progress("user1", "python-fundamentals")
 
         assert result is not None
@@ -203,7 +245,9 @@ class TestCourseService:
         ]
         mock_progress_repo.get_all_progress = AsyncMock(return_value=expected)
 
-        service = CourseService(course_repo=mock_course_repo, progress_repo=mock_progress_repo)
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
         result = await service.get_all_progress("user1")
 
         assert len(result) == 2

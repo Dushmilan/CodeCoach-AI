@@ -10,7 +10,7 @@ from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, 
 from app.ports.coaching_provider import CoachingProvider
 from app.services.nim_service import NIMService
 from app.services.redis_service import RedisCache
-from app.api.auth import get_current_user
+from app.api.auth_deps import get_current_user
 from app.api.dependencies import get_redis_cache
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT

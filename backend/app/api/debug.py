@@ -100,11 +100,6 @@ async def get_environment_info() -> Dict[str, Any]:
         "python_version": f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
         "working_directory": os.getcwd(),
         "nvidia_api_key_present": bool(os.getenv("NVIDIA_API_KEY")),
-        "all_nvidia_vars": {
-            k: v
-            for k, v in os.environ.items()
-            if "nvidia" in k.lower() or "key" in k.lower()
-        },
     }
 
 

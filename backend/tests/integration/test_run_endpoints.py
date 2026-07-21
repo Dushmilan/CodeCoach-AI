@@ -13,7 +13,7 @@ from contextlib import contextmanager
 @contextmanager
 def mock_auth():
     """Override auth dependency for testing."""
-    from app.api.auth import get_current_user
+    from app.api.auth_deps import get_current_user
     from app.models.auth_schemas import UserResponse
 
     async def override_get_current_user():
@@ -332,7 +332,7 @@ for i in range(10):
             "version": "3.11.0",
         }
 
-        from app.api.auth import get_current_user
+        from app.api.auth_deps import get_current_user
         from app.models.auth_schemas import UserResponse
 
         async def override_get_current_user():
@@ -379,7 +379,7 @@ for i in range(10):
                 ]
 
         from app.api.dependencies import get_executor
-        from app.api.auth import get_current_user
+        from app.api.auth_deps import get_current_user
         from app.models.auth_schemas import UserResponse
 
         async def override_get_current_user():

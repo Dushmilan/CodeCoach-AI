@@ -183,7 +183,7 @@ class TestAuthLogin:
 
 class TestAuthMe:
     def test_get_me_authenticated(self, test_client: TestClient):
-        from app.api.auth import get_current_user
+        from app.api.auth_deps import get_current_user
 
         async def override_get_current_user():
             return UserResponse(

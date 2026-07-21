@@ -1,11 +1,11 @@
 """
 Performance and load testing for API endpoints.
 """
+
 import pytest
 import asyncio
 import time
 import statistics
-from typing import List
 
 import psutil
 import gc
@@ -19,9 +19,11 @@ from app.main import app
 @contextmanager
 def mock_auth(user_id: str = "test-id", username: str = "testuser"):
     """Override auth dependency for testing."""
-    from app.api.auth import get_current_user
+    from app.api.auth_deps import get_current_user
+
     async def override_get_current_user():
         from app.models.auth_schemas import UserResponse
+
         return UserResponse(
             id=user_id,
             username=username,
@@ -29,6 +31,7 @@ def mock_auth(user_id: str = "test-id", username: str = "testuser"):
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
         )
+
     app.dependency_overrides[get_current_user] = override_get_current_user
     try:
         yield
@@ -124,7 +127,9 @@ class TestLoadLimits:
             assert response.status_code == 200
             response_time = (end_time - start_time) * 1000
 
-            assert response_time < 100 + size * 2, f"Page size {size} took {response_time}ms"
+            assert (
+                response_time < 100 + size * 2
+            ), f"Page size {size} took {response_time}ms"
 
     @pytest.mark.asyncio
     async def test_large_payload_handling(self, async_client: AsyncClient):
@@ -137,7 +142,7 @@ class TestLoadLimits:
             "language": "python",
             "message": "Test message",
             "mode": "hint",
-            "difficulty": "easy"
+            "difficulty": "easy",
         }
 
         start_time = time.time()
@@ -192,7 +197,7 @@ print(fibonacci(20))
             "language": "python",
             "code": fibonacci_code,
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
 
         start_time = time.time()
@@ -216,7 +221,7 @@ print(len(large_list))
             "language": "python",
             "code": memory_code,
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
 
         start_time = time.time()
@@ -250,16 +255,18 @@ while True:
             "language": "python",
             "code": infinite_loop_code,
             "stdin": "",
-            "version": "3.11.0"
+            "version": "3.11.0",
         }
 
         start_time = time.time()
         with mock_auth():
-            response = await async_client.post("/api/run/", json=code_request)
+            await async_client.post("/api/run/", json=code_request)
         end_time = time.time()
 
         response_time = (end_time - start_time) * 1000
-        assert response_time < 30000, f"Should timeout within 30s, took {response_time}ms"
+        assert (
+            response_time < 30000
+        ), f"Should timeout within 30s, took {response_time}ms"
 
     @pytest.mark.asyncio
     async def test_load_balancing_simulation(self, async_client: AsyncClient):
@@ -271,6 +278,7 @@ while True:
         ]
 
         import random
+
         tasks = []
         for _ in range(200):
             endpoint = random.choice(endpoints)
@@ -296,67 +304,15 @@ while True:
         assert p95 < 200, f"p95 response time {p95}ms exceeds 200ms threshold"
 
 
-try:
-    import locust
-    from locust import HttpUser, task, between
-
-    class CodeCoachLoadTest(HttpUser):
-        """Locust load test configuration."""
-
-        wait_time = between(1, 3)
-
-        @task(3)
-        def get_questions(self):
-            self.client.get("/api/questions/")
-
-        @task(2)
-        def get_health(self):
-            self.client.get("/health/health")
-
-        @task(1)
-        def get_languages(self):
-            self.client.get("/api/run/languages")
-
-        @task(1)
-        def get_categories(self):
-            self.client.get("/api/questions/categories")
-
-        @task(2)
-        def search_questions(self):
-            self.client.get("/api/questions/search?q=array")
-
-        @task(1)
-        def get_coaching_modes(self):
-            self.client.get("/api/coach/modes")
-
-except ImportError:
-    pass
-
-
 class TestLoadTestConfiguration:
     """Test load test configuration."""
 
     def test_load_test_scenarios(self):
         """Test load test scenarios."""
         scenarios = [
-            {
-                "name": "normal_load",
-                "users": 10,
-                "spawn_rate": 2,
-                "duration": "30s"
-            },
-            {
-                "name": "stress_load",
-                "users": 50,
-                "spawn_rate": 5,
-                "duration": "60s"
-            },
-            {
-                "name": "peak_load",
-                "users": 100,
-                "spawn_rate": 10,
-                "duration": "120s"
-            }
+            {"name": "normal_load", "users": 10, "spawn_rate": 2, "duration": "30s"},
+            {"name": "stress_load", "users": 50, "spawn_rate": 5, "duration": "60s"},
+            {"name": "peak_load", "users": 100, "spawn_rate": 10, "duration": "120s"},
         ]
 
         for scenario in scenarios:

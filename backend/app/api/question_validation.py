@@ -12,21 +12,17 @@ from app.models.question_validation_schemas import (
     QuestionValidationResult,
     ValidationUseCase,
 )
-from app.services.question_validator import QuestionValidatorService
 from app.ports.code_executor import CodeExecutor
-from app.services.piston_service import PistonService
+from app.services.question_validator import QuestionValidatorService
+from app.api.dependencies import get_executor
 
 router = APIRouter()
 
 
-def get_executor() -> CodeExecutor:
-    """Get or create code executor instance."""
-    return PistonService()
-
-
-def get_validator_service() -> QuestionValidatorService:
-    """Get or create validator service instance."""
-    return QuestionValidatorService(executor=get_executor())
+def get_validator_service(
+    executor: CodeExecutor = Depends(get_executor),
+) -> QuestionValidatorService:
+    return QuestionValidatorService(executor=executor)
 
 
 @router.post("/validate", response_model=QuestionValidationResult)

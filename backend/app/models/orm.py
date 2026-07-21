@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, Index, JSON
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
-from datetime import datetime
+from datetime import datetime, timezone
 
 Base = declarative_base()
 
@@ -15,7 +15,7 @@ class UserORM(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     is_active = Column(Integer, default=1, nullable=False)
     oauth_provider = Column(String(50), nullable=True)
     oauth_id = Column(String(255), nullable=True)
@@ -121,9 +121,12 @@ class CourseProgressORM(Base):
     )
     completed_lessons = Column(JSONType, default=list, nullable=False)
     last_accessed_lesson_id = Column(String(36), nullable=True)
-    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     last_accessed_at = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+        nullable=False,
     )
 
     __table_args__ = (
