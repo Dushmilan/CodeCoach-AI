@@ -1,13 +1,10 @@
-import pytest
+import json
 from app.adapters.coaching_prompts import (
     build_system_prompt,
     build_structured_system_prompt,
     build_user_prompt,
     build_structured_user_prompt,
     MODE_SECTIONS,
-    PERSONA,
-    STRUCTURED_PERSONA,
-    GENERAL_GUIDELINES,
 )
 
 
@@ -23,7 +20,9 @@ class TestBuildSystemPrompt:
         assert "completely stuck" in prompt
 
     def test_lesson_context_framing(self):
-        prompt = build_system_prompt("hint", "python", lesson_context="Python Lesson 4: For Loops")
+        prompt = build_system_prompt(
+            "hint", "python", lesson_context="Python Lesson 4: For Loops"
+        )
         assert "Frame your guiding questions" in prompt
         assert "Connect the student's current struggle" in prompt
 
@@ -39,7 +38,6 @@ class TestBuildSystemPrompt:
         prompt = build_system_prompt("explain", "python")
         assert "ONE foundational idea at a time" in prompt
         assert "Do NOT dump the full concept" in prompt
-
 
     def test_includes_persona(self):
         prompt = build_system_prompt("hint", "python")
@@ -80,7 +78,9 @@ class TestBuildSystemPrompt:
         assert "General Guidelines" in prompt
 
     def test_includes_lesson_context_when_provided(self):
-        prompt = build_system_prompt("hint", "python", lesson_context="Python Lesson 4: For Loops")
+        prompt = build_system_prompt(
+            "hint", "python", lesson_context="Python Lesson 4: For Loops"
+        )
         assert "Python Lesson 4: For Loops" in prompt
         assert "lesson" in prompt.lower()
 
@@ -118,14 +118,20 @@ class TestBuildStructuredSystemPrompt:
         assert "completely stuck" in prompt
 
     def test_structured_lesson_context_framing(self):
-        prompt = build_structured_system_prompt("hint", "python", lesson_context="Python Lesson 4: For Loops")
+        prompt = build_structured_system_prompt(
+            "hint", "python", lesson_context="Python Lesson 4: For Loops"
+        )
         assert "Frame your guiding questions" in prompt
         assert "Connect the student's current struggle" in prompt
-
 
     def test_includes_structured_persona(self):
         prompt = build_structured_system_prompt("hint", "python")
         assert "You MUST respond with ONLY a valid JSON object" in prompt
+
+    def test_includes_input_format_section(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "Input Format" in prompt
+        assert "JSON object with fields" in prompt
 
     def test_includes_language_line(self):
         prompt = build_structured_system_prompt("hint", "python")
@@ -162,7 +168,9 @@ class TestBuildStructuredSystemPrompt:
         assert "Language: python" in prompt
 
     def test_structured_includes_lesson_context_when_provided(self):
-        prompt = build_structured_system_prompt("hint", "python", lesson_context="Python Lesson 4: For Loops")
+        prompt = build_structured_system_prompt(
+            "hint", "python", lesson_context="Python Lesson 4: For Loops"
+        )
         assert "Python Lesson 4: For Loops" in prompt
 
     def test_structured_omits_lesson_context_when_not_provided(self):
@@ -193,20 +201,46 @@ class TestBuildUserPrompt:
 
 
 class TestBuildStructuredUserPrompt:
-    def test_contains_problem_and_code_and_message(self):
-        prompt = build_structured_user_prompt("Two Sum", "def f(): pass", "Help", "explain")
-        assert "Two Sum" in prompt
-        assert "def f(): pass" in prompt
-        assert "Help" in prompt
+    def test_is_valid_json(self):
+        prompt = build_structured_user_prompt(
+            "Two Sum", "def f(): pass", "Help", "explain"
+        )
+        data = json.loads(prompt)
+        assert data["problem"] == "Two Sum"
+        assert data["code"] == "def f(): pass"
+        assert data["message"] == "Help"
+        assert data["mode"] == "explain"
 
-    def test_includes_json_instruction(self):
+    def test_has_expected_keys(self):
         prompt = build_structured_user_prompt("P", "c", "m", "hint")
-        assert "valid JSON object" in prompt
+        data = json.loads(prompt)
+        assert set(data.keys()) == {"problem", "code", "message", "mode"}
+
+    def test_handles_special_chars_in_code(self):
+        prompt = build_structured_user_prompt(
+            "Test", 'print("hello")\n# comment', "msg", "review"
+        )
+        data = json.loads(prompt)
+        assert 'print("hello")' in data["code"]
+        assert "# comment" in data["code"]
+
+    def test_handles_special_chars_in_message(self):
+        prompt = build_structured_user_prompt(
+            "P", "c", 'it\'s "broken" somehow', "debug"
+        )
+        data = json.loads(prompt)
+        assert data["message"] == 'it\'s "broken" somehow'
 
 
 class TestModeSections:
     def test_maps_all_five_modes(self):
-        assert set(MODE_SECTIONS.keys()) == {"hint", "review", "explain", "debug", "freeform"}
+        assert set(MODE_SECTIONS.keys()) == {
+            "hint",
+            "review",
+            "explain",
+            "debug",
+            "freeform",
+        }
 
     def test_each_mode_has_unstructured_section(self):
         for name, entry in MODE_SECTIONS.items():

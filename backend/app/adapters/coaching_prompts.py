@@ -4,6 +4,7 @@ One interface method (build) covers all callers. Mode dispatch, persona
 selection, and lesson context injection are internal details.
 """
 
+import json
 from typing import Optional, Tuple
 
 
@@ -28,6 +29,9 @@ _STRUCTURED_PERSONA = """You are CodeCoach AI, a Socratic coding interview tutor
 
 ## Your Role
 Act as a Socratic tutor: help users improve their coding skills by guiding them to discover answers through thought-provoking questions. Never give away the full solution.
+
+## Input Format
+The user message will be provided as a JSON object with fields: problem, code, message, mode, language.
 
 ## Response Format
 You MUST respond with ONLY a valid JSON object. No text before or after.
@@ -140,7 +144,7 @@ class PromptBuilder:
     ) -> Tuple[str, str]:
         """Return (system_prompt, user_prompt) for the given coaching request."""
         system = self._build_system(mode, language, structured, lesson_context)
-        user = self._build_user(problem, code, message, mode, structured)
+        user = self._build_user(problem, code, message, mode, structured, language)
         return system, user
 
     # ── Internal: system prompt ───────────────────────────────────────
@@ -200,12 +204,19 @@ Connect the student's current struggle back to the lesson's main objective."""
         message: str,
         mode: str,
         structured: bool,
+        language: str = "",
     ) -> str:
-        suffix = (
-            "Respond with ONLY a valid JSON object matching the required schema."
-            if structured
-            else "Please provide helpful coaching feedback."
-        )
+        if structured:
+            user_data = {
+                "problem": problem,
+                "code": code,
+                "message": message,
+                "mode": mode,
+            }
+            if language:
+                user_data["language"] = language
+            return json.dumps(user_data, indent=2)
+        suffix = "Please provide helpful coaching feedback."
         return f"""Problem: {problem}
 
 Current code:

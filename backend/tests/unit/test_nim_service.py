@@ -7,18 +7,21 @@ class TestNIMServiceInit:
     def test_init_with_api_key_arg(self):
         with patch.dict("os.environ", {}, clear=True):
             from app.services.nim_service import NIMService
+
             service = NIMService(api_key="nvapi-test-key-12345")
             assert service.api_key == "nvapi-test-key-12345"
 
     def test_init_with_env_var(self):
         with patch.dict("os.environ", {"NVIDIA_API_KEY": "nvapi-from-env-xxx"}):
             from app.services.nim_service import NIMService
+
             service = NIMService()
             assert service.api_key == "nvapi-from-env-xxx"
 
     def test_init_without_key_raises(self):
         with patch.dict("os.environ", {}, clear=True):
             from app.services.nim_service import NIMService
+
             with pytest.raises(ValueError, match="NVIDIA_API_KEY"):
                 NIMService()
 
@@ -38,11 +41,13 @@ class TestNIMServiceStructured:
             from app.services.nim_service import NIMService
 
             mock_response_data = {
-                "choices": [{
-                    "message": {
-                        "content": '{"summary": "Great work", "hints": [], "code_review": null, "complexity_analysis": null, "suggestions": [], "edge_cases": [], "explanation": null, "debug_help": null}'
+                "choices": [
+                    {
+                        "message": {
+                            "content": '{"summary": "Great work", "hints": [], "code_review": null, "complexity_analysis": null, "suggestions": [], "edge_cases": [], "explanation": null, "debug_help": null}'
+                        }
                     }
-                }]
+                ]
             }
 
             mock_response = MagicMock()
@@ -52,12 +57,20 @@ class TestNIMServiceStructured:
 
             service = NIMService(api_key="nvapi-test")
             result = await service.get_structured_coaching_response(
-                problem="Test", code="print(1)", language="python",
-                message="help", mode="hint", difficulty="easy",
+                problem="Test",
+                code="print(1)",
+                language="python",
+                message="help",
+                mode="hint",
+                difficulty="easy",
             )
 
             assert result["summary"] == "Great work"
             assert result["hints"] == []
+
+            call_kwargs = mock_async_client.post.call_args[1]
+            payload = call_kwargs["json"]
+            assert payload["response_format"] == {"type": "json_object"}
 
     @pytest.mark.asyncio
     async def test_get_structured_coaching_response_api_error(self, mock_async_client):
@@ -72,8 +85,12 @@ class TestNIMServiceStructured:
             service = NIMService(api_key="nvapi-test")
             with pytest.raises(HTTPException) as exc:
                 await service.get_structured_coaching_response(
-                    problem="Test", code="x", language="python",
-                    message="h", mode="hint", difficulty="easy",
+                    problem="Test",
+                    code="x",
+                    language="python",
+                    message="h",
+                    mode="hint",
+                    difficulty="easy",
                 )
             assert exc.value.status_code == 401
 
@@ -81,19 +98,27 @@ class TestNIMServiceStructured:
     async def test_get_structured_coaching_response_timeout(self, mock_async_client):
         from app.services.nim_service import NIMService
 
-        mock_async_client.post.side_effect = HTTPException(status_code=504, detail="Timeout")
+        mock_async_client.post.side_effect = HTTPException(
+            status_code=504, detail="Timeout"
+        )
 
         with patch.dict("os.environ", {"NVIDIA_API_KEY": "nvapi-test"}):
             service = NIMService(api_key="nvapi-test")
             with pytest.raises(HTTPException) as exc:
                 await service.get_structured_coaching_response(
-                    problem="Test", code="x", language="python",
-                    message="h", mode="hint", difficulty="easy",
+                    problem="Test",
+                    code="x",
+                    language="python",
+                    message="h",
+                    mode="hint",
+                    difficulty="easy",
                 )
             assert exc.value.status_code == 504
 
     @pytest.mark.asyncio
-    async def test_get_structured_coaching_response_malformed_json(self, mock_async_client):
+    async def test_get_structured_coaching_response_malformed_json(
+        self, mock_async_client
+    ):
         with patch.dict("os.environ", {"NVIDIA_API_KEY": "nvapi-test"}):
             from app.services.nim_service import NIMService
 
@@ -108,8 +133,12 @@ class TestNIMServiceStructured:
 
             service = NIMService(api_key="nvapi-test")
             result = await service.get_structured_coaching_response(
-                problem="Test", code="x", language="python",
-                message="h", mode="hint", difficulty="easy",
+                problem="Test",
+                code="x",
+                language="python",
+                message="h",
+                mode="hint",
+                difficulty="easy",
             )
 
             assert "summary" in result
@@ -135,13 +164,19 @@ class TestNIMServiceStreaming:
                 mock_response = MagicMock()
                 mock_response.status_code = 200
                 mock_response.aiter_lines = mock_lines
-                mock_instance.stream.return_value.__aenter__.return_value = mock_response
+                mock_instance.stream.return_value.__aenter__.return_value = (
+                    mock_response
+                )
 
                 service = NIMService(api_key="nvapi-test")
                 chunks = []
                 async for chunk in service.get_coaching_response(
-                    problem="Test", code="x", language="python",
-                    message="h", mode="hint", difficulty="easy",
+                    problem="Test",
+                    code="x",
+                    language="python",
+                    message="h",
+                    mode="hint",
+                    difficulty="easy",
                 ):
                     chunks.append(chunk)
 

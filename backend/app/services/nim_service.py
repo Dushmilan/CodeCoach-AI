@@ -55,7 +55,7 @@ class NIMService(CoachingProvider):
         cache_key = None
         if self.cache and not chat_history:
             content_hash = _content_hash(
-                problem, code, message, mode, difficulty, lesson_context or ""
+                problem, code, message, mode, difficulty, lesson_context or "", "v2"
             )
             cache_key = RedisCache.key("nim", "coaching", content_hash)
             cached = await self.cache.get(cache_key)
@@ -88,6 +88,7 @@ class NIMService(CoachingProvider):
             "temperature": 0.1,
             "top_p": 0.9,
             "stream": False,
+            "response_format": {"type": "json_object"},
         }
 
         try:
