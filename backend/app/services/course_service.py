@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 
-from app.models.course_schemas import Course, CourseSummary, Lesson
+from app.models.course_schemas import Course, CourseProgress, CourseSummary, Lesson
 from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
 from app.repositories.file_course_repository import FileCourseRepository
@@ -135,12 +136,8 @@ class CourseService:
         return await self.progress_repo.get_all_progress(user_id)
 
     async def track_lesson_access(self, user_id: str, course_id: str, lesson_id: str):
-        from datetime import datetime, timezone
-
         progress = await self.progress_repo.get_progress(user_id, course_id)
         if progress is None:
-            from app.models.course_schemas import CourseProgress
-
             progress = CourseProgress(
                 user_id=user_id,
                 course_id=course_id,

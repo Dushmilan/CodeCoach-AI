@@ -115,3 +115,30 @@ class SqlCourseRepository(CourseRepository):
         for orm in result.scalars().all():
             modules.append(await self._hydrate_module(orm))
         return modules
+
+    async def get_modules_by_course_batch(self, course_ids: List[str]) -> List[Module]:
+        if not course_ids:
+            return []
+        result = await self.session.execute(
+            select(ModuleORM)
+            .where(ModuleORM.course_id.in_(course_ids))
+            .order_by(ModuleORM.course_id, ModuleORM.order)
+        )
+        orms = result.scalars().all()
+        if not orms:
+            return []
+        module_ids = [m.id for m in orms]
+        lesson_rows = await self.session.execute(
+            select(LessonORM.id, LessonORM.module_id, LessonORM.order)
+            .where(LessonORM.module_id.in_(module_ids))
+            .order_by(LessonORM.module_id, LessonORM.order)
+        )
+        lesson_map = {}
+        for lid, mid, _ in lesson_rows.all():
+            lesson_map.setdefault(mid, []).append(lid)
+        modules = []
+        for orm in orms:
+            m = self._module_to_model(orm)
+            m.lessons = lesson_map.get(orm.id, [])
+            modules.append(m)
+        return modules
