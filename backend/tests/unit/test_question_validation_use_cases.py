@@ -373,7 +373,7 @@ class TestStarterCodeValidationUseCase:
         executor.execute.return_value = ExecutionResult(stdout="", exit_code=0)
 
         use_case = StarterCodeValidationUseCase(executor=executor)
-        await use_case.execute(valid_question)
+        _result = await use_case.execute(valid_question)
 
         # Should validate Python, JavaScript, and Java
         assert executor.execute.call_count >= 3
@@ -814,7 +814,7 @@ class TestQuestionBankValidationIntegration:
             stdout="result", exit_code=0
         )
 
-        await bank.add(valid_question, validate=True)
+        _result = await bank.add(valid_question, validate=True)
 
         statuses = await empty_repo.get_validation_statuses()
         assert valid_question.id in statuses

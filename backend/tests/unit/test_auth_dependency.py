@@ -78,7 +78,7 @@ class TestGetCurrentUser:
 class TestGetOptionalCurrentUser:
     @pytest.mark.asyncio
     async def test_optional_no_token_returns_none(self):
-        with patch("app.api.auth.AuthService"):
+        with patch("app.api.auth.AuthService") as _mock_auth_cls:
             from app.api.auth_deps import get_optional_current_user
 
             result = await get_optional_current_user(None)
