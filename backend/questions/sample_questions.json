@@ -2843,22 +2843,5 @@
     "space_complexity": null,
     "constraints": [],
     "is_interactive": false
-  },
-  {
-    "id": "test-q-1",
-    "title": "Reverse a String",
-    "difficulty": "easy",
-    "category": "strings",
-    "company_tags": [],
-    "description": "Write a function to reverse a string.",
-    "starter_code": null,
-    "examples": null,
-    "test_cases": null,
-    "hints": [],
-    "solution": null,
-    "time_complexity": null,
-    "space_complexity": null,
-    "constraints": [],
-    "is_interactive": false
   }
 ]
