@@ -78,9 +78,9 @@ class TestHealthEndpoints:
 
         # Validate timestamp format (ISO 8601)
         timestamp = data["timestamp"]
-        assert (
-            timestamp.endswith("Z") or "+" in timestamp
-        ), "Timestamp should be in ISO 8601 format"
+        assert timestamp.endswith("Z") or "+" in timestamp, (
+            "Timestamp should be in ISO 8601 format"
+        )
 
     def test_health_check_error_handling(self, test_client: TestClient):
         """Test health check error handling."""
@@ -116,9 +116,9 @@ class TestHealthEndpoints:
 
         # Response should be very fast (< 100ms)
         response_time = (end_time - start_time) * 1000
-        assert (
-            response_time < 100
-        ), f"Health check took {response_time}ms, expected < 100ms"
+        assert response_time < 100, (
+            f"Health check took {response_time}ms, expected < 100ms"
+        )
 
     def test_health_check_detailed_response_time(self, test_client: TestClient):
         """Test detailed health check response time."""
@@ -131,6 +131,6 @@ class TestHealthEndpoints:
         assert response.status_code == 200
 
         response_time = (end_time - start_time) * 1000
-        assert (
-            response_time < 200
-        ), f"Health check took {response_time}ms, expected < 200ms"
+        assert response_time < 200, (
+            f"Health check took {response_time}ms, expected < 200ms"
+        )

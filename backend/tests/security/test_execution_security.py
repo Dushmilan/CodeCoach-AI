@@ -40,9 +40,9 @@ class TestExecutionSecurity:
             assert response.status_code in [200, 401]
             if response.status_code == 200:
                 data = response.json()
-                assert "root:" not in data.get(
-                    "stdout", ""
-                ), f"File read leaked: {code}"
+                assert "root:" not in data.get("stdout", ""), (
+                    f"File read leaked: {code}"
+                )
 
     def test_network_access_blocked(self, test_client: TestClient):
         """Code should not be able to make outbound network requests."""
@@ -70,9 +70,9 @@ class TestExecutionSecurity:
                 data = response.json()
                 admin_names = ["root", "administrator", "admin"]
                 stdout_lower = data.get("stdout", "").lower()
-                assert not any(
-                    name in stdout_lower for name in admin_names
-                ), f"Process spawn leaked: {code}"
+                assert not any(name in stdout_lower for name in admin_names), (
+                    f"Process spawn leaked: {code}"
+                )
 
     def test_js_require_fs(self, test_client: TestClient):
         """JavaScript code should not access fs module."""

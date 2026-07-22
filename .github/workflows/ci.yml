@@ -40,6 +40,8 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/unit/ -v --tb=short
+        env:
+          JWT_SECRET_KEY: "ci-test-secret-key-32chars-long!!!!!"
 
   frontend:
     name: Frontend

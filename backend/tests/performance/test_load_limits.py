@@ -127,9 +127,9 @@ class TestLoadLimits:
             assert response.status_code == 200
             response_time = (end_time - start_time) * 1000
 
-            assert (
-                response_time < 100 + size * 2
-            ), f"Page size {size} took {response_time}ms"
+            assert response_time < 100 + size * 2, (
+                f"Page size {size} took {response_time}ms"
+            )
 
     @pytest.mark.asyncio
     async def test_large_payload_handling(self, async_client: AsyncClient):
@@ -264,9 +264,9 @@ while True:
         end_time = time.time()
 
         response_time = (end_time - start_time) * 1000
-        assert (
-            response_time < 30000
-        ), f"Should timeout within 30s, took {response_time}ms"
+        assert response_time < 30000, (
+            f"Should timeout within 30s, took {response_time}ms"
+        )
 
     @pytest.mark.asyncio
     async def test_load_balancing_simulation(self, async_client: AsyncClient):

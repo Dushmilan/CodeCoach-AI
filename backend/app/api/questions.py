@@ -113,60 +113,6 @@ async def get_question_stats(
         )
 
 
-@router.get("/category/{category}")
-async def get_questions_by_category(
-    category: str,
-    page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
-    bank: QuestionBank = Depends(get_question_bank),
-):
-    try:
-        result = await bank.query(QuestionFilters(category=category, per_page=10000))
-
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated = result.items[start_idx:end_idx]
-
-        return QuestionsListResponse(
-            questions=paginated,
-            total=result.total,
-            page=page,
-            per_page=per_page,
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching questions by category: {str(e)}"
-        )
-
-
-@router.get("/difficulty/{difficulty}")
-async def get_questions_by_difficulty(
-    difficulty: Difficulty,
-    page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
-    bank: QuestionBank = Depends(get_question_bank),
-):
-    try:
-        result = await bank.query(
-            QuestionFilters(difficulty=difficulty, per_page=10000)
-        )
-
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated = result.items[start_idx:end_idx]
-
-        return QuestionsListResponse(
-            questions=paginated,
-            total=result.total,
-            page=page,
-            per_page=per_page,
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching questions by difficulty: {str(e)}"
-        )
-
-
 @router.get("/{question_id}", response_model=Question)
 async def get_question(
     question_id: str,

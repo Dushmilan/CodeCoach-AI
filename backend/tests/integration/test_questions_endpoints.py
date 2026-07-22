@@ -54,9 +54,9 @@ class TestQuestionsEndpoints:
         app.dependency_overrides[get_questions_service] = lambda: MockQuestions()
         try:
             response = test_client.get("/api/questions/categories")
-            assert (
-                response.status_code == 200
-            ), f"Got {response.status_code}: {response.json()['detail']}"
+            assert response.status_code == 200, (
+                f"Got {response.status_code}: {response.json()['detail']}"
+            )
             data = response.json()
             assert data["categories"] == ["mock-category"]
         finally:
@@ -228,36 +228,6 @@ class TestQuestionsEndpoints:
         assert isinstance(data["difficulty_counts"], dict)
         assert isinstance(data["category_counts"], dict)
 
-    def test_get_questions_by_category(self, test_client: TestClient):
-        """Test getting questions filtered by category."""
-        response = test_client.get("/api/questions/category/arrays")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        assert "questions" in data
-        assert "total" in data
-        assert "page" in data
-        assert "per_page" in data
-
-        for question in data["questions"]:
-            assert question["category"].lower() == "arrays"
-
-    def test_get_questions_by_difficulty(self, test_client: TestClient):
-        """Test getting questions filtered by difficulty."""
-        response = test_client.get("/api/questions/difficulty/medium")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        assert "questions" in data
-        assert "total" in data
-        assert "page" in data
-        assert "per_page" in data
-
-        for question in data["questions"]:
-            assert question["difficulty"] == "medium"
-
     def test_questions_pagination_limits(self, test_client: TestClient):
         """Test pagination limits."""
         # Test minimum per_page
@@ -379,6 +349,6 @@ class TestQuestionsEndpoints:
 
         # Response should be fast (< 200ms)
         response_time = (end_time - start_time) * 1000
-        assert (
-            response_time < 200
-        ), f"Questions endpoint took {response_time}ms, expected < 200ms"
+        assert response_time < 200, (
+            f"Questions endpoint took {response_time}ms, expected < 200ms"
+        )

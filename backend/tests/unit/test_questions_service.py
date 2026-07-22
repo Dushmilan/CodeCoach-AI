@@ -1,4 +1,4 @@
-"""Tests for QuestionBank (replaces old QuestionsService wrapper tests)."""
+"""Tests for QuestionBank."""
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
@@ -169,6 +169,35 @@ class TestQuestionBankStats:
         stats = await bank.stats()
         assert stats.category_counts["arrays"] == 1
         assert stats.category_counts["linked-lists"] == 1
+
+    @pytest.mark.asyncio
+    async def test_search_questions(self, mock_repo, sample_questions):
+        mock_repo.search_summaries = AsyncMock(return_value=[sample_questions[0]])
+        bank = make_bank(mock_repo)
+
+        result = await bank.query(QuestionFilters(query="two"))
+        assert result.total == 1
+        assert result.items[0].id == "two-sum"
+
+    @pytest.mark.asyncio
+    async def test_get_by_category(self, mock_repo, sample_questions):
+        arrays = [q for q in sample_questions if q.category == "arrays"]
+        mock_repo.get_summaries = AsyncMock(return_value=arrays)
+        bank = make_bank(mock_repo)
+
+        result = await bank.query(QuestionFilters(category="arrays"))
+        assert result.total == 1
+        assert result.items[0].category == "arrays"
+
+    @pytest.mark.asyncio
+    async def test_get_by_difficulty(self, mock_repo, sample_questions):
+        easy = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
+        mock_repo.get_summaries = AsyncMock(return_value=easy)
+        bank = make_bank(mock_repo)
+
+        result = await bank.query(QuestionFilters(difficulty=Difficulty.EASY))
+        assert result.total == 1
+        assert result.items[0].difficulty == Difficulty.EASY
 
 
 class TestQuestionBankAdd:

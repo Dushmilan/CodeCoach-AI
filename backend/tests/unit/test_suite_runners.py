@@ -560,9 +560,9 @@ class TestSuiteRunnerIntegration:
             # Verify the code passed to execute does NOT have double fs requires
             call_kwargs = mock_exec.call_args[1]
             sent_code = call_kwargs["code"]
-            assert (
-                sent_code.count("require('fs')") <= 1
-            ), f"double fs require in sent code would crash JS runtime:\n{sent_code[:300]}"
+            assert sent_code.count("require('fs')") <= 1, (
+                f"double fs require in sent code would crash JS runtime:\n{sent_code[:300]}"
+            )
             assert results[0].passed is True
 
     @pytest.mark.asyncio
@@ -585,9 +585,9 @@ class TestSuiteRunnerIntegration:
             call_kwargs = mock_exec.call_args[1]
             sent_code = call_kwargs["code"]
             # Wrapper adds "readFileSync(0" for stdin reading - should NOT be present
-            assert (
-                "readFileSync(0" not in sent_code
-            ), "wrapper should not add stdin-reading code to suite runner"
+            assert "readFileSync(0" not in sent_code, (
+                "wrapper should not add stdin-reading code to suite runner"
+            )
 
 
 # ── Schema Normalization Tests ─────────────────────────────────────────

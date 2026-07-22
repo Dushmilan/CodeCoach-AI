@@ -422,6 +422,6 @@ for i in range(10):
 
         # Response should be reasonably fast (< 2s for simple code)
         response_time = (end_time - start_time) * 1000
-        assert (
-            response_time < 2000
-        ), f"Code execution took {response_time}ms, expected < 2000ms"
+        assert response_time < 2000, (
+            f"Code execution took {response_time}ms, expected < 2000ms"
+        )

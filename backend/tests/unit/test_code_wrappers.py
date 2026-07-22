@@ -85,9 +85,9 @@ class TestPythonCodeWrapper:
         for code, expected_sig in variants:
             result = wrapper.wrap(code)
             assert expected_sig in result, f"sig {expected_sig} not found for {code!r}"
-            assert "self" not in result.replace(
-                "self.", ""
-            ), f"self param not stripped for {code!r}"
+            assert "self" not in result.replace("self.", ""), (
+                f"self param not stripped for {code!r}"
+            )
 
     def test_string_output_path(self):
         wrapper = get_wrapper("python")
