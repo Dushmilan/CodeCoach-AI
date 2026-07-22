@@ -1,6 +1,7 @@
 """
 Realistic load profiles for API endpoints.
 """
+
 import pytest
 import asyncio
 import time
@@ -50,19 +51,32 @@ async def test_sustained_load(async_client: AsyncClient):
 async def test_mixed_workload(async_client: AsyncClient):
     """60% read, 30% execute POST, 10% coach POST."""
     import random
+
     tasks = []
     for _ in range(100):
         roll = random.random()
         if roll < 0.6:
             tasks.append(async_client.get("/api/questions/"))
         elif roll < 0.9:
-            tasks.append(async_client.post("/api/run/", json={
-                "language": "python", "code": "print(1)", "stdin": ""
-            }))
+            tasks.append(
+                async_client.post(
+                    "/api/run/",
+                    json={"language": "python", "code": "print(1)", "stdin": ""},
+                )
+            )
         else:
-            tasks.append(async_client.post("/api/coach/", json={
-                "problem": "test", "code": "x=1", "language": "python",
-                "message": "help", "mode": "hint", "difficulty": "easy"
-            }))
+            tasks.append(
+                async_client.post(
+                    "/api/coach/",
+                    json={
+                        "problem": "test",
+                        "code": "x=1",
+                        "language": "python",
+                        "message": "help",
+                        "mode": "hint",
+                        "difficulty": "easy",
+                    },
+                )
+            )
     responses = await asyncio.gather(*tasks)
     assert len(responses) == 100

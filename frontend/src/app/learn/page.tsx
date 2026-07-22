@@ -1,14 +1,15 @@
-"use client";
+'use client';
 
-import { Header } from "@/components/header/Header";
-import { useCurriculum } from "@/features/curriculum/use-curriculum.hook";
-import { FetchClient } from "@/lib/fetch-client";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/providers";
-import type { CourseSummary } from "@/types";
-import { motion } from "framer-motion";
-import Link from "next/link";
-import { memo, ReactNode, useEffect, useState } from "react";
+import { Header } from '@/components/header/Header';
+import { useCurriculum } from '@/features/curriculum/use-curriculum.hook';
+import { FetchClient } from '@/lib/fetch-client';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers';
+import type { CourseSummary } from '@/types';
+import { motion } from 'framer-motion';
+import { BookOpen, Star, Zap } from 'lucide-react';
+import Link from 'next/link';
+import { memo, ReactNode, useEffect, useState } from 'react';
 
 const api = new FetchClient();
 
@@ -20,9 +21,9 @@ interface ProgressMap {
 }
 
 const languageConfig: Record<string, { icon: ReactNode; label: string }> = {
-  python: { icon: <BookOpen width={20} height={20} />, label: "Python" },
-  c: { icon: <Zap width={20} height={20} />, label: "C" },
-  java: { icon: <Star width={20} height={20} />, label: "Java" },
+  python: { icon: <BookOpen width={20} height={20} />, label: 'Python' },
+  c: { icon: <Zap width={20} height={20} />, label: 'C' },
+  java: { icon: <Star width={20} height={20} />, label: 'Java' },
 };
 
 const staggerVariants = {
@@ -70,21 +71,17 @@ const CourseCard = memo(function CourseCard({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <motion.div
-      layout
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <motion.div layout onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <Link
         href={`/learn/${course.id}`}
         className={cn(
-          "group relative block rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8",
-          "transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          "hover:bg-white/[0.04]",
+          'group relative block rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8',
+          'transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+          'hover:bg-white/[0.04]',
           accentBorder,
         )}
         style={{
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
         }}
       >
         <div className="flex items-start justify-between mb-5">
@@ -116,9 +113,7 @@ const CourseCard = memo(function CourseCard({
 
         <div className="flex items-center justify-between mt-3">
           {isAuthenticated && completedCount > 0 && (
-            <span className="text-[11px] text-muted-foreground/40">
-              {completedCount} completed
-            </span>
+            <span className="text-[11px] text-muted-foreground/40">{completedCount} completed</span>
           )}
           {isAuthenticated && lastLessonId && (
             <span className="ml-auto text-[11px] text-primary/60 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
@@ -136,12 +131,7 @@ const CourseCard = memo(function CourseCard({
 
 function SkeletonCard({ className }: { className?: string }) {
   return (
-    <div
-      className={cn(
-        "rounded-3xl border border-white/[0.04] bg-white/[0.01] p-8",
-        className,
-      )}
-    >
+    <div className={cn('rounded-3xl border border-white/[0.04] bg-white/[0.01] p-8', className)}>
       <div className="flex items-center gap-3 mb-5">
         <div className="h-10 w-10 rounded-xl bg-white/[0.03] animate-pulse" />
         <div className="space-y-2">
@@ -172,7 +162,7 @@ export default function LearnPage() {
     if (!isAuthenticated || !isHydrated) return;
     const fetchProgress = async () => {
       try {
-        const data = await api.get<{ progress: any[] }>("/api/progress/");
+        const data = await api.get<{ progress: any[] }>('/api/progress/');
         const map: ProgressMap = {};
         data.progress.forEach((p: any) => {
           map[p.course_id] = {
@@ -182,7 +172,7 @@ export default function LearnPage() {
         });
         setProgressMap(map);
       } catch (err) {
-        console.error("Failed to fetch progress:", err);
+        console.error('Failed to fetch progress:', err);
       }
     };
     fetchProgress();
@@ -203,8 +193,8 @@ export default function LearnPage() {
             Learning Paths
           </h1>
           <p className="text-sm text-muted-foreground/50 mt-4 max-w-[45ch] leading-relaxed">
-            Choose a language to begin. Each path combines structured theory
-            with hands-on coding exercises.
+            Choose a language to begin. Each path combines structured theory with hands-on coding
+            exercises.
           </p>
         </motion.div>
 
@@ -238,7 +228,7 @@ export default function LearnPage() {
                   initial="hidden"
                   animate="visible"
                   variants={staggerVariants}
-                  className={isHero ? "md:col-span-2" : ""}
+                  className={isHero ? 'md:col-span-2' : ''}
                 >
                   <CourseCard
                     course={course}
@@ -246,9 +236,7 @@ export default function LearnPage() {
                     lastLessonId={lastLessonId}
                     isAuthenticated={isHydrated && isAuthenticated}
                     accentBorder={
-                      isHero
-                        ? "md:hover:border-primary/20"
-                        : "md:hover:border-white/[0.12]"
+                      isHero ? 'md:hover:border-primary/20' : 'md:hover:border-white/[0.12]'
                     }
                   />
                 </motion.div>

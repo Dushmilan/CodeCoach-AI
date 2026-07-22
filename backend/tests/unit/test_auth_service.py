@@ -5,12 +5,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone, timedelta
 
 from app.models.auth_schemas import (
-    UserRegisterRequest, UserLoginRequest, TokenData,
-    UserInDB, UserResponse,
+    UserRegisterRequest,
+    UserLoginRequest,
+    TokenData,
+    UserInDB,
 )
 from app.services.auth_service import (
-    AuthService, hash_password, verify_password,
-    create_access_token, decode_access_token, _user_to_response,
+    AuthService,
+    hash_password,
+    verify_password,
+    create_access_token,
+    decode_access_token,
 )
 
 
@@ -63,7 +68,11 @@ class TestTokenCreation:
     def test_decode_expired_token(self):
         with patch("app.services.auth_service.datetime") as mock_dt:
             mock_dt.now.return_value = datetime.now(timezone.utc) - timedelta(hours=48)
-            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw) if a else datetime.now(timezone.utc) - timedelta(hours=48)
+            mock_dt.side_effect = lambda *a, **kw: (
+                datetime(*a, **kw)
+                if a
+                else datetime.now(timezone.utc) - timedelta(hours=48)
+            )
             token, _ = create_access_token(
                 TokenData(user_id="user-1", username="testuser"),
                 expires_delta=timedelta(hours=1),
@@ -92,8 +101,11 @@ class TestAuthServiceRegister:
     async def test_register_duplicate_username(self, mock_repo):
         mock_repo.get_by_username = AsyncMock(
             return_value=UserInDB(
-                id="existing", username="newuser", email="other@test.com",
-                hashed_password="hash", created_at=datetime.now(timezone.utc),
+                id="existing",
+                username="newuser",
+                email="other@test.com",
+                hashed_password="hash",
+                created_at=datetime.now(timezone.utc),
             )
         )
         service = AuthService(repository=mock_repo)
@@ -108,8 +120,11 @@ class TestAuthServiceRegister:
     async def test_register_duplicate_email(self, mock_repo):
         mock_repo.get_by_email = AsyncMock(
             return_value=UserInDB(
-                id="existing", username="other", email="new@test.com",
-                hashed_password="hash", created_at=datetime.now(timezone.utc),
+                id="existing",
+                username="other",
+                email="new@test.com",
+                hashed_password="hash",
+                created_at=datetime.now(timezone.utc),
             )
         )
         service = AuthService(repository=mock_repo)
@@ -125,9 +140,12 @@ class TestAuthServiceLogin:
     @pytest.mark.asyncio
     async def test_login_success(self, mock_repo):
         user = UserInDB(
-            id="user-1", username="testuser", email="test@test.com",
+            id="user-1",
+            username="testuser",
+            email="test@test.com",
             hashed_password=hash_password("correctpass"),
-            created_at=datetime.now(timezone.utc), is_active=True,
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
         )
         mock_repo.get_by_username = AsyncMock(return_value=user)
         service = AuthService(repository=mock_repo)
@@ -141,9 +159,12 @@ class TestAuthServiceLogin:
     @pytest.mark.asyncio
     async def test_login_wrong_password(self, mock_repo):
         user = UserInDB(
-            id="user-1", username="testuser", email="test@test.com",
+            id="user-1",
+            username="testuser",
+            email="test@test.com",
             hashed_password=hash_password("correctpass"),
-            created_at=datetime.now(timezone.utc), is_active=True,
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
         )
         mock_repo.get_by_username = AsyncMock(return_value=user)
         service = AuthService(repository=mock_repo)
@@ -165,9 +186,12 @@ class TestAuthServiceLogin:
     @pytest.mark.asyncio
     async def test_login_inactive_user(self, mock_repo):
         user = UserInDB(
-            id="user-1", username="inactive", email="test@test.com",
+            id="user-1",
+            username="inactive",
+            email="test@test.com",
             hashed_password=hash_password("pass"),
-            created_at=datetime.now(timezone.utc), is_active=False,
+            created_at=datetime.now(timezone.utc),
+            is_active=False,
         )
         mock_repo.get_by_username = AsyncMock(return_value=user)
         service = AuthService(repository=mock_repo)
@@ -179,9 +203,12 @@ class TestAuthServiceLogin:
     @pytest.mark.asyncio
     async def test_login_by_email(self, mock_repo):
         user = UserInDB(
-            id="user-1", username="testuser", email="test@test.com",
+            id="user-1",
+            username="testuser",
+            email="test@test.com",
             hashed_password=hash_password("pass"),
-            created_at=datetime.now(timezone.utc), is_active=True,
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
         )
         mock_repo.get_by_username = AsyncMock(return_value=None)
         mock_repo.get_by_email = AsyncMock(return_value=user)
@@ -196,8 +223,12 @@ class TestAuthServiceGetCurrentUser:
     @pytest.mark.asyncio
     async def test_get_current_user_success(self, mock_repo):
         user = UserInDB(
-            id="user-1", username="testuser", email="test@test.com",
-            hashed_password="hash", created_at=datetime.now(timezone.utc), is_active=True,
+            id="user-1",
+            username="testuser",
+            email="test@test.com",
+            hashed_password="hash",
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
         )
         mock_repo.get_by_id = AsyncMock(return_value=user)
         service = AuthService(repository=mock_repo)
@@ -218,7 +249,9 @@ class TestAuthServiceGetCurrentUser:
     async def test_get_current_user_not_found(self, mock_repo):
         mock_repo.get_by_id = AsyncMock(return_value=None)
         service = AuthService(repository=mock_repo)
-        token, _ = create_access_token(TokenData(user_id="nonexistent", username="ghost"))
+        token, _ = create_access_token(
+            TokenData(user_id="nonexistent", username="ghost")
+        )
 
         with pytest.raises(ValueError, match="User not found"):
             await service.get_current_user(token)
@@ -226,8 +259,12 @@ class TestAuthServiceGetCurrentUser:
     @pytest.mark.asyncio
     async def test_get_current_user_inactive(self, mock_repo):
         user = UserInDB(
-            id="user-1", username="disabled", email="test@test.com",
-            hashed_password="hash", created_at=datetime.now(timezone.utc), is_active=False,
+            id="user-1",
+            username="disabled",
+            email="test@test.com",
+            hashed_password="hash",
+            created_at=datetime.now(timezone.utc),
+            is_active=False,
         )
         mock_repo.get_by_id = AsyncMock(return_value=user)
         service = AuthService(repository=mock_repo)
@@ -240,10 +277,13 @@ class TestAuthServiceGetCurrentUser:
 class TestAuthServiceSupabaseLogin:
     @pytest.fixture(autouse=True)
     def setup_env(self):
-        with patch.dict(os.environ, {
-            "SUPABASE_URL": "https://test.supabase.co",
-            "SUPABASE_ANON_KEY": "test-anon-key",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "SUPABASE_URL": "https://test.supabase.co",
+                "SUPABASE_ANON_KEY": "test-anon-key",
+            },
+        ):
             yield
 
     @pytest.mark.asyncio
@@ -275,9 +315,14 @@ class TestAuthServiceSupabaseLogin:
     @pytest.mark.asyncio
     async def test_login_with_supabase_returns_existing_user(self, mock_repo):
         existing_user = UserInDB(
-            id="user-1", username="existing", email="existing@gmail.com",
-            hashed_password="", created_at=datetime.now(timezone.utc),
-            is_active=True, oauth_provider="google", oauth_id="google-123",
+            id="user-1",
+            username="existing",
+            email="existing@gmail.com",
+            hashed_password="",
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
+            oauth_provider="google",
+            oauth_id="google-123",
         )
         mock_repo.get_by_oauth = AsyncMock(return_value=existing_user)
 

@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { executeClientJS, formatClientJsOutput } from "./client-js-executor";
-import { Question } from "@/types";
+import { describe, it, expect } from 'vitest';
+import { executeClientJS, formatClientJsOutput } from './client-js-executor';
+import { Question } from '@/types';
 
 const passingCode = `function add(a, b) {
   return a + b;
@@ -15,37 +15,64 @@ const errorCode = `function add(a, b) {
 }`;
 
 const question: Question = {
-  id: "1",
-  title: "Add",
-  difficulty: "easy",
-  category: "math",
+  id: '1',
+  title: 'Add',
+  difficulty: 'easy',
+  category: 'math',
   company_tags: [],
-  description: "Add two numbers.",
-  starter: { python: "", javascript: "function add(a, b) {}", java: "" },
-  examples: [{ input: "1,2", output: "3" }],
+  description: 'Add two numbers.',
+  starter: {
+    python: '',
+    javascript: 'function add(a, b) {}',
+    java: '',
+    cpp: '',
+    c: '',
+    go: '',
+    rust: '',
+    typescript: '',
+  },
+  examples: [{ input: '1,2', output: '3' }],
   test_cases: [
-    { input: "1\n2", expected_output: "3" },
-    { input: "10\n20", expected_output: "30" },
-    { input: "-1\n1", expected_output: "0" },
+    { input: '1\n2', expected_output: '3' },
+    { input: '10\n20', expected_output: '30' },
+    { input: '-1\n1', expected_output: '0' },
   ],
   hints: [],
-  solution: "",
-  time_complexity: "O(1)",
-  space_complexity: "O(1)",
+  solution: '',
+  time_complexity: 'O(1)',
+  space_complexity: 'O(1)',
 };
 
 const questionWithVarStarter: Question = {
   ...question,
-  starter: { python: "", javascript: "var add = function(a, b) {}", java: "" },
+  starter: {
+    python: '',
+    javascript: 'var add = function(a, b) {}',
+    java: '',
+    cpp: '',
+    c: '',
+    go: '',
+    rust: '',
+    typescript: '',
+  },
 };
 
 const questionWithConstStarter: Question = {
   ...question,
-  starter: { python: "", javascript: "const add = (a, b) => {}", java: "" },
+  starter: {
+    python: '',
+    javascript: 'const add = (a, b) => {}',
+    java: '',
+    cpp: '',
+    c: '',
+    go: '',
+    rust: '',
+    typescript: '',
+  },
 };
 
-describe("executeClientJS", () => {
-  it("returns allPassed=true when all tests pass", () => {
+describe('executeClientJS', () => {
+  it('returns allPassed=true when all tests pass', () => {
     const result = executeClientJS(passingCode, question);
     expect(result.allPassed).toBe(true);
     expect(result.results).toHaveLength(3);
@@ -54,71 +81,89 @@ describe("executeClientJS", () => {
     }
   });
 
-  it("returns allPassed=false when tests fail", () => {
+  it('returns allPassed=false when tests fail', () => {
     const result = executeClientJS(failingCode, question);
     expect(result.allPassed).toBe(false);
     expect(result.results[0].passed).toBe(false);
   });
 
-  it("captures console output in logs", () => {
+  it('captures console output in logs', () => {
     const code = `function add(a, b) {
       console.log('adding', a, b);
       return a + b;
     }`;
     const result = executeClientJS(code, question);
     expect(result.logs.length).toBeGreaterThan(0);
-    expect(result.logs.some((l) => l.includes("adding"))).toBe(true);
+    expect(result.logs.some((l) => l.includes('adding'))).toBe(true);
   });
 
-  it("handles runtime errors in user code", () => {
+  it('handles runtime errors in user code', () => {
     const result = executeClientJS(errorCode, question);
-    expect(result.results[0].error).toBe("runtime failure");
+    expect(result.results[0].error).toBe('runtime failure');
     expect(result.results[0].passed).toBe(false);
   });
 
-  it("throws when function name cannot be determined", () => {
+  it('throws when function name cannot be determined', () => {
     const noFnQuestion: Question = {
       ...question,
-      starter: { python: "", javascript: "", java: "" },
+      starter: {
+        python: '',
+        javascript: '',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
-    expect(() => executeClientJS("const x = 42;", noFnQuestion)).toThrow(
-      "Could not identify the target function name",
+    expect(() => executeClientJS('const x = 42;', noFnQuestion)).toThrow(
+      'Could not identify the target function name',
     );
   });
 
-  it("detects function name from starter with var pattern", () => {
+  it('detects function name from starter with var pattern', () => {
     const result = executeClientJS(passingCode, questionWithVarStarter);
     expect(result.allPassed).toBe(true);
   });
 
-  it("detects function name from starter with const pattern", () => {
+  it('detects function name from starter with const pattern', () => {
     const result = executeClientJS(passingCode, questionWithConstStarter);
     expect(result.allPassed).toBe(true);
   });
 
-  it("restores console.log after execution", () => {
+  it('restores console.log after execution', () => {
     const originalLog = console.log;
     executeClientJS(passingCode, question);
     expect(console.log).toBe(originalLog);
   });
 
-  it("restores console.error after execution", () => {
+  it('restores console.error after execution', () => {
     const originalError = console.error;
     executeClientJS(passingCode, question);
     expect(console.error).toBe(originalError);
   });
 
-  it("restores console.warn after execution", () => {
+  it('restores console.warn after execution', () => {
     const originalWarn = console.warn;
     executeClientJS(passingCode, question);
     expect(console.warn).toBe(originalWarn);
   });
 
-  it("handles non-JSON expected_output gracefully", () => {
+  it('handles non-JSON expected_output gracefully', () => {
     const strQuestion: Question = {
       ...question,
-      test_cases: [{ input: '"world"', expected_output: "Hello, world" }],
-      starter: { python: "", javascript: "function greet(name) {}", java: "" },
+      test_cases: [{ input: '"world"', expected_output: 'Hello, world' }],
+      starter: {
+        python: '',
+        javascript: 'function greet(name) {}',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
     const code = `function greet(name) { return "Hello, " + name; }`;
     const result = executeClientJS(code, strQuestion);
@@ -126,28 +171,42 @@ describe("executeClientJS", () => {
     expect(result.results[0].passed).toBe(true);
   });
 
-  it("handles expected_output that is a non-JSON string", () => {
+  it('handles expected_output that is a non-JSON string', () => {
     const strQuestion: Question = {
       ...question,
-      test_cases: [{ input: "5", expected_output: "not a json string" }],
-      starter: { python: "", javascript: "function foo(x) {}", java: "" },
+      test_cases: [{ input: '5', expected_output: 'not a json string' }],
+      starter: {
+        python: '',
+        javascript: 'function foo(x) {}',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
     const code = `function foo(x) { return "not a json string"; }`;
     const result = executeClientJS(code, strQuestion);
     expect(result.results[0].passed).toBe(true);
   });
 
-  it("handles in-place (void) function that returns undefined", () => {
+  it('handles in-place (void) function that returns undefined', () => {
     const rotateQuestion: Question = {
       ...question,
       test_cases: [
-        { input: "[[1,2],[3,4]]", expected_output: "[[3,1],[4,2]]" },
-        { input: "[[1]]", expected_output: "[[1]]" },
+        { input: '[[1,2],[3,4]]', expected_output: '[[3,1],[4,2]]' },
+        { input: '[[1]]', expected_output: '[[1]]' },
       ],
       starter: {
-        python: "",
-        javascript: "function rotate(matrix) {}",
-        java: "",
+        python: '',
+        javascript: 'function rotate(matrix) {}',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
       },
     };
     const code = `function rotate(matrix) {
@@ -166,11 +225,20 @@ describe("executeClientJS", () => {
     expect(result.allPassed).toBe(true);
   });
 
-  it("uses parsedArgs[0] as actual when function returns undefined", () => {
+  it('uses parsedArgs[0] as actual when function returns undefined', () => {
     const mutateQuestion: Question = {
       ...question,
-      test_cases: [{ input: "[1,2,3]", expected_output: "[1,2,3,4]" }],
-      starter: { python: "", javascript: "function push(arr) {}", java: "" },
+      test_cases: [{ input: '[1,2,3]', expected_output: '[1,2,3,4]' }],
+      starter: {
+        python: '',
+        javascript: 'function push(arr) {}',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
     const code = `function push(arr) {
       arr.push(4);
@@ -180,67 +248,63 @@ describe("executeClientJS", () => {
   });
 });
 
-describe("formatClientJsOutput", () => {
-  it("includes console output when logs exist", () => {
+describe('formatClientJsOutput', () => {
+  it('includes console output when logs exist', () => {
     const output = {
-      logs: ["hello", "world"],
-      results: [
-        { index: 1, passed: true, input: "1", expected: "3", actual: 3 },
-      ],
+      logs: ['hello', 'world'],
+      results: [{ index: 1, passed: true, input: '1', expected: '3', actual: 3 }],
       allPassed: true,
     };
     const formatted = formatClientJsOutput(output, question);
-    expect(formatted).toContain("Console Output");
-    expect(formatted).toContain("hello");
+    expect(formatted).toContain('Console Output');
+    expect(formatted).toContain('hello');
   });
 
-  it("formats test results with pass/fail status", () => {
+  it('formats test results with pass/fail status', () => {
     const output = {
       logs: [],
       results: [
-        { index: 1, passed: true, input: "1", expected: "3", actual: 3 },
-        { index: 2, passed: false, input: "2", expected: "4", actual: 2 },
+        { index: 1, passed: true, input: '1', expected: '3', actual: 3 },
+        { index: 2, passed: false, input: '2', expected: '4', actual: 2 },
       ],
       allPassed: false,
     };
     const formatted = formatClientJsOutput(output, question);
-    expect(formatted).toContain("✅");
-    expect(formatted).toContain("❌");
-    expect(formatted).toContain("Test Case 1");
-    expect(formatted).toContain("Test Case 2");
+    expect(formatted).toContain('✅');
+    expect(formatted).toContain('❌');
+    expect(formatted).toContain('Test Case 1');
+    expect(formatted).toContain('Test Case 2');
   });
 
-  it("includes error message when result has error", () => {
+  it('includes error message when result has error', () => {
     const output = {
       logs: [],
       results: [
         {
           index: 1,
           passed: false,
-          input: "1",
-          expected: "3",
+          input: '1',
+          expected: '3',
           actual: null,
-          error: "something broke",
+          error: 'something broke',
         },
       ],
       allPassed: false,
     };
     const formatted = formatClientJsOutput(output, question);
-    expect(formatted).toContain("something broke");
+    expect(formatted).toContain('something broke');
   });
 
-  it("includes test labels", () => {
+  it('includes test labels', () => {
     const output = {
       logs: [],
-      results: [
-        { index: 1, passed: true, input: "1", expected: "3", actual: 3 },
-      ],
+      results: [{ index: 1, passed: true, input: '1', expected: '3', actual: 3 }],
       allPassed: true,
     };
     const formatted = formatClientJsOutput(output, question);
-    expect(formatted).toContain("Test Results");
-    expect(formatted).toContain("Input:");
-    expect(formatted).toContain("Expected Output:");
-    expect(formatted).toContain("Actual Output:");
+    expect(formatted).toContain('Test Results');
+    expect(formatted).toContain('Input:');
+    expect(formatted).toContain('Expected Output:');
+    expect(formatted).toContain('Actual Output:');
   });
 });

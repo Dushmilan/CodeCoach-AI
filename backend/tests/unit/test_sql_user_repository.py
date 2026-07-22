@@ -26,6 +26,7 @@ async def test_db():
 @pytest_asyncio.fixture
 async def repo(test_db):
     from app.repositories.sql_user_repository import SqlUserRepository
+
     return SqlUserRepository(test_db)
 
 

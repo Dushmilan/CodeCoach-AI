@@ -44,9 +44,7 @@ class SqlUserRepository(UserRepository):
         orm = result.scalar_one_or_none()
         return self._orm_to_model(orm) if orm else None
 
-    async def get_by_oauth(
-        self, provider: str, oauth_id: str
-    ) -> Optional[UserInDB]:
+    async def get_by_oauth(self, provider: str, oauth_id: str) -> Optional[UserInDB]:
         result = await self.session.execute(
             select(UserORM).where(
                 UserORM.oauth_provider == provider,

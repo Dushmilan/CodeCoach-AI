@@ -54,9 +54,7 @@ class FileUserRepository(UserRepository):
     async def get_by_id(self, user_id: str) -> Optional[UserInDB]:
         return self._users.get(user_id)
 
-    async def get_by_oauth(
-        self, provider: str, oauth_id: str
-    ) -> Optional[UserInDB]:
+    async def get_by_oauth(self, provider: str, oauth_id: str) -> Optional[UserInDB]:
         for u in self._users.values():
             if u.oauth_provider == provider and u.oauth_id == oauth_id:
                 return u

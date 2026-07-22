@@ -173,8 +173,7 @@ def _get_use_case_description(use_case: ValidationUseCase) -> str:
             "defined with correct types."
         ),
         ValidationUseCase.OUTPUT_FORMAT: (
-            "Validates expected outputs have consistent formats across "
-            "all test cases."
+            "Validates expected outputs have consistent formats across all test cases."
         ),
     }
     return descriptions.get(use_case, "No description available.")

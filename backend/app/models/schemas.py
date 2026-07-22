@@ -55,8 +55,12 @@ class CoachingRequest(BaseModel):
     difficulty: Difficulty = Field(
         default=Difficulty.MEDIUM, description="Problem difficulty"
     )
-    lesson_context: Optional[str] = Field(None, description="Lesson context for scoped coaching")
-    chat_history: Optional[List[ChatMessageContext]] = Field(default=[], description="Previous conversation messages for context")
+    lesson_context: Optional[str] = Field(
+        None, description="Lesson context for scoped coaching"
+    )
+    chat_history: Optional[List[ChatMessageContext]] = Field(
+        default=[], description="Previous conversation messages for context"
+    )
 
 
 class StructuredCoachingResponse(BaseModel):
@@ -112,7 +116,9 @@ class CodeExecutionResult(BaseModel):
 
 class TestCase(BaseModel):
     input: Union[str, Dict[str, Any]] = Field(..., description="Test input")
-    expected_output: Union[str, Dict[str, Any]] = Field(..., description="Expected output")
+    expected_output: Union[str, Dict[str, Any]] = Field(
+        ..., description="Expected output"
+    )
     description: Optional[str] = Field(None, description="Test case description")
     hidden: bool = Field(
         default=False, description="Whether this is a hidden test case"
@@ -198,7 +204,9 @@ class Question(BaseModel):
         None, description="Space complexity of optimal solution"
     )
     constraints: List[str] = Field(default=[], description="Problem constraints")
-    is_interactive: bool = Field(default=False, description="Whether this is an interactive terminal challenge")
+    is_interactive: bool = Field(
+        default=False, description="Whether this is an interactive terminal challenge"
+    )
 
     @field_validator("description", mode="before")
     @classmethod
@@ -229,7 +237,16 @@ class Question(BaseModel):
             return data
         if isinstance(starter, str):
             lang = starter.lower()
-            if lang in ("python", "javascript", "java", "typescript", "c", "cpp", "go", "rust"):
+            if lang in (
+                "python",
+                "javascript",
+                "java",
+                "typescript",
+                "c",
+                "cpp",
+                "go",
+                "rust",
+            ):
                 data["starter"] = {"python": "", "javascript": "", "java": ""}
         elif isinstance(starter, list):
             mapped = {}

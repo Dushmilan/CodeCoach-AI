@@ -16,12 +16,32 @@ from .base import BaseValidationUseCase
 
 class FunctionSignatureValidationUseCase(BaseValidationUseCase):
     VALID_PYTHON_TYPES = {
-        "int", "str", "bool", "float", "list", "dict", "set", "tuple",
-        "List", "Dict", "Set", "Tuple", "Optional", "Any", "Union",
-        "None", "Callable", "Iterable", "Sequence",
+        "int",
+        "str",
+        "bool",
+        "float",
+        "list",
+        "dict",
+        "set",
+        "tuple",
+        "List",
+        "Dict",
+        "Set",
+        "Tuple",
+        "Optional",
+        "Any",
+        "Union",
+        "None",
+        "Callable",
+        "Iterable",
+        "Sequence",
     }
 
-    def __init__(self, config: Optional[FunctionSignatureConfig] = None, require_type_hints: bool = True):
+    def __init__(
+        self,
+        config: Optional[FunctionSignatureConfig] = None,
+        require_type_hints: bool = True,
+    ):
         self.config = config or FunctionSignatureConfig()
         self.require_type_hints = require_type_hints
 
@@ -86,53 +106,143 @@ class FunctionSignatureValidationUseCase(BaseValidationUseCase):
         issues = []
         func_match = re.search(r"def\s+(\w+)\s*\(([^)]*)\)(?:\s*->\s*([^\n:]+))?", code)
         if not func_match:
-            issues.append(self._create_issue(message="No valid Python function definition found", field="starter.python", language="python"))
+            issues.append(
+                self._create_issue(
+                    message="No valid Python function definition found",
+                    field="starter.python",
+                    language="python",
+                )
+            )
             return issues
-        func_name, params_str, return_type = func_match.group(1), func_match.group(2), func_match.group(3)
+        func_name, params_str, return_type = (
+            func_match.group(1),
+            func_match.group(2),
+            func_match.group(3),
+        )
         if not re.match(r"^[a-z_][a-z0-9_]*$", func_name, re.IGNORECASE):
-            issues.append(self._create_issue(message=f"Invalid Python function name: {func_name}", field="starter.python", language="python", severity=ValidationSeverity.WARNING))
+            issues.append(
+                self._create_issue(
+                    message=f"Invalid Python function name: {func_name}",
+                    field="starter.python",
+                    language="python",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
         if params_str.strip():
             for param_name, param_type in self._parse_python_params(params_str):
                 if self.require_type_hints and not param_type:
-                    issues.append(self._create_issue(message=f"Parameter '{param_name}' missing type hint", field="starter.python", language="python", severity=ValidationSeverity.WARNING, details={"parameter": param_name}))
+                    issues.append(
+                        self._create_issue(
+                            message=f"Parameter '{param_name}' missing type hint",
+                            field="starter.python",
+                            language="python",
+                            severity=ValidationSeverity.WARNING,
+                            details={"parameter": param_name},
+                        )
+                    )
                 if param_type and not self._is_valid_python_type(param_type):
-                    issues.append(self._create_issue(message=f"Potentially invalid type hint for parameter '{param_name}': {param_type}", field="starter.python", language="python", severity=ValidationSeverity.INFO, details={"parameter": param_name, "type": param_type}))
+                    issues.append(
+                        self._create_issue(
+                            message=f"Potentially invalid type hint for parameter '{param_name}': {param_type}",
+                            field="starter.python",
+                            language="python",
+                            severity=ValidationSeverity.INFO,
+                            details={"parameter": param_name, "type": param_type},
+                        )
+                    )
         if self.require_type_hints and not return_type:
-            issues.append(self._create_issue(message="Return type hint missing for Python function", field="starter.python", language="python", severity=ValidationSeverity.WARNING))
+            issues.append(
+                self._create_issue(
+                    message="Return type hint missing for Python function",
+                    field="starter.python",
+                    language="python",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
         if return_type and not self._is_valid_python_type(return_type.strip()):
-            issues.append(self._create_issue(message=f"Potentially invalid return type: {return_type.strip()}", field="starter.python", language="python", severity=ValidationSeverity.INFO, details={"return_type": return_type.strip()}))
+            issues.append(
+                self._create_issue(
+                    message=f"Potentially invalid return type: {return_type.strip()}",
+                    field="starter.python",
+                    language="python",
+                    severity=ValidationSeverity.INFO,
+                    details={"return_type": return_type.strip()},
+                )
+            )
         return issues
 
     def _validate_javascript_signature(self, code: str) -> List:
         issues = []
         func_match = re.search(r"function\s+(\w+)\s*\(([^)]*)\)", code)
         if not func_match:
-            func_match = re.search(r"(?:const|let|var)\s+(\w+)\s*=\s*(?:\([^)]*\)|[^=])\s*=>", code)
+            func_match = re.search(
+                r"(?:const|let|var)\s+(\w+)\s*=\s*(?:\([^)]*\)|[^=])\s*=>", code
+            )
         if not func_match:
-            issues.append(self._create_issue(message="No valid JavaScript function definition found", field="starter.javascript", language="javascript"))
+            issues.append(
+                self._create_issue(
+                    message="No valid JavaScript function definition found",
+                    field="starter.javascript",
+                    language="javascript",
+                )
+            )
             return issues
         func_name = func_match.group(1)
         if not re.match(r"^[a-zA-Z_$][a-zA-Z0-9_$]*$", func_name):
-            issues.append(self._create_issue(message=f"Invalid JavaScript function name: {func_name}", field="starter.javascript", language="javascript", severity=ValidationSeverity.WARNING))
+            issues.append(
+                self._create_issue(
+                    message=f"Invalid JavaScript function name: {func_name}",
+                    field="starter.javascript",
+                    language="javascript",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
         return issues
 
     def _validate_java_signature(self, code: str) -> List:
         issues = []
-        method_match = re.search(r"public\s+(\w+(?:<[^>]+>)?)\s+(\w+)\s*\(([^)]*)\)", code)
+        method_match = re.search(
+            r"public\s+(\w+(?:<[^>]+>)?)\s+(\w+)\s*\(([^)]*)\)", code
+        )
         if not method_match:
-            method_match = re.search(r"(?:public|private|protected)\s+(?:static\s+)?(\w+(?:<[^>]+>)?)\s+(\w+)\s*\(([^)]*)\)", code)
+            method_match = re.search(
+                r"(?:public|private|protected)\s+(?:static\s+)?(\w+(?:<[^>]+>)?)\s+(\w+)\s*\(([^)]*)\)",
+                code,
+            )
         if not method_match:
-            method_match = re.search(r"(?:static\s+)?(\w+(?:<[^>]+>)?)\s+(\w+)\s*\(([^)]*)\)\s*\{", code)
+            method_match = re.search(
+                r"(?:static\s+)?(\w+(?:<[^>]+>)?)\s+(\w+)\s*\(([^)]*)\)\s*\{", code
+            )
         if not method_match:
             method_match = re.search(r"(\w+(?:\[\])?)\s+(\w+)\s*\(([^)]*)\)\s*\{", code)
         if not method_match:
-            issues.append(self._create_issue(message="No valid Java method definition found", field="starter.java", language="java"))
+            issues.append(
+                self._create_issue(
+                    message="No valid Java method definition found",
+                    field="starter.java",
+                    language="java",
+                )
+            )
             return issues
         return_type, method_name = method_match.group(1), method_match.group(2)
         if not re.match(r"^[a-z][a-zA-Z0-9_]*$", method_name):
-            issues.append(self._create_issue(message=f"Java method name '{method_name}' should follow camelCase convention", field="starter.java", language="java", severity=ValidationSeverity.INFO))
+            issues.append(
+                self._create_issue(
+                    message=f"Java method name '{method_name}' should follow camelCase convention",
+                    field="starter.java",
+                    language="java",
+                    severity=ValidationSeverity.INFO,
+                )
+            )
         if return_type == "void":
-            issues.append(self._create_issue(message="Java method returns void - ensure this is intentional", field="starter.java", language="java", severity=ValidationSeverity.INFO))
+            issues.append(
+                self._create_issue(
+                    message="Java method returns void - ensure this is intentional",
+                    field="starter.java",
+                    language="java",
+                    severity=ValidationSeverity.INFO,
+                )
+            )
         return issues
 
     def _extract_python_function_name(self, code: str) -> Optional[str]:
@@ -157,8 +267,20 @@ class FunctionSignatureValidationUseCase(BaseValidationUseCase):
         java_name = self._extract_java_method_name(question.starter.java)
         if python_name and js_name:
             if python_name.replace("_", "").lower() != js_name.lower():
-                issues.append(self._create_issue(message=f"Function names differ between Python ({python_name}) and JavaScript ({js_name})", severity=ValidationSeverity.INFO, details={"python": python_name, "javascript": js_name}))
+                issues.append(
+                    self._create_issue(
+                        message=f"Function names differ between Python ({python_name}) and JavaScript ({js_name})",
+                        severity=ValidationSeverity.INFO,
+                        details={"python": python_name, "javascript": js_name},
+                    )
+                )
         if python_name and java_name:
             if python_name.replace("_", "").lower() != java_name.lower():
-                issues.append(self._create_issue(message=f"Function names differ between Python ({python_name}) and Java ({java_name})", severity=ValidationSeverity.INFO, details={"python": python_name, "java": java_name}))
+                issues.append(
+                    self._create_issue(
+                        message=f"Function names differ between Python ({python_name}) and Java ({java_name})",
+                        severity=ValidationSeverity.INFO,
+                        details={"python": python_name, "java": java_name},
+                    )
+                )
         return issues

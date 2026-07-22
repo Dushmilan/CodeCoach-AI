@@ -26,16 +26,23 @@ class ExecutionResultFormatter:
 
         try:
             stdout_preview = processed["stdout"][:100] if processed["stdout"] else ""
-            logger.info(f"Processed execution result: stdout='{stdout_preview}...', exit_code={processed['exit_code']}")
+            logger.info(
+                f"Processed execution result: stdout='{stdout_preview}...', exit_code={processed['exit_code']}"
+            )
         except Exception as e:
             logger.warning(f"Could not log processed result: {e}")
 
         stderr = processed["stderr"]
         if stderr:
             lines = stderr.split("\n")
-            filtered_lines = [line for line in lines if not any(
-                warning in line.lower() for warning in ["warning", "deprecated", "note:", "#warning"]
-            )]
+            filtered_lines = [
+                line
+                for line in lines
+                if not any(
+                    warning in line.lower()
+                    for warning in ["warning", "deprecated", "note:", "#warning"]
+                )
+            ]
             processed["stderr"] = "\n".join(filtered_lines).strip()
 
         return processed

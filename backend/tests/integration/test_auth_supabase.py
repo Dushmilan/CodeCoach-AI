@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.models.auth_schemas import TokenResponse, UserResponse
 
 
@@ -44,7 +43,9 @@ class TestAuthSupabase:
         assert data["user"]["username"] == "google_user"
         assert data["user"]["email"] == "google_user@example.com"
 
-    def test_supabase_login_invalid_token(self, test_client: TestClient, mock_auth_service):
+    def test_supabase_login_invalid_token(
+        self, test_client: TestClient, mock_auth_service
+    ):
         mock_auth_service.login_with_supabase = AsyncMock(
             side_effect=ValueError("Invalid Supabase token")
         )

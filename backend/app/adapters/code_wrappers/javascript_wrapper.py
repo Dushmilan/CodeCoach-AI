@@ -7,11 +7,19 @@ from .base import CodeWrapper
 
 class JavaScriptCodeWrapper(CodeWrapper):
     def wrap(self, code: str) -> str:
-        if "process.stdin" in code or "readFileSync" in code or "console.log" in code or "process.stdout.write" in code or "require('fs')" in code:
+        if (
+            "process.stdin" in code
+            or "readFileSync" in code
+            or "console.log" in code
+            or "process.stdout.write" in code
+            or "require('fs')" in code
+        ):
             return code
         func_match = re.search(r"function\s+(\w+)\s*\(", code)
         if not func_match:
-            func_match = re.search(r"(?:const|let|var)\s+(\w+)\s*=\s*(?:function|\(.*\)\s*=>)", code)
+            func_match = re.search(
+                r"(?:const|let|var)\s+(\w+)\s*=\s*(?:function|\(.*\)\s*=>)", code
+            )
         if not func_match:
             return code
         func_name = func_match.group(1)
@@ -43,12 +51,21 @@ try {{
 
     def wrap_with_tests(self, code: str, test_cases: List[Dict[str, Any]]) -> str:
         tc_json = json.dumps(
-            [{"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}
-             for i, tc in enumerate(test_cases)]
+            [
+                {
+                    "input": tc["input"],
+                    "expected": tc["expected_output"],
+                    "hidden": tc.get("hidden", False),
+                    "index": i + 1,
+                }
+                for i, tc in enumerate(test_cases)
+            ]
         )
         func_match = re.search(r"function\s+(\w+)\s*\(", code)
         if not func_match:
-            func_match = re.search(r"(?:const|let|var)\s+(\w+)\s*=\s*(?:function|\(.*\)\s*=>)", code)
+            func_match = re.search(
+                r"(?:const|let|var)\s+(\w+)\s*=\s*(?:function|\(.*\)\s*=>)", code
+            )
         func_name = func_match.group(1) if func_match else "solve"
 
         return f"""{code}

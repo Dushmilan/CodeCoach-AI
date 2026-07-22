@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Header } from "@/components/header/Header";
-import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { BookOpen, Code, Globe, Rocket, Zap } from "lucide-react";
-import Link from "next/link";
+import { Header } from '@/components/header/Header';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import { BookOpen, Code, Globe, Rocket, Star, Zap } from 'lucide-react';
+import Link from 'next/link';
 
 const staggerVariants = {
   hidden: { opacity: 0, y: 24 },
@@ -22,55 +22,52 @@ const staggerVariants = {
 const features = [
   {
     icon: Zap,
-    title: "100% Free",
-    description:
-      "No paywalls, no premium tiers. Just bring your own API key and code.",
-    accent: "border-l-emerald-500/40",
+    title: '100% Free',
+    description: 'No paywalls, no premium tiers. Just bring your own API key and code.',
+    accent: 'border-l-emerald-500/40',
   },
   {
     icon: BookOpen,
-    title: "AI Coaching",
+    title: 'AI Coaching',
     description:
-      "Context-aware hints and explanations powered by NVIDIA NIM — like a teaching assistant, 24/7.",
-    accent: "border-l-blue-500/40",
+      'Context-aware hints and explanations powered by NVIDIA NIM — like a teaching assistant, 24/7.',
+    accent: 'border-l-blue-500/40',
   },
   {
     icon: Code,
-    title: "Language Curriculum",
+    title: 'Language Curriculum',
     description:
-      "Structured C, Python, and Java paths blending theory with hands-on coding exercises.",
-    accent: "border-l-violet-500/40",
+      'Structured C, Python, and Java paths blending theory with hands-on coding exercises.',
+    accent: 'border-l-violet-500/40',
   },
   {
     icon: Globe,
-    title: "Open Source & Professor-Ready",
-    description:
-      "Curriculum-mapped, privacy-first, and free for every institution to recommend.",
-    accent: "border-l-amber-500/40",
+    title: 'Open Source & Professor-Ready',
+    description: 'Curriculum-mapped, privacy-first, and free for every institution to recommend.',
+    accent: 'border-l-amber-500/40',
   },
 ];
 
 const audiences = [
   {
     icon: Rocket,
-    title: "Interview Grinders",
-    description: "Prepare for tech internships and jobs with DSA practice.",
+    title: 'Interview Grinders',
+    description: 'Prepare for tech internships and jobs with DSA practice.',
   },
   {
     icon: BookOpen,
-    title: "Struggling Students",
-    description:
-      "Get hand-holding through the basics with instant AI feedback.",
+    title: 'Struggling Students',
+    description: 'Get hand-holding through the basics with instant AI feedback.',
   },
   {
     icon: Star,
-    title: "Curious Learners",
-    description: "Non-CS majors who want to learn programming on their own.",
+    title: 'Curious Learners',
+    description: 'Non-CS majors who want to learn programming on their own.',
   },
   {
     icon: Globe,
-    title: "Professors",
-    description: "A free, curriculum-aligned tool to recommend to your class.",
+    title: 'Professors',
+    description: 'A free, curriculum-aligned tool to recommend to your class.',
   },
 ];
 
@@ -123,8 +120,8 @@ export default function LandingPage() {
             }}
             className="mt-6 text-sm md:text-base text-muted-foreground/60 max-w-2xl mx-auto leading-relaxed text-balance"
           >
-            Practice DSA problems and learn programming languages through
-            structured lessons with real-time AI coaching — no payment needed.
+            Practice DSA problems and learn programming languages through structured lessons with
+            real-time AI coaching — no payment needed.
           </motion.p>
 
           <motion.div
@@ -176,7 +173,7 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] as const }}
             className="mb-12"
           >
@@ -184,8 +181,7 @@ export default function LandingPage() {
               Why CodeCoach AI?
             </h2>
             <p className="text-sm text-muted-foreground/50 mt-3 max-w-[45ch] leading-relaxed">
-              Everything you need to level up your coding — without burning a
-              hole in your wallet.
+              Everything you need to level up your coding — without burning a hole in your wallet.
             </p>
           </motion.div>
 
@@ -196,19 +192,19 @@ export default function LandingPage() {
                 custom={i}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true, margin: "-60px" }}
+                viewport={{ once: true, margin: '-60px' }}
                 variants={staggerVariants}
               >
                 <div
                   className={cn(
-                    "group relative rounded-3xl border border-white/[0.06] bg-white/[0.02] p-7 md:p-8",
-                    "transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
-                    "hover:bg-white/[0.04] hover:border-white/[0.10]",
-                    "h-full",
+                    'group relative rounded-3xl border border-white/[0.06] bg-white/[0.02] p-7 md:p-8',
+                    'transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                    'hover:bg-white/[0.04] hover:border-white/[0.10]',
+                    'h-full',
                     feature.accent,
                   )}
                   style={{
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
                   }}
                 >
                   <div className="flex items-center gap-3 mb-4">
@@ -235,7 +231,7 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] as const }}
             className="mb-12"
           >
@@ -243,8 +239,7 @@ export default function LandingPage() {
               Built for everyone
             </h2>
             <p className="text-sm text-muted-foreground/50 mt-3 max-w-[45ch] leading-relaxed">
-              Whether you&apos;re grinding for interviews or writing your first
-              loop.
+              Whether you&apos;re grinding for interviews or writing your first loop.
             </p>
           </motion.div>
 
@@ -255,13 +250,13 @@ export default function LandingPage() {
                 custom={i}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true, margin: "-40px" }}
+                viewport={{ once: true, margin: '-40px' }}
                 variants={staggerVariants}
               >
                 <div
                   className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-white/[0.04] h-full"
                   style={{
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
                   }}
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-foreground/50 ring-1 ring-white/5 mb-3">
@@ -285,7 +280,7 @@ export default function LandingPage() {
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
+          viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] as const }}
           className="max-w-3xl mx-auto text-center"
         >
@@ -294,8 +289,8 @@ export default function LandingPage() {
               Start coding, for free.
             </h2>
             <p className="text-sm text-muted-foreground/50 max-w-[40ch] mx-auto leading-relaxed mb-8">
-              No credit card. No premium tier. Just you, the code, and an AI
-              coach that&apos;s always awake.
+              No credit card. No premium tier. Just you, the code, and an AI coach that&apos;s
+              always awake.
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <Link

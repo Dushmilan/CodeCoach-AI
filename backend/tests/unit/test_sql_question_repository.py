@@ -30,7 +30,11 @@ def sample_question():
         category="arrays",
         company_tags=["Google", "Meta"],
         description="A test question description.",
-        starter=StarterCode(python="def solve():\n    pass", javascript="function solve() {}", java="class Solve {}"),
+        starter=StarterCode(
+            python="def solve():\n    pass",
+            javascript="function solve() {}",
+            java="class Solve {}",
+        ),
         examples=[Example(input="1", output="1", explanation="Basic test")],
         test_cases=[TestCase(input="1", expected_output="1", description="TC1")],
         hints=["Think about it"],
@@ -45,6 +49,7 @@ def sample_question():
 @pytest_asyncio.fixture
 async def repo(test_db):
     from app.repositories.sql_question_repository import SqlQuestionRepository
+
     return SqlQuestionRepository(test_db)
 
 
@@ -236,14 +241,20 @@ class TestSqlQuestionRepository:
             category="dynamic-programming",
             company_tags=[],
             description="Complex description.",
-            starter=StarterCode(python="def solve():\n    pass", javascript="function solve() {}", java="class Solve {}"),
+            starter=StarterCode(
+                python="def solve():\n    pass",
+                javascript="function solve() {}",
+                java="class Solve {}",
+            ),
             examples=[
                 Example(input="[1,2,3]", output="6", explanation="Sum"),
                 Example(input="[4,5]", output="9", explanation="Also sum"),
             ],
             test_cases=[
                 TestCase(input="[1,2,3]", expected_output="6", description="Basic"),
-                TestCase(input="[]", expected_output="0", description="Empty", hidden=True),
+                TestCase(
+                    input="[]", expected_output="0", description="Empty", hidden=True
+                ),
             ],
             hints=["Hint 1", "Hint 2", "Hint 3"],
             solution="Dynamic programming approach",

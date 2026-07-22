@@ -6,7 +6,9 @@ from app.models.course_schemas import CourseProgress
 
 class ProgressRepository(ABC):
     @abstractmethod
-    async def get_progress(self, user_id: str, course_id: str) -> Optional[CourseProgress]: ...
+    async def get_progress(
+        self, user_id: str, course_id: str
+    ) -> Optional[CourseProgress]: ...
 
     @abstractmethod
     async def get_all_progress(self, user_id: str) -> List[CourseProgress]: ...

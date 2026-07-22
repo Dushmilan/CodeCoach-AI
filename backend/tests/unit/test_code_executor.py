@@ -15,13 +15,23 @@ class TestPistonServiceImplementsCodeExecutor:
 
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json = MagicMock(return_value={
-            "run": {"stdout": "hello\n", "stderr": "", "code": 0, "wall_time": 0.01},
-            "language": "python", "version": "3.10.0",
-        })
+        mock_response.json = MagicMock(
+            return_value={
+                "run": {
+                    "stdout": "hello\n",
+                    "stderr": "",
+                    "code": 0,
+                    "wall_time": 0.01,
+                },
+                "language": "python",
+                "version": "3.10.0",
+            }
+        )
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+                return_value=mock_response
+            )
             result = await service.execute("python", "print(1)")
 
         assert isinstance(result, ExecutionResult)
@@ -42,10 +52,14 @@ class TestPistonServiceImplementsCodeExecutor:
 
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json = MagicMock(return_value=[{"language": "python", "version": "3.11.0"}])
+        mock_response.json = MagicMock(
+            return_value=[{"language": "python", "version": "3.11.0"}]
+        )
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                return_value=mock_response
+            )
             runtimes = await service.get_runtimes()
 
         assert isinstance(runtimes, list)

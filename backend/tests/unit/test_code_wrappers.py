@@ -16,7 +16,7 @@ class TestPythonCodeWrapper:
         assert "def add(a, b):" in result
         assert "import sys" in result
         assert "import json" in result
-        assert 'result = add(line)' in result or 'result = add("")' in result
+        assert "result = add(line)" in result or 'result = add("")' in result
         assert "json.dumps(result" in result
 
     def test_detects_existing_input(self):
@@ -77,25 +77,30 @@ class TestPythonCodeWrapper:
             ("def foo(self):\n    pass", "def foo():"),
             ("def foo(self, x):\n    return x", "def foo(x):"),
             ("def foo(self , x):\n    return x", "def foo(x):"),
-            ("def foo( self ):\n    pass", "def foo("),  # regex keeps space before ), but strips self
+            (
+                "def foo( self ):\n    pass",
+                "def foo(",
+            ),  # regex keeps space before ), but strips self
         ]
         for code, expected_sig in variants:
             result = wrapper.wrap(code)
             assert expected_sig in result, f"sig {expected_sig} not found for {code!r}"
-            assert "self" not in result.replace("self.", ""), f"self param not stripped for {code!r}"
+            assert "self" not in result.replace(
+                "self.", ""
+            ), f"self param not stripped for {code!r}"
 
     def test_string_output_path(self):
         wrapper = get_wrapper("python")
         code = "def greet(n):\n    return 'hi'"
         result = wrapper.wrap(code)
-        assert 'result = greet(' in result
+        assert "result = greet(" in result
         assert "print(result)" in result
 
     def test_number_output_path(self):
         wrapper = get_wrapper("python")
         code = "def answer():\n    return 42"
         result = wrapper.wrap(code)
-        assert 'result = answer(' in result
+        assert "result = answer(" in result
         assert "print(result)" in result
 
     def test_json_loads_fallback_in_output(self):
@@ -302,7 +307,7 @@ class TestJavaCodeWrapper:
 
     def test_no_class_fallback(self):
         wrapper = get_wrapper("java")
-        code = "public static String greet(String name) {\n  return \"hi\";\n}"
+        code = 'public static String greet(String name) {\n  return "hi";\n}'
         result = wrapper.wrap(code)
         assert "public class Solution {" in result
         assert "greet" in result
@@ -310,7 +315,7 @@ class TestJavaCodeWrapper:
 
     def test_no_class_fallback_with_imports(self):
         wrapper = get_wrapper("java")
-        code = "import java.util.*;\npublic static String greet(String name) {\n  return \"hi\";\n}"
+        code = 'import java.util.*;\npublic static String greet(String name) {\n  return "hi";\n}'
         result = wrapper.wrap(code)
         assert result.startswith("import java.util.*;")
         assert "public class Solution {" in result
@@ -403,7 +408,7 @@ class TestJavaCodeWrapper:
     }
 }"""
         result = wrapper.wrap(code)
-        assert '__toJson' in result
+        assert "__toJson" in result
         assert 'sb.append(",")' in result
         assert 'sb.append(", ")' not in result
 
@@ -492,16 +497,19 @@ class TestGetWrapper:
     def test_returns_python_wrapper(self):
         wrapper = get_wrapper("python")
         from app.adapters.code_wrappers.python_wrapper import PythonCodeWrapper
+
         assert isinstance(wrapper, PythonCodeWrapper)
 
     def test_returns_javascript_wrapper(self):
         wrapper = get_wrapper("javascript")
         from app.adapters.code_wrappers.javascript_wrapper import JavaScriptCodeWrapper
+
         assert isinstance(wrapper, JavaScriptCodeWrapper)
 
     def test_returns_java_wrapper(self):
         wrapper = get_wrapper("java")
         from app.adapters.code_wrappers.java_wrapper import JavaCodeWrapper
+
         assert isinstance(wrapper, JavaCodeWrapper)
 
     def test_returns_none_for_unknown_language(self):
@@ -526,19 +534,25 @@ class TestGetWrapper:
 
 # ── Python wrap_with_tests ──────────────────────────────────────────────
 
+
 class TestPythonWrapWithTests:
     def _wrap(self, code, test_cases):
         from app.adapters.code_wrappers.python_wrapper import PythonCodeWrapper
+
         return PythonCodeWrapper().wrap_with_tests(code, test_cases)
 
     def test_single_param_list_return(self):
         code = "def threeSum(nums):\n    return [[-4,-2,6],[-4,0,4]]"
         test_cases = [
-            {"input": "[-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6]", "expected_output": "[[-4,-2,6],[-4,0,4]]", "hidden": False},
+            {
+                "input": "[-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6]",
+                "expected_output": "[[-4,-2,6],[-4,0,4]]",
+                "hidden": False,
+            },
         ]
         runner = self._wrap(code, test_cases)
         assert "def threeSum(nums):" in runner
-        assert "json.dumps(__out, separators=(\",\", \":\"))" in runner
+        assert 'json.dumps(__out, separators=(",", ":"))' in runner
         assert "__out, __in_val = __run_test(__tc)" in runner
         assert "threeSum(__parsed)" in runner
         assert "hidden" not in runner
@@ -608,13 +622,13 @@ class TestPythonWrapWithTests:
             {"input": "2", "expected_output": "2", "hidden": False},
         ]
         runner = self._wrap("def f(x):\n    return x", test_cases)
-        assert "\"hidden\"" not in runner
+        assert '"hidden"' not in runner
         assert "True" not in runner.replace("True", "", 1)
 
     def test_none_return_vs_string_return(self):
         code = "def greet(name):\n    return 'hello'"
         test_cases = [
-            {"input": "\"world\"", "expected_output": "hello", "hidden": False},
+            {"input": '"world"', "expected_output": "hello", "hidden": False},
         ]
         runner = self._wrap(code, test_cases)
         assert "if __out is None:" in runner
@@ -623,15 +637,21 @@ class TestPythonWrapWithTests:
 
 # ── JavaScript wrap_with_tests ──────────────────────────────────────────
 
+
 class TestJavaScriptWrapWithTests:
     def _wrap(self, code, test_cases):
         from app.adapters.code_wrappers.javascript_wrapper import JavaScriptCodeWrapper
+
         return JavaScriptCodeWrapper().wrap_with_tests(code, test_cases)
 
     def test_single_param(self):
         code = "function threeSum(nums) { return [[-4,-2,6],[-4,0,4]]; }"
         test_cases = [
-            {"input": "[-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6]", "expected_output": "[[-4,-2,6],[-4,0,4]]", "hidden": False},
+            {
+                "input": "[-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6]",
+                "expected_output": "[[-4,-2,6],[-4,0,4]]",
+                "hidden": False,
+            },
         ]
         runner = self._wrap(code, test_cases)
         assert "threeSum(parsed)" in runner
@@ -649,7 +669,11 @@ class TestJavaScriptWrapWithTests:
     def test_inplace_modification(self):
         code = "function rotate(matrix) { matrix.reverse(); }"
         test_cases = [
-            {"input": "[[1,2],[3,4]]", "expected_output": "[[3,4],[1,2]]", "hidden": False},
+            {
+                "input": "[[1,2],[3,4]]",
+                "expected_output": "[[3,4],[1,2]]",
+                "hidden": False,
+            },
         ]
         runner = self._wrap(code, test_cases)
         assert "out == null" in runner
@@ -677,7 +701,7 @@ class TestJavaScriptWrapWithTests:
         test_cases = [{"input": "1", "expected_output": "1", "hidden": False}]
         runner = self._wrap(code, test_cases)
         assert "require('fs')" not in runner
-        assert "require(\"fs\")" not in runner
+        assert 'require("fs")' not in runner
 
     def test_uses_process_stdout_write(self):
         code = "function f(x) { return x; }"
@@ -688,9 +712,11 @@ class TestJavaScriptWrapWithTests:
 
 # ── Java wrap_with_tests ────────────────────────────────────────────────
 
+
 class TestJavaWrapWithTests:
     def _wrap(self, code, test_cases):
         from app.adapters.code_wrappers.java_wrapper import JavaCodeWrapper
+
         return JavaCodeWrapper().wrap_with_tests(code, test_cases)
 
     def test_single_string_param(self):
@@ -700,7 +726,7 @@ class TestJavaWrapWithTests:
     }
 }"""
         test_cases = [
-            {"input": "\"world\"", "expected_output": "Hello, world", "hidden": False},
+            {"input": '"world"', "expected_output": "Hello, world", "hidden": False},
         ]
         runner = self._wrap(code, test_cases)
         assert "import java.util.*" in runner
@@ -742,7 +768,7 @@ class TestJavaWrapWithTests:
         runner = self._wrap(code, test_cases)
         assert "instanceof int[]" in runner
         assert "sb.append(arr[i])" in runner
-        assert "sb.append(\",\")" in runner
+        assert 'sb.append(",")' in runner
 
     def test_toJson_handles_boolean_array(self):
         code = """public class Solution {
@@ -764,7 +790,7 @@ class TestJavaWrapWithTests:
         code = """public class Solution {
     public static String[] strs(String[] a) { return a; }
 }"""
-        test_cases = [{"input": "\"a\"\n\"b\"", "expected_output": "[\"a\",\"b\"]"}]
+        test_cases = [{"input": '"a"\n"b"', "expected_output": '["a","b"]'}]
         runner = self._wrap(code, test_cases)
         assert "instanceof Object[]" in runner
         assert "toJson(arr[i])" in runner

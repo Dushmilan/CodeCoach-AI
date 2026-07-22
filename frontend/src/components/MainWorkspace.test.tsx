@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { QuestionSummary, Question } from "@/types";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QuestionSummary, Question } from '@/types';
 
 const mockLoadQuestions = vi.fn();
 const mockSelectQuestion = vi.fn();
@@ -45,11 +45,11 @@ const mockUseQuestion = vi.hoisted(() =>
 const mockUseCodeRunner = vi.hoisted(() =>
   vi.fn<
     (...args: unknown[]) => {
-      userProgress: Record<string, "attempted" | "solved">;
+      userProgress: Record<string, 'attempted' | 'solved'>;
       setUserProgress: (
         updater: (
-          prev: Record<string, "attempted" | "solved">,
-        ) => Record<string, "attempted" | "solved">,
+          prev: Record<string, 'attempted' | 'solved'>,
+        ) => Record<string, 'attempted' | 'solved'>,
       ) => void;
       handleRunCode: () => void;
       handleSubmitCode: () => void;
@@ -65,7 +65,7 @@ const mockUseCodeRunner = vi.hoisted(() =>
     handleRunCode: mockValidateCode,
     handleSubmitCode: mockSubmitCode,
     isRunning: false,
-    output: "",
+    output: '',
     executionError: null,
     clearOutput: mockClearOutput,
     clearExecutionError: mockClearExecutionError,
@@ -97,31 +97,31 @@ const mockUseCoaching = vi.hoisted(() =>
   })),
 );
 
-vi.mock("@/features/question/question.hook", () => ({
+vi.mock('@/features/question/question.hook', () => ({
   useQuestion: mockUseQuestion,
 }));
 
-vi.mock("@/features/question/use-code-runner.hook", () => ({
+vi.mock('@/features/question/use-code-runner.hook', () => ({
   useCodeRunner: mockUseCodeRunner,
 }));
 
-vi.mock("@/features/coaching/coaching.hook", () => ({
+vi.mock('@/features/coaching/coaching.hook', () => ({
   useCoaching: mockUseCoaching,
 }));
 
-vi.mock("@/hooks", () => ({
+vi.mock('@/hooks', () => ({
   useLocalStorage: vi.fn((key: string, initial: Record<string, string>) => [
     initial,
     mockSetUserProgress,
   ]),
-  useTheme: vi.fn(() => ({ theme: "dark", setTheme: vi.fn() })),
+  useTheme: vi.fn(() => ({ theme: 'dark', setTheme: vi.fn() })),
 }));
 
-vi.mock("@/components/header/Header", () => ({
+vi.mock('@/components/header/Header', () => ({
   Header: vi.fn(() => <div>CodeCoach AI</div>),
 }));
 
-vi.mock("@/components/sidebar/Sidebar", () => ({
+vi.mock('@/components/sidebar/Sidebar', () => ({
   Sidebar: vi.fn(
     ({
       questions,
@@ -140,10 +140,10 @@ vi.mock("@/components/sidebar/Sidebar", () => ({
         <button
           onClick={() =>
             onSelectQuestion({
-              id: "1",
-              title: "Two Sum",
-              difficulty: "easy",
-              category: "arrays",
+              id: '1',
+              title: 'Two Sum',
+              difficulty: 'easy',
+              category: 'arrays',
               company_tags: [],
             })
           }
@@ -155,26 +155,20 @@ vi.mock("@/components/sidebar/Sidebar", () => ({
   ),
 }));
 
-vi.mock("@/components/layout/elements", () => ({
-  LoadingSkeleton: vi.fn(() => (
-    <div data-testid="loading-skeleton">Loading...</div>
-  )),
+vi.mock('@/components/layout/elements', () => ({
+  LoadingSkeleton: vi.fn(() => <div data-testid="loading-skeleton">Loading...</div>),
   MainLayoutContainer: vi.fn(({ children }: { children: React.ReactNode }) => (
     <div data-testid="main-layout">{children}</div>
   )),
   MainContentContainer: vi.fn(({ children }: { children: React.ReactNode }) => (
     <div data-testid="main-content">{children}</div>
   )),
-  ContentLayoutContainer: vi.fn(
-    ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="content-layout">{children}</div>
-    ),
-  ),
-  QuestionContentSection: vi.fn(
-    ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="question-section">{children}</div>
-    ),
-  ),
+  ContentLayoutContainer: vi.fn(({ children }: { children: React.ReactNode }) => (
+    <div data-testid="content-layout">{children}</div>
+  )),
+  QuestionContentSection: vi.fn(({ children }: { children: React.ReactNode }) => (
+    <div data-testid="question-section">{children}</div>
+  )),
   CodeEditorContainer: vi.fn(
     ({
       onRunCode,
@@ -188,7 +182,7 @@ vi.mock("@/components/layout/elements", () => ({
       <div data-testid="mock-editor-container">
         <button onClick={onRunCode}>Run Code</button>
         <button onClick={onSubmitCode}>Submit Code</button>
-        <button onClick={() => onCodeChange("new code")}>Change Code</button>
+        <button onClick={() => onCodeChange('new code')}>Change Code</button>
       </div>
     ),
   ),
@@ -201,34 +195,32 @@ vi.mock("@/components/layout/elements", () => ({
       isTyping: boolean;
     }) => (
       <div data-testid="mock-chat-panel" data-typing={String(isTyping)}>
-        <button onClick={() => onSendMessage("hello", "freeform")}>
-          Send Message
-        </button>
+        <button onClick={() => onSendMessage('hello', 'freeform')}>Send Message</button>
       </div>
     ),
   ),
 }));
 
-import { MainWorkspace } from "./MainWorkspace";
+import { MainWorkspace } from './MainWorkspace';
 
 const questions: QuestionSummary[] = [
   {
-    id: "1",
-    title: "Two Sum",
-    difficulty: "easy",
-    category: "arrays",
+    id: '1',
+    title: 'Two Sum',
+    difficulty: 'easy',
+    category: 'arrays',
     company_tags: [],
   },
   {
-    id: "2",
-    title: "Add Two Numbers",
-    difficulty: "medium",
-    category: "linked-list",
+    id: '2',
+    title: 'Add Two Numbers',
+    difficulty: 'medium',
+    category: 'linked-list',
     company_tags: [],
   },
 ];
 
-describe("MainWorkspace", () => {
+describe('MainWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseQuestion.mockImplementation(() => ({
@@ -248,7 +240,7 @@ describe("MainWorkspace", () => {
       handleRunCode: mockValidateCode,
       handleSubmitCode: mockSubmitCode,
       isRunning: false,
-      output: "",
+      output: '',
       executionError: null,
       clearOutput: mockClearOutput,
       clearExecutionError: mockClearExecutionError,
@@ -263,7 +255,7 @@ describe("MainWorkspace", () => {
     }));
   });
 
-  it("shows loading skeleton when isLoading is true", () => {
+  it('shows loading skeleton when isLoading is true', () => {
     mockUseQuestion.mockImplementation(() => ({
       questions: [],
       selectedQuestion: null,
@@ -279,17 +271,17 @@ describe("MainWorkspace", () => {
     act(() => {
       render(<MainWorkspace />);
     });
-    expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument();
   });
 
-  it("renders main layout when mounted", () => {
+  it('renders main layout when mounted', () => {
     act(() => {
       render(<MainWorkspace />);
     });
-    expect(screen.getByTestId("main-layout")).toBeInTheDocument();
+    expect(screen.getByTestId('main-layout')).toBeInTheDocument();
   });
 
-  it("renders Sidebar with questions", () => {
+  it('renders Sidebar with questions', () => {
     mockUseQuestion.mockImplementation(() => ({
       questions,
       selectedQuestion: null,
@@ -305,48 +297,48 @@ describe("MainWorkspace", () => {
     act(() => {
       render(<MainWorkspace />);
     });
-    const sidebar = screen.getByTestId("mock-sidebar");
-    expect(sidebar).toHaveAttribute("data-question-count", "2");
+    const sidebar = screen.getByTestId('mock-sidebar');
+    expect(sidebar).toHaveAttribute('data-question-count', '2');
   });
 
-  it("renders CodeEditorContainer", () => {
+  it('renders CodeEditorContainer', () => {
     act(() => {
       render(<MainWorkspace />);
     });
-    expect(screen.getByTestId("mock-editor-container")).toBeInTheDocument();
+    expect(screen.getByTestId('mock-editor-container')).toBeInTheDocument();
   });
 
-  it("renders AIChatPanelContainer", () => {
+  it('renders AIChatPanelContainer', () => {
     act(() => {
       render(<MainWorkspace />);
     });
-    expect(screen.getByTestId("mock-chat-panel")).toBeInTheDocument();
+    expect(screen.getByTestId('mock-chat-panel')).toBeInTheDocument();
   });
 
-  it("renders Header", () => {
+  it('renders Header', () => {
     act(() => {
       render(<MainWorkspace />);
     });
-    expect(screen.getByText("CodeCoach AI")).toBeInTheDocument();
+    expect(screen.getByText('CodeCoach AI')).toBeInTheDocument();
   });
 
-  it("calls loadQuestions on mount", () => {
+  it('calls loadQuestions on mount', () => {
     act(() => {
       render(<MainWorkspace />);
     });
     expect(mockLoadQuestions).toHaveBeenCalledTimes(1);
   });
 
-  it("does not send message when no question is selected", async () => {
+  it('does not send message when no question is selected', async () => {
     act(() => {
       render(<MainWorkspace />);
     });
     const user = userEvent.setup();
-    await user.click(screen.getByText("Send Message"));
+    await user.click(screen.getByText('Send Message'));
     expect(mockSendMessage).not.toHaveBeenCalled();
   });
 
-  it("calls sendMessage when question is selected", async () => {
+  it('calls sendMessage when question is selected', async () => {
     mockUseQuestion.mockImplementation(() => ({
       questions,
       selectedQuestion: questions[0],
@@ -363,17 +355,17 @@ describe("MainWorkspace", () => {
       render(<MainWorkspace />);
     });
     const user = userEvent.setup();
-    await user.click(screen.getByText("Send Message"));
+    await user.click(screen.getByText('Send Message'));
     expect(mockSendMessage).toHaveBeenCalledWith(
-      "hello",
-      "freeform",
+      'hello',
+      'freeform',
       questions[0].title,
-      "",
-      "python",
+      '',
+      'python',
     );
   });
 
-  it("disables chat inputs when isTyping", () => {
+  it('disables chat inputs when isTyping', () => {
     mockUseCoaching.mockImplementation(() => ({
       messages: [],
       isTyping: true,
@@ -386,24 +378,33 @@ describe("MainWorkspace", () => {
     act(() => {
       render(<MainWorkspace />);
     });
-    const chatPanel = screen.getByTestId("mock-chat-panel");
-    expect(chatPanel).toHaveAttribute("data-typing", "true");
+    const chatPanel = screen.getByTestId('mock-chat-panel');
+    expect(chatPanel).toHaveAttribute('data-typing', 'true');
   });
 
-  it("calls validateCode when Run Code is clicked with fullQuestion", async () => {
+  it('calls validateCode when Run Code is clicked with fullQuestion', async () => {
     const fullQuestion: Question = {
-      id: "1",
-      title: "Two Sum",
-      difficulty: "easy",
-      category: "arrays",
+      id: '1',
+      title: 'Two Sum',
+      difficulty: 'easy',
+      category: 'arrays',
       company_tags: [],
-      description: "test",
+      description: 'test',
       examples: [],
       hints: [],
-      starter: { python: "", javascript: "", java: "" },
-      solution: "",
-      time_complexity: "",
-      space_complexity: "",
+      starter: {
+        python: '',
+        javascript: '',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
+      solution: '',
+      time_complexity: '',
+      space_complexity: '',
       test_cases: [],
     };
     mockUseQuestion.mockImplementation(() => ({
@@ -422,24 +423,33 @@ describe("MainWorkspace", () => {
       render(<MainWorkspace />);
     });
     const user = userEvent.setup();
-    await user.click(screen.getByText("Run Code"));
+    await user.click(screen.getByText('Run Code'));
     expect(mockValidateCode).toHaveBeenCalled();
   });
 
-  it("calls submitCode when Submit Code is clicked with fullQuestion", async () => {
+  it('calls submitCode when Submit Code is clicked with fullQuestion', async () => {
     const fullQuestion: Question = {
-      id: "1",
-      title: "Two Sum",
-      difficulty: "easy",
-      category: "arrays",
+      id: '1',
+      title: 'Two Sum',
+      difficulty: 'easy',
+      category: 'arrays',
       company_tags: [],
-      description: "test",
+      description: 'test',
       examples: [],
       hints: [],
-      starter: { python: "", javascript: "", java: "" },
-      solution: "",
-      time_complexity: "",
-      space_complexity: "",
+      starter: {
+        python: '',
+        javascript: '',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
+      solution: '',
+      time_complexity: '',
+      space_complexity: '',
       test_cases: [],
     };
     mockUseQuestion.mockImplementation(() => ({
@@ -458,16 +468,16 @@ describe("MainWorkspace", () => {
       render(<MainWorkspace />);
     });
     const user = userEvent.setup();
-    await user.click(screen.getByText("Submit Code"));
+    await user.click(screen.getByText('Submit Code'));
     expect(mockSubmitCode).toHaveBeenCalled();
   });
 
-  it("calls selectQuestion when question is selected in sidebar", async () => {
+  it('calls selectQuestion when question is selected in sidebar', async () => {
     act(() => {
       render(<MainWorkspace />);
     });
     const user = userEvent.setup();
-    await user.click(screen.getByText("Select Question"));
+    await user.click(screen.getByText('Select Question'));
     expect(mockSelectQuestion).toHaveBeenCalled();
   });
 });
