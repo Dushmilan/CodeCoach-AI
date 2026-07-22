@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 
-const API_KEY_KEY = 'nvidia_api_key';
+const API_KEY_KEY = "nvidia_api_key";
 
 export function useSettings() {
-  const [apiKey, setApiKeyState] = useState<string>('');
+  const [apiKey, setApiKeyState] = useState<string>("");
 
   useEffect(() => {
-    setApiKeyState(localStorage.getItem(API_KEY_KEY) || '');
+    setApiKeyState(localStorage.getItem(API_KEY_KEY) || "");
   }, []);
 
   const setApiKey = useCallback((key: string) => {

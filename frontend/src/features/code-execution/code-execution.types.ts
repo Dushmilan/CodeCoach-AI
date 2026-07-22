@@ -1,4 +1,4 @@
-import { Language, Question } from '@/types';
+import { Language, Question } from "@/types";
 
 export interface TestCase {
   input: string;
@@ -54,14 +54,26 @@ export interface SubmitResponse {
 }
 
 export interface CodeExecutionActions {
-  runCode: (language: string, code: string, version?: string) => Promise<CodeExecutionResult>;
+  runCode: (
+    language: string,
+    code: string,
+    version?: string,
+  ) => Promise<CodeExecutionResult>;
   validateCode: (
     language: string,
     code: string,
-    testCases: TestCase[]
+    testCases: TestCase[],
   ) => Promise<ValidationResponse>;
-  submitCode: (questionId: string, language: string, code: string) => Promise<SubmitResponse>;
-  runLocalJavaScript: (code: string, question: Question, fnName?: string) => Promise<string>;
+  submitCode: (
+    questionId: string,
+    language: string,
+    code: string,
+  ) => Promise<SubmitResponse>;
+  runLocalJavaScript: (
+    code: string,
+    question: Question,
+    fnName?: string,
+  ) => Promise<string>;
   clearOutput: () => void;
   clearError: () => void;
 }

@@ -1,17 +1,17 @@
-'use client';
-export const dynamic = 'force-dynamic';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/providers';
-import { Button } from '@/components/ui/button';
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/providers";
+import { Button } from "@/components/ui/button";
 
 export default function AdminLogin() {
   const router = useRouter();
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,9 +23,9 @@ export default function AdminLogin() {
 
       try {
         await login(username, password);
-        router.push('/admin/dashboard');
+        router.push("/admin/dashboard");
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Invalid credentials');
+        setError(err instanceof Error ? err.message : "Invalid credentials");
       } finally {
         setIsLoading(false);
       }
@@ -101,13 +101,17 @@ export default function AdminLogin() {
               )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
 
             <div className="mt-6 pt-6 border-t border-white/10 text-center">
-              <p className="text-xs text-muted-foreground/60">Demo Credentials</p>
-              <p className="font-mono text-xs text-muted-foreground/40 mt-1">admin / admin123</p>
+              <p className="text-xs text-muted-foreground/60">
+                Demo Credentials
+              </p>
+              <p className="font-mono text-xs text-muted-foreground/40 mt-1">
+                admin / admin123
+              </p>
               <p className="font-mono text-xs text-muted-foreground/40">
                 superadmin / superadmin123
               </p>

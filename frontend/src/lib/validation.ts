@@ -1,4 +1,4 @@
-import { FetchClient } from '@/lib/fetch-client';
+import { FetchClient } from "@/lib/fetch-client";
 
 const api = new FetchClient();
 
@@ -8,15 +8,18 @@ export interface FieldErrors {
   [key: string]: string;
 }
 
-export function validateRequired(value: string, fieldName: string): string | null {
-  if (!value || value.trim() === '') return `${fieldName} is required`;
+export function validateRequired(
+  value: string,
+  fieldName: string,
+): string | null {
+  if (!value || value.trim() === "") return `${fieldName} is required`;
   return null;
 }
 
 export function validateIdFormat(value: string): string | null {
   if (!value) return null;
   if (!ID_PATTERN.test(value)) {
-    return 'ID must contain only lowercase letters, numbers, and hyphens';
+    return "ID must contain only lowercase letters, numbers, and hyphens";
   }
   return null;
 }
@@ -24,13 +27,13 @@ export function validateIdFormat(value: string): string | null {
 export function validateOrder(value: number): string | null {
   if (value === undefined || value === null) return null;
   if (!Number.isInteger(value) || value < 1) {
-    return 'Order must be a positive integer';
+    return "Order must be a positive integer";
   }
   return null;
 }
 
 export async function validateIdUnique(
-  entityType: 'course' | 'module' | 'lesson',
+  entityType: "course" | "module" | "lesson",
   id: string,
   isEdit: boolean = false,
 ): Promise<string | null> {
@@ -51,9 +54,9 @@ export function validateCourseForm(data: {
   order: number;
 }): FieldErrors {
   const errors: FieldErrors = {};
-  const idErr = validateRequired(data.id, 'ID') || validateIdFormat(data.id);
+  const idErr = validateRequired(data.id, "ID") || validateIdFormat(data.id);
   if (idErr) errors.id = idErr;
-  const titleErr = validateRequired(data.title, 'Title');
+  const titleErr = validateRequired(data.title, "Title");
   if (titleErr) errors.title = titleErr;
   const orderErr = validateOrder(data.order);
   if (orderErr) errors.order = orderErr;
@@ -66,9 +69,9 @@ export function validateModuleForm(data: {
   order: number;
 }): FieldErrors {
   const errors: FieldErrors = {};
-  const idErr = validateRequired(data.id, 'ID') || validateIdFormat(data.id);
+  const idErr = validateRequired(data.id, "ID") || validateIdFormat(data.id);
   if (idErr) errors.id = idErr;
-  const titleErr = validateRequired(data.title, 'Title');
+  const titleErr = validateRequired(data.title, "Title");
   if (titleErr) errors.title = titleErr;
   const orderErr = validateOrder(data.order);
   if (orderErr) errors.order = orderErr;
@@ -81,9 +84,9 @@ export function validateLessonForm(data: {
   order: number;
 }): FieldErrors {
   const errors: FieldErrors = {};
-  const idErr = validateRequired(data.id, 'ID') || validateIdFormat(data.id);
+  const idErr = validateRequired(data.id, "ID") || validateIdFormat(data.id);
   if (idErr) errors.id = idErr;
-  const titleErr = validateRequired(data.title, 'Title');
+  const titleErr = validateRequired(data.title, "Title");
   if (titleErr) errors.title = titleErr;
   const orderErr = validateOrder(data.order);
   if (orderErr) errors.order = orderErr;

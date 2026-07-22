@@ -1,13 +1,14 @@
-import { HttpClient, HttpMethod, HttpRequestOptions } from './http-client';
+import { HttpClient, HttpMethod, HttpRequestOptions } from "./http-client";
 
 declare const process: { env: { NEXT_PUBLIC_API_URL?: string } };
 
-const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const DEFAULT_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
-    const stored = localStorage.getItem('auth_token');
+    const stored = localStorage.getItem("auth_token");
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -18,32 +19,43 @@ export class FetchClient implements HttpClient {
   private baseUrl: string;
   private getToken: () => string | null;
 
-  constructor(baseUrl: string = DEFAULT_BASE_URL, getToken?: () => string | null) {
+  constructor(
+    baseUrl: string = DEFAULT_BASE_URL,
+    getToken?: () => string | null,
+  ) {
     this.baseUrl = baseUrl;
     this.getToken = getToken ?? getAuthToken;
   }
 
   async get<T>(path: string, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>('GET', path, undefined, options);
+    return this.request<T>("GET", path, undefined, options);
   }
 
-  async post<T>(path: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>('POST', path, body, options);
+  async post<T>(
+    path: string,
+    body?: unknown,
+    options?: HttpRequestOptions,
+  ): Promise<T> {
+    return this.request<T>("POST", path, body, options);
   }
 
-  async put<T>(path: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>('PUT', path, body, options);
+  async put<T>(
+    path: string,
+    body?: unknown,
+    options?: HttpRequestOptions,
+  ): Promise<T> {
+    return this.request<T>("PUT", path, body, options);
   }
 
   async delete<T>(path: string, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>('DELETE', path, undefined, options);
+    return this.request<T>("DELETE", path, undefined, options);
   }
 
   private async request<T>(
     method: HttpMethod,
     path: string,
     body?: unknown,
-    options?: HttpRequestOptions
+    options?: HttpRequestOptions,
   ): Promise<T> {
     const controller = new AbortController();
     const timeoutMs = options?.timeout ?? 10000;
@@ -56,7 +68,7 @@ export class FetchClient implements HttpClient {
     try {
       const token = this.getToken();
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options?.headers,
       };
@@ -72,11 +84,11 @@ export class FetchClient implements HttpClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
+        const errorBody = await response.text().catch(() => "");
         throw new HttpError(
           `Request failed: ${response.status} ${response.statusText}`,
           response.status,
-          errorBody
+          errorBody,
         );
       }
 
@@ -90,8 +102,8 @@ export class FetchClient implements HttpClient {
       if (error instanceof HttpError) {
         throw error;
       }
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new HttpError('Request timeout', 408);
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new HttpError("Request timeout", 408);
       }
       throw error;
     }
@@ -106,10 +118,10 @@ export class HttpError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly body?: string
+    public readonly body?: string,
   ) {
     super(message);
-    this.name = 'HttpError';
+    this.name = "HttpError";
   }
 }
 
@@ -120,7 +132,9 @@ function anySignal(signals: AbortSignal[]): AbortSignal {
       controller.abort(signal.reason);
       return controller.signal;
     }
-    signal.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
+    signal.addEventListener("abort", () => controller.abort(signal.reason), {
+      once: true,
+    });
   }
   return controller.signal;
 }

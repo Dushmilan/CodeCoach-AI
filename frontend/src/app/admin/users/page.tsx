@@ -1,11 +1,18 @@
-'use client';
-export const dynamic = 'force-dynamic';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '@/providers';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Search, Shield, ShieldOff, UserCheck, UserX, Users } from 'lucide-react';
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/providers";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Search,
+  Shield,
+  ShieldOff,
+  UserCheck,
+  UserX,
+  Users,
+} from "lucide-react";
 
 interface UserItem {
   id: string;
@@ -22,18 +29,21 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 15;
 
   const fetchUsers = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ page: String(page), per_page: String(pageSize) });
-      if (search) params.set('search', search);
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(pageSize),
+      });
+      if (search) params.set("search", search);
       const res = await fetch(`/api/admin/users?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setUsers(data.users || []);
       setTotal(data.total || 0);
@@ -50,8 +60,11 @@ export default function UsersPage() {
 
   const updateRole = async (userId: string, role: string) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ role }),
     });
     if (res.ok) fetchUsers();
@@ -59,8 +72,11 @@ export default function UsersPage() {
 
   const toggleStatus = async (userId: string, current: boolean) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ is_active: !current }),
     });
     if (res.ok) fetchUsers();
@@ -68,12 +84,14 @@ export default function UsersPage() {
 
   const roleBadge = (role: string) => {
     const colors: Record<string, string> = {
-      super_admin: 'bg-purple-500/20 text-purple-500',
-      admin: 'bg-blue-500/20 text-blue-500',
-      user: 'bg-gray-500/20 text-gray-400',
+      super_admin: "bg-purple-500/20 text-purple-500",
+      admin: "bg-blue-500/20 text-blue-500",
+      user: "bg-gray-500/20 text-gray-400",
     };
     return (
-      <span className={`text-xs px-2 py-0.5 rounded-full ${colors[role] || colors.user}`}>
+      <span
+        className={`text-xs px-2 py-0.5 rounded-full ${colors[role] || colors.user}`}
+      >
         {role}
       </span>
     );
@@ -84,7 +102,9 @@ export default function UsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Users</h1>
-          <p className="text-muted-foreground text-sm mt-1">{total} total users</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {total} total users
+          </p>
         </div>
         <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
           <Search className="h-4 w-4 text-muted-foreground" />
@@ -113,7 +133,9 @@ export default function UsersPage() {
       ) : (
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">All Users</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              All Users
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="overflow-x-auto">
@@ -141,9 +163,11 @@ export default function UsersPage() {
                           <span className="font-medium">
                             {u.username}
                             {u.id === authUser?.id ? (
-                              <span className="text-xs text-muted-foreground ml-1">(you)</span>
+                              <span className="text-xs text-muted-foreground ml-1">
+                                (you)
+                              </span>
                             ) : (
-                              ''
+                              ""
                             )}
                           </span>
                         </div>
@@ -163,30 +187,39 @@ export default function UsersPage() {
                       </td>
                       <td className="py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {authUser?.role === 'super_admin' && u.id !== authUser?.id && (
-                            <>
-                              <select
-                                value={u.role}
-                                onChange={(e) => updateRole(u.id, e.target.value)}
-                                className="text-xs bg-muted/50 rounded px-2 py-1 border border-border outline-none"
-                              >
-                                <option value="user">user</option>
-                                <option value="admin">admin</option>
-                                <option value="super_admin">super_admin</option>
-                              </select>
-                              <button
-                                onClick={() => toggleStatus(u.id, u.is_active)}
-                                className="text-xs p-1.5 rounded hover:bg-muted transition-colors"
-                                title={u.is_active ? 'Deactivate' : 'Activate'}
-                              >
-                                {u.is_active ? (
-                                  <ShieldOff className="h-3.5 w-3.5 text-muted-foreground" />
-                                ) : (
-                                  <Shield className="h-3.5 w-3.5 text-green-500" />
-                                )}
-                              </button>
-                            </>
-                          )}
+                          {authUser?.role === "super_admin" &&
+                            u.id !== authUser?.id && (
+                              <>
+                                <select
+                                  value={u.role}
+                                  onChange={(e) =>
+                                    updateRole(u.id, e.target.value)
+                                  }
+                                  className="text-xs bg-muted/50 rounded px-2 py-1 border border-border outline-none"
+                                >
+                                  <option value="user">user</option>
+                                  <option value="admin">admin</option>
+                                  <option value="super_admin">
+                                    super_admin
+                                  </option>
+                                </select>
+                                <button
+                                  onClick={() =>
+                                    toggleStatus(u.id, u.is_active)
+                                  }
+                                  className="text-xs p-1.5 rounded hover:bg-muted transition-colors"
+                                  title={
+                                    u.is_active ? "Deactivate" : "Activate"
+                                  }
+                                >
+                                  {u.is_active ? (
+                                    <ShieldOff className="h-3.5 w-3.5 text-muted-foreground" />
+                                  ) : (
+                                    <Shield className="h-3.5 w-3.5 text-green-500" />
+                                  )}
+                                </button>
+                              </>
+                            )}
                         </div>
                       </td>
                     </tr>

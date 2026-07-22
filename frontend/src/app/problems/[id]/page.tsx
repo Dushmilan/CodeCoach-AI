@@ -1,25 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { Question, Language } from '@/types';
-import { questionService } from '@/features/question/question.service';
-import { useCodeRunner } from '@/features/question/use-code-runner.hook';
-import { useCoaching } from '@/features/coaching/coaching.hook';
-import { ResizablePanelGroup } from '@/components/ui/ResizablePanelGroup';
-import { QuestionDescriptionPanel } from '@/components/sidebar/QuestionDescriptionPanel';
-import { CodeEditorContainer } from '@/components/layout/elements/CodeEditorContainer';
-import { AIChatPanelContainer } from '@/components/layout/elements/AIChatPanelContainer';
-import { Loader2Icon, RadixChevronLeft } from '@/components/ui/icons';
-import { Header } from '@/components/header/Header';
+import { Header } from "@/components/header/Header";
+import { AIChatPanelContainer } from "@/components/layout/elements/AIChatPanelContainer";
+import { CodeEditorContainer } from "@/components/layout/elements/CodeEditorContainer";
+import { QuestionDescriptionPanel } from "@/components/sidebar/QuestionDescriptionPanel";
+import { ResizablePanelGroup } from "@/components/ui/ResizablePanelGroup";
+import { useCoaching } from "@/features/coaching/coaching.hook";
+import { questionService } from "@/features/question/question.service";
+import { useCodeRunner } from "@/features/question/use-code-runner.hook";
+import { Language, Question } from "@/types";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 export default function ProblemWorkspacePage() {
   const params = useParams();
   const questionId = params.id as string;
 
-  const [language, setLanguage] = useState<Language>('python');
-  const [currentCode, setCurrentCode] = useState('');
+  const [language, setLanguage] = useState<Language>("python");
+  const [currentCode, setCurrentCode] = useState("");
   const [fullQuestion, setFullQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,10 @@ export default function ProblemWorkspacePage() {
         if (!cancelled) setFullQuestion(data);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load question');
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : "Failed to load question",
+          );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -45,30 +48,43 @@ export default function ProblemWorkspacePage() {
     };
   }, [questionId]);
 
-  const { isRunning, output, executionError, handleRunCode, handleSubmitCode, isAuthenticated } =
-    useCodeRunner({ fullQuestion, language, currentCode });
+  const {
+    isRunning,
+    output,
+    executionError,
+    handleRunCode,
+    handleSubmitCode,
+    isAuthenticated,
+  } = useCodeRunner({ fullQuestion, language, currentCode });
 
   const { messages, isTyping, sendMessage } = useCoaching();
 
   useEffect(() => {
     if (
       fullQuestion?.starter &&
-      typeof fullQuestion.starter === 'object' &&
+      typeof fullQuestion.starter === "object" &&
       language in fullQuestion.starter
     ) {
-      const starter = fullQuestion.starter[language as keyof typeof fullQuestion.starter];
-      setCurrentCode(typeof starter === 'string' ? starter : '');
+      const starter =
+        fullQuestion.starter[language as keyof typeof fullQuestion.starter];
+      setCurrentCode(typeof starter === "string" ? starter : "");
     } else {
-      setCurrentCode('');
+      setCurrentCode("");
     }
   }, [language, fullQuestion]);
 
   const handleSendMessage = useCallback(
     async (message: string, mode: string) => {
       if (!fullQuestion) return;
-      await sendMessage(message, mode as any, fullQuestion.title, currentCode, language);
+      await sendMessage(
+        message,
+        mode as any,
+        fullQuestion.title,
+        currentCode,
+        language,
+      );
     },
-    [fullQuestion, currentCode, language, sendMessage]
+    [fullQuestion, currentCode, language, sendMessage],
   );
 
   if (loading) {
@@ -77,8 +93,10 @@ export default function ProblemWorkspacePage() {
         <Header />
         <main className="flex items-center justify-center min-h-[60vh]">
           <div className="flex flex-col items-center gap-3">
-            <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground/40" />
-            <span className="text-sm text-muted-foreground/60">Loading question...</span>
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40" />
+            <span className="text-sm text-muted-foreground/60">
+              Loading question...
+            </span>
           </div>
         </main>
       </div>
@@ -98,7 +116,7 @@ export default function ProblemWorkspacePage() {
               href="/problems"
               className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors flex items-center gap-1"
             >
-              <RadixChevronLeft className="h-3 w-3" />
+              <ChevronLeft className="h-3 w-3" />
               Back to problems
             </Link>
           </div>
@@ -113,12 +131,14 @@ export default function ProblemWorkspacePage() {
         <Header />
         <main className="flex items-center justify-center min-h-[60vh]">
           <div className="flex flex-col items-center gap-4">
-            <p className="text-sm text-muted-foreground/60">Question not found</p>
+            <p className="text-sm text-muted-foreground/60">
+              Question not found
+            </p>
             <Link
               href="/problems"
               className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors flex items-center gap-1"
             >
-              <RadixChevronLeft className="h-3 w-3" />
+              <ChevronLeft className="h-3 w-3" />
               Back to problems
             </Link>
           </div>
@@ -131,89 +151,91 @@ export default function ProblemWorkspacePage() {
     <div className="h-dvh bg-background text-foreground flex flex-col overflow-hidden">
       <Header />
       <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
-      <div className="flex items-center gap-2 px-1 py-2">
-        <Link
-          href="/problems"
-          className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground/60 hover:text-foreground hover:bg-white/5 rounded-full transition-all"
-        >
-          <RadixChevronLeft className="h-3 w-3" />
-          Problems
-        </Link>
-        <span className="text-xs text-muted-foreground/30">/</span>
-        <span className="text-xs text-foreground/60 truncate max-w-[200px]">
-          {fullQuestion.title}
-        </span>
-      </div>
+        <div className="flex items-center gap-2 px-1 py-2">
+          <Link
+            href="/problems"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground/60 hover:text-foreground hover:bg-white/5 rounded-full transition-all"
+          >
+            <ChevronLeft className="h-3 w-3" />
+            Problems
+          </Link>
+          <span className="text-xs text-muted-foreground/30">/</span>
+          <span className="text-xs text-foreground/60 truncate max-w-[200px]">
+            {fullQuestion.title}
+          </span>
+        </div>
 
-      <div className="flex-1 min-h-0">
-        <ResizablePanelGroup
-          panels={[
-            {
-              id: 'description',
-              defaultSize: 28,
-              minSize: 280,
-              children: (
-                <div className="h-full flex flex-col rounded-[1.5rem] bg-white/[0.03] ring-1 ring-white/5 p-1 mr-1">
-                  <div className="flex-1 flex flex-col rounded-[calc(1.5rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] overflow-hidden">
-                    <QuestionDescriptionPanel
-                      selectedQuestion={fullQuestion}
-                    />
+        <div className="flex-1 min-h-0">
+          <ResizablePanelGroup
+            panels={[
+              {
+                id: "description",
+                defaultSize: 28,
+                minSize: 280,
+                children: (
+                  <div className="h-full flex flex-col rounded-[1.5rem] bg-white/[0.03] ring-1 ring-white/5 p-1 mr-1">
+                    <div className="flex-1 flex flex-col rounded-[calc(1.5rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] overflow-hidden">
+                      <QuestionDescriptionPanel
+                        selectedQuestion={fullQuestion}
+                      />
+                    </div>
                   </div>
-                </div>
-              ),
-            },
-            {
-              id: 'editor',
-              defaultSize: 44,
-              minSize: 400,
-              children: (
-                <div className="h-full flex flex-col rounded-[1.5rem] bg-white/[0.03] ring-1 ring-white/5 p-1 mr-1">
-                  <div className="flex-1 flex flex-col rounded-[calc(1.5rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] overflow-hidden">
-                    <CodeEditorContainer
-                      language={language}
-                      currentCode={currentCode}
-                      initialCode={
-                        fullQuestion.starter &&
-                        typeof fullQuestion.starter === 'object'
-                          ? (fullQuestion.starter[language as keyof typeof fullQuestion.starter] || '')
-                          : ''
-                      }
-                      isRunning={isRunning}
-                      output={output}
-                      error={executionError || error || ''}
-                      isInteractive={fullQuestion.is_interactive || false}
-                      onCodeChange={setCurrentCode}
-                      onLanguageChange={setLanguage}
-                      onRunCode={handleRunCode}
-                      onSubmitCode={handleSubmitCode}
-                      isAuthenticated={isAuthenticated}
-                    />
+                ),
+              },
+              {
+                id: "editor",
+                defaultSize: 44,
+                minSize: 400,
+                children: (
+                  <div className="h-full flex flex-col rounded-[1.5rem] bg-white/[0.03] ring-1 ring-white/5 p-1 mr-1">
+                    <div className="flex-1 flex flex-col rounded-[calc(1.5rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] overflow-hidden">
+                      <CodeEditorContainer
+                        language={language}
+                        currentCode={currentCode}
+                        initialCode={
+                          fullQuestion.starter &&
+                          typeof fullQuestion.starter === "object"
+                            ? fullQuestion.starter[
+                                language as keyof typeof fullQuestion.starter
+                              ] || ""
+                            : ""
+                        }
+                        isRunning={isRunning}
+                        output={output}
+                        error={executionError || error || ""}
+                        isInteractive={fullQuestion.is_interactive || false}
+                        onCodeChange={setCurrentCode}
+                        onLanguageChange={setLanguage}
+                        onRunCode={handleRunCode}
+                        onSubmitCode={handleSubmitCode}
+                        isAuthenticated={isAuthenticated}
+                      />
+                    </div>
                   </div>
-                </div>
-              ),
-            },
-            {
-              id: 'chat',
-              defaultSize: 28,
-              minSize: 280,
-              children: (
-                <div className="h-full flex flex-col rounded-[1.5rem] bg-white/[0.03] ring-1 ring-white/5 p-1">
-                  <div className="flex-1 flex flex-col rounded-[calc(1.5rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] overflow-hidden">
-                    <AIChatPanelContainer
-                      messages={messages}
-                      onSendMessage={handleSendMessage}
-                      isTyping={isTyping}
-                      selectedQuestion={fullQuestion.title}
-                      currentCode={currentCode}
-                      language={language}
-                    />
+                ),
+              },
+              {
+                id: "chat",
+                defaultSize: 28,
+                minSize: 280,
+                children: (
+                  <div className="h-full flex flex-col rounded-[1.5rem] bg-white/[0.03] ring-1 ring-white/5 p-1">
+                    <div className="flex-1 flex flex-col rounded-[calc(1.5rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] overflow-hidden">
+                      <AIChatPanelContainer
+                        messages={messages}
+                        onSendMessage={handleSendMessage}
+                        isTyping={isTyping}
+                        selectedQuestion={fullQuestion.title}
+                        currentCode={currentCode}
+                        language={language}
+                      />
+                    </div>
                   </div>
-                </div>
-              ),
-            },
-          ]}
-        />
-      </div>
+                ),
+              },
+            ]}
+          />
+        </div>
       </div>
     </div>
   );

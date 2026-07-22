@@ -1,13 +1,24 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { User, AuthState } from '@/types';
-import { authService } from '@/features/auth/auth.service';
-import { showToast } from '@/components/ui/Toast';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { User, AuthState } from "@/types";
+import { authService } from "@/features/auth/auth.service";
+import { showToast } from "@/components/ui/Toast";
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
   loginWithSupabase: (accessToken: string) => Promise<void>;
   logout: () => void;
 }
@@ -15,9 +26,9 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 function getStoredToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
-    const stored = localStorage.getItem('auth_token');
+    const stored = localStorage.getItem("auth_token");
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -25,11 +36,11 @@ function getStoredToken(): string | null {
 }
 
 function setStoredToken(token: string | null) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   if (token) {
-    localStorage.setItem('auth_token', JSON.stringify(token));
+    localStorage.setItem("auth_token", JSON.stringify(token));
   } else {
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem("auth_token");
   }
 }
 
@@ -56,12 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedToken = getStoredToken();
     if (!storedToken) {
-      setState(prev => ({ ...prev, isLoading: false, isHydrated: true }));
+      setState((prev) => ({ ...prev, isLoading: false, isHydrated: true }));
       return;
     }
 
-    authService.getMe(storedToken)
-      .then(user => {
+    authService
+      .getMe(storedToken)
+      .then((user) => {
         setState({
           user,
           token: storedToken,
@@ -82,30 +94,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
-    const response = await authService.login({ username, password });
-    setAuth(response.user, response.access_token);
-    showToast('Signed in successfully', 'success');
-  }, [setAuth]);
+  const login = useCallback(
+    async (username: string, password: string) => {
+      const response = await authService.login({ username, password });
+      setAuth(response.user, response.access_token);
+      showToast("Signed in successfully", "success");
+    },
+    [setAuth],
+  );
 
-  const register = useCallback(async (username: string, email: string, password: string) => {
-    const response = await authService.register({ username, email, password });
-    setAuth(response.user, response.access_token);
-    showToast('Account created successfully', 'success');
-  }, [setAuth]);
+  const register = useCallback(
+    async (username: string, email: string, password: string) => {
+      const response = await authService.register({
+        username,
+        email,
+        password,
+      });
+      setAuth(response.user, response.access_token);
+      showToast("Account created successfully", "success");
+    },
+    [setAuth],
+  );
 
-  const loginWithSupabase = useCallback(async (accessToken: string) => {
-    const response = await authService.loginWithSupabase({ access_token: accessToken });
-    setAuth(response.user, response.access_token);
-  }, [setAuth]);
+  const loginWithSupabase = useCallback(
+    async (accessToken: string) => {
+      const response = await authService.loginWithSupabase({
+        access_token: accessToken,
+      });
+      setAuth(response.user, response.access_token);
+    },
+    [setAuth],
+  );
 
   const logout = useCallback(() => {
     setAuth(null, null);
-    showToast('Signed out', 'info');
+    showToast("Signed out", "info");
   }, [setAuth]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, loginWithSupabase, logout }}>
+    <AuthContext.Provider
+      value={{ ...state, login, register, loginWithSupabase, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -114,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

@@ -1,6 +1,6 @@
-import { HttpClient } from '@/lib/http-client';
-import { FetchClient } from '@/lib/fetch-client'
-import { User } from '@/types';
+import { HttpClient } from "@/lib/http-client";
+import { FetchClient } from "@/lib/fetch-client";
+import { User } from "@/types";
 
 export interface LoginRequest {
   username: string;
@@ -28,19 +28,19 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   async login(data: LoginRequest): Promise<TokenResponse> {
-    return this.http.post<TokenResponse>('/api/auth/login', data);
+    return this.http.post<TokenResponse>("/api/auth/login", data);
   }
 
   async register(data: RegisterRequest): Promise<TokenResponse> {
-    return this.http.post<TokenResponse>('/api/auth/register', data);
+    return this.http.post<TokenResponse>("/api/auth/register", data);
   }
 
   async loginWithSupabase(data: SupabaseAuthRequest): Promise<TokenResponse> {
-    return this.http.post<TokenResponse>('/api/auth/supabase', data);
+    return this.http.post<TokenResponse>("/api/auth/supabase", data);
   }
 
   async getMe(token: string): Promise<User> {
-    return this.http.get<User>('/api/auth/me', {
+    return this.http.get<User>("/api/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
   }

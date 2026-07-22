@@ -1,59 +1,66 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MessageList } from './MessageList';
-import { ChatMessage } from '@/types';
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { MessageList } from "./MessageList";
+import { ChatMessage } from "@/types";
 
 const baseMessage: ChatMessage = {
-  id: '1',
-  role: 'user',
-  content: 'Hello',
-  timestamp: new Date('2024-01-01T12:00:00'),
+  id: "1",
+  role: "user",
+  content: "Hello",
+  timestamp: new Date("2024-01-01T12:00:00"),
 };
 
-describe('MessageList', () => {
-  it('renders user messages aligned to the right', () => {
+describe("MessageList", () => {
+  it("renders user messages aligned to the right", () => {
     render(<MessageList messages={[baseMessage]} isTyping={false} />);
-    const container = screen.getByText('Hello').closest('.flex');
-    expect(container?.className).toContain('justify-end');
+    const container = screen.getByText("Hello").closest(".flex");
+    expect(container?.className).toContain("justify-end");
   });
 
-  it('renders assistant messages aligned to the left', () => {
-    const assistantMsg: ChatMessage = { ...baseMessage, id: '2', role: 'assistant', content: 'Hi there' };
+  it("renders assistant messages aligned to the left", () => {
+    const assistantMsg: ChatMessage = {
+      ...baseMessage,
+      id: "2",
+      role: "assistant",
+      content: "Hi there",
+    };
     render(<MessageList messages={[assistantMsg]} isTyping={false} />);
-    const container = screen.getByText('Hi there').closest('.flex');
-    expect(container?.className).toContain('justify-start');
+    const container = screen.getByText("Hi there").closest(".flex");
+    expect(container?.className).toContain("justify-start");
   });
 
-  it('renders multiple messages', () => {
+  it("renders multiple messages", () => {
     const msgs: ChatMessage[] = [
       baseMessage,
-      { ...baseMessage, id: '2', role: 'assistant', content: 'Reply' },
+      { ...baseMessage, id: "2", role: "assistant", content: "Reply" },
     ];
     render(<MessageList messages={msgs} isTyping={false} />);
-    expect(screen.getByText('Hello')).toBeInTheDocument();
-    expect(screen.getByText('Reply')).toBeInTheDocument();
+    expect(screen.getByText("Hello")).toBeInTheDocument();
+    expect(screen.getByText("Reply")).toBeInTheDocument();
   });
 
-  it('shows typing indicator when isTyping is true', () => {
+  it("shows typing indicator when isTyping is true", () => {
     const { container } = render(<MessageList messages={[]} isTyping />);
-    const dots = container.querySelectorAll('.animate-bounce');
+    const dots = container.querySelectorAll(".animate-bounce");
     expect(dots.length).toBe(3);
   });
 
-  it('does not show typing indicator when isTyping is false', () => {
-    const { container } = render(<MessageList messages={[]} isTyping={false} />);
-    expect(container.querySelector('.animate-bounce')).not.toBeInTheDocument();
+  it("does not show typing indicator when isTyping is false", () => {
+    const { container } = render(
+      <MessageList messages={[]} isTyping={false} />,
+    );
+    expect(container.querySelector(".animate-bounce")).not.toBeInTheDocument();
   });
 
-  it('renders structured response for assistant messages with structured data', () => {
+  it("renders structured response for assistant messages with structured data", () => {
     const structuredMsg: ChatMessage = {
       ...baseMessage,
-      id: '3',
-      role: 'assistant',
-      content: 'Here is help',
+      id: "3",
+      role: "assistant",
+      content: "Here is help",
       structured: {
-        summary: 'Great work',
-        hints: ['Try X'],
+        summary: "Great work",
+        hints: ["Try X"],
         code_review: null,
         complexity_analysis: null,
         suggestions: [],
@@ -64,6 +71,6 @@ describe('MessageList', () => {
       timestamp: new Date(),
     };
     render(<MessageList messages={[structuredMsg]} isTyping={false} />);
-    expect(screen.getByText('Great work')).toBeInTheDocument();
+    expect(screen.getByText("Great work")).toBeInTheDocument();
   });
 });

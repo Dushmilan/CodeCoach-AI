@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface PanelConfig {
   id: string;
@@ -13,13 +13,13 @@ interface PanelConfig {
 interface ResizablePanelGroupProps {
   panels: PanelConfig[];
   className?: string;
-  direction?: 'horizontal' | 'vertical';
+  direction?: "horizontal" | "vertical";
 }
 
 export function ResizablePanelGroup({
   panels,
   className,
-  direction = 'horizontal',
+  direction = "horizontal",
 }: ResizablePanelGroupProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [sizes, setSizes] = useState<number[]>([]);
@@ -37,7 +37,7 @@ export function ResizablePanelGroup({
     const el = containerRef.current;
     if (!el || initialized) return;
     const rect = el.getBoundingClientRect();
-    const containerSize = direction === 'horizontal' ? rect.width : rect.height;
+    const containerSize = direction === "horizontal" ? rect.width : rect.height;
     if (containerSize <= 0) return;
     const initial = panels.map((p) => (containerSize * p.defaultSize) / 100);
     setSizes(initial);
@@ -50,7 +50,7 @@ export function ResizablePanelGroup({
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const containerSize =
-          direction === 'horizontal'
+          direction === "horizontal"
             ? entry.contentBoxSize[0].inlineSize
             : entry.contentBoxSize[0].blockSize;
         if (containerSize <= 0) return;
@@ -70,7 +70,8 @@ export function ResizablePanelGroup({
       const el = containerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const containerSize = direction === 'horizontal' ? rect.width : rect.height;
+      const containerSize =
+        direction === "horizontal" ? rect.width : rect.height;
       setResizing({
         leftIdx: idx,
         startX: e.clientX,
@@ -80,14 +81,14 @@ export function ResizablePanelGroup({
         containerSize,
       });
     },
-    [sizes, direction]
+    [sizes, direction],
   );
 
   useEffect(() => {
     if (!resizing) return;
     const handleMouseMove = (e: MouseEvent) => {
       const dx =
-        direction === 'horizontal'
+        direction === "horizontal"
           ? e.clientX - resizing.startX
           : e.clientY - resizing.startY;
 
@@ -114,32 +115,32 @@ export function ResizablePanelGroup({
       });
     };
     const handleMouseUp = () => setResizing(null);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [resizing, panels, direction]);
 
   if (panels.length === 0) return null;
 
-  const isCol = direction === 'vertical';
+  const isCol = direction === "vertical";
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        'flex w-full h-full overflow-hidden',
-        isCol ? 'flex-col' : 'flex-row',
-        className
+        "flex w-full h-full overflow-hidden",
+        isCol ? "flex-col" : "flex-row",
+        className,
       )}
     >
       {resizing && (
         <div
           className={cn(
-            'fixed inset-0 z-[9999] select-none',
-            isCol ? 'cursor-row-resize' : 'cursor-col-resize'
+            "fixed inset-0 z-[9999] select-none",
+            isCol ? "cursor-row-resize" : "cursor-col-resize",
           )}
         />
       )}
@@ -147,11 +148,17 @@ export function ResizablePanelGroup({
         <React.Fragment key={panel.id}>
           <div
             style={{
-              flex: '0 0 auto',
-              width: direction === 'horizontal' && sizes[idx] ? `${sizes[idx]}px` : undefined,
-              height: direction === 'vertical' && sizes[idx] ? `${sizes[idx]}px` : undefined,
-              minWidth: direction === 'horizontal' ? panel.minSize : undefined,
-              minHeight: direction === 'vertical' ? panel.minSize : undefined,
+              flex: "0 0 auto",
+              width:
+                direction === "horizontal" && sizes[idx]
+                  ? `${sizes[idx]}px`
+                  : undefined,
+              height:
+                direction === "vertical" && sizes[idx]
+                  ? `${sizes[idx]}px`
+                  : undefined,
+              minWidth: direction === "horizontal" ? panel.minSize : undefined,
+              minHeight: direction === "vertical" ? panel.minSize : undefined,
             }}
             className="overflow-hidden"
           >
@@ -161,16 +168,18 @@ export function ResizablePanelGroup({
             <div
               onMouseDown={(e) => handleMouseDown(idx, e)}
               className={cn(
-                'flex-shrink-0 bg-transparent hover:bg-primary/20 transition-colors relative',
-                isCol ? 'h-1 w-full cursor-row-resize' : 'w-1 h-full cursor-col-resize'
+                "flex-shrink-0 bg-transparent hover:bg-primary/20 transition-colors relative",
+                isCol
+                  ? "h-1 w-full cursor-row-resize"
+                  : "w-1 h-full cursor-col-resize",
               )}
             >
               <div
                 className={cn(
-                  'absolute bg-white/10 rounded-full transition-all',
+                  "absolute bg-white/10 rounded-full transition-all",
                   isCol
-                    ? 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-1 w-8 group-hover:h-2'
-                    : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 group-hover:w-2'
+                    ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-1 w-8 group-hover:h-2"
+                    : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 group-hover:w-2",
                 )}
               />
             </div>

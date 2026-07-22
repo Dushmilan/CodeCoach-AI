@@ -1,7 +1,6 @@
-'use client';
+"use client";
 
-import { PaperPlaneIcon } from '@radix-ui/react-icons';
-import { Button } from '@/components/ui/button';
+import { Send } from "lucide-react";
 
 interface ChatInputProps {
   value: string;
@@ -16,10 +15,10 @@ export function ChatInput({
   onChange,
   onSend,
   disabled = false,
-  placeholder = 'Ask a question or describe your approach...',
+  placeholder = "Ask a question or describe your approach...",
 }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
@@ -40,7 +39,7 @@ export function ChatInput({
         disabled={disabled || !value.trim()}
         className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-[0.93]"
       >
-        <PaperPlaneIcon className="h-3.5 w-3.5 text-muted-foreground/60" />
+        <Send className="h-3.5 w-3.5 text-muted-foreground/60" />
       </button>
     </div>
   );

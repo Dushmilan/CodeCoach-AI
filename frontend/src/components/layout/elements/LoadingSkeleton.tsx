@@ -1,8 +1,12 @@
-import React from 'react';
+import React from "react";
 
 export function LoadingSkeleton() {
   return (
-    <main className="flex h-[100dvh] bg-background overflow-hidden" role="main" aria-label="CodeCoach AI Learning Platform">
+    <main
+      className="flex h-[100dvh] bg-background overflow-hidden"
+      role="main"
+      aria-label="CodeCoach AI Learning Platform"
+    >
       <div className="flex w-full gap-0.5 p-2">
         {/* Sidebar Skeleton */}
         <aside className="flex flex-col w-80 p-1">
@@ -41,7 +45,11 @@ export function LoadingSkeleton() {
                 <div className="flex-1 rounded-[calc(2rem-0.375rem)] bg-card p-4">
                   <div className="space-y-3">
                     {[...Array(3)].map((_, i) => (
-                      <div key={i} className="h-12 bg-white/5 rounded-2xl w-3/4" style={{ marginLeft: i % 2 === 0 ? 0 : '25%' }} />
+                      <div
+                        key={i}
+                        className="h-12 bg-white/5 rounded-2xl w-3/4"
+                        style={{ marginLeft: i % 2 === 0 ? 0 : "25%" }}
+                      />
                     ))}
                   </div>
                 </div>

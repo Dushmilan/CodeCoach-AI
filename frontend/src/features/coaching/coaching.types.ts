@@ -1,6 +1,6 @@
-import { StructuredCoachingResponse, ChatMessage } from '@/types';
+import { StructuredCoachingResponse, ChatMessage } from "@/types";
 
-export type CoachingMode = 'hint' | 'review' | 'explain' | 'debug' | 'freeform';
+export type CoachingMode = "hint" | "review" | "explain" | "debug" | "freeform";
 
 export interface CoachingRequest {
   problem: string;
@@ -23,7 +23,15 @@ export interface CoachingState {
 }
 
 export interface CoachingActions {
-  sendMessage: (message: string, mode: CoachingMode, problem: string, code: string, language: string, lessonContext?: string, difficulty?: string) => Promise<void>;
+  sendMessage: (
+    message: string,
+    mode: CoachingMode,
+    problem: string,
+    code: string,
+    language: string,
+    lessonContext?: string,
+    difficulty?: string,
+  ) => Promise<void>;
   clearMessages: () => void;
   clearError: () => void;
 }

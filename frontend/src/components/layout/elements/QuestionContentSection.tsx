@@ -1,10 +1,12 @@
-import React from 'react';
+import React from "react";
 
 interface QuestionContentSectionProps {
   children: React.ReactNode;
 }
 
-export function QuestionContentSection({ children }: QuestionContentSectionProps) {
+export function QuestionContentSection({
+  children,
+}: QuestionContentSectionProps) {
   return (
     <section
       className="flex-1 flex flex-col p-1 overflow-hidden min-w-[300px]"
