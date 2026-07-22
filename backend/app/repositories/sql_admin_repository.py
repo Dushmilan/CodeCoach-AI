@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import update, delete, func, or_, select
+from sqlalchemy import update, delete, func, and_, select
 
 from app.models.orm import UserORM, QuestionORM, CourseORM, ModuleORM, LessonORM
 from app.models.admin_models import (
@@ -125,13 +125,13 @@ class SqlAdminRepository(AdminRepository):
             conditions.append(QuestionORM.category == filter.category)
 
         if conditions:
-            query = query.where(or_(*conditions))
+            query = query.where(and_(*conditions))
 
         query = query.offset((filter.page - 1) * filter.per_page).limit(filter.per_page)
 
         count_query = select(func.count())
         if conditions:
-            count_query = count_query.where(or_(*conditions))
+            count_query = count_query.where(and_(*conditions))
         count_result = await self.session.execute(count_query)
         total = count_result.scalar_one()
 
@@ -335,7 +335,7 @@ class SqlAdminRepository(AdminRepository):
 
         query = base_query
         if conditions:
-            query = query.where(or_(*conditions))
+            query = query.where(and_(*conditions))
 
         query = query.offset(skip).limit(limit)
 
@@ -344,7 +344,7 @@ class SqlAdminRepository(AdminRepository):
 
         count_query = select(func.count())
         if conditions:
-            count_query = count_query.where(or_(*conditions))
+            count_query = count_query.where(and_(*conditions))
         count_result = await self.session.execute(count_query)
         total = count_result.scalar_one()
 
