@@ -1,7 +1,8 @@
 """Starter code validation use case."""
 
-from typing import Any, List, Optional
+from typing import List, Optional
 
+from app.ports.code_executor import CodeExecutor
 from app.models.schemas import Question
 from app.models.question_validation_schemas import (
     UseCaseValidationResult,
@@ -15,7 +16,7 @@ from .base import BaseValidationUseCase
 class StarterCodeValidationUseCase(BaseValidationUseCase):
     LANGUAGES = ["python", "javascript", "java"]
 
-    def __init__(self, executor: Optional[Any] = None):
+    def __init__(self, executor: Optional[CodeExecutor] = None):
         self.executor = executor
 
     @property
@@ -27,7 +28,13 @@ class StarterCodeValidationUseCase(BaseValidationUseCase):
         for language in self.LANGUAGES:
             code = getattr(question.starter, language, None)
             if not code:
-                issues.append(self._create_issue(message=f"Starter code for {language} is missing", field=f"starter.{language}", language=language))
+                issues.append(
+                    self._create_issue(
+                        message=f"Starter code for {language} is missing",
+                        field=f"starter.{language}",
+                        language=language,
+                    )
+                )
                 continue
             if self.executor:
                 issues.extend(await self._validate_syntax(language, code))
@@ -71,11 +78,27 @@ except SyntaxError as e:
         issues = []
         try:
             test_code = self._create_syntax_test_code(language, code)
-            result = await self.executor.execute(language=language, code=test_code, stdin="")
+            result = await self.executor.execute(
+                language=language, code=test_code, stdin=""
+            )
             if result.exit_code != 0:
-                issues.append(self._create_issue(message=f"Syntax error in {language} starter code: {self._parse_error_message(language, result.stderr)}", field=f"starter.{language}", language=language, details={"stderr": result.stderr}))
+                issues.append(
+                    self._create_issue(
+                        message=f"Syntax error in {language} starter code: {self._parse_error_message(language, result.stderr)}",
+                        field=f"starter.{language}",
+                        language=language,
+                        details={"stderr": result.stderr},
+                    )
+                )
         except Exception as e:
-            issues.append(self._create_issue(message=f"Failed to validate {language} starter code: {str(e)}", field=f"starter.{language}", language=language, severity=ValidationSeverity.WARNING))
+            issues.append(
+                self._create_issue(
+                    message=f"Failed to validate {language} starter code: {str(e)}",
+                    field=f"starter.{language}",
+                    language=language,
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
         return issues
 
     def _basic_validate(self, language: str, code: str) -> List:
@@ -98,9 +121,22 @@ except SyntaxError as e:
                 open_chars[close_chars[char]] -= 1
         for char, count in open_chars.items():
             if count != 0:
-                issues.append(self._create_issue(message=f"Unbalanced {char} in Python starter code", field="starter.python", language="python", severity=ValidationSeverity.WARNING))
+                issues.append(
+                    self._create_issue(
+                        message=f"Unbalanced {char} in Python starter code",
+                        field="starter.python",
+                        language="python",
+                        severity=ValidationSeverity.WARNING,
+                    )
+                )
         if "def " in code and ":" not in code:
-            issues.append(self._create_issue(message="Python function definition missing colon", field="starter.python", language="python"))
+            issues.append(
+                self._create_issue(
+                    message="Python function definition missing colon",
+                    field="starter.python",
+                    language="python",
+                )
+            )
         return issues
 
     def _basic_javascript_validate(self, code: str) -> List:
@@ -114,14 +150,35 @@ except SyntaxError as e:
                 open_chars[close_chars[char]] -= 1
         for char, count in open_chars.items():
             if count != 0:
-                issues.append(self._create_issue(message=f"Unbalanced {char} in JavaScript starter code", field="starter.javascript", language="javascript", severity=ValidationSeverity.WARNING))
+                issues.append(
+                    self._create_issue(
+                        message=f"Unbalanced {char} in JavaScript starter code",
+                        field="starter.javascript",
+                        language="javascript",
+                        severity=ValidationSeverity.WARNING,
+                    )
+                )
         return issues
 
     def _basic_java_validate(self, code: str) -> List:
         issues = []
         if "class " not in code:
-            issues.append(self._create_issue(message="Java starter code should contain a class definition", field="starter.java", language="java", severity=ValidationSeverity.WARNING))
+            issues.append(
+                self._create_issue(
+                    message="Java starter code should contain a class definition",
+                    field="starter.java",
+                    language="java",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
         brace_count = code.count("{") - code.count("}")
         if brace_count != 0:
-            issues.append(self._create_issue(message="Unbalanced braces in Java starter code", field="starter.java", language="java", severity=ValidationSeverity.WARNING))
+            issues.append(
+                self._create_issue(
+                    message="Unbalanced braces in Java starter code",
+                    field="starter.java",
+                    language="java",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
         return issues
