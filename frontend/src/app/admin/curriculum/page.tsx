@@ -1,15 +1,15 @@
-'use client';
-export const dynamic = 'force-dynamic';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { showToast } from '@/components/ui/Toast';
-import { FetchClient } from '@/lib/fetch-client';
-import CourseForm from '@/components/admin/CourseForm';
-import ModuleForm from '@/components/admin/ModuleForm';
-import LessonForm from '@/components/admin/LessonForm';
-import EntityDrawer from '@/components/admin/EntityDrawer';
+import { useEffect, useState, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { showToast } from "@/components/ui/Toast";
+import { FetchClient } from "@/lib/fetch-client";
+import CourseForm from "@/components/admin/CourseForm";
+import ModuleForm from "@/components/admin/ModuleForm";
+import LessonForm from "@/components/admin/LessonForm";
+import EntityDrawer from "@/components/admin/EntityDrawer";
 import {
   Database,
   BookOpen,
@@ -19,7 +19,7 @@ import {
   Edit3,
   ChevronRight,
   ChevronDown,
-} from 'lucide-react';
+} from "lucide-react";
 
 const api = new FetchClient();
 
@@ -54,10 +54,14 @@ interface CourseTree {
   modules: Module[];
   lessons: Lesson[];
 }
-type EntityType = 'course' | 'module' | 'lesson';
+type EntityType = "course" | "module" | "lesson";
 
 export default function CurriculumPage() {
-  const [tree, setTree] = useState<CourseTree>({ courses: [], modules: [], lessons: [] });
+  const [tree, setTree] = useState<CourseTree>({
+    courses: [],
+    modules: [],
+    lessons: [],
+  });
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -73,10 +77,10 @@ export default function CurriculumPage() {
 
   const fetchTree = useCallback(async () => {
     try {
-      const data = await api.get<CourseTree>('/api/admin/courses/tree');
+      const data = await api.get<CourseTree>("/api/admin/courses/tree");
       setTree(data);
     } catch {
-      showToast('Failed to load curriculum', 'error');
+      showToast("Failed to load curriculum", "error");
     } finally {
       setLoading(false);
     }
@@ -88,11 +92,17 @@ export default function CurriculumPage() {
 
   const toggle = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
-  const openDrawer = async (type: EntityType, initial?: any, parentId?: string) => {
+  const openDrawer = async (
+    type: EntityType,
+    initial?: any,
+    parentId?: string,
+  ) => {
     let initialQuestion = undefined;
-    if (type === 'lesson' && initial?.question_id) {
+    if (type === "lesson" && initial?.question_id) {
       try {
-        initialQuestion = await api.get(`/api/admin/questions/${initial.question_id}`);
+        initialQuestion = await api.get(
+          `/api/admin/questions/${initial.question_id}`,
+        );
       } catch {
         // Question might not exist yet — that's fine
       }
@@ -115,10 +125,10 @@ export default function CurriculumPage() {
     };
     try {
       await api.delete(endpoints[type]);
-      showToast(`${type} deleted`, 'success');
+      showToast(`${type} deleted`, "success");
       fetchTree();
     } catch {
-      showToast(`Failed to delete ${type}`, 'error');
+      showToast(`Failed to delete ${type}`, "error");
     }
   };
 
@@ -128,37 +138,44 @@ export default function CurriculumPage() {
       const { type, initial, parentId } = drawerEntity || {};
       const isEdit = !!initial;
 
-      let url = '';
-      let method = 'POST';
+      let url = "";
+      let method = "POST";
       let body = { ...formData };
 
-      if (type === 'course') {
-        url = isEdit ? `/api/admin/courses/${initial.id}` : '/api/admin/courses';
-        method = isEdit ? 'PUT' : 'POST';
-      } else if (type === 'module') {
-        url = isEdit ? `/api/admin/modules/${initial.id}` : '/api/admin/modules';
-        method = isEdit ? 'PUT' : 'POST';
+      if (type === "course") {
+        url = isEdit
+          ? `/api/admin/courses/${initial.id}`
+          : "/api/admin/courses";
+        method = isEdit ? "PUT" : "POST";
+      } else if (type === "module") {
+        url = isEdit
+          ? `/api/admin/modules/${initial.id}`
+          : "/api/admin/modules";
+        method = isEdit ? "PUT" : "POST";
         if (!isEdit) body.course_id = parentId;
-      } else if (type === 'lesson') {
-        url = isEdit ? `/api/admin/lessons/${initial.id}` : '/api/admin/lessons';
-        method = isEdit ? 'PUT' : 'POST';
+      } else if (type === "lesson") {
+        url = isEdit
+          ? `/api/admin/lessons/${initial.id}`
+          : "/api/admin/lessons";
+        method = isEdit ? "PUT" : "POST";
         if (!isEdit) {
-          body.course_id = tree.modules.find((m) => m.id === parentId)?.course_id || '';
-          body.module_id = parentId || '';
+          body.course_id =
+            tree.modules.find((m) => m.id === parentId)?.course_id || "";
+          body.module_id = parentId || "";
         }
       }
 
-      if (method === 'PUT') {
+      if (method === "PUT") {
         await api.put(url, body);
       } else {
         await api.post(url, body);
       }
 
-      showToast(`${type} saved`, 'success');
+      showToast(`${type} saved`, "success");
       closeDrawer();
       fetchTree();
     } catch (e: any) {
-      showToast(e.message || 'Failed to save', 'error');
+      showToast(e.message || "Failed to save", "error");
     } finally {
       setSaving(false);
     }
@@ -177,7 +194,7 @@ export default function CurriculumPage() {
     ? drawerEntity.initial
       ? `Edit ${drawerEntity.type}`
       : `New ${drawerEntity.type}`
-    : '';
+    : "";
 
   const drawerSubtitle = drawerEntity?.initial?.title || undefined;
 
@@ -187,11 +204,11 @@ export default function CurriculumPage() {
         <div>
           <h1 className="text-2xl font-bold">Curriculum</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {tree.courses.length} courses, {tree.modules.length} modules, {tree.lessons.length}{' '}
-            lessons
+            {tree.courses.length} courses, {tree.modules.length} modules,{" "}
+            {tree.lessons.length} lessons
           </p>
         </div>
-        <Button size="sm" onClick={() => openDrawer('course')}>
+        <Button size="sm" onClick={() => openDrawer("course")}>
           <Plus className="h-4 w-4 mr-1" /> Add Course
         </Button>
       </div>
@@ -213,23 +230,27 @@ export default function CurriculumPage() {
                       <Database className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">{course.title}</CardTitle>
+                      <CardTitle className="text-base">
+                        {course.title}
+                      </CardTitle>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {course.language} &middot; order {course.order}
-                        {course.description && <span> &middot; {course.description}</span>}
+                        {course.description && (
+                          <span> &middot; {course.description}</span>
+                        )}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => openDrawer('course', course)}
+                      onClick={() => openDrawer("course", course)}
                       className="text-xs p-1.5 rounded hover:bg-muted transition-colors"
                       title="Edit course"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      onClick={() => del('course', course.id)}
+                      onClick={() => del("course", course.id)}
                       className="text-xs p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
                       title="Delete course"
                     >
@@ -255,24 +276,32 @@ export default function CurriculumPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => openDrawer('module', undefined, course.id)}
+                      onClick={() => openDrawer("module", undefined, course.id)}
                     >
                       <Plus className="h-3.5 w-3.5 mr-1" /> Add Module
                     </Button>
                   </div>
 
-                  {tree.modules.filter((m) => m.course_id === course.id).length === 0 ? (
-                    <p className="text-xs text-muted-foreground pl-13 ml-6">No modules</p>
+                  {tree.modules.filter((m) => m.course_id === course.id)
+                    .length === 0 ? (
+                    <p className="text-xs text-muted-foreground pl-13 ml-6">
+                      No modules
+                    </p>
                   ) : (
                     tree.modules
                       .filter((m) => m.course_id === course.id)
                       .sort((a, b) => (a.order || 0) - (b.order || 0))
                       .map((mod) => (
-                        <div key={mod.id} className="ml-6 pl-4 border-l-2 border-border/50">
+                        <div
+                          key={mod.id}
+                          className="ml-6 pl-4 border-l-2 border-border/50"
+                        >
                           <div className="flex items-center justify-between py-1">
                             <div className="flex items-center gap-2">
                               <BookOpen className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">{mod.title}</span>
+                              <span className="text-sm font-medium">
+                                {mod.title}
+                              </span>
                               {mod.description && (
                                 <span className="text-xs text-muted-foreground hidden sm:inline">
                                   &middot; {mod.description}
@@ -281,14 +310,14 @@ export default function CurriculumPage() {
                             </div>
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={() => openDrawer('module', mod)}
+                                onClick={() => openDrawer("module", mod)}
                                 className="text-xs p-1 rounded hover:bg-muted transition-colors"
                                 title="Edit module"
                               >
                                 <Edit3 className="h-3 w-3" />
                               </button>
                               <button
-                                onClick={() => del('module', mod.id)}
+                                onClick={() => del("module", mod.id)}
                                 className="text-xs p-1 rounded hover:bg-red-500/10 text-red-400 transition-colors"
                                 title="Delete module"
                               >
@@ -312,29 +341,40 @@ export default function CurriculumPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openDrawer('lesson', undefined, mod.id)}
+                                onClick={() =>
+                                  openDrawer("lesson", undefined, mod.id)
+                                }
                               >
-                                <Plus className="h-3 h-3.5 w-3.5 mr-1" /> Add Lesson
+                                <Plus className="h-3 h-3.5 w-3.5 mr-1" /> Add
+                                Lesson
                               </Button>
 
-                              {tree.lessons.filter((l) => l.module_id === mod.id).length === 0 ? (
-                                <p className="text-xs text-muted-foreground py-1">No lessons</p>
+                              {tree.lessons.filter(
+                                (l) => l.module_id === mod.id,
+                              ).length === 0 ? (
+                                <p className="text-xs text-muted-foreground py-1">
+                                  No lessons
+                                </p>
                               ) : (
                                 tree.lessons
                                   .filter((l) => l.module_id === mod.id)
-                                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                  .sort(
+                                    (a, b) => (a.order || 0) - (b.order || 0),
+                                  )
                                   .map((les) => (
                                     <div key={les.id}>
                                       <div className="flex items-center justify-between py-1">
                                         <div className="flex items-center gap-2">
                                           <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                                          <span className="text-sm">{les.title}</span>
+                                          <span className="text-sm">
+                                            {les.title}
+                                          </span>
                                           {les.type && (
                                             <span
                                               className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                                les.type === 'exercise'
-                                                  ? 'bg-blue-500/20 text-blue-400'
-                                                  : 'bg-muted/50 text-muted-foreground'
+                                                les.type === "exercise"
+                                                  ? "bg-blue-500/20 text-blue-400"
+                                                  : "bg-muted/50 text-muted-foreground"
                                               }`}
                                             >
                                               {les.type}
@@ -343,14 +383,18 @@ export default function CurriculumPage() {
                                         </div>
                                         <div className="flex items-center gap-1">
                                           <button
-                                            onClick={() => openDrawer('lesson', les)}
+                                            onClick={() =>
+                                              openDrawer("lesson", les)
+                                            }
                                             className="text-xs p-1 rounded hover:bg-muted transition-colors"
                                             title="Edit lesson"
                                           >
                                             <Edit3 className="h-3 w-3" />
                                           </button>
                                           <button
-                                            onClick={() => del('lesson', les.id)}
+                                            onClick={() =>
+                                              del("lesson", les.id)
+                                            }
                                             className="text-xs p-1 rounded hover:bg-red-500/10 text-red-400 transition-colors"
                                             title="Delete lesson"
                                           >
@@ -379,9 +423,9 @@ export default function CurriculumPage() {
         onClose={closeDrawer}
         title={drawerTitle}
         subtitle={drawerSubtitle}
-        wide={drawerEntity?.type === 'lesson'}
+        wide={drawerEntity?.type === "lesson"}
       >
-        {drawerEntity?.type === 'course' && (
+        {drawerEntity?.type === "course" && (
           <CourseForm
             initial={drawerEntity.initial}
             saving={saving}
@@ -389,7 +433,7 @@ export default function CurriculumPage() {
             onCancel={closeDrawer}
           />
         )}
-        {drawerEntity?.type === 'module' && (
+        {drawerEntity?.type === "module" && (
           <ModuleForm
             initial={drawerEntity.initial}
             courseId={drawerEntity.parentId}
@@ -398,7 +442,7 @@ export default function CurriculumPage() {
             onCancel={closeDrawer}
           />
         )}
-        {drawerEntity?.type === 'lesson' && (
+        {drawerEntity?.type === "lesson" && (
           <LessonForm
             initial={drawerEntity.initial}
             initialQuestion={drawerEntity.initialQuestion}

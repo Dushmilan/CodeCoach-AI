@@ -1,30 +1,31 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
+import { Header } from "@/components/header/Header";
+import { useAuth } from "@/providers";
+import { motion } from "framer-motion";
 import {
-  ReaderIcon,
-  LightningBoltIcon,
-  StarIcon,
-  ChevronRightIcon,
-  CheckIcon,
-  DotFilledIcon,
-} from '@radix-ui/react-icons';
-import { useParams } from 'next/navigation';
-import { Header } from '@/components/header/Header';
-import { useAuth } from '@/providers';
-import Link from 'next/link';
-import { ArrowLeftIcon } from '@radix-ui/react-icons';
-import { useCourse } from '@/features/curriculum/use-curriculum.hook';
-import { useEffect, useState, memo, ReactNode } from 'react';
-import { FetchClient } from '@/lib/fetch-client';
-import { cn } from '@/lib/utils';
+  ArrowLeft,
+  BookOpen,
+  Check,
+  ChevronRight,
+  Circle,
+  Star,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+
+import { useCourse } from "@/features/curriculum/use-curriculum.hook";
+import { FetchClient } from "@/lib/fetch-client";
+import { cn } from "@/lib/utils";
+import { memo, ReactNode, useEffect, useState } from "react";
 
 const api = new FetchClient();
 
 const languageIcon: Record<string, ReactNode> = {
-  python: <ReaderIcon width={20} height={20} />,
-  c: <LightningBoltIcon width={20} height={20} />,
-  java: <StarIcon width={20} height={20} />,
+  python: <BookOpen width={20} height={20} />,
+  c: <Zap width={20} height={20} />,
+  java: <Star width={20} height={20} />,
 };
 
 const staggerItem = {
@@ -32,7 +33,11 @@ const staggerItem = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.32, 0.72, 0, 1] as const, delay: 0.1 + i * 0.08 },
+    transition: {
+      duration: 0.6,
+      ease: [0.32, 0.72, 0, 1] as const,
+      delay: 0.1 + i * 0.08,
+    },
   }),
 };
 
@@ -108,22 +113,27 @@ export default function CoursePage() {
   const courseId = params.courseId as string;
   const { course, isLoading, error } = useCourse(courseId);
   const { isAuthenticated } = useAuth();
-  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
     if (!isAuthenticated || !courseId) return;
     const fetchProgress = async () => {
       try {
-        const data = await api.get<{ completed_lessons: string[] }>(`/api/progress/${courseId}`);
+        const data = await api.get<{ completed_lessons: string[] }>(
+          `/api/progress/${courseId}`,
+        );
         setCompletedLessons(new Set(data.completed_lessons || []));
       } catch (err) {
-        console.error('Failed to fetch progress:', err);
+        console.error("Failed to fetch progress:", err);
       }
     };
     fetchProgress();
   }, [courseId, isAuthenticated]);
 
-  const totalLessons = course?.modules.reduce((acc, m) => acc + m.lessons.length, 0) || 0;
+  const totalLessons =
+    course?.modules.reduce((acc, m) => acc + m.lessons.length, 0) || 0;
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
@@ -144,7 +154,7 @@ export default function CoursePage() {
               href="/learn"
               className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-foreground/70 mt-3 transition-colors"
             >
-              <ArrowLeftIcon /> Back to learning paths
+              <ArrowLeft /> Back to learning paths
             </Link>
           </div>
         )}
@@ -161,12 +171,14 @@ export default function CoursePage() {
                 href="/learn"
                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/40 hover:text-foreground/60 mb-8 transition-colors"
               >
-                <ArrowLeftIcon /> All paths
+                <ArrowLeft /> All paths
               </Link>
 
               <div className="flex items-center gap-3 mb-4">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.04] text-foreground/50 ring-1 ring-white/5">
-                  {languageIcon[course.language] || <ReaderIcon width={20} height={20} />}
+                  {languageIcon[course.language] || (
+                    <BookOpen width={20} height={20} />
+                  )}
                 </span>
                 <div>
                   <h1 className="text-lg font-semibold tracking-tight text-foreground/90">
@@ -196,7 +208,9 @@ export default function CoursePage() {
               className="flex-1 min-w-0"
             >
               {course.modules.map((mod, mi) => {
-                const moduleCompleted = mod.lessons.every(l => completedLessons.has(l.id));
+                const moduleCompleted = mod.lessons.every((l) =>
+                  completedLessons.has(l.id),
+                );
 
                 return (
                   <motion.section
@@ -204,8 +218,9 @@ export default function CoursePage() {
                     custom={mi}
                     variants={staggerItem}
                     className={cn(
-                      'pt-8 pb-8',
-                      mi < course.modules.length - 1 && 'border-b border-white/[0.04]'
+                      "pt-8 pb-8",
+                      mi < course.modules.length - 1 &&
+                        "border-b border-white/[0.04]",
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -229,41 +244,41 @@ export default function CoursePage() {
                             key={lesson.id}
                             href={`/learn/lesson/${lesson.id}`}
                             className={cn(
-                              'flex items-center gap-3 px-3 py-2.5 rounded-xl',
-                              'transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
-                              'hover:bg-white/[0.03] group'
+                              "flex items-center gap-3 px-3 py-2.5 rounded-xl",
+                              "transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                              "hover:bg-white/[0.03] group",
                             )}
                           >
                             {isComplete ? (
                               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-primary">
-                                <CheckIcon width={10} height={10} />
+                                <Check width={10} height={10} />
                               </span>
                             ) : (
-                              <DotFilledIcon
+                              <Circle
                                 width={16}
                                 height={16}
                                 className={cn(
-                                  'flex-shrink-0',
-                                  lesson.type === 'theory'
-                                    ? 'text-muted-foreground/20'
-                                    : 'text-muted-foreground/30'
+                                  "flex-shrink-0",
+                                  lesson.type === "theory"
+                                    ? "text-muted-foreground/20"
+                                    : "text-muted-foreground/30",
                                 )}
                               />
                             )}
                             <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40 w-10 flex-shrink-0 font-mono">
-                              {lesson.type === 'theory' ? 'Read' : 'Code'}
+                              {lesson.type === "theory" ? "Read" : "Code"}
                             </span>
                             <span
                               className={cn(
-                                'text-sm flex-1 transition-colors',
+                                "text-sm flex-1 transition-colors",
                                 isComplete
-                                  ? 'text-primary/70'
-                                  : 'text-foreground/60 group-hover:text-foreground/80'
+                                  ? "text-primary/70"
+                                  : "text-foreground/60 group-hover:text-foreground/80",
                               )}
                             >
                               {lesson.title}
                             </span>
-                            <ChevronRightIcon
+                            <ChevronRight
                               width={14}
                               height={14}
                               className="text-muted-foreground/15 group-hover:text-muted-foreground/40 transition-colors flex-shrink-0"

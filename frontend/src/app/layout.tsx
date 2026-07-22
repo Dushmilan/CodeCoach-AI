@@ -16,18 +16,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans`} suppressHydrationWarning>
+      <body
+        className={`${GeistSans.variable} ${GeistMono.variable} font-sans`}
+        suppressHydrationWarning
+      >
         <ThemeProvider
           defaultTheme="dark"
-          themes={['light', 'dark']}
+          themes={["light", "dark"]}
           enableSystem={true}
           disableTransitionOnChange
           attribute="class"
         >
           <AuthProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
+            <ToastProvider>{children}</ToastProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

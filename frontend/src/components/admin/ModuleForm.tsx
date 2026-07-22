@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { validateModuleForm, validateIdUnique, FieldErrors } from '@/lib/validation';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  validateModuleForm,
+  validateIdUnique,
+  FieldErrors,
+} from "@/lib/validation";
 
 interface ModuleFormProps {
   initial?: {
@@ -26,9 +30,9 @@ export default function ModuleForm({
 }: ModuleFormProps) {
   const isEdit = !!initial;
   const [f, setF] = useState({
-    id: initial?.id || '',
-    title: initial?.title || '',
-    description: initial?.description || '',
+    id: initial?.id || "",
+    title: initial?.title || "",
+    description: initial?.description || "",
     order: initial?.order ?? 1,
   });
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -57,7 +61,7 @@ export default function ModuleForm({
 
     if (!isEdit) {
       setIdChecking(true);
-      const idErr = await validateIdUnique('module', f.id, isEdit);
+      const idErr = await validateIdUnique("module", f.id, isEdit);
       setIdChecking(false);
       if (idErr) {
         setErrors({ id: idErr });
@@ -72,50 +76,66 @@ export default function ModuleForm({
 
   const inputClass = (field: string) =>
     `w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border outline-none transition-all duration-200 ${
-      errors[field] ? 'border-destructive ring-1 ring-destructive/20' : 'border-border'
-    } ${field === 'id' ? 'font-mono' : ''}`;
+      errors[field]
+        ? "border-destructive ring-1 ring-destructive/20"
+        : "border-border"
+    } ${field === "id" ? "font-mono" : ""}`;
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">ID *</label>
+          <label className="text-xs text-muted-foreground block mb-1">
+            ID *
+          </label>
           <input
-            className={inputClass('id')}
+            className={inputClass("id")}
             value={f.id}
-            onChange={(e) => set('id', e.target.value)}
+            onChange={(e) => set("id", e.target.value)}
             disabled={isEdit}
             placeholder="getting-started"
           />
-          {errors.id && <p className="text-xs text-destructive mt-1">{errors.id}</p>}
+          {errors.id && (
+            <p className="text-xs text-destructive mt-1">{errors.id}</p>
+          )}
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">Order</label>
+          <label className="text-xs text-muted-foreground block mb-1">
+            Order
+          </label>
           <input
             type="number"
-            className={inputClass('order')}
+            className={inputClass("order")}
             value={f.order}
-            onChange={(e) => set('order', Number(e.target.value))}
+            onChange={(e) => set("order", Number(e.target.value))}
           />
-          {errors.order && <p className="text-xs text-destructive mt-1">{errors.order}</p>}
+          {errors.order && (
+            <p className="text-xs text-destructive mt-1">{errors.order}</p>
+          )}
         </div>
       </div>
       <div>
-        <label className="text-xs text-muted-foreground block mb-1">Title *</label>
+        <label className="text-xs text-muted-foreground block mb-1">
+          Title *
+        </label>
         <input
-          className={inputClass('title')}
+          className={inputClass("title")}
           value={f.title}
-          onChange={(e) => set('title', e.target.value)}
+          onChange={(e) => set("title", e.target.value)}
           placeholder="Getting Started"
         />
-        {errors.title && <p className="text-xs text-destructive mt-1">{errors.title}</p>}
+        {errors.title && (
+          <p className="text-xs text-destructive mt-1">{errors.title}</p>
+        )}
       </div>
       <div>
-        <label className="text-xs text-muted-foreground block mb-1">Description</label>
+        <label className="text-xs text-muted-foreground block mb-1">
+          Description
+        </label>
         <textarea
           className="w-full h-16 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y"
           value={f.description}
-          onChange={(e) => set('description', e.target.value)}
+          onChange={(e) => set("description", e.target.value)}
         />
       </div>
       <div className="flex gap-2 pt-2">
@@ -124,7 +144,13 @@ export default function ModuleForm({
           onClick={handleSave}
           disabled={saving || idChecking || Object.keys(errors).length > 0}
         >
-          {saving ? 'Saving...' : idChecking ? 'Checking...' : initial ? 'Update' : 'Create'}
+          {saving
+            ? "Saving..."
+            : idChecking
+              ? "Checking..."
+              : initial
+                ? "Update"
+                : "Create"}
         </Button>
         <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel

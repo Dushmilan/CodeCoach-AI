@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef } from "react";
+import { X } from "lucide-react";
 
 interface EntityDrawerProps {
   open: boolean;
@@ -25,21 +25,21 @@ export default function EntityDrawer({
 
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [open]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
-    if (open) window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    if (open) window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [open, onClose]);
 
   if (!open) return null;
@@ -57,10 +57,12 @@ export default function EntityDrawer({
       <div
         ref={panelRef}
         className={`relative h-full bg-card border-l border-border shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-          wide ? 'w-full max-w-2xl' : 'w-full max-w-lg'
+          wide ? "w-full max-w-2xl" : "w-full max-w-lg"
         }`}
         style={{
-          animation: open ? 'slide-in-right 0.5s cubic-bezier(0.32,0.72,0,1) forwards' : undefined,
+          animation: open
+            ? "slide-in-right 0.5s cubic-bezier(0.32,0.72,0,1) forwards"
+            : undefined,
         }}
       >
         {/* Glass morphism outer ring effect */}
@@ -70,7 +72,9 @@ export default function EntityDrawer({
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border bg-card/80 backdrop-blur-xl">
           <div>
             <h2 className="text-lg font-semibold">{title}</h2>
-            {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+            {subtitle && (
+              <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -81,7 +85,9 @@ export default function EntityDrawer({
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto h-[calc(100vh-65px)]">{children}</div>
+        <div className="p-6 overflow-y-auto h-[calc(100vh-65px)]">
+          {children}
+        </div>
       </div>
     </div>
   );

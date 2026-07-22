@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { StructuredCoachingResponse } from '@/types';
+import { StructuredCoachingResponse } from "@/types";
 
 interface StructuredResponseProps {
   structured: StructuredCoachingResponse;
@@ -12,35 +12,39 @@ interface StructuredResponseProps {
  */
 function FormattedText({ text }: { text: string }) {
   if (!text) return null;
-  
-  const lines = text.split('\n');
-  
+
+  const lines = text.split("\n");
+
   return (
     <div className="space-y-2">
       {lines.map((line, idx) => {
         // Skip empty lines
         if (!line.trim()) return null;
-        
+
         // Check for numbered list
         if (line.match(/^\d+\./)) {
           return (
             <div key={idx} className="flex gap-2 text-sm">
-              <span className="text-muted-foreground">{line.match(/^\d+\./)?.[0]}</span>
-              <span>{formatInlineStyles(line.replace(/^\d+\.\s*/, ''))}</span>
+              <span className="text-muted-foreground">
+                {line.match(/^\d+\./)?.[0]}
+              </span>
+              <span>{formatInlineStyles(line.replace(/^\d+\.\s*/, ""))}</span>
             </div>
           );
         }
-        
+
         // Check for bullet points
         if (line.match(/^[\-\•\*]\s/)) {
           return (
             <div key={idx} className="flex gap-2 text-sm">
               <span className="text-muted-foreground">•</span>
-              <span>{formatInlineStyles(line.replace(/^[\-\•\*]\s*/, ''))}</span>
+              <span>
+                {formatInlineStyles(line.replace(/^[\-\•\*]\s*/, ""))}
+              </span>
             </div>
           );
         }
-        
+
         // Check for section headers (lines ending with :)
         if (line.match(/^\w+[\s\w]*:$/)) {
           return (
@@ -49,7 +53,7 @@ function FormattedText({ text }: { text: string }) {
             </div>
           );
         }
-        
+
         // Regular paragraph
         return (
           <div key={idx} className="text-sm leading-relaxed">
@@ -68,22 +72,22 @@ function formatInlineStyles(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
-  
+
   // Process bold and code iteratively
   while (remaining.length > 0) {
     const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
     const codeMatch = remaining.match(/`(.+?)`/);
-    
+
     // Find which comes first
     const boldIndex = boldMatch ? remaining.indexOf(boldMatch[0]) : Infinity;
     const codeIndex = codeMatch ? remaining.indexOf(codeMatch[0]) : Infinity;
-    
+
     if (boldIndex === Infinity && codeIndex === Infinity) {
       // No more matches, add remaining text
       parts.push(remaining);
       break;
     }
-    
+
     if (boldIndex < codeIndex) {
       // Bold comes first
       if (boldIndex > 0) {
@@ -92,7 +96,7 @@ function formatInlineStyles(text: string): React.ReactNode {
       parts.push(
         <strong key={key++} className="font-semibold">
           {boldMatch![1]}
-        </strong>
+        </strong>,
       );
       remaining = remaining.slice(boldIndex + boldMatch![0].length);
     } else {
@@ -101,31 +105,41 @@ function formatInlineStyles(text: string): React.ReactNode {
         parts.push(remaining.slice(0, codeIndex));
       }
       parts.push(
-        <code key={key++} className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
+        <code
+          key={key++}
+          className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono"
+        >
           {codeMatch![1]}
-        </code>
+        </code>,
       );
       remaining = remaining.slice(codeIndex + codeMatch![0].length);
     }
   }
-  
+
   return parts.length === 1 ? parts[0] : parts;
 }
 
 /**
  * Validates if the structured response has valid data
  */
-function isValidStructuredResponse(structured: StructuredCoachingResponse): boolean {
+function isValidStructuredResponse(
+  structured: StructuredCoachingResponse,
+): boolean {
   if (!structured.summary || structured.summary.length < 5) return false;
-  
+
   const trimmedSummary = structured.summary.trim();
-  if (trimmedSummary.startsWith('{') || trimmedSummary.startsWith('[')) return false;
-  if (trimmedSummary.includes('":') && !trimmedSummary.includes(': ')) return false;
-  
+  if (trimmedSummary.startsWith("{") || trimmedSummary.startsWith("["))
+    return false;
+  if (trimmedSummary.includes('":') && !trimmedSummary.includes(": "))
+    return false;
+
   return true;
 }
 
-export function StructuredResponse({ structured, rawContent }: StructuredResponseProps) {
+export function StructuredResponse({
+  structured,
+  rawContent,
+}: StructuredResponseProps) {
   // Validate structured response - fall back to raw text if malformed
   if (!structured || !isValidStructuredResponse(structured)) {
     if (rawContent) {
@@ -167,7 +181,7 @@ export function StructuredResponse({ structured, rawContent }: StructuredRespons
             <span>{hint}</span>
           </div>
         ))}
-      </div>
+      </div>,
     );
   }
 
@@ -176,7 +190,7 @@ export function StructuredResponse({ structured, rawContent }: StructuredRespons
     sections.push(
       <div key="code_review" className="mt-3">
         <FormattedText text={code_review} />
-      </div>
+      </div>,
     );
   }
 
@@ -185,7 +199,7 @@ export function StructuredResponse({ structured, rawContent }: StructuredRespons
     sections.push(
       <div key="complexity" className="mt-3">
         <FormattedText text={complexity_analysis} />
-      </div>
+      </div>,
     );
   }
 
@@ -199,7 +213,7 @@ export function StructuredResponse({ structured, rawContent }: StructuredRespons
             <span>{suggestion}</span>
           </div>
         ))}
-      </div>
+      </div>,
     );
   }
 
@@ -213,7 +227,7 @@ export function StructuredResponse({ structured, rawContent }: StructuredRespons
             <span>{edgeCase}</span>
           </div>
         ))}
-      </div>
+      </div>,
     );
   }
 
@@ -222,7 +236,7 @@ export function StructuredResponse({ structured, rawContent }: StructuredRespons
     sections.push(
       <div key="explanation" className="mt-3">
         <FormattedText text={explanation} />
-      </div>
+      </div>,
     );
   }
 
@@ -231,7 +245,7 @@ export function StructuredResponse({ structured, rawContent }: StructuredRespons
     sections.push(
       <div key="debug_help" className="mt-3">
         <FormattedText text={debug_help} />
-      </div>
+      </div>,
     );
   }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface MainLayoutContainerProps {
   children: React.ReactNode;
@@ -11,9 +11,7 @@ export function MainLayoutContainer({ children }: MainLayoutContainerProps) {
       role="main"
       aria-label="CodeCoach AI Learning Platform"
     >
-      <div className="flex w-full gap-0.5 p-2">
-        {children}
-      </div>
+      <div className="flex w-full gap-0.5 p-2">{children}</div>
     </main>
   );
 }

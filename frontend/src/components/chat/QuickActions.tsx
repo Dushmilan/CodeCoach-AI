@@ -1,7 +1,6 @@
-'use client';
+"use client";
 
-import { LightningBoltIcon, ClockIcon, ReaderIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { Button } from '@/components/ui/button';
+import { AlertTriangle, BookOpen, Clock, Zap } from "lucide-react";
 
 export interface QuickAction {
   id: string;
@@ -11,10 +10,10 @@ export interface QuickAction {
 }
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  { id: 'hint', label: 'Hint', icon: LightningBoltIcon, mode: 'hint' },
-  { id: 'review', label: 'Review', icon: ClockIcon, mode: 'review' },
-  { id: 'explain', label: 'Explain', icon: ReaderIcon, mode: 'explain' },
-  { id: 'debug', label: 'Debug', icon: ExclamationTriangleIcon, mode: 'debug' },
+  { id: "hint", label: "Hint", icon: Zap, mode: "hint" },
+  { id: "review", label: "Review", icon: Clock, mode: "review" },
+  { id: "explain", label: "Explain", icon: BookOpen, mode: "explain" },
+  { id: "debug", label: "Debug", icon: AlertTriangle, mode: "debug" },
 ];
 
 interface QuickActionsProps {
@@ -22,7 +21,10 @@ interface QuickActionsProps {
   disabled?: boolean;
 }
 
-export function QuickActions({ onActionClick, disabled = false }: QuickActionsProps) {
+export function QuickActions({
+  onActionClick,
+  disabled = false,
+}: QuickActionsProps) {
   return (
     <div className="flex flex-wrap gap-1.5 mb-2">
       {QUICK_ACTIONS.map((action) => (

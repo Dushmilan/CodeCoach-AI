@@ -1,10 +1,7 @@
-'use client';
+"use client";
 
-import {
-  RadixChevronLeft,
-  RadixChevronRight,
-} from '@/components/ui/icons';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface NavigationControlsProps {
   onPrevious: () => void;
@@ -22,8 +19,10 @@ export function NavigationControls({
   return (
     <div
       className={cn(
-        'px-3 py-3 border-b border-white/5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
-        isCollapsed ? 'opacity-0 h-0 overflow-hidden py-0' : 'opacity-100 h-auto'
+        "px-3 py-3 border-b border-white/5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+        isCollapsed
+          ? "opacity-0 h-0 overflow-hidden py-0"
+          : "opacity-100 h-auto",
       )}
     >
       <div className="grid grid-cols-2 gap-1.5">
@@ -32,7 +31,7 @@ export function NavigationControls({
           disabled={disabled}
           className="flex items-center justify-center px-2 py-1.5 text-[10px] font-medium rounded-full bg-white/5 hover:bg-white/10 text-muted-foreground disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
         >
-          <RadixChevronLeft className="h-3 w-3 mr-1" />
+          <ChevronLeft className="h-3 w-3 mr-1" />
           Prev
         </button>
         <button
@@ -40,7 +39,7 @@ export function NavigationControls({
           disabled={disabled}
           className="flex items-center justify-center px-2 py-1.5 text-[10px] font-medium rounded-full bg-white/5 hover:bg-white/10 text-muted-foreground disabled:opacity-40 disabled:pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
         >
-          <RadixChevronRight className="h-3 w-3 mr-1" />
+          <ChevronRight className="h-3 w-3 mr-1" />
           Next
         </button>
       </div>

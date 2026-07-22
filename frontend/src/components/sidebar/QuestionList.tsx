@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { QuestionSummary } from '@/types';
-import { QuestionItem } from './QuestionItem';
+import { QuestionSummary } from "@/types";
+import { QuestionItem } from "./QuestionItem";
 
 interface QuestionListProps {
   questions: QuestionSummary[];
   selectedQuestion: QuestionSummary | null;
   currentIndex: number;
-  userProgress: Record<string, 'attempted' | 'solved'>;
+  userProgress: Record<string, "attempted" | "solved">;
   isCollapsed?: boolean;
   onSelectQuestion: (question: QuestionSummary, index: number) => void;
 }

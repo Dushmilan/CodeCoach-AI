@@ -1,4 +1,4 @@
-import { Question } from '@/types';
+import { Question } from "@/types";
 
 export interface ClientJsTestResult {
   index: number;
@@ -18,7 +18,7 @@ export interface ClientJsOutput {
 export function executeClientJS(
   code: string,
   question: Question,
-  fnName?: string
+  fnName?: string,
 ): ClientJsOutput {
   const logs: string[] = [];
   const originalConsoleLog = console.log;
@@ -27,8 +27,10 @@ export function executeClientJS(
 
   const captureLog = (...args: unknown[]) => {
     const formattedArgs = args
-      .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
-      .join(' ');
+      .map((arg) =>
+        typeof arg === "object" ? JSON.stringify(arg) : String(arg),
+      )
+      .join(" ");
     logs.push(formattedArgs);
     originalConsoleLog(...args);
   };
@@ -46,11 +48,13 @@ export function executeClientJS(
       jsStarter.match(/const\s+(\w+)\s*=/)?.[1];
 
     if (!functionName) {
-      throw new Error('Could not identify the target function name for testing.');
+      throw new Error(
+        "Could not identify the target function name for testing.",
+      );
     }
 
     const testRunner = new Function(
-      'testCases',
+      "testCases",
       `
       ${code}
 
@@ -78,7 +82,7 @@ export function executeClientJS(
           return { index: index + 1, passed: false, error: (e).message, input: tc.input };
         }
       });
-    `
+    `,
     );
 
     const results = testRunner(question.test_cases);
@@ -98,19 +102,22 @@ export function executeClientJS(
   }
 }
 
-export function formatClientJsOutput(output: ClientJsOutput, question: Question): string {
+export function formatClientJsOutput(
+  output: ClientJsOutput,
+  question: Question,
+): string {
   const lines: string[] = [];
 
   if (output.logs.length > 0) {
-    lines.push(`Console Output:\n${output.logs.join('\n')}\n`);
+    lines.push(`Console Output:\n${output.logs.join("\n")}\n`);
   }
 
-  lines.push('Test Results:\n');
+  lines.push("Test Results:\n");
 
   for (const r of output.results) {
     const testCase = question.test_cases[r.index - 1];
-    const status = r.passed ? 'Pass' : 'Fail';
-    lines.push(`${r.passed ? '✅' : '❌'} Test Case ${r.index}:`);
+    const status = r.passed ? "Pass" : "Fail";
+    lines.push(`${r.passed ? "✅" : "❌"} Test Case ${r.index}:`);
     lines.push(`   Status: ${status}`);
     lines.push(`   Input: ${r.input}`);
     lines.push(`   Expected Output: ${r.expected}`);
@@ -119,8 +126,8 @@ export function formatClientJsOutput(output: ClientJsOutput, question: Question)
     } else {
       lines.push(`   Actual Output: ${JSON.stringify(r.actual)}`);
     }
-    lines.push('');
+    lines.push("");
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
