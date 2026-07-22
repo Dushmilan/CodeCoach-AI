@@ -46,10 +46,10 @@ Multi-institution, drop-in, voluntary — students sign up on their own time, ze
 
 ## Features
 
-### Built
+## Built
 
 | Feature | Description |
-|---|---|---|
+|---------|-------------|
 | **AI Coaching** | 5 modes (Hint, Review, Explain, Debug, Freeform) via NVIDIA NIM or Google Gemini — structured JSON responses + SSE streaming |
 | **Code Execution** | Piston container — Python, JavaScript, Java with smart code wrapping for test harness generation |
 | **Question Bank** | 36 DSA questions across 14/14 topics with full CRUD, search, filter by difficulty/category |
