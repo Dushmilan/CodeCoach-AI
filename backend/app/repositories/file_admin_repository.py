@@ -1,9 +1,7 @@
-"""File-based admin repository for non-DB mode."""
+"""File-based admin repository — delegates to focused sub-repositories."""
 
 import json
 import logging
-import uuid
-from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 
@@ -12,20 +10,18 @@ from app.models.admin_models import (
     StatsResponse,
     QuestionFilter,
     QuestionImportResult,
-    FeatureFlagUpdate,
     CourseProgressDetail,
-    AuditLogFilter,
 )
 from app.ports.admin_repository import AdminRepository
+from app.repositories.file_user_admin_repository import FileUserAdminRepository
+from app.repositories.file_question_admin_repository import FileQuestionAdminRepository
+from app.repositories.file_course_admin_repository import FileCourseAdminRepository
 
 logger = logging.getLogger(__name__)
-
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class FileAdminRepository(AdminRepository):
-    """File-based admin repository. Delegates to existing file repos."""
-
     def __init__(
         self,
         users_file: str = "",
@@ -33,226 +29,111 @@ class FileAdminRepository(AdminRepository):
         courses_dir: str = "",
         progress_file: str = "",
     ):
-        self._users_file = Path(users_file or BASE_DIR / "data" / "users.json")
-        self._questions_file = Path(
-            questions_file or BASE_DIR / "questions" / "sample_questions.json"
+        self._users = FileUserAdminRepository(
+            users_file or str(BASE_DIR / "data" / "users.json")
         )
-        self._courses_dir = Path(courses_dir or BASE_DIR / "data" / "courses")
+        self._questions = FileQuestionAdminRepository(
+            questions_file or str(BASE_DIR / "questions" / "sample_questions.json")
+        )
+        self._courses = FileCourseAdminRepository(
+            courses_dir or str(BASE_DIR / "data" / "courses")
+        )
         self._progress_file = Path(
             progress_file or BASE_DIR / "data" / "user_progress.json"
         )
 
-    def _load_users(self) -> List[Dict[str, Any]]:
-        if not self._users_file.exists():
-            return []
-        with open(self._users_file) as f:
-            return json.load(f)
-
-    def _save_users(self, users: List[Dict[str, Any]]):
-        self._users_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._users_file, "w") as f:
-            json.dump(users, f, indent=2)
-
-    def _load_questions(self) -> List[Dict[str, Any]]:
-        if not self._questions_file.exists():
-            return []
-        with open(self._questions_file) as f:
-            return json.load(f)
-
-    def _save_questions(self, questions: List[Dict[str, Any]]):
-        self._questions_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._questions_file, "w") as f:
-            json.dump(questions, f, indent=2)
-
-    def _load_courses(self) -> Dict[str, Any]:
-        tree = {"courses": [], "modules": [], "lessons": []}
-        if not self._courses_dir.exists():
-            return tree
-        for path in self._courses_dir.rglob("*.json"):
-            try:
-                with open(path) as f:
-                    tree["courses"].append(json.load(f))
-            except (json.JSONDecodeError, OSError) as e:
-                logger.warning("Skipping %s: %s", path, e)
-        return tree
-
     def _load_progress(self) -> List[Dict[str, Any]]:
         if not self._progress_file.exists():
             return []
-        with open(self._progress_file) as f:
+        with open(self._progress_file, encoding="utf-8") as f:
             return json.load(f)
 
+    # ── User delegation ──
     async def get_user_by_id(self, user_id: str) -> Optional[UserInDB]:
-        for u in self._load_users():
-            if u.get("id") == user_id:
-                return UserInDB(**u)
-        return None
+        return await self._users.get_user_by_id(user_id)
 
     async def get_user_by_username(self, username: str) -> Optional[UserInDB]:
-        for u in self._load_users():
-            if u.get("username") == username:
-                return UserInDB(**u)
-        return None
+        return await self._users.get_user_by_username(username)
 
     async def update_user_role(
         self, user_id: str, role: str, current_user_id: str
     ) -> bool:
-        users = self._load_users()
-        for u in users:
-            if u["id"] == user_id:
-                if u["id"] == current_user_id:
-                    return False
-                u["role"] = role
-                self._save_users(users)
-                return True
-        return False
+        return await self._users.update_user_role(user_id, role, current_user_id)
 
     async def update_user_status(
         self, user_id: str, is_active: bool, current_user_id: str
     ) -> bool:
-        users = self._load_users()
-        for u in users:
-            if u["id"] == user_id:
-                if u["id"] == current_user_id:
-                    return False
-                u["is_active"] = is_active
-                self._save_users(users)
-                return True
-        return False
+        return await self._users.update_user_status(user_id, is_active, current_user_id)
 
     async def list_users(
         self, skip: int = 0, limit: int = 20
     ) -> Tuple[List[UserInDB], int]:
-        users = self._load_users()
-        parsed = [UserInDB(**u) for u in users]
-        return parsed[skip : skip + limit], len(parsed)
+        return await self._users.list_users(skip, limit)
 
+    # ── Question delegation ──
     async def get_question_by_id(self, question_id: str) -> Optional[Dict[str, Any]]:
-        for q in self._load_questions():
-            if q.get("id") == question_id:
-                return q
-        return None
+        return await self._questions.get_question_by_id(question_id)
 
     async def update_question(
         self, question_id: str, update_data: Dict[str, Any]
     ) -> bool:
-        questions = self._load_questions()
-        for q in questions:
-            if q["id"] == question_id:
-                q.update(update_data)
-                self._save_questions(questions)
-                return True
-        return False
+        return await self._questions.update_question(question_id, update_data)
 
     async def delete_question(self, question_id: str) -> bool:
-        questions = self._load_questions()
-        for i, q in enumerate(questions):
-            if q["id"] == question_id:
-                questions.pop(i)
-                self._save_questions(questions)
-                return True
-        return False
+        return await self._questions.delete_question(question_id)
 
     async def list_questions(
         self, filter: QuestionFilter
     ) -> Tuple[List[Dict[str, Any]], int]:
-        all_q = self._load_questions()
-        filtered = all_q
-        if filter.difficulty:
-            filtered = [q for q in filtered if q.get("difficulty") == filter.difficulty]
-        if filter.category:
-            filtered = [q for q in filtered if q.get("category") == filter.category]
-        total = len(filtered)
-        start = (filter.page - 1) * filter.per_page
-        return filtered[start : start + filter.per_page], total
+        return await self._questions.list_questions(filter)
 
     async def import_questions(
         self, questions: List[Dict[str, Any]], dry_run: bool = False
     ) -> QuestionImportResult:
-        result = QuestionImportResult(
-            total=len(questions), successful=0, failed=0, errors=[]
-        )
-        if dry_run:
-            result.successful = len(questions)
-            return result
-        existing = self._load_questions()
-        for q in questions:
-            if "id" not in q:
-                q["id"] = str(uuid.uuid4())
-            existing.append(q)
-            result.successful += 1
-        self._save_questions(existing)
-        return result
+        return await self._questions.import_questions(questions, dry_run)
+
+    async def create_question(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        return await self._questions.create_question(data)
+
+    # ── Course delegation ──
+    async def exists(self, entity_type: str, entity_id: str) -> bool:
+        return await self._courses.exists(entity_type, entity_id)
 
     async def get_course_tree(self) -> Dict[str, Any]:
-        return self._load_courses()
+        return await self._courses.get_course_tree()
 
     async def delete_course(self, course_id: str) -> bool:
-        tree = self._load_courses()
-        for i, c in enumerate(tree["courses"]):
-            if c.get("id") == course_id:
-                tree["courses"].pop(i)
-                return True
-        return False
+        return await self._courses.delete_course(course_id)
 
     async def delete_module(self, module_id: str) -> bool:
-        tree = self._load_courses()
-        for i, m in enumerate(tree.get("modules", [])):
-            if m.get("id") == module_id:
-                tree["modules"].pop(i)
-                return True
-        return False
+        return await self._courses.delete_module(module_id)
 
     async def delete_lesson(self, lesson_id: str) -> bool:
-        tree = self._load_courses()
-        for i, lesson in enumerate(tree.get("lessons", [])):
-            if lesson.get("id") == lesson_id:
-                tree["lessons"].pop(i)
-                return True
-        return False
+        return await self._courses.delete_lesson(lesson_id)
 
-    async def get_generation_jobs(
-        self, status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        return []
+    async def create_course(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        return await self._courses.create_course(data)
 
-    async def get_generation_job_by_id(self, job_id: str) -> Optional[Dict[str, Any]]:
-        return None
+    async def update_course(self, course_id: str, data: Dict[str, Any]) -> bool:
+        return await self._courses.update_course(course_id, data)
 
-    async def update_generation_job(self, job_id: str, updates: Dict[str, Any]) -> bool:
-        return True
+    async def create_module(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        return await self._courses.create_module(data)
 
-    async def get_feature_flags(self) -> Dict[str, Any]:
-        return {
-            "question_generation": {
-                "enabled": True,
-                "rollout_pct": 100,
-                "target_roles": ["admin", "super_admin"],
-            },
-            "audit_logging": {
-                "enabled": True,
-                "rollout_pct": 100,
-                "target_roles": ["super_admin"],
-            },
-            "experimental_languages": {
-                "enabled": False,
-                "rollout_pct": 0,
-                "target_roles": ["admin", "super_admin"],
-            },
-        }
+    async def update_module(self, module_id: str, data: Dict[str, Any]) -> bool:
+        return await self._courses.update_module(module_id, data)
 
-    async def update_feature_flag(self, key: str, updates: FeatureFlagUpdate) -> bool:
-        return True
+    async def create_lesson(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        return await self._courses.create_lesson(data)
 
-    async def get_audit_logs(
-        self, filter: AuditLogFilter, skip: int = 0, limit: int = 50
-    ) -> Tuple[List[Dict[str, Any]], int]:
-        return [], 0
+    async def update_lesson(self, lesson_id: str, data: Dict[str, Any]) -> bool:
+        return await self._courses.update_lesson(lesson_id, data)
 
+    # ── Stats ──
     async def get_system_stats(self) -> StatsResponse:
-        users = self._load_users()
-        questions = self._load_questions()
-        tree = self._load_courses()
+        users = self._users._load_users()
+        questions = self._questions._load_questions()
+        tree = self._courses._load_courses()
 
         active = sum(1 for u in users if u.get("is_active", False))
         admins = sum(1 for u in users if u.get("role") in ("admin", "super_admin"))
@@ -298,8 +179,3 @@ class FileAdminRepository(AdminRepository):
             if p.get("user_id") == user_id:
                 results.append(CourseProgressDetail(**p))
         return results
-
-    async def generate_user_role_grant_report(
-        self, start_date: datetime, end_date: datetime
-    ) -> List[Dict[str, Any]]:
-        return []

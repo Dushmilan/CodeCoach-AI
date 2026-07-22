@@ -14,7 +14,9 @@ class TestPistonServiceInit:
             assert service.base_url == "http://localhost:2000/api/v2"
 
     def test_custom_base_url(self):
-        with patch.dict("os.environ", {"PISTON_API_URL": "http://piston:2000/api/v2/piston"}):
+        with patch.dict(
+            "os.environ", {"PISTON_API_URL": "http://piston:2000/api/v2/piston"}
+        ):
             service = PistonService()
             assert service.base_url == "http://piston:2000/api/v2/piston"
 
@@ -37,8 +39,14 @@ class TestPistonServiceExecute:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {
-                "run": {"stdout": "Hello\n", "stderr": "", "code": 0, "wall_time": 0.05},
-                "language": "python", "version": "3.10.0",
+                "run": {
+                    "stdout": "Hello\n",
+                    "stderr": "",
+                    "code": 0,
+                    "wall_time": 0.05,
+                },
+                "language": "python",
+                "version": "3.10.0",
             }
             mock_instance.post.return_value = mock_response
 
@@ -97,7 +105,8 @@ class TestPistonServiceExecute:
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "run": {"stdout": "hello\n", "stderr": "", "code": 0},
-                "language": "python", "version": "3.10.0",
+                "language": "python",
+                "version": "3.10.0",
             }
             mock_instance.post.return_value = mock_response
 
@@ -116,7 +125,8 @@ class TestPistonServiceExecute:
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "run": {"stdout": "", "stderr": "", "code": 0},
-                "language": "python", "version": "3.10.0",
+                "language": "python",
+                "version": "3.10.0",
             }
             mock_instance.post.return_value = mock_response
 
@@ -134,7 +144,8 @@ class TestPistonServiceExecute:
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "run": {"stdout": "", "stderr": "", "code": 0},
-                "language": "c", "version": "10.2.0",
+                "language": "c",
+                "version": "10.2.0",
             }
             mock_instance.post.return_value = mock_response
 
@@ -152,7 +163,8 @@ class TestPistonServiceExecute:
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "run": {"stdout": "", "stderr": "", "code": 0},
-                "language": "python", "version": "3.10.0",
+                "language": "python",
+                "version": "3.10.0",
             }
             mock_instance.post.return_value = mock_response
 
@@ -188,7 +200,10 @@ class TestPistonServiceExecute:
             mock_client.return_value = mock_instance
             mock_response = MagicMock()
             mock_response.status_code = 200
-            mock_response.json.return_value = {"language": "python", "version": "3.10.0"}
+            mock_response.json.return_value = {
+                "language": "python",
+                "version": "3.10.0",
+            }
             mock_instance.post.return_value = mock_response
 
             service = PistonService()
@@ -216,7 +231,7 @@ class TestPistonServiceValidate:
 
     def test_validate_python_with_input_warning(self):
         service = PistonService()
-        result = service.validate_code("python", 'name = input()')
+        result = service.validate_code("python", "name = input()")
         assert len(result["warnings"]) > 0
 
     def test_validate_javascript_code(self):
@@ -226,7 +241,9 @@ class TestPistonServiceValidate:
 
     def test_validate_java_code(self):
         service = PistonService()
-        result = service.validate_code("java", 'class A { public static void main(String[] a) {} }')
+        result = service.validate_code(
+            "java", "class A { public static void main(String[] a) {} }"
+        )
         assert result["valid"] is True
 
     def test_validate_cpp_code(self):
@@ -245,7 +262,9 @@ class TestPistonServiceRuntimes:
 
             mock_response = MagicMock()
             mock_response.status_code = 200
-            mock_response.json.return_value = [{"language": "python", "version": "3.10.0"}]
+            mock_response.json.return_value = [
+                {"language": "python", "version": "3.10.0"}
+            ]
             mock_instance.get.return_value = mock_response
 
             service = PistonService()
@@ -301,24 +320,30 @@ class TestPistonServiceEvaluateSuite:
     @pytest.mark.asyncio
     async def test_evaluate_suite_unsupported_language_raises(self, service):
         with pytest.raises(HTTPException, match="Unsupported"):
-            await service.evaluate_suite("brainfuck", "code", [{"input": "1", "expected_output": "1", "hidden": False}])
+            await service.evaluate_suite(
+                "brainfuck",
+                "code",
+                [{"input": "1", "expected_output": "1", "hidden": False}],
+            )
 
     @pytest.mark.asyncio
     async def test_evaluate_suite_empty_cases_returns_empty(self, service):
-        with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
+        with patch.object(service, "execute", new=AsyncMock()) as mock_exec:
             results = await service.evaluate_suite("python", "code", [])
             assert results == []
             mock_exec.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_evaluate_suite_mocked_python_runner(self, service):
-        with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
+        with patch.object(service, "execute", new=AsyncMock()) as mock_exec:
             mock_exec.return_value = ExecutionResult(
-                stdout="@@SUITE_RESULT@@[{\"index\":1,\"passed\":true,\"actual\":\"6\"}]@@SUITE_RESULT@@",
-                stderr="", exit_code=0,
+                stdout='@@SUITE_RESULT@@[{"index":1,"passed":true,"actual":"6"}]@@SUITE_RESULT@@',
+                stderr="",
+                exit_code=0,
             )
             results = await service.evaluate_suite(
-                "python", "def add(a, b): return a + b",
+                "python",
+                "def add(a, b): return a + b",
                 [{"input": "2\n4", "expected_output": "6", "hidden": False}],
             )
             assert len(results) == 1
@@ -326,13 +351,18 @@ class TestPistonServiceEvaluateSuite:
 
     @pytest.mark.asyncio
     async def test_evaluate_suite_build_runner_fallback(self, service):
-        with patch.object(service, 'execute', new=AsyncMock()) as mock_exec:
+        with patch.object(service, "execute", new=AsyncMock()) as mock_exec:
             mock_exec.return_value = ExecutionResult(
-                stdout="@@SUITE_RESULT@@[{\"index\":1,\"passed\":true,\"actual\":\"42\"}]@@SUITE_RESULT@@",
-                stderr="", exit_code=0,
+                stdout='@@SUITE_RESULT@@[{"index":1,"passed":true,"actual":"42"}]@@SUITE_RESULT@@',
+                stderr="",
+                exit_code=0,
             )
             raw_code = "def solve():\n    return 42"
-            results = await service.evaluate_suite("cpp", raw_code, [{"input": "", "expected_output": "42", "hidden": False}])
+            results = await service.evaluate_suite(
+                "cpp",
+                raw_code,
+                [{"input": "", "expected_output": "42", "hidden": False}],
+            )
             call_kwargs = mock_exec.call_args[1]
             assert call_kwargs["code"] == raw_code  # fallback: raw code unchanged
             assert len(results) == 1

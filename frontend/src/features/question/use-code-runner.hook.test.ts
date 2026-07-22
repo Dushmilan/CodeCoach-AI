@@ -47,7 +47,16 @@ const question: Question = {
   category: 'arrays',
   company_tags: [],
   description: 'Test question.',
-  starter: { python: 'def f(): pass', javascript: 'function f() {}', java: '' },
+  starter: {
+    python: 'def f(): pass',
+    javascript: 'function f() {}',
+    java: '',
+    cpp: '',
+    c: '',
+    go: '',
+    rust: '',
+    typescript: '',
+  },
   examples: [],
   test_cases: [
     { input: '1', expected_output: '2', hidden: false },
@@ -77,7 +86,11 @@ describe('useCodeRunner', () => {
   describe('handleRunCode', () => {
     it('calls runLocalJavaScript when language is javascript', async () => {
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'javascript', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'javascript',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -89,10 +102,18 @@ describe('useCodeRunner', () => {
     });
 
     it('calls validateCode with non-hidden test cases for non-js languages', async () => {
-      mockSubmitCode.mockResolvedValue({ passed_count: 2, total: 3, results: [] });
+      mockSubmitCode.mockResolvedValue({
+        passed_count: 2,
+        total: 3,
+        results: [],
+      });
 
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -107,7 +128,11 @@ describe('useCodeRunner', () => {
 
     it('does nothing when fullQuestion is null', async () => {
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: null, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: null,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -120,7 +145,11 @@ describe('useCodeRunner', () => {
 
     it('updates user progress to attempted after non-JS run', async () => {
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -134,7 +163,11 @@ describe('useCodeRunner', () => {
       mockRunLocalJavaScript.mockRejectedValue(new Error('JS error'));
 
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'javascript', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'javascript',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -148,7 +181,11 @@ describe('useCodeRunner', () => {
       mockValidateCode.mockRejectedValue(new Error('Execution error'));
 
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -161,10 +198,18 @@ describe('useCodeRunner', () => {
 
   describe('handleSubmitCode', () => {
     it('calls submitCode with correct params', async () => {
-      mockSubmitCode.mockResolvedValue({ passed_count: 3, total: 3, results: [] });
+      mockSubmitCode.mockResolvedValue({
+        passed_count: 3,
+        total: 3,
+        results: [],
+      });
 
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -175,10 +220,18 @@ describe('useCodeRunner', () => {
     });
 
     it('sets progress to solved when all tests pass', async () => {
-      mockSubmitCode.mockResolvedValue({ passed_count: 3, total: 3, results: [] });
+      mockSubmitCode.mockResolvedValue({
+        passed_count: 3,
+        total: 3,
+        results: [],
+      });
 
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -189,10 +242,18 @@ describe('useCodeRunner', () => {
     });
 
     it('sets progress to attempted when some tests fail', async () => {
-      mockSubmitCode.mockResolvedValue({ passed_count: 1, total: 3, results: [] });
+      mockSubmitCode.mockResolvedValue({
+        passed_count: 1,
+        total: 3,
+        results: [],
+      });
 
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -204,7 +265,11 @@ describe('useCodeRunner', () => {
 
     it('does nothing when fullQuestion is null', async () => {
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: null, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: null,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -218,7 +283,11 @@ describe('useCodeRunner', () => {
       mockSubmitCode.mockRejectedValue(new Error('Submit error'));
 
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: 'code' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: 'code',
+        }),
       );
 
       await act(async () => {
@@ -232,7 +301,11 @@ describe('useCodeRunner', () => {
   describe('state', () => {
     it('starts with empty userProgress', () => {
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: '' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: '',
+        }),
       );
 
       expect(result.current.userProgress).toEqual({});
@@ -240,7 +313,11 @@ describe('useCodeRunner', () => {
 
     it('exposes isRunning, output, executionError from useCodeExecution', () => {
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: '' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: '',
+        }),
       );
 
       expect(result.current.isRunning).toBe(false);
@@ -250,7 +327,11 @@ describe('useCodeRunner', () => {
 
     it('exposes clearOutput and clearExecutionError', () => {
       const { result } = renderHook(() =>
-        useCodeRunner({ fullQuestion: question, language: 'python', currentCode: '' })
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: '',
+        }),
       );
 
       act(() => result.current.clearOutput());

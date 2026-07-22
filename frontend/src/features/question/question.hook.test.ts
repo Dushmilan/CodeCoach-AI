@@ -14,9 +14,27 @@ vi.mock('./question.service', () => ({
 }));
 
 const sampleQuestions: QuestionSummary[] = [
-  { id: '1', title: 'Two Sum', difficulty: 'easy', category: 'arrays', company_tags: ['Google'] },
-  { id: '2', title: 'Add Two Numbers', difficulty: 'medium', category: 'linked-list', company_tags: [] },
-  { id: '3', title: 'Median of Two Sorted Arrays', difficulty: 'hard', category: 'arrays', company_tags: ['Google', 'Meta'] },
+  {
+    id: '1',
+    title: 'Two Sum',
+    difficulty: 'easy',
+    category: 'arrays',
+    company_tags: ['Google'],
+  },
+  {
+    id: '2',
+    title: 'Add Two Numbers',
+    difficulty: 'medium',
+    category: 'linked-list',
+    company_tags: [],
+  },
+  {
+    id: '3',
+    title: 'Median of Two Sorted Arrays',
+    difficulty: 'hard',
+    category: 'arrays',
+    company_tags: ['Google', 'Meta'],
+  },
 ];
 
 const sampleFullQuestion: Question = {
@@ -26,7 +44,16 @@ const sampleFullQuestion: Question = {
   category: 'arrays',
   company_tags: ['Google'],
   description: 'Find two numbers that add up to target',
-  starter: { python: 'def two_sum(nums, target):', javascript: 'function twoSum(nums, target) {}', java: 'class Solution {}' },
+  starter: {
+    python: 'def two_sum(nums, target):',
+    javascript: 'function twoSum(nums, target) {}',
+    java: 'class Solution {}',
+    cpp: '',
+    c: '',
+    go: '',
+    rust: '',
+    typescript: '',
+  },
   examples: [{ input: '[2,7,11,15], 9', output: '[0,1]' }],
   test_cases: [{ input: '[2,7], 9', expected_output: '[0,1]' }],
   hints: ['Use a hash map'],
@@ -83,7 +110,9 @@ describe('useQuestion', () => {
 
     it('sets isLoading to true during load and false after', async () => {
       let resolvePromise: (value: unknown) => void;
-      const promise = new Promise((resolve) => { resolvePromise = resolve; });
+      const promise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
       mockGetQuestions.mockReturnValue(promise);
 
       const { result } = renderHook(() => useQuestion());
@@ -139,12 +168,16 @@ describe('useQuestion', () => {
 
       expect(mockGetQuestion).toHaveBeenCalledWith('1');
       expect(result.current.selectedQuestion?.id).toBe('1');
-      expect(result.current.fullQuestion?.description).toBe('Find two numbers that add up to target');
+      expect(result.current.fullQuestion?.description).toBe(
+        'Find two numbers that add up to target',
+      );
     });
 
     it('sets selectedQuestion immediately before async load', async () => {
       let resolvePromise: (value: unknown) => void;
-      const promise = new Promise((resolve) => { resolvePromise = resolve; });
+      const promise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
       mockGetQuestion.mockReturnValue(promise);
 
       const { result } = renderHook(() => useQuestion());
@@ -247,7 +280,9 @@ describe('useQuestion', () => {
   describe('clearError', () => {
     it('clears error state', () => {
       const { result } = renderHook(() => useQuestion());
-      act(() => { result.current.clearError(); });
+      act(() => {
+        result.current.clearError();
+      });
       expect(result.current.error).toBeNull();
     });
   });

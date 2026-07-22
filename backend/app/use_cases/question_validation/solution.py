@@ -2,8 +2,9 @@
 
 import json
 import re
-from typing import Any, List, Optional
+from typing import List, Optional
 
+from app.ports.code_executor import CodeExecutor
 from app.models.schemas import Question
 from app.models.question_validation_schemas import (
     UseCaseValidationResult,
@@ -15,7 +16,7 @@ from .base import BaseValidationUseCase
 
 
 class SolutionValidationUseCase(BaseValidationUseCase):
-    def __init__(self, executor: Optional[Any] = None):
+    def __init__(self, executor: Optional[CodeExecutor] = None):
         self.executor = executor
 
     @property
@@ -25,12 +26,23 @@ class SolutionValidationUseCase(BaseValidationUseCase):
     async def _execute_validation(self, question: Question) -> UseCaseValidationResult:
         issues: List = []
         if not question.solution:
-            issues.append(self._create_issue(message="Reference solution is required for validation", field="solution"))
+            issues.append(
+                self._create_issue(
+                    message="Reference solution is required for validation",
+                    field="solution",
+                )
+            )
             return self._create_result(passed=False, issues=issues)
         if self.executor:
             issues.extend(await self._validate_solution_with_piston(question))
         else:
-            issues.append(self._create_issue(message="Cannot validate solution execution without Piston service", field="solution", severity=ValidationSeverity.WARNING))
+            issues.append(
+                self._create_issue(
+                    message="Cannot validate solution execution without Piston service",
+                    field="solution",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
         passed = not any(issue.severity == ValidationSeverity.ERROR for issue in issues)
         return self._create_result(passed=passed, issues=issues)
 
@@ -47,11 +59,16 @@ class SolutionValidationUseCase(BaseValidationUseCase):
             return float(actual) == float(expected)
         except (ValueError, TypeError):
             pass
-        if actual.lower() in ("true", "false") and expected.lower() in ("true", "false"):
+        if actual.lower() in ("true", "false") and expected.lower() in (
+            "true",
+            "false",
+        ):
             return actual.lower() == expected.lower()
         return False
 
-    def _create_runner(self, solution_code: str, func_name: str, question: Question) -> str:
+    def _create_runner(
+        self, solution_code: str, func_name: str, question: Question
+    ) -> str:
         return f"""
 import sys
 import json
@@ -104,24 +121,64 @@ except Exception as e:
         issues = []
         solution_code = self._create_executable_solution(question)
         if not solution_code:
-            issues.append(self._create_issue(message="Could not create executable solution from reference solution", field="solution"))
+            issues.append(
+                self._create_issue(
+                    message="Could not create executable solution from reference solution",
+                    field="solution",
+                )
+            )
             return issues
         passed_count = 0
         total_count = len(question.test_cases)
         for i, test_case in enumerate(question.test_cases):
             try:
-                result = await self.executor.execute(language="python", code=solution_code, stdin=test_case.input)
+                result = await self.executor.execute(
+                    language="python", code=solution_code, stdin=test_case.input
+                )
                 if result.exit_code != 0:
-                    issues.append(self._create_issue(message=f"Solution failed on test case {i + 1}: {result.stderr[:100]}", field="solution", test_case_index=i, details={"test_case": test_case.description, "error": result.stderr}))
+                    issues.append(
+                        self._create_issue(
+                            message=f"Solution failed on test case {i + 1}: {result.stderr[:100]}",
+                            field="solution",
+                            test_case_index=i,
+                            details={
+                                "test_case": test_case.description,
+                                "error": result.stderr,
+                            },
+                        )
+                    )
                     continue
                 actual_output = result.stdout.strip()
                 expected_output = test_case.expected_output.strip()
                 if self._compare_outputs(actual_output, expected_output):
                     passed_count += 1
                 else:
-                    issues.append(self._create_issue(message=f"Solution output mismatch on test case {i + 1}", field="solution", test_case_index=i, details={"test_case": test_case.description, "expected": expected_output, "actual": actual_output}))
+                    issues.append(
+                        self._create_issue(
+                            message=f"Solution output mismatch on test case {i + 1}",
+                            field="solution",
+                            test_case_index=i,
+                            details={
+                                "test_case": test_case.description,
+                                "expected": expected_output,
+                                "actual": actual_output,
+                            },
+                        )
+                    )
             except Exception as e:
-                issues.append(self._create_issue(message=f"Failed to execute solution for test case {i + 1}: {str(e)}", field="solution", test_case_index=i))
+                issues.append(
+                    self._create_issue(
+                        message=f"Failed to execute solution for test case {i + 1}: {str(e)}",
+                        field="solution",
+                        test_case_index=i,
+                    )
+                )
         if total_count > 0 and passed_count < total_count:
-            issues.append(self._create_issue(message=f"Solution only passed {passed_count}/{total_count} test cases", field="solution", details={"passed": passed_count, "total": total_count}))
+            issues.append(
+                self._create_issue(
+                    message=f"Solution only passed {passed_count}/{total_count} test cases",
+                    field="solution",
+                    details={"passed": passed_count, "total": total_count},
+                )
+            )
         return issues

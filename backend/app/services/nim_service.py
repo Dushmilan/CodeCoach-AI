@@ -4,20 +4,16 @@ import logging
 from typing import AsyncIterator, Dict, Any, Optional
 from fastapi import HTTPException
 
-from app.adapters.coaching_prompts import (
-    build_system_prompt,
-    build_structured_system_prompt,
-    build_user_prompt,
-    build_structured_user_prompt,
-)
+from app.adapters.coaching_prompts import PromptBuilder
 from app.adapters.coaching_response_parser import CoachingResponseParser
+from app.ports.coaching_provider import CoachingProvider
 from app.services.redis_service import RedisCache, _content_hash
 
 logger = logging.getLogger(__name__)
 
 
-class NIMService:
-    """Service for interacting with NVIDIA NIM API for AI coaching."""
+class NIMService(CoachingProvider):
+    """NVIDIA NIM adapter for AI coaching."""
 
     def __init__(self, api_key: str = None, cache: Optional[RedisCache] = None):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
@@ -41,6 +37,7 @@ class NIMService:
         }
 
         self.parser = CoachingResponseParser()
+        self.prompts = PromptBuilder()
 
     async def get_structured_coaching_response(
         self,
@@ -58,7 +55,7 @@ class NIMService:
         cache_key = None
         if self.cache and not chat_history:
             content_hash = _content_hash(
-                problem, code, message, mode, difficulty, lesson_context or ""
+                problem, code, message, mode, difficulty, lesson_context or "", "v2"
             )
             cache_key = RedisCache.key("nim", "coaching", content_hash)
             cached = await self.cache.get(cache_key)
@@ -67,10 +64,15 @@ class NIMService:
 
         model = self.models.get(difficulty, self.models["medium"])
 
-        system_prompt = build_structured_system_prompt(
-            mode, language, lesson_context=lesson_context
+        system_prompt, user_prompt = self.prompts.build(
+            mode=mode,
+            language=language,
+            problem=problem,
+            code=code,
+            message=message,
+            structured=True,
+            lesson_context=lesson_context,
         )
-        user_prompt = build_structured_user_prompt(problem, code, message, mode)
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -140,10 +142,15 @@ class NIMService:
     ) -> AsyncIterator[str]:
         model = self.models.get(difficulty, self.models["medium"])
 
-        system_prompt = build_system_prompt(
-            mode, language, lesson_context=lesson_context
+        system_prompt, user_prompt = self.prompts.build(
+            mode=mode,
+            language=language,
+            problem=problem,
+            code=code,
+            message=message,
+            structured=False,
+            lesson_context=lesson_context,
         )
-        user_prompt = build_user_prompt(problem, code, message, mode)
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -190,3 +197,50 @@ class NIMService:
         except Exception as e:
             logger.error(f"Error calling NVIDIA NIM API: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal server error")
+
+    # ── CoachingProvider port ──────────────────────────────────────────
+
+    async def get_structured(
+        self,
+        problem: str,
+        code: str,
+        language: str,
+        message: str,
+        mode: str = "hint",
+        difficulty: str = "medium",
+        lesson_context: Optional[str] = None,
+        chat_history: Optional[list] = None,
+    ) -> Dict[str, Any]:
+        return await self.get_structured_coaching_response(
+            problem=problem,
+            code=code,
+            language=language,
+            message=message,
+            mode=mode,
+            difficulty=difficulty,
+            lesson_context=lesson_context,
+            chat_history=chat_history,
+        )
+
+    async def stream(
+        self,
+        problem: str,
+        code: str,
+        language: str,
+        message: str,
+        mode: str = "hint",
+        difficulty: str = "medium",
+        lesson_context: Optional[str] = None,
+        chat_history: Optional[list] = None,
+    ) -> AsyncIterator[str]:
+        async for chunk in self.get_coaching_response(
+            problem=problem,
+            code=code,
+            language=language,
+            message=message,
+            mode=mode,
+            difficulty=difficulty,
+            lesson_context=lesson_context,
+            chat_history=chat_history,
+        ):
+            yield chunk

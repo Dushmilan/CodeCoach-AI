@@ -1,8 +1,18 @@
+"""Tests for QuestionBank."""
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
 
-from app.models.schemas import QuestionSummary, Difficulty
+from app.models.schemas import (
+    Question,
+    QuestionSummary,
+    Difficulty,
+    StarterCode,
+    Example,
+    TestCase,
+)
+from app.services.question_bank import QuestionBank, QuestionFilters
 
 
 @pytest.fixture
@@ -17,6 +27,7 @@ def mock_repo():
     repo.get_summaries = AsyncMock(return_value=[])
     repo.search_summaries = AsyncMock(return_value=[])
     repo.save_validation_status = AsyncMock()
+    repo.count = AsyncMock(return_value=0)
     return repo
 
 
@@ -34,164 +45,176 @@ def sample_questions():
     ]
 
 
-class TestQuestionsServiceGetAll:
+def make_bank(repo):
+    return QuestionBank(repository=repo)
+
+
+class TestQuestionBankQuery:
     @pytest.mark.asyncio
-    async def test_get_all_questions(self, mock_repo, sample_questions):
+    async def test_query_all(self, mock_repo, sample_questions):
         mock_repo.get_summaries = AsyncMock(return_value=sample_questions)
-        from app.services.questions_service import QuestionsService
+        bank = make_bank(mock_repo)
 
-        service = QuestionsService(repository=mock_repo)
+        result = await bank.query(QuestionFilters())
 
-        items, total = await service.get_all_questions()
-
-        assert total == 2
-        assert len(items) == 2
-        assert items[0].id == "two-sum"
-        assert items[1].id == "rev-list"
+        assert result.total == 2
+        assert len(result.items) == 2
+        assert result.items[0].id == "two-sum"
 
     @pytest.mark.asyncio
-    async def test_get_all_with_pagination(self, mock_repo, sample_questions):
+    async def test_query_with_pagination(self, mock_repo, sample_questions):
         mock_repo.get_summaries = AsyncMock(return_value=sample_questions)
-        from app.services.questions_service import QuestionsService
+        bank = make_bank(mock_repo)
 
-        service = QuestionsService(repository=mock_repo)
+        page1 = await bank.query(QuestionFilters(page=1, per_page=1))
+        assert len(page1.items) == 1
+        assert page1.items[0].id == "two-sum"
 
-        page1, total1 = await service.get_all_questions(page=1, per_page=1)
-        assert len(page1) == 1
-        assert total1 == 2
-        assert page1[0].id == "two-sum"
-
-        page2, total2 = await service.get_all_questions(page=2, per_page=1)
-        assert len(page2) == 1
-        assert total2 == 2
-        assert page2[0].id == "rev-list"
+        page2 = await bank.query(QuestionFilters(page=2, per_page=1))
+        assert len(page2.items) == 1
+        assert page2.items[0].id == "rev-list"
 
     @pytest.mark.asyncio
-    async def test_get_all_with_difficulty_filter(self, mock_repo, sample_questions):
-        easy_only = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
-        mock_repo.get_summaries = AsyncMock(return_value=easy_only)
-        from app.services.questions_service import QuestionsService
+    async def test_query_with_difficulty_filter(self, mock_repo, sample_questions):
+        easy = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
+        mock_repo.get_summaries = AsyncMock(return_value=easy)
+        bank = make_bank(mock_repo)
 
-        service = QuestionsService(repository=mock_repo)
+        result = await bank.query(QuestionFilters(difficulty=Difficulty.EASY))
+        assert result.total == 1
+        assert result.items[0].difficulty == Difficulty.EASY
 
-        items, total = await service.get_all_questions(difficulty=Difficulty.EASY)
-        assert total == 1
-        assert len(items) == 1
-        assert items[0].difficulty == Difficulty.EASY
+    @pytest.mark.asyncio
+    async def test_query_with_search(self, mock_repo, sample_questions):
+        mock_repo.search_summaries = AsyncMock(return_value=[sample_questions[0]])
+        bank = make_bank(mock_repo)
+
+        result = await bank.query(QuestionFilters(query="two"))
+        assert result.total == 1
+        assert result.items[0].id == "two-sum"
+
+    @pytest.mark.asyncio
+    async def test_query_with_category_filter(self, mock_repo, sample_questions):
+        arrays = [q for q in sample_questions if q.category == "arrays"]
+        mock_repo.get_summaries = AsyncMock(return_value=arrays)
+        bank = make_bank(mock_repo)
+
+        result = await bank.query(QuestionFilters(category="arrays"))
+        assert result.total == 1
 
 
-class TestQuestionsServiceGetById:
+class TestQuestionBankGet:
     @pytest.mark.asyncio
     async def test_get_by_id_found(self, mock_repo, sample_questions):
         mock_repo.get_by_id = AsyncMock(return_value=sample_questions[0])
-        from app.services.questions_service import QuestionsService
+        bank = make_bank(mock_repo)
 
-        service = QuestionsService(repository=mock_repo)
-
-        result = await service.get_question_by_id("two-sum")
+        result = await bank.get("two-sum")
         assert result.id == "two-sum"
         assert result.title == "Two Sum"
 
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, mock_repo):
         mock_repo.get_by_id = AsyncMock(return_value=None)
-        from app.services.questions_service import QuestionsService
-
-        service = QuestionsService(repository=mock_repo)
+        bank = make_bank(mock_repo)
 
         with pytest.raises(HTTPException) as exc:
-            await service.get_question_by_id("nonexistent")
+            await bank.get("nonexistent")
         assert exc.value.status_code == 404
 
 
-class TestQuestionsServiceSearch:
+class TestQuestionBankStats:
+    @pytest.mark.asyncio
+    async def test_categories(self, mock_repo):
+        mock_repo.get_categories = AsyncMock(return_value=["arrays", "strings"])
+        mock_repo.get_all = AsyncMock(return_value=[])
+        bank = make_bank(mock_repo)
+
+        stats = await bank.stats()
+        assert "arrays" in stats.categories
+
+    @pytest.mark.asyncio
+    async def test_company_tags(self, mock_repo):
+        mock_repo.get_company_tags = AsyncMock(return_value=["Google", "Amazon"])
+        mock_repo.get_all = AsyncMock(return_value=[])
+        bank = make_bank(mock_repo)
+
+        stats = await bank.stats()
+        assert "Google" in stats.companies
+
+    @pytest.mark.asyncio
+    async def test_total_count(self, mock_repo, sample_questions):
+        mock_repo.get_all = AsyncMock(return_value=sample_questions)
+        mock_repo.count = AsyncMock(return_value=2)
+        bank = make_bank(mock_repo)
+
+        stats = await bank.stats()
+        assert stats.total == 2
+
+    @pytest.mark.asyncio
+    async def test_difficulty_counts(self, mock_repo, sample_questions):
+        mock_repo.get_all = AsyncMock(return_value=sample_questions)
+        bank = make_bank(mock_repo)
+
+        stats = await bank.stats()
+        assert stats.difficulty_counts["easy"] == 1
+        assert stats.difficulty_counts["medium"] == 1
+        assert stats.difficulty_counts["hard"] == 0
+
+    @pytest.mark.asyncio
+    async def test_category_counts(self, mock_repo, sample_questions):
+        mock_repo.get_all = AsyncMock(return_value=sample_questions)
+        bank = make_bank(mock_repo)
+
+        stats = await bank.stats()
+        assert stats.category_counts["arrays"] == 1
+        assert stats.category_counts["linked-lists"] == 1
+
     @pytest.mark.asyncio
     async def test_search_questions(self, mock_repo, sample_questions):
         mock_repo.search_summaries = AsyncMock(return_value=[sample_questions[0]])
-        from app.services.questions_service import QuestionsService
+        bank = make_bank(mock_repo)
 
-        service = QuestionsService(repository=mock_repo)
+        result = await bank.query(QuestionFilters(query="two"))
+        assert result.total == 1
+        assert result.items[0].id == "two-sum"
 
-        result = await service.search_questions(query="two")
-        assert len(result) == 1
-        assert result[0].id == "two-sum"
-
-
-class TestQuestionsServiceStats:
-    @pytest.mark.asyncio
-    async def test_get_categories(self, mock_repo):
-        mock_repo.get_categories = AsyncMock(return_value=["arrays", "strings"])
-        from app.services.questions_service import QuestionsService
-
-        service = QuestionsService(repository=mock_repo)
-
-        result = await service.get_categories()
-        assert result == ["arrays", "strings"]
-
-    @pytest.mark.asyncio
-    async def test_get_company_tags(self, mock_repo):
-        mock_repo.get_company_tags = AsyncMock(return_value=["Google", "Amazon"])
-        from app.services.questions_service import QuestionsService
-
-        service = QuestionsService(repository=mock_repo)
-
-        result = await service.get_company_tags()
-        assert "Google" in result
-
-    @pytest.mark.asyncio
-    async def test_get_total_count(self, mock_repo, sample_questions):
-        mock_repo.get_all = AsyncMock(return_value=sample_questions)
-        from app.services.questions_service import QuestionsService
-
-        service = QuestionsService(repository=mock_repo)
-
-        result = await service.get_total_count()
-        assert result == 2
-
-    @pytest.mark.asyncio
-    async def test_get_difficulty_counts(self, mock_repo, sample_questions):
-        mock_repo.get_all = AsyncMock(return_value=sample_questions)
-        from app.services.questions_service import QuestionsService
-
-        service = QuestionsService(repository=mock_repo)
-
-        counts = await service.get_difficulty_counts()
-        assert counts["easy"] == 1
-        assert counts["medium"] == 1
-        assert counts["hard"] == 0
-
-    @pytest.mark.asyncio
-    async def test_get_category_counts(self, mock_repo, sample_questions):
-        mock_repo.get_all = AsyncMock(return_value=sample_questions)
-        from app.services.questions_service import QuestionsService
-
-        service = QuestionsService(repository=mock_repo)
-
-        counts = await service.get_category_counts()
-        assert counts["arrays"] == 1
-        assert counts["linked-lists"] == 1
-
-
-class TestQuestionsServiceByCategory:
     @pytest.mark.asyncio
     async def test_get_by_category(self, mock_repo, sample_questions):
         arrays = [q for q in sample_questions if q.category == "arrays"]
         mock_repo.get_summaries = AsyncMock(return_value=arrays)
-        from app.services.questions_service import QuestionsService
+        bank = make_bank(mock_repo)
 
-        service = QuestionsService(repository=mock_repo)
-
-        result = await service.get_questions_by_category("arrays")
-        assert len(result) == 1
-        assert result[0].category == "arrays"
+        result = await bank.query(QuestionFilters(category="arrays"))
+        assert result.total == 1
+        assert result.items[0].category == "arrays"
 
     @pytest.mark.asyncio
     async def test_get_by_difficulty(self, mock_repo, sample_questions):
         easy = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
         mock_repo.get_summaries = AsyncMock(return_value=easy)
-        from app.services.questions_service import QuestionsService
+        bank = make_bank(mock_repo)
 
-        service = QuestionsService(repository=mock_repo)
+        result = await bank.query(QuestionFilters(difficulty=Difficulty.EASY))
+        assert result.total == 1
+        assert result.items[0].difficulty == Difficulty.EASY
 
-        result = await service.get_questions_by_difficulty(Difficulty.EASY)
-        assert len(result) == 1
+
+class TestQuestionBankAdd:
+    @pytest.mark.asyncio
+    async def test_add_without_validation(self, mock_repo):
+        mock_repo.add = AsyncMock()
+        bank = make_bank(mock_repo)
+
+        question = Question(
+            id="test-q",
+            title="Test",
+            difficulty=Difficulty.EASY,
+            category="arrays",
+            description="desc",
+            starter=StarterCode(python="def f(): pass"),
+            examples=[Example(input="1", output="1")],
+            test_cases=[TestCase(input="1", expected_output="1")],
+        )
+        result = await bank.add(question, validate=False)
+        assert result.is_validated is False

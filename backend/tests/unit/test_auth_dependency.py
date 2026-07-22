@@ -9,20 +9,27 @@ from app.models.auth_schemas import UserResponse
 class TestGetCurrentUser:
     @pytest.mark.asyncio
     async def test_valid_token_returns_user(self):
-        creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="valid.token.here")
+        creds = HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials="valid.token.here"
+        )
 
         with patch("app.api.auth.AuthService") as mock_auth_cls:
             mock_auth = AsyncMock()
             mock_auth_cls.return_value = mock_auth
 
             expected_user = UserResponse(
-                id="user-1", username="testuser", email="test@test.com",
-                created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+                id="user-1",
+                username="testuser",
+                email="test@test.com",
+                created_at=__import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ),
                 is_active=True,
             )
             mock_auth.get_current_user = AsyncMock(return_value=expected_user)
 
-            from app.api.auth import get_current_user
+            from app.api.auth_deps import get_current_user
+
             result = await get_current_user(creds, mock_auth)
 
             assert result.username == "testuser"
@@ -40,7 +47,8 @@ class TestGetCurrentUser:
                 side_effect=ValueError("Invalid or expired token")
             )
 
-            from app.api.auth import get_current_user
+            from app.api.auth_deps import get_current_user
+
             with pytest.raises(HTTPException) as exc:
                 await get_current_user(creds, mock_auth)
 
@@ -58,7 +66,8 @@ class TestGetCurrentUser:
                 side_effect=ValueError("Account is deactivated")
             )
 
-            from app.api.auth import get_current_user
+            from app.api.auth_deps import get_current_user
+
             with pytest.raises(HTTPException) as exc:
                 await get_current_user(creds, mock_auth)
 
@@ -69,8 +78,9 @@ class TestGetCurrentUser:
 class TestGetOptionalCurrentUser:
     @pytest.mark.asyncio
     async def test_optional_no_token_returns_none(self):
-        with patch("app.api.auth.AuthService") as mock_auth_cls:
-            from app.api.auth import get_optional_current_user
+        with patch("app.api.auth.AuthService") as _mock_auth_cls:
+            from app.api.auth_deps import get_optional_current_user
+
             result = await get_optional_current_user(None)
             assert result is None
 
@@ -78,8 +88,12 @@ class TestGetOptionalCurrentUser:
     async def test_optional_valid_token_returns_user(self):
         creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="valid.token")
         expected_user = UserResponse(
-            id="user-1", username="testuser", email="test@test.com",
-            created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+            id="user-1",
+            username="testuser",
+            email="test@test.com",
+            created_at=__import__("datetime").datetime.now(
+                __import__("datetime").timezone.utc
+            ),
             is_active=True,
         )
 
@@ -88,7 +102,8 @@ class TestGetOptionalCurrentUser:
             mock_auth_cls.return_value = mock_auth
             mock_auth.get_current_user = AsyncMock(return_value=expected_user)
 
-            from app.api.auth import get_optional_current_user
+            from app.api.auth_deps import get_optional_current_user
+
             result = await get_optional_current_user(creds, mock_auth)
             assert result.username == "testuser"
 
@@ -103,6 +118,7 @@ class TestGetOptionalCurrentUser:
                 side_effect=ValueError("Invalid token")
             )
 
-            from app.api.auth import get_optional_current_user
+            from app.api.auth_deps import get_optional_current_user
+
             result = await get_optional_current_user(creds, mock_auth)
             assert result is None

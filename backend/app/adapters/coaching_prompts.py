@@ -1,10 +1,16 @@
-"""Coaching prompt templates per mode.
+"""PromptBuilder — deep module for coaching prompt assembly.
 
-Exports prompt builder functions and mode-specific section constants.
+One interface method (build) covers all callers. Mode dispatch, persona
+selection, and lesson context injection are internal details.
 """
-from typing import Optional
 
-PERSONA = """You are CodeCoach AI, a Socratic coding interview tutor.
+import json
+from typing import Optional, Tuple
+
+
+# ── Constants (internal) ──────────────────────────────────────────────
+
+_PERSONA = """You are CodeCoach AI, a Socratic coding interview tutor.
 
 ## Your Persona
 - Warm, encouraging, and approachable — but you NEVER give away the answer
@@ -19,10 +25,13 @@ PERSONA = """You are CodeCoach AI, a Socratic coding interview tutor.
 - DO NOT explain the fix in debug mode — point to the problem area and ask what the user expects
 - Always end your summary with a question that drives the user to think"""
 
-STRUCTURED_PERSONA = """You are CodeCoach AI, a Socratic coding interview tutor.
+_STRUCTURED_PERSONA = """You are CodeCoach AI, a Socratic coding interview tutor.
 
 ## Your Role
 Act as a Socratic tutor: help users improve their coding skills by guiding them to discover answers through thought-provoking questions. Never give away the full solution.
+
+## Input Format
+The user message will be provided as a JSON object with fields: problem, code, message, mode, language.
 
 ## Response Format
 You MUST respond with ONLY a valid JSON object. No text before or after.
@@ -50,7 +59,7 @@ You MUST respond with ONLY a valid JSON object. No text before or after.
 8. Only populate the specific field(s) needed for your single step — use null or [] for everything else to avoid overwhelming the student
 9. Always end summary with a question that drives the user to think"""
 
-GENERAL_GUIDELINES = """
+_GENERAL_GUIDELINES = """
 ## General Guidelines
 - Be concise but thorough — provide ONE piece of information at a time
 - Always end with a question that drives the user to think
@@ -60,20 +69,7 @@ GENERAL_GUIDELINES = """
 - Wait for the user to respond before offering the next piece
 - If the user expresses frustration, states they are completely stuck, or explicitly demands the answer after trying, provide a clear, direct conceptual explanation — but STILL stop short of writing the exact code solution for them"""
 
-
-def _lesson_context_block(lesson_context: Optional[str]) -> str:
-    if not lesson_context:
-        return ""
-    return f"""
-## Lesson Context
-You are currently coaching a student through "{lesson_context}".
-All hints, explanations, and code examples MUST stay within the scope of this lesson.
-Do not introduce concepts outside this lesson unless the student explicitly asks.
-Frame your guiding questions using the core concepts of the current lesson.
-Connect the student's current struggle back to the lesson's main objective."""
-
-
-MODE_SECTIONS = {
+_MODE_SECTIONS = {
     "hint": {
         "unstructured": """### 1. Hints (mode: hint)
 - Start with encouragement
@@ -129,69 +125,177 @@ MODE_SECTIONS = {
 }
 
 
-def _mode_section(mode: str, language: str) -> str:
-    entry = MODE_SECTIONS.get(mode)
-    if entry:
-        return entry["unstructured"]
-    return ""
+# ── Deep module ───────────────────────────────────────────────────────
 
 
-def _structured_mode_section(mode: str, language: str) -> str:
-    entry = MODE_SECTIONS.get(mode)
-    if entry:
-        return entry["structured"]
-    return ""
+class PromptBuilder:
+    """Deep module — one build() method covers all callers.
+    Mode dispatch, persona selection, and lesson context are internal."""
+
+    def build(
+        self,
+        mode: str,
+        language: str,
+        problem: str,
+        code: str,
+        message: str,
+        structured: bool = False,
+        lesson_context: Optional[str] = None,
+    ) -> Tuple[str, str]:
+        """Return (system_prompt, user_prompt) for the given coaching request."""
+        system = self._build_system(mode, language, structured, lesson_context)
+        user = self._build_user(problem, code, message, mode, structured, language)
+        return system, user
+
+    # ── Internal: system prompt ───────────────────────────────────────
+
+    def _build_system(
+        self,
+        mode: str,
+        language: str,
+        structured: bool,
+        lesson_context: Optional[str],
+    ) -> str:
+        persona = _STRUCTURED_PERSONA if structured else _PERSONA
+        parts = [persona]
+
+        section = self._mode_section(mode, structured)
+        if section:
+            parts.append(section)
+
+        lang_line = (
+            f"\nLanguage: {language}"
+            if structured
+            else f"\n## Language\nRespond in: {language}"
+        )
+        parts.append(lang_line)
+
+        ctx = self._lesson_context_block(lesson_context)
+        if ctx:
+            parts.append(ctx)
+
+        parts.append(_GENERAL_GUIDELINES)
+        return "\n\n".join(parts)
+
+    def _mode_section(self, mode: str, structured: bool) -> str:
+        entry = _MODE_SECTIONS.get(mode)
+        if entry:
+            return entry["structured" if structured else "unstructured"]
+        return ""
+
+    @staticmethod
+    def _lesson_context_block(lesson_context: Optional[str]) -> str:
+        if not lesson_context:
+            return ""
+        return f"""
+## Lesson Context
+You are currently coaching a student through "{lesson_context}".
+All hints, explanations, and code examples MUST stay within the scope of this lesson.
+Do not introduce concepts outside this lesson unless the student explicitly asks.
+Frame your guiding questions using the core concepts of the current lesson.
+Connect the student's current struggle back to the lesson's main objective."""
+
+    # ── Internal: user prompt ─────────────────────────────────────────
+
+    @staticmethod
+    def _build_user(
+        problem: str,
+        code: str,
+        message: str,
+        mode: str,
+        structured: bool,
+        language: str = "",
+    ) -> str:
+        if structured:
+            user_data = {
+                "problem": problem,
+                "code": code,
+                "message": message,
+                "mode": mode,
+            }
+            if language:
+                user_data["language"] = language
+            return json.dumps(user_data, indent=2)
+        suffix = "Please provide helpful coaching feedback."
+        return f"""Problem: {problem}
+
+Current code:
+```{code}
+```
+
+User message: {message}
+
+Mode: {mode}
+
+{suffix}"""
 
 
-def build_system_prompt(mode: str, language: str, lesson_context: Optional[str] = None) -> str:
-    parts = [PERSONA]
-    section = _mode_section(mode, language)
-    if section:
-        parts.append(section)
-    parts.append(f"\n## Language\nRespond in: {language}")
-    ctx = _lesson_context_block(lesson_context)
-    if ctx:
-        parts.append(ctx)
-    parts.append(GENERAL_GUIDELINES)
-    return "\n\n".join(parts)
+# ── Module-level singleton for convenience ─────────────────────────────
+
+_default_builder = PromptBuilder()
+
+# Re-export constants for backward compatibility
+MODE_SECTIONS = _MODE_SECTIONS
+PERSONA = _PERSONA
+STRUCTURED_PERSONA = _STRUCTURED_PERSONA
+GENERAL_GUIDELINES = _GENERAL_GUIDELINES
 
 
-def build_structured_system_prompt(mode: str, language: str, lesson_context: Optional[str] = None) -> str:
-    parts = [STRUCTURED_PERSONA]
-    section = _structured_mode_section(mode, language)
-    if section:
-        parts.append(section)
-    parts.append(f"\nLanguage: {language}")
-    ctx = _lesson_context_block(lesson_context)
-    if ctx:
-        parts.append(ctx)
-    parts.append(GENERAL_GUIDELINES)
-    return "\n\n".join(parts)
+def build_system_prompt(
+    mode: str, language: str, lesson_context: Optional[str] = None
+) -> str:
+    """Legacy function — delegates to PromptBuilder."""
+    system, _ = _default_builder.build(
+        mode=mode,
+        language=language,
+        problem="",
+        code="",
+        message="",
+        structured=False,
+        lesson_context=lesson_context,
+    )
+    return system
+
+
+def build_structured_system_prompt(
+    mode: str, language: str, lesson_context: Optional[str] = None
+) -> str:
+    """Legacy function — delegates to PromptBuilder."""
+    system, _ = _default_builder.build(
+        mode=mode,
+        language=language,
+        problem="",
+        code="",
+        message="",
+        structured=True,
+        lesson_context=lesson_context,
+    )
+    return system
 
 
 def build_user_prompt(problem: str, code: str, message: str, mode: str) -> str:
-    return f"""Problem: {problem}
+    """Legacy function — delegates to PromptBuilder."""
+    _, user = _default_builder.build(
+        mode=mode,
+        language="",
+        problem=problem,
+        code=code,
+        message=message,
+        structured=False,
+    )
+    return user
 
-Current code:
-```{code}
-```
 
-User message: {message}
-
-Mode: {mode}
-
-Please provide helpful coaching feedback."""
-
-
-def build_structured_user_prompt(problem: str, code: str, message: str, mode: str) -> str:
-    return f"""Problem: {problem}
-
-Current code:
-```{code}
-```
-
-User message: {message}
-
-Mode: {mode}
-
-Respond with ONLY a valid JSON object matching the required schema."""
+def build_structured_user_prompt(
+    problem: str, code: str, message: str, mode: str
+) -> str:
+    """Legacy function — delegates to PromptBuilder."""
+    _, user = _default_builder.build(
+        mode=mode,
+        language="",
+        problem=problem,
+        code=code,
+        message=message,
+        structured=True,
+    )
+    return user

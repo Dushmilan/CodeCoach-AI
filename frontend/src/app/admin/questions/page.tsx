@@ -1,11 +1,21 @@
-'use client';
-export const dynamic = 'force-dynamic';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '@/providers';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { FileText, Trash2, Upload, Download, Search } from 'lucide-react';
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/providers";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { showToast } from "@/components/ui/Toast";
+import QuestionForm from "@/components/admin/QuestionForm";
+import {
+  FileText,
+  Trash2,
+  Upload,
+  Download,
+  Search,
+  Plus,
+  Code2,
+} from "lucide-react";
 
 interface QBrief {
   id: string;
@@ -16,29 +26,34 @@ interface QBrief {
 }
 
 export default function QuestionsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [questions, setQuestions] = useState<QBrief[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState({ difficulty: '', category: '', page: 1, per_page: 20 });
+  const [filter, setFilter] = useState({
+    difficulty: "",
+    category: "",
+    page: 1,
+    per_page: 20,
+  });
   const [importOpen, setImportOpen] = useState(false);
-  const [importJson, setImportJson] = useState('');
+  const [importJson, setImportJson] = useState("");
   const [importResult, setImportResult] = useState<any>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('auth_token');
       const params = new URLSearchParams({
         page: String(filter.page),
         per_page: String(filter.per_page),
       });
-      if (filter.difficulty) params.set('difficulty', filter.difficulty);
-      if (filter.category) params.set('category', filter.category);
+      if (filter.difficulty) params.set("difficulty", filter.difficulty);
+      if (filter.category) params.set("category", filter.category);
       const res = await fetch(`/api/admin/questions?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       setQuestions(data.questions || []);
       setTotal(data.total || 0);
@@ -47,17 +62,16 @@ export default function QuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, token]);
 
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
 
   const deleteQ = async (id: string) => {
-    if (!confirm('Delete this question?')) return;
-    const token = localStorage.getItem('auth_token');
+    if (!confirm("Delete this question?")) return;
     const res = await fetch(`/api/admin/questions/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) fetchQuestions();
@@ -66,11 +80,15 @@ export default function QuestionsPage() {
   const doImport = async () => {
     try {
       const data = JSON.parse(importJson);
-      const token = localStorage.getItem('auth_token');
-      const res = await fetch('/api/admin/questions/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ questions: Array.isArray(data) ? data : [data] }),
+      const res = await fetch("/api/admin/questions/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          questions: Array.isArray(data) ? data : [data],
+        }),
       });
       const result = await res.json();
       setImportResult(result);
@@ -80,18 +98,22 @@ export default function QuestionsPage() {
         total: 0,
         successful: 0,
         failed: 1,
-        errors: [{ message: 'Invalid JSON' }],
+        errors: [{ message: "Invalid JSON" }],
       });
     }
   };
 
   const diffBadge = (d: string) => {
     const colors: Record<string, string> = {
-      easy: 'bg-green-500/20 text-green-500',
-      medium: 'bg-yellow-500/20 text-yellow-500',
-      hard: 'bg-red-500/20 text-red-500',
+      easy: "bg-green-500/20 text-green-500",
+      medium: "bg-yellow-500/20 text-yellow-500",
+      hard: "bg-red-500/20 text-red-500",
     };
-    return <span className={`text-xs px-2 py-0.5 rounded-full ${colors[d] || ''}`}>{d}</span>;
+    return (
+      <span className={`text-xs px-2 py-0.5 rounded-full ${colors[d] || ""}`}>
+        {d}
+      </span>
+    );
   };
 
   return (
@@ -102,17 +124,44 @@ export default function QuestionsPage() {
           <p className="text-muted-foreground text-sm mt-1">{total} total</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setImportOpen(!importOpen)}>
+          <Button size="sm" onClick={() => setShowCreateForm(!showCreateForm)}>
+            <Code2 className="h-4 w-4 mr-1" /> Add Question
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportOpen(!importOpen)}
+          >
             <Upload className="h-4 w-4 mr-1" /> Import JSON
           </Button>
         </div>
       </div>
 
+      {/* Create Question Form */}
+      {showCreateForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Create New Question</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <QuestionForm
+              onSaved={() => {
+                setShowCreateForm(false);
+                fetchQuestions();
+              }}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
       <div className="flex gap-3">
         <select
           value={filter.difficulty}
-          onChange={(e) => setFilter((f) => ({ ...f, difficulty: e.target.value, page: 1 }))}
+          onChange={(e) =>
+            setFilter((f) => ({ ...f, difficulty: e.target.value, page: 1 }))
+          }
           className="text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
         >
           <option value="">All Difficulties</option>
@@ -124,7 +173,9 @@ export default function QuestionsPage() {
           className="text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none w-48"
           placeholder="Category filter..."
           value={filter.category}
-          onChange={(e) => setFilter((f) => ({ ...f, category: e.target.value, page: 1 }))}
+          onChange={(e) =>
+            setFilter((f) => ({ ...f, category: e.target.value, page: 1 }))
+          }
         />
       </div>
 
@@ -150,7 +201,7 @@ export default function QuestionsPage() {
                 size="sm"
                 onClick={() => {
                   setImportOpen(false);
-                  setImportJson('');
+                  setImportJson("");
                   setImportResult(null);
                 }}
               >
@@ -161,8 +212,8 @@ export default function QuestionsPage() {
               <div
                 className={`text-sm p-3 rounded-lg ${
                   importResult.failed > 0
-                    ? 'bg-red-500/10 text-red-400'
-                    : 'bg-green-500/10 text-green-500'
+                    ? "bg-red-500/10 text-red-400"
+                    : "bg-green-500/10 text-green-500"
                 }`}
               >
                 {importResult.successful} imported, {importResult.failed} failed
@@ -210,12 +261,18 @@ export default function QuestionsPage() {
                     >
                       <td className="py-3 font-medium">{q.title}</td>
                       <td className="py-3">{diffBadge(q.difficulty)}</td>
-                      <td className="py-3 text-muted-foreground text-xs">{q.category}</td>
+                      <td className="py-3 text-muted-foreground text-xs">
+                        {q.category}
+                      </td>
                       <td className="py-3">
                         {q.solution ? (
-                          <span className="text-xs text-green-500">Has solution</span>
+                          <span className="text-xs text-green-500">
+                            Has solution
+                          </span>
                         ) : (
-                          <span className="text-xs text-muted-foreground">None</span>
+                          <span className="text-xs text-muted-foreground">
+                            None
+                          </span>
                         )}
                       </td>
                       <td className="py-3 text-right">
@@ -242,7 +299,9 @@ export default function QuestionsPage() {
                     variant="outline"
                     size="sm"
                     disabled={filter.page === 1}
-                    onClick={() => setFilter((f) => ({ ...f, page: f.page - 1 }))}
+                    onClick={() =>
+                      setFilter((f) => ({ ...f, page: f.page - 1 }))
+                    }
                   >
                     Previous
                   </Button>
@@ -250,7 +309,9 @@ export default function QuestionsPage() {
                     variant="outline"
                     size="sm"
                     disabled={filter.page >= Math.ceil(total / filter.per_page)}
-                    onClick={() => setFilter((f) => ({ ...f, page: f.page + 1 }))}
+                    onClick={() =>
+                      setFilter((f) => ({ ...f, page: f.page + 1 }))
+                    }
                   >
                     Next
                   </Button>

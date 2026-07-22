@@ -81,8 +81,11 @@ class TestCourseService:
         self, mock_course_repo, mock_progress_repo, sample_course
     ):
         mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
-        mock_course_repo.get_module_by_id = AsyncMock(
-            return_value=MagicMock(lessons=["py-hello-world"])
+        mock_module = MagicMock()
+        mock_module.id = "python-intro"
+        mock_module.lessons = ["py-hello-world"]
+        mock_course_repo.get_modules_by_course_batch = AsyncMock(
+            return_value=[mock_module]
         )
         mock_progress_repo.get_progress = AsyncMock(
             return_value=CourseProgress(

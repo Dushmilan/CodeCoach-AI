@@ -21,7 +21,16 @@ const question: Question = {
   category: 'math',
   company_tags: [],
   description: 'Add two numbers.',
-  starter: { python: '', javascript: 'function add(a, b) {}', java: '' },
+  starter: {
+    python: '',
+    javascript: 'function add(a, b) {}',
+    java: '',
+    cpp: '',
+    c: '',
+    go: '',
+    rust: '',
+    typescript: '',
+  },
   examples: [{ input: '1,2', output: '3' }],
   test_cases: [
     { input: '1\n2', expected_output: '3' },
@@ -36,12 +45,30 @@ const question: Question = {
 
 const questionWithVarStarter: Question = {
   ...question,
-  starter: { python: '', javascript: 'var add = function(a, b) {}', java: '' },
+  starter: {
+    python: '',
+    javascript: 'var add = function(a, b) {}',
+    java: '',
+    cpp: '',
+    c: '',
+    go: '',
+    rust: '',
+    typescript: '',
+  },
 };
 
 const questionWithConstStarter: Question = {
   ...question,
-  starter: { python: '', javascript: 'const add = (a, b) => {}', java: '' },
+  starter: {
+    python: '',
+    javascript: 'const add = (a, b) => {}',
+    java: '',
+    cpp: '',
+    c: '',
+    go: '',
+    rust: '',
+    typescript: '',
+  },
 };
 
 describe('executeClientJS', () => {
@@ -79,10 +106,19 @@ describe('executeClientJS', () => {
   it('throws when function name cannot be determined', () => {
     const noFnQuestion: Question = {
       ...question,
-      starter: { python: '', javascript: '', java: '' },
+      starter: {
+        python: '',
+        javascript: '',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
     expect(() => executeClientJS('const x = 42;', noFnQuestion)).toThrow(
-      'Could not identify the target function name'
+      'Could not identify the target function name',
     );
   });
 
@@ -117,10 +153,17 @@ describe('executeClientJS', () => {
   it('handles non-JSON expected_output gracefully', () => {
     const strQuestion: Question = {
       ...question,
-      test_cases: [
-        { input: '"world"', expected_output: 'Hello, world' },
-      ],
-      starter: { python: '', javascript: 'function greet(name) {}', java: '' },
+      test_cases: [{ input: '"world"', expected_output: 'Hello, world' }],
+      starter: {
+        python: '',
+        javascript: 'function greet(name) {}',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
     const code = `function greet(name) { return "Hello, " + name; }`;
     const result = executeClientJS(code, strQuestion);
@@ -131,10 +174,17 @@ describe('executeClientJS', () => {
   it('handles expected_output that is a non-JSON string', () => {
     const strQuestion: Question = {
       ...question,
-      test_cases: [
-        { input: '5', expected_output: 'not a json string' },
-      ],
-      starter: { python: '', javascript: 'function foo(x) {}', java: '' },
+      test_cases: [{ input: '5', expected_output: 'not a json string' }],
+      starter: {
+        python: '',
+        javascript: 'function foo(x) {}',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
     const code = `function foo(x) { return "not a json string"; }`;
     const result = executeClientJS(code, strQuestion);
@@ -148,7 +198,16 @@ describe('executeClientJS', () => {
         { input: '[[1,2],[3,4]]', expected_output: '[[3,1],[4,2]]' },
         { input: '[[1]]', expected_output: '[[1]]' },
       ],
-      starter: { python: '', javascript: 'function rotate(matrix) {}', java: '' },
+      starter: {
+        python: '',
+        javascript: 'function rotate(matrix) {}',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
     const code = `function rotate(matrix) {
       for (let i = 0; i < matrix.length; i++) {
@@ -169,10 +228,17 @@ describe('executeClientJS', () => {
   it('uses parsedArgs[0] as actual when function returns undefined', () => {
     const mutateQuestion: Question = {
       ...question,
-      test_cases: [
-        { input: '[1,2,3]', expected_output: '[1,2,3,4]' },
-      ],
-      starter: { python: '', javascript: 'function push(arr) {}', java: '' },
+      test_cases: [{ input: '[1,2,3]', expected_output: '[1,2,3,4]' }],
+      starter: {
+        python: '',
+        javascript: 'function push(arr) {}',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
     };
     const code = `function push(arr) {
       arr.push(4);
@@ -214,7 +280,14 @@ describe('formatClientJsOutput', () => {
     const output = {
       logs: [],
       results: [
-        { index: 1, passed: false, input: '1', expected: '3', actual: null, error: 'something broke' },
+        {
+          index: 1,
+          passed: false,
+          input: '1',
+          expected: '3',
+          actual: null,
+          error: 'something broke',
+        },
       ],
       allPassed: false,
     };

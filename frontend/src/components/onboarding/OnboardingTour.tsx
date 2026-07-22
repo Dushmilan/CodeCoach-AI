@@ -1,43 +1,47 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { useLocalStorage } from "@/hooks";
 import {
-  XIcon,
-  RadixChevronLeft,
-  RadixChevronRight,
-  LightbulbIcon,
-  RadixCodeIcon,
-  MessageSquareIcon,
-  SettingsIcon,
-} from '@/components/ui/icons';
-import { Button } from '@/components/ui/button';
-import { useLocalStorage } from '@/hooks';
+  ChevronLeft,
+  ChevronRight,
+  Code,
+  Lightbulb,
+  MessageSquare,
+  Settings,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 const STEPS = [
   {
-    title: 'Welcome to CodeCoach AI',
-    description: 'Practice coding interview questions with instant feedback, AI coaching, and progress tracking.',
-    icon: LightbulbIcon,
+    title: "Welcome to CodeCoach AI",
+    description:
+      "Practice coding interview questions with instant feedback, AI coaching, and progress tracking.",
+    icon: Lightbulb,
   },
   {
-    title: 'Question Browser',
-    description: 'Browse coding questions by difficulty or category. Click any question to view its description, examples, and hints in the sidebar.',
-    icon: RadixCodeIcon,
+    title: "Question Browser",
+    description:
+      "Browse coding questions by difficulty or category. Click any question to view its description, examples, and hints in the sidebar.",
+    icon: Code,
   },
   {
-    title: 'AI Coach',
-    description: 'Get 24/7 AI-powered help. Ask for hints, code reviews, explanations, or debugging assistance. The AI understands your code context.',
-    icon: MessageSquareIcon,
+    title: "AI Coach",
+    description:
+      "Get 24/7 AI-powered help. Ask for hints, code reviews, explanations, or debugging assistance. The AI understands your code context.",
+    icon: MessageSquare,
   },
   {
-    title: 'NVIDIA API Key',
-    description: 'Open Settings and add your free NVIDIA API key to enable the AI Coach. Your key stays in your browser — never sent to our server.',
-    icon: SettingsIcon,
+    title: "NVIDIA API Key",
+    description:
+      "Open Settings and add your free NVIDIA API key to enable the AI Coach. Your key stays in your browser — never sent to our server.",
+    icon: Settings,
   },
 ];
 
 export function OnboardingTour() {
-  const [showTour, setShowTour] = useLocalStorage('onboarding-done', false);
+  const [showTour, setShowTour] = useLocalStorage("onboarding-done", false);
   const [step, setStep] = useState(0);
   const [mounted, setMounted] = useState(false);
 
@@ -54,7 +58,7 @@ export function OnboardingTour() {
     if (isLast) {
       setShowTour(true);
     } else {
-      setStep(s => s + 1);
+      setStep((s) => s + 1);
     }
   };
 
@@ -74,7 +78,7 @@ export function OnboardingTour() {
             className="p-1 hover:bg-secondary rounded transition-colors"
             aria-label="Dismiss tour"
           >
-            <XIcon className="h-4 w-4 text-muted-foreground" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -91,7 +95,7 @@ export function OnboardingTour() {
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  i === step ? 'bg-primary' : 'bg-muted-foreground/30'
+                  i === step ? "bg-primary" : "bg-muted-foreground/30"
                 }`}
               />
             ))}
@@ -99,14 +103,18 @@ export function OnboardingTour() {
 
           <div className="flex gap-2">
             {step > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setStep(s => s - 1)}>
-                <RadixChevronLeft className="h-4 w-4 mr-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep((s) => s - 1)}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
             )}
             <Button size="sm" onClick={handleNext}>
-              {isLast ? 'Get started' : 'Next'}
-              {!isLast && <RadixChevronRight className="h-4 w-4 ml-1" />}
+              {isLast ? "Get started" : "Next"}
+              {!isLast && <ChevronRight className="h-4 w-4 ml-1" />}
             </Button>
           </div>
         </div>

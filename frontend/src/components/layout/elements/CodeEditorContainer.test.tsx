@@ -3,15 +3,34 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('@/components/editor/CodeEditor', () => ({
-  CodeEditor: vi.fn(({ language, code, onCodeChange, onLanguageChange, onRunCode, onSubmitCode, isRunning }: {
-    language: string; code: string; onCodeChange: (c: string) => void;
-    onLanguageChange: (l: string) => void; onRunCode: () => void;
-    onSubmitCode: () => void; isRunning: boolean;
-  }) => (
-    <div data-testid="mock-code-editor" data-language={language} data-code={code} data-is-running={String(isRunning)}>
-      Mock Editor
-    </div>
-  )),
+  CodeEditor: vi.fn(
+    ({
+      language,
+      code,
+      onCodeChange,
+      onLanguageChange,
+      onRunCode,
+      onSubmitCode,
+      isRunning,
+    }: {
+      language: string;
+      code: string;
+      onCodeChange: (c: string) => void;
+      onLanguageChange: (l: string) => void;
+      onRunCode: () => void;
+      onSubmitCode: () => void;
+      isRunning: boolean;
+    }) => (
+      <div
+        data-testid="mock-code-editor"
+        data-language={language}
+        data-code={code}
+        data-is-running={String(isRunning)}
+      >
+        Mock Editor
+      </div>
+    ),
+  ),
 }));
 
 import { CodeEditorContainer } from './CodeEditorContainer';
@@ -20,6 +39,7 @@ describe('CodeEditorContainer', () => {
   const defaultProps = {
     language: 'python' as const,
     currentCode: 'print("hi")',
+    initialCode: '',
     isRunning: false,
     output: '',
     error: '',
@@ -71,7 +91,9 @@ describe('CodeEditorContainer', () => {
     const user = userEvent.setup();
     render(<CodeEditorContainer {...defaultProps} output="Hello" />);
 
-    const collapseBtn = screen.getByRole('button', { name: /collapse output/i });
+    const collapseBtn = screen.getByRole('button', {
+      name: /collapse output/i,
+    });
     await user.click(collapseBtn);
 
     expect(screen.getByRole('button', { name: /expand output/i })).toBeInTheDocument();

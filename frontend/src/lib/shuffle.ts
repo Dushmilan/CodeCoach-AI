@@ -18,7 +18,7 @@ function hashString(str: string): number {
 }
 
 export function seededShuffle<T>(array: T[], seed: number | string): T[] {
-  const rng = mulberry32(typeof seed === 'string' ? hashString(seed) : seed);
+  const rng = mulberry32(typeof seed === "string" ? hashString(seed) : seed);
   const result = [...array];
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -29,5 +29,5 @@ export function seededShuffle<T>(array: T[], seed: number | string): T[] {
 
 export function getDailySeed(): string {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }

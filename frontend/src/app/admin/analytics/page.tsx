@@ -1,11 +1,11 @@
-'use client';
-export const dynamic = 'force-dynamic';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '@/providers';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Users, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/providers";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3, TrendingUp, Users, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface UserAnalytics {
   total_users?: number;
@@ -21,19 +21,20 @@ interface QuestionProgress {
 }
 
 export default function AnalyticsPage() {
-  const { user } = useAuth();
-  const [userAnalytics, setUserAnalytics] = useState<UserAnalytics | null>(null);
+  const { user, token } = useAuth();
+  const [userAnalytics, setUserAnalytics] = useState<UserAnalytics | null>(
+    null,
+  );
   const [qProgress, setQProgress] = useState<QuestionProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const token = localStorage.getItem('auth_token');
       const headers = { Authorization: `Bearer ${token}` };
       try {
         const [uRes, qRes] = await Promise.all([
-          fetch('/api/admin/analytics/users', { headers }),
-          fetch('/api/admin/analytics/question-progress', { headers }),
+          fetch("/api/admin/analytics/users", { headers }),
+          fetch("/api/admin/analytics/question-progress", { headers }),
         ]);
         if (uRes.ok) setUserAnalytics(await uRes.json());
         if (qRes.ok) setQProgress(await qRes.json());
@@ -44,7 +45,7 @@ export default function AnalyticsPage() {
       }
     };
     load();
-  }, []);
+  }, [token]);
 
   if (loading)
     return (
@@ -56,13 +57,17 @@ export default function AnalyticsPage() {
   const StatCard = ({ title, value, sub, icon: Icon, color }: any) => (
     <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
+        <div
+          className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center`}
+        >
           <Icon className="h-4 w-4" />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">{value ?? '-'}</div>
+        <div className="text-3xl font-bold">{value ?? "-"}</div>
         {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
       </CardContent>
     </Card>
@@ -72,7 +77,9 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-muted-foreground text-sm mt-1">Platform usage and performance metrics</p>
+        <p className="text-muted-foreground text-sm mt-1">
+          Platform usage and performance metrics
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -100,8 +107,9 @@ export default function AnalyticsPage() {
           title="Attempt Rate"
           value={
             qProgress?.total
-              ? Math.round(((qProgress.solved ?? 0) / qProgress.total) * 100) + '%'
-              : '-'
+              ? Math.round(((qProgress.solved ?? 0) / qProgress.total) * 100) +
+                "%"
+              : "-"
           }
           icon={BarChart3}
           color="bg-orange-500/10 text-orange-500"
@@ -121,14 +129,16 @@ export default function AnalyticsPage() {
                   const total = userAnalytics.total_users || 1;
                   const pct = Math.round((count / total) * 100);
                   const colors: Record<string, string> = {
-                    super_admin: 'bg-purple-500',
-                    admin: 'bg-blue-500',
-                    user: 'bg-gray-500',
+                    super_admin: "bg-purple-500",
+                    admin: "bg-blue-500",
+                    user: "bg-gray-500",
                   };
                   return (
                     <div key={role}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium capitalize">{role.replace('_', ' ')}</span>
+                        <span className="font-medium capitalize">
+                          {role.replace("_", " ")}
+                        </span>
                         <span className="text-muted-foreground">
                           {count} ({pct}%)
                         </span>
@@ -136,7 +146,7 @@ export default function AnalyticsPage() {
                       <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
-                            colors[role] || 'bg-gray-500'
+                            colors[role] || "bg-gray-500"
                           }`}
                           style={{ width: `${pct}%` }}
                         />
@@ -154,23 +164,31 @@ export default function AnalyticsPage() {
       {qProgress?.by_difficulty && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Question Difficulty Distribution</CardTitle>
+            <CardTitle className="text-sm">
+              Question Difficulty Distribution
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
-              {Object.entries(qProgress.by_difficulty).map(([d, c]: [string, any]) => {
-                const colors: Record<string, string> = {
-                  easy: 'text-green-500 border-green-500/30 bg-green-500/5',
-                  medium: 'text-yellow-500 border-yellow-500/30 bg-yellow-500/5',
-                  hard: 'text-red-500 border-red-500/30 bg-red-500/5',
-                };
-                return (
-                  <div key={d} className={`text-center p-4 rounded-xl border ${colors[d] || ''}`}>
-                    <div className="text-2xl font-bold">{c}</div>
-                    <div className="text-xs capitalize mt-1">{d}</div>
-                  </div>
-                );
-              })}
+              {Object.entries(qProgress.by_difficulty).map(
+                ([d, c]: [string, any]) => {
+                  const colors: Record<string, string> = {
+                    easy: "text-green-500 border-green-500/30 bg-green-500/5",
+                    medium:
+                      "text-yellow-500 border-yellow-500/30 bg-yellow-500/5",
+                    hard: "text-red-500 border-red-500/30 bg-red-500/5",
+                  };
+                  return (
+                    <div
+                      key={d}
+                      className={`text-center p-4 rounded-xl border ${colors[d] || ""}`}
+                    >
+                      <div className="text-2xl font-bold">{c}</div>
+                      <div className="text-xs capitalize mt-1">{d}</div>
+                    </div>
+                  );
+                },
+              )}
             </div>
           </CardContent>
         </Card>

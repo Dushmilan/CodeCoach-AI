@@ -307,9 +307,9 @@ class TestSecurityVulnerabilities:
             # Check response for sensitive data
             response_text = response.text.lower()
             for pattern in sensitive_patterns:
-                assert (
-                    pattern not in response_text
-                ), f"Sensitive data exposed: {pattern} in {endpoint}"
+                assert pattern not in response_text, (
+                    f"Sensitive data exposed: {pattern} in {endpoint}"
+                )
 
     def test_error_message_security(self, test_client: TestClient):
         """Test error message security (no sensitive info in errors)."""
@@ -330,9 +330,9 @@ class TestSecurityVulnerabilities:
                 error_str = json.dumps(error_response).lower()
                 sensitive_patterns = ["password", "secret", "key", "token", "config"]
                 for pattern in sensitive_patterns:
-                    assert (
-                        pattern not in error_str
-                    ), f"Sensitive info in error: {pattern}"
+                    assert pattern not in error_str, (
+                        f"Sensitive info in error: {pattern}"
+                    )
 
     def test_header_injection_prevention(self, test_client: TestClient):
         """Test header injection prevention."""

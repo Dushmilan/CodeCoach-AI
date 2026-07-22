@@ -1,9 +1,9 @@
-import { Question, QuestionSummary } from '@/types';
+import { Question, QuestionSummary } from "@/types";
 
 export interface QuestionFilters {
-  difficulty?: 'easy' | 'medium' | 'hard';
+  difficulty?: "easy" | "medium" | "hard";
   category?: string;
-  status?: 'solved' | 'attempted' | 'not_started';
+  status?: "solved" | "attempted" | "not_started";
 }
 
 export interface QuestionState {

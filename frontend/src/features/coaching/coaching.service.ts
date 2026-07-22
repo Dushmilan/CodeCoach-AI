@@ -1,6 +1,6 @@
-import { HttpClient } from '@/lib/http-client';
-import { FetchClient } from '@/lib/fetch-client';
-import { StructuredCoachingResponse } from '@/types';
+import { HttpClient } from "@/lib/http-client";
+import { FetchClient } from "@/lib/fetch-client";
+import { StructuredCoachingResponse } from "@/types";
 
 export interface CoachingRequest {
   problem: string;
@@ -22,9 +22,9 @@ export class CoachingService {
   constructor(private http: HttpClient) {}
 
   private getApiKeyHeader(): Record<string, string> {
-    if (typeof window === 'undefined') return {};
-    const key = localStorage.getItem('nvidia_api_key');
-    return key ? { 'X-NVIDIA-API-Key': key } : {};
+    if (typeof window === "undefined") return {};
+    const key = localStorage.getItem("nvidia_api_key");
+    return key ? { "X-NVIDIA-API-Key": key } : {};
   }
 
   async getCoachResponse(
@@ -33,9 +33,9 @@ export class CoachingService {
     code: string,
     message: string,
     mode: string,
-    difficulty: string = 'medium',
+    difficulty: string = "medium",
     lessonContext?: string,
-    chatHistory?: { role: string; content: string }[]
+    chatHistory?: { role: string; content: string }[],
   ): Promise<CoachingResponse> {
     const headers = this.getApiKeyHeader();
     const body: CoachingRequest = {
@@ -52,11 +52,10 @@ export class CoachingService {
     if (chatHistory && chatHistory.length > 0) {
       body.chat_history = chatHistory;
     }
-    const data = await this.http.post<{ response: string; structured: StructuredCoachingResponse | null }>(
-      '/api/coach/',
-      body,
-      { headers }
-    );
+    const data = await this.http.post<{
+      response: string;
+      structured: StructuredCoachingResponse | null;
+    }>("/api/coach/", body, { headers });
 
     return {
       response: data.response,

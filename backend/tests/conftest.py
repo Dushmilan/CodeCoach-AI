@@ -1,6 +1,7 @@
 """
 Test configuration and fixtures for CodeCoach AI API testing.
 """
+
 import pytest
 import pytest_asyncio
 import asyncio
@@ -10,12 +11,9 @@ from httpx import AsyncClient, ASGITransport
 import json
 import os
 import tempfile
-from pathlib import Path
 
 from app.main import app
-from app.services.nim_service import NIMService
-from app.services.piston_service import PistonService
-from app.services.questions_service import QuestionsService
+from app.services.question_bank import QuestionBank
 
 
 @pytest.fixture(scope="session")
@@ -44,6 +42,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 @pytest.fixture
 def mock_nim_service():
     """Mock NIM service for testing."""
+
     class MockNIMService:
         responses = {
             "hint": "Consider using a hash map to solve this problem.",
@@ -55,20 +54,34 @@ def mock_nim_service():
         def __init__(self, api_key: str = "test_key"):
             self.api_key = api_key
 
-        async def get_coaching_response(self, problem: str, code: str, language: str,
-                                      message: str, mode: str, difficulty: str,
-                                      **kwargs):
+        async def get_coaching_response(
+            self,
+            problem: str,
+            code: str,
+            language: str,
+            message: str,
+            mode: str,
+            difficulty: str,
+            **kwargs,
+        ):
             """Mock coaching response generation."""
             yield self.responses.get(mode, "Here's some guidance for your problem.")
 
         async def get_structured_coaching_response(
-            self, problem: str, code: str, language: str,
-            message: str, mode: str, difficulty: str,
+            self,
+            problem: str,
+            code: str,
+            language: str,
+            message: str,
+            mode: str,
+            difficulty: str,
             **kwargs,
         ):
             """Mock structured coaching response generation."""
             return {
-                "summary": self.responses.get(mode, "Here's some guidance for your problem."),
+                "summary": self.responses.get(
+                    mode, "Here's some guidance for your problem."
+                ),
                 "hints": [],
                 "code_review": None,
                 "complexity_analysis": None,
@@ -84,12 +97,18 @@ def mock_nim_service():
 @pytest.fixture
 def mock_piston_service():
     """Mock Piston service for testing."""
+
     class MockPistonService:
-        async def execute(self, language: str, code: str, stdin: str = "", version: str = None):
+        async def execute(
+            self, language: str, code: str, stdin: str = "", version: str = None
+        ):
             """Mock execution returning ExecutionResult."""
             from app.ports.code_executor import ExecutionResult
+
             if "error" in code.lower():
-                return ExecutionResult(exit_code=1, stderr="SyntaxError: invalid syntax")
+                return ExecutionResult(
+                    exit_code=1, stderr="SyntaxError: invalid syntax"
+                )
             return ExecutionResult(stdout="Hello, World!\n", exit_code=0)
 
         def validate_code(self, language: str, code: str):
@@ -97,8 +116,10 @@ def mock_piston_service():
             is_valid = "error" not in code.lower()
             return {
                 "valid": is_valid,
-                "warnings": ["Consider adding type hints"] if language == "python" else [],
-                "errors": ["Syntax error on line 1"] if not is_valid else []
+                "warnings": ["Consider adding type hints"]
+                if language == "python"
+                else [],
+                "errors": ["Syntax error on line 1"] if not is_valid else [],
             }
 
         async def get_runtimes(self):
@@ -108,7 +129,7 @@ def mock_piston_service():
                     "language": "python",
                     "version": "3.11.0",
                     "aliases": ["py", "python3"],
-                    "runtime": "cpython"
+                    "runtime": "cpython",
                 }
             ]
 
@@ -116,106 +137,12 @@ def mock_piston_service():
 
 
 @pytest.fixture
-def mock_questions_service():
-    """Mock questions service for testing."""
-    class MockQuestionsService:
-        def __init__(self):
-            self.questions = self._load_mock_questions()
+def mock_question_bank():
+    """Mock QuestionBank for testing."""
+    from unittest.mock import AsyncMock
 
-        def _load_mock_questions(self):
-            """Load mock questions data."""
-            return [
-                {
-                    "id": "two-sum",
-                    "title": "Two Sum",
-                    "difficulty": "easy",
-                    "category": "arrays",
-                    "company_tags": ["Google", "Amazon", "Facebook"],
-                    "description": "Given an array of integers, return indices of the two numbers...",
-                    "starter": {
-                        "python": "def two_sum(nums, target):\n    pass"
-                    },
-                    "examples": [
-                        {
-                            "input": "nums = [2,7,11,15], target = 9",
-                            "output": "[0,1]",
-                            "explanation": "Because nums[0] + nums[1] = 9"
-                        }
-                    ],
-                    "test_cases": [
-                        {
-                            "input": "[2,7,11,15]\n9",
-                            "expected_output": "[0,1]",
-                            "description": "Basic case"
-                        }
-                    ]
-                },
-                {
-                    "id": "reverse-linked-list",
-                    "title": "Reverse Linked List",
-                    "difficulty": "medium",
-                    "category": "linked-lists",
-                    "company_tags": ["Microsoft", "Apple"],
-                    "description": "Reverse a singly linked list.",
-                    "starter": {
-                        "python": "def reverse_list(head):\n    pass"
-                    },
-                    "examples": [
-                        {
-                            "input": "head = [1,2,3,4,5]",
-                            "output": "[5,4,3,2,1]",
-                            "explanation": "The reversed linked list"
-                        }
-                    ],
-                    "test_cases": [
-                        {
-                            "input": "[1,2,3,4,5]",
-                            "expected_output": "[5,4,3,2,1]",
-                            "description": "Complete reversal"
-                        }
-                    ]
-                }
-            ]
-
-        def get_all_questions(self, difficulty=None, category=None, page=1, per_page=20):
-            questions = self.questions
-            if difficulty:
-                questions = [q for q in questions if q["difficulty"] == difficulty]
-            if category:
-                questions = [q for q in questions if q["category"] == category]
-
-            start = (page - 1) * per_page
-            end = start + per_page
-            return questions[start:end]
-
-        def get_question_by_id(self, question_id):
-            for question in self.questions:
-                if question["id"] == question_id:
-                    return question
-            raise ValueError(f"Question {question_id} not found")
-
-        def get_categories(self):
-            return list(set(q["category"] for q in self.questions))
-
-        def get_company_tags(self):
-            companies = set()
-            for question in self.questions:
-                companies.update(question["company_tags"])
-            return list(companies)
-
-        def get_total_count(self):
-            return len(self.questions)
-
-        def search_questions(self, query, difficulty=None, category=None):
-            results = []
-            for question in self.questions:
-                if query.lower() in question["title"].lower() or query.lower() in question["description"].lower():
-                    if (not difficulty or question["difficulty"] == difficulty) and \
-                       (not category or question["category"] == category):
-                        results.append(question)
-            return results
-
-    return MockQuestionsService
+    bank = AsyncMock(spec=QuestionBank)
+    return bank
 
 
 @pytest.fixture
@@ -259,14 +186,12 @@ def sample_question_data():
         "category": "arrays",
         "company_tags": ["TestCompany"],
         "description": "This is a test question for unit testing.",
-        "starter": {
-            "python": "def test_function(input):\n    pass"
-        },
+        "starter": {"python": "def test_function(input):\n    pass"},
         "examples": [
             {
                 "input": "input = [1, 2, 3]",
                 "output": "6",
-                "explanation": "Sum of array elements"
+                "explanation": "Sum of array elements",
             }
         ],
         "test_cases": [
@@ -274,14 +199,14 @@ def sample_question_data():
                 "input": "[1, 2, 3]",
                 "expected_output": "6",
                 "description": "Basic test case",
-                "hidden": False
+                "hidden": False,
             }
         ],
         "hints": ["Consider using a loop", "Think about edge cases"],
         "solution": "Use a simple loop to sum the elements",
         "time_complexity": "O(n)",
         "space_complexity": "O(1)",
-        "constraints": ["1 <= len(array) <= 1000", "-1000 <= array[i] <= 1000"]
+        "constraints": ["1 <= len(array) <= 1000", "-1000 <= array[i] <= 1000"],
     }
 
 
@@ -294,7 +219,7 @@ def sample_coaching_request():
         "language": "python",
         "message": "Can you review my solution and suggest improvements?",
         "mode": "review",
-        "difficulty": "medium"
+        "difficulty": "medium",
     }
 
 
@@ -305,7 +230,7 @@ def sample_code_execution_request():
         "language": "python",
         "code": "print('Hello, World!')\nprint(sum([1, 2, 3, 4, 5]))",
         "stdin": "",
-        "version": "3.11.0"
+        "version": "3.11.0",
     }
 
 
@@ -320,11 +245,11 @@ def temp_questions_file():
             "category": "arrays",
             "company_tags": ["TestCompany"],
             "description": "Test description 1",
-            "starter": {
-                "python": "def test1(input):\n    pass"
-            },
+            "starter": {"python": "def test1(input):\n    pass"},
             "examples": [{"input": "[1,2,3]", "output": "6", "explanation": "Sum"}],
-            "test_cases": [{"input": "[1,2,3]", "expected_output": "6", "description": "Test"}]
+            "test_cases": [
+                {"input": "[1,2,3]", "expected_output": "6", "description": "Test"}
+            ],
         },
         {
             "id": "test-question-2",
@@ -333,15 +258,21 @@ def temp_questions_file():
             "category": "strings",
             "company_tags": ["AnotherCompany"],
             "description": "Test description 2",
-            "starter": {
-                "python": "def test2(input):\n    pass"
-            },
-            "examples": [{"input": "'hello'", "output": "'olleh'", "explanation": "Reverse"}],
-            "test_cases": [{"input": "'hello'", "expected_output": "'olleh'", "description": "Test"}]
-        }
+            "starter": {"python": "def test2(input):\n    pass"},
+            "examples": [
+                {"input": "'hello'", "output": "'olleh'", "explanation": "Reverse"}
+            ],
+            "test_cases": [
+                {
+                    "input": "'hello'",
+                    "expected_output": "'olleh'",
+                    "description": "Test",
+                }
+            ],
+        },
     ]
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(test_questions, f, indent=2)
         temp_path = f.name
 

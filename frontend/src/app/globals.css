@@ -19,6 +19,12 @@
   --accent-foreground: 240 5.9% 10%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+  --info: 210 80% 56%;
+  --info-foreground: 0 0% 100%;
   --border: 240 5.9% 88%;
   --input: 240 5.9% 88%;
   --ring: 160 84% 39%;
@@ -42,6 +48,12 @@
   --accent-foreground: 0 0% 98%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+  --info: 210 80% 56%;
+  --info-foreground: 0 0% 100%;
   --border: 0 0% 14%;
   --input: 0 0% 14%;
   --ring: 160 84% 50%;
@@ -55,7 +67,12 @@
   body {
     color: hsl(var(--foreground));
     background: hsl(var(--background));
-    font-feature-settings: "ss01" 1, "ss02" 1, "cv01" 1, "cv02" 1, "calt" 1;
+    font-feature-settings:
+      "ss01" 1,
+      "ss02" 1,
+      "cv01" 1,
+      "cv02" 1,
+      "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -78,21 +95,29 @@
 }
 
 .dark body::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(255, 255, 255, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% 70%, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
+    radial-gradient(
+      ellipse 80% 60% at 15% 20%,
+      rgba(255, 255, 255, 0.04) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 85% 70%,
+      rgba(255, 255, 255, 0.02) 0%,
+      transparent 60%
+    );
 }
 
 body::after {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 0;
   pointer-events: none;
   opacity: 0.03;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
@@ -105,13 +130,25 @@ body::after {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }
 
 @keyframes fade-up {
@@ -119,6 +156,7 @@ body::after {
     opacity: 0;
     transform: translateY(32px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -130,6 +168,7 @@ body::after {
     opacity: 0;
     transform: translateX(24px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);

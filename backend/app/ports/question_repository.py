@@ -10,6 +10,11 @@ class QuestionRepository(ABC):
         self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None
     ) -> List[Question]: ...
 
+    async def count(
+        self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None
+    ) -> int:
+        return len(await self.get_all(difficulty=difficulty, category=category))
+
     @abstractmethod
     async def get_by_id(self, question_id: str) -> Optional[Question]: ...
 
@@ -45,9 +50,7 @@ class QuestionRepository(ABC):
         questions = await self.search(query, difficulty=difficulty, category=category)
         return [self._to_summary(q) for q in questions]
 
-    async def save_validation_status(
-        self, question_id: str, status: Any
-    ) -> None:
+    async def save_validation_status(self, question_id: str, status: Any) -> None:
         pass
 
     async def get_validation_statuses(self) -> Dict[str, Any]:

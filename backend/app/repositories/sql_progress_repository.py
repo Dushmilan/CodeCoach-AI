@@ -2,7 +2,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from datetime import datetime, timezone
-import uuid
 
 from app.models.course_schemas import CourseProgress
 from app.models.orm import CourseProgressORM
@@ -82,7 +81,8 @@ class SqlProgressRepository(ProgressRepository):
                 completed_lessons=progress.completed_lessons or [],
                 last_accessed_lesson_id=progress.last_accessed_lesson_id,
                 started_at=progress.started_at or datetime.now(timezone.utc),
-                last_accessed_at=progress.last_accessed_at or datetime.now(timezone.utc),
+                last_accessed_at=progress.last_accessed_at
+                or datetime.now(timezone.utc),
             )
             self.session.add(orm)
         await self.session.flush()

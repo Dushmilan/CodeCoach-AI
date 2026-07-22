@@ -21,7 +21,16 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
         "medium": {"max_complexity": "O(n log n)", "warning_complexity": "O(n^2)"},
         "hard": {"max_complexity": "O(n^2)", "warning_complexity": "O(n^3)"},
     }
-    COMPLEXITY_ORDER = ["O(1)", "O(log n)", "O(n)", "O(n log n)", "O(n^2)", "O(n^3)", "O(2^n)", "O(n!)"]
+    COMPLEXITY_ORDER = [
+        "O(1)",
+        "O(log n)",
+        "O(n)",
+        "O(n log n)",
+        "O(n^2)",
+        "O(n^3)",
+        "O(2^n)",
+        "O(n!)",
+    ]
 
     def __init__(self, config: Optional[TimeLimitConfig] = None):
         self.config = config or TimeLimitConfig()
@@ -33,7 +42,13 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
     async def _execute_validation(self, question: Question) -> UseCaseValidationResult:
         issues: List = []
         if not question.time_complexity:
-            issues.append(self._create_issue(message="Time complexity should be specified", field="time_complexity", severity=ValidationSeverity.WARNING))
+            issues.append(
+                self._create_issue(
+                    message="Time complexity should be specified",
+                    field="time_complexity",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
         else:
             issues.extend(self._validate_time_complexity(question))
         issues.extend(self._validate_constraints_for_time(question))
@@ -90,17 +105,48 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
         issues = []
         complexity = question.time_complexity.strip()
         if not re.match(r"^O\([^)]+\)$", complexity):
-            issues.append(self._create_issue(message=f"Time complexity '{complexity}' is not in standard Big O notation", field="time_complexity", severity=ValidationSeverity.WARNING, details={"complexity": complexity}))
+            issues.append(
+                self._create_issue(
+                    message=f"Time complexity '{complexity}' is not in standard Big O notation",
+                    field="time_complexity",
+                    severity=ValidationSeverity.WARNING,
+                    details={"complexity": complexity},
+                )
+            )
         complexity_level = self._get_complexity_level(complexity)
         difficulty = question.difficulty.value
         thresholds = self.COMPLEXITY_THRESHOLDS.get(difficulty, {})
         if thresholds:
             max_level = self._get_complexity_level(thresholds.get("max_complexity"))
-            warning_level = self._get_complexity_level(thresholds.get("warning_complexity"))
+            warning_level = self._get_complexity_level(
+                thresholds.get("warning_complexity")
+            )
             if complexity_level > max_level:
-                issues.append(self._create_issue(message=f"Time complexity {complexity} may be too high for {difficulty} problem", field="time_complexity", severity=ValidationSeverity.WARNING, details={"complexity": complexity, "difficulty": difficulty, "recommended_max": thresholds["max_complexity"]}))
+                issues.append(
+                    self._create_issue(
+                        message=f"Time complexity {complexity} may be too high for {difficulty} problem",
+                        field="time_complexity",
+                        severity=ValidationSeverity.WARNING,
+                        details={
+                            "complexity": complexity,
+                            "difficulty": difficulty,
+                            "recommended_max": thresholds["max_complexity"],
+                        },
+                    )
+                )
             elif complexity_level > warning_level:
-                issues.append(self._create_issue(message=f"Time complexity {complexity} is acceptable but challenging for {difficulty} problem", field="time_complexity", severity=ValidationSeverity.INFO, details={"complexity": complexity, "difficulty": difficulty, "recommended": thresholds["warning_complexity"]}))
+                issues.append(
+                    self._create_issue(
+                        message=f"Time complexity {complexity} is acceptable but challenging for {difficulty} problem",
+                        field="time_complexity",
+                        severity=ValidationSeverity.INFO,
+                        details={
+                            "complexity": complexity,
+                            "difficulty": difficulty,
+                            "recommended": thresholds["warning_complexity"],
+                        },
+                    )
+                )
         return issues
 
     def _validate_constraints_for_time(self, question: Question) -> List:
@@ -109,11 +155,15 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
             return issues
         max_input_size = None
         for constraint in question.constraints:
-            match = re.search(r"(\d+)\s*(?:<=|<)\s*(?:n|nums\.length|s\.length)", constraint)
+            match = re.search(
+                r"(\d+)\s*(?:<=|<)\s*(?:n|nums\.length|s\.length)", constraint
+            )
             if match:
                 max_input_size = int(match.group(1))
                 break
-            match = re.search(r"(?:n|nums\.length|s\.length)\s*(?:<=|<)\s*(\d+)", constraint)
+            match = re.search(
+                r"(?:n|nums\.length|s\.length)\s*(?:<=|<)\s*(\d+)", constraint
+            )
             if match:
                 max_input_size = int(match.group(1))
                 break
@@ -122,7 +172,20 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
                 max_input_size = 10 ** int(match.group(1))
                 break
         if max_input_size and question.time_complexity:
-            estimated_ops = self._estimate_operations(question.time_complexity.strip(), max_input_size)
+            estimated_ops = self._estimate_operations(
+                question.time_complexity.strip(), max_input_size
+            )
             if estimated_ops > 10**9:
-                issues.append(self._create_issue(message=f"Estimated {estimated_ops:.2e} operations may exceed time limit", field="time_complexity", severity=ValidationSeverity.WARNING, details={"complexity": question.time_complexity, "max_input_size": max_input_size, "estimated_operations": estimated_ops}))
+                issues.append(
+                    self._create_issue(
+                        message=f"Estimated {estimated_ops:.2e} operations may exceed time limit",
+                        field="time_complexity",
+                        severity=ValidationSeverity.WARNING,
+                        details={
+                            "complexity": question.time_complexity,
+                            "max_input_size": max_input_size,
+                            "estimated_operations": estimated_ops,
+                        },
+                    )
+                )
         return issues

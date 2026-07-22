@@ -188,3 +188,48 @@ Programming language curriculum (C, Python, Java) for CodeCoach AI:
 - `backend/tests/unit/test_piston_service.py` — +15 tests
 - `backend/tests/unit/test_execution_result_formatter.py` — +4 tests
 - `backend/tests/integration/test_submit_endpoints.py` — +18 tests
+
+### Session Context — June 27, 2026 (Admin Panel Bug Fixes)
+
+**Problem:** Admin panel showed empty data (0 users, 0 questions) and some pages loading forever.
+
+**Root causes (2 interacting bugs):**
+
+1. **Token format mismatch:** `AuthProvider` stores token with `JSON.stringify()` but admin pages read with bare `localStorage.getItem()` (no `JSON.parse()`) → JWT had literal surrounding quotes → backend rejected with 401 → silent catch blocks → empty UI. Fixed by replacing all `localStorage.getItem('auth_token')` with `token` from `useAuth()` context across 9 admin pages plus adding `token` to relevant dependency arrays.
+
+2. **Next.js rewrite resolution in Docker:** `next.config.js` rewrites `http://localhost:8000/api/:path*` → `localhost:8000` resolves to the frontend container itself inside Docker (not the backend). Next.js serializes rewrite destinations at **build time** into `routes-manifest.json`, so runtime `API_URL` env var was ignored. Fixed by adding `ENV API_URL=http://backend:8000` to Dockerfile **before** `npm run build`.
+
+**Other fixes:**
+
+- `file_admin_repository.py: _load_courses()`: routes `course.json`→courses, `modules.json(items)`→modules, `lessons.json(items)`→lessons (was dumping all JSON files into courses array)
+- `admin.py: get_course_tree()`: removed double-wrap `{"courses": tree}` → returns `tree` directly
+- Settings page: `setSettings(await res.json())` instead of `setSettings((await res.json()).settings || {})`
+- Removed Generation and Feature Flags nav items + unused `Play`/`Shield` icons from `AdminSidebar.tsx`
+- Deleted `backend/data/courses/` directory (preserved `users.json`, `user_progress.json`)
+- Added `API_URL=http://backend:8000` runtime env to `docker-compose.yml` frontend service
+
+**Validation:** `curl http://localhost:3000/api/admin/stats` returns valid JSON with correct user question counts. All admin pages return HTTP 200.
+
+**Key lesson:** Next.js serializes rewrite destinations from `next.config.js` at build time into `routes-manifest.json`. Runtime `process.env` values are not used for rewrites after build. Dockerfile must set `ENV API_URL=http://backend:8000` before `npm run build`.
+
+### Session Context — July 8, 2026 (Bug Fix Sprint — 17 failures → 0)
+
+**Fixes applied (5 bugs + 1 infrastructure):**
+
+1. **`get_adjacent_lessons` returning 500 instead of 404** (`courses.py`): The `except Exception` catch-all was swallowing the `HTTPException(404)` raised for nonexistent lessons. Added `except HTTPException: raise` before the generic handler.
+
+2. **`ExecutionResult` calls `model_dump()` on a dataclass** (`piston_service.py`): `ExecutionResult` is a dataclass, not a Pydantic model. Replaced `result.model_dump()` with `dataclasses.asdict(result)`; added `import dataclasses`.
+
+3. **`validate_code` references wrong variable** (`run.py`): Used `request.language.value` where `request` is the FastAPI `Request` object (for rate limiting), not the `CodeExecutionRequest`. Fixed to `execution_request.language.value`.
+
+4. **`app.dependency_overrides.clear()` nukes all overrides globally** (7 test files): Using `clear()` in one test's `finally` block removes overrides set by other tests' `mock_auth()` contextmanagers, causing 401s/breakage in subsequent tests. Replaced all `clear()` with `pop(specific_key, None)` across 7 files (coach, run, submit, auth, questions, question_validation, admin curriculum endpoints).
+
+5. **Rate limit exceeded in coach tests** (`rate_limit.py`): `COACH_RATE_LIMIT` was evaluated at import time as a static string. Test env var override ran too late (after module import). Changed to lazy callable via `_rate_limit(env_key, default)` — reads `os.getenv` at request time instead of import time. Tests updated to call `COACH_RATE_LIMIT()`.
+
+6. **Redis cache raises on connection error** (`redis_service.py`): `aioredis.RedisError` didn't catch `OSError` (socket-level `getaddrinfo` failures). Changed all `except aioredis.RedisError` to `except Exception` and `logger.warning` to `logger.debug` so Redis failures degrade silently. Wrapped `await client.aclose()` in `try/except`.
+
+**Graphify Updated:** (N/A — no structural changes)
+
+**Test results:** 669/669 pass (0 failures). Full suite: backend unit + integration + performance + security.
+
+**Key lesson:** `app.dependency_overrides` is a global mutable dict shared across all tests in a session. Never use `clear()` — always `pop()` the specific key you added. Rate limit config strings should be lazy (callables or `@limiter.limit` with deferred resolution) when env vars are set by test fixtures that run after module import.

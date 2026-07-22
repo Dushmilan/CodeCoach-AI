@@ -6,7 +6,7 @@ from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
 from app.services.course_service import CourseService
 from app.services.redis_service import RedisCache
-from app.api.auth import get_optional_current_user
+from app.api.auth_deps import get_optional_current_user
 from app.api.dependencies import get_course_repo, get_progress_repo, get_redis_cache
 from app.models.auth_schemas import UserResponse
 
@@ -101,5 +101,7 @@ async def get_adjacent_lessons(
             if current_idx < len(flat_ids) - 1
             else None,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

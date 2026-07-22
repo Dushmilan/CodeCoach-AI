@@ -1,18 +1,20 @@
 from fastapi import APIRouter, Request
 from datetime import datetime, timezone
+from importlib.metadata import version
 
 router = APIRouter()
 
-@router.get("/health")
+
+@router.get("/")
 async def health_check(request: Request):
     rate_limiting_enabled = hasattr(request.app.state, "limiter")
     return {
         "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "system": {
-            "python_version": "3.11.x",
-            "fastapi_version": "0.104.1",
-            "uvicorn_version": "0.24.0",
+            "python_version": f"{__import__('sys').version_info.major}.{__import__('sys').version_info.minor}.{__import__('sys').version_info.micro}",
+            "fastapi_version": version("fastapi"),
+            "uvicorn_version": version("uvicorn"),
         },
         "features": {
             "ai_coaching": "enabled",

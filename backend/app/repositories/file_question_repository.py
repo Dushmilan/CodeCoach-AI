@@ -3,11 +3,11 @@ import logging
 import os
 from typing import Dict, Optional
 
+from app.models.question_validation_schemas import QuestionValidationStatus
 from app.models.schemas import Question, Difficulty
+from app.ports.question_repository import QuestionRepository
 
 logger = logging.getLogger(__name__)
-from app.models.question_validation_schemas import QuestionValidationStatus
-from app.ports.question_repository import QuestionRepository
 
 
 class FileQuestionRepository(QuestionRepository):
@@ -96,7 +96,9 @@ class FileQuestionRepository(QuestionRepository):
     ) -> None:
         self._validation_statuses[question_id] = {
             "is_validated": status.is_validated,
-            "last_validated": status.last_validated.isoformat() if status.last_validated else None,
+            "last_validated": status.last_validated.isoformat()
+            if status.last_validated
+            else None,
             "validation_passed": status.validation_passed,
             "validation_errors": status.validation_errors,
             "validation_warnings": status.validation_warnings,

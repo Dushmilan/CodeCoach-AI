@@ -1,6 +1,8 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from typing import Optional
+from pydantic import model_validator
 
 
 class Settings(BaseSettings):
@@ -11,8 +13,15 @@ class Settings(BaseSettings):
     USE_DATABASE: bool = False
 
     # Auth
-    JWT_SECRET_KEY: str = "dev-secret-key-change-in-production"
+    JWT_SECRET_KEY: str = ""
     NVIDIA_API_KEY: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _require_jwt_key_in_production(self):
+        env = os.getenv("ENVIRONMENT", "development")
+        if env == "production" and not self.JWT_SECRET_KEY:
+            raise ValueError("JWT_SECRET_KEY must be set in production")
+        return self
 
     # Piston
     PISTON_API_URL: str = "http://piston:2000/api/v2"

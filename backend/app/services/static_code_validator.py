@@ -16,8 +16,14 @@ class StaticCodeValidator:
 
 
 _FILE_EXTENSIONS = {
-    "python": "py", "javascript": "js", "java": "java",
-    "cpp": "cpp", "c": "c", "go": "go", "rust": "rs", "typescript": "ts",
+    "python": "py",
+    "javascript": "js",
+    "java": "java",
+    "cpp": "cpp",
+    "c": "c",
+    "go": "go",
+    "rust": "rs",
+    "typescript": "ts",
 }
 
 

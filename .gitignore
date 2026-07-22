@@ -234,3 +234,10 @@ graphify-out/
 # Playwright test output
 frontend/test-results/
 frontend/e2e-report/
+
+# Agentic development (AI agent config, not for public)
+CLAUDE.md
+AGENTS.md
+.opencode/
+.opencodeignore
+Docs/

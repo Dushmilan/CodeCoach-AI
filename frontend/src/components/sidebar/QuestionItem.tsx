@@ -1,8 +1,8 @@
 'use client';
 
-import { RadixCheckCircledIcon, RadixCrossCircledIcon } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 import { QuestionSummary } from '@/types';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 interface QuestionItemProps {
   question: QuestionSummary;
@@ -39,7 +39,7 @@ export function QuestionItem({
       className={cn(
         'px-4 py-3 border-b border-white/5 cursor-pointer hover:bg-white/[0.03] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
         isSelected && 'bg-white/[0.05] border-l-[1.5px] border-l-primary/60',
-        isCurrentIndex && !isSelected && 'bg-white/[0.02]'
+        isCurrentIndex && !isSelected && 'bg-white/[0.02]',
       )}
       onClick={onClick}
     >
@@ -47,10 +47,10 @@ export function QuestionItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {progress === 'solved' && (
-              <RadixCheckCircledIcon className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
+              <CheckCircle className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
             )}
             {progress === 'attempted' && (
-              <RadixCrossCircledIcon className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0" />
+              <XCircle className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0" />
             )}
             <h3 className="text-sm font-medium text-foreground/90 truncate">{question.title}</h3>
           </div>
@@ -58,18 +58,20 @@ export function QuestionItem({
           <div
             className={cn(
               'flex items-center gap-2 mt-1.5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
-              isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'
+              isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto',
             )}
           >
             <span
               className={cn(
                 'text-[10px] px-2 py-0.5 rounded-full font-medium tracking-wide uppercase',
-                getDifficultyColor(question.difficulty)
+                getDifficultyColor(question.difficulty),
               )}
             >
               {question.difficulty}
             </span>
-            <span className="text-[10px] text-muted-foreground/60 tracking-wide">{question.category}</span>
+            <span className="text-[10px] text-muted-foreground/60 tracking-wide">
+              {question.category}
+            </span>
           </div>
         </div>
       </div>

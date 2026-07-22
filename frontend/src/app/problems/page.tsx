@@ -1,30 +1,28 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useQuestion } from '@/features/question/question.hook';
-import { QuestionSummary } from '@/types';
-import { seededShuffle, getDailySeed } from '@/lib/shuffle';
-import { useLocalStorage } from '@/hooks';
-import { cn } from '@/lib/utils';
-import {
-  RadixCheckCircledIcon,
-  RadixCrossCircledIcon,
-  RadixDotFilledIcon,
-  Loader2Icon,
-} from '@/components/ui/icons';
-import { Header } from '@/components/header/Header';
+import { Header } from "@/components/header/Header";
+import { useQuestion } from "@/features/question/question.hook";
+import { useLocalStorage } from "@/hooks";
+import { getDailySeed, seededShuffle } from "@/lib/shuffle";
+import { cn } from "@/lib/utils";
+import { QuestionSummary } from "@/types";
+import { CheckCircle, Circle, Loader2, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo } from "react";
 
 const difficultyStyles: Record<string, string> = {
-  easy: 'text-green-400 bg-green-500/10',
-  medium: 'text-yellow-400 bg-yellow-500/10',
-  hard: 'text-red-400 bg-red-500/10',
+  easy: "text-green-400 bg-green-500/10",
+  medium: "text-yellow-400 bg-yellow-500/10",
+  hard: "text-red-400 bg-red-500/10",
 };
 
 export default function ProblemsPage() {
   const router = useRouter();
   const { allQuestions, loadQuestions, isLoading, error } = useQuestion();
-  const [progress] = useLocalStorage<Record<string, 'attempted' | 'solved'>>('user_progress', {});
+  const [progress] = useLocalStorage<Record<string, "attempted" | "solved">>(
+    "user_progress",
+    {},
+  );
 
   useEffect(() => {
     loadQuestions();
@@ -39,7 +37,7 @@ export default function ProblemsPage() {
     (q: QuestionSummary) => {
       router.push(`/problems/${q.id}`);
     },
-    [router]
+    [router],
   );
 
   if (isLoading) {
@@ -48,8 +46,10 @@ export default function ProblemsPage() {
         <Header />
         <main className="flex items-center justify-center min-h-[60vh]">
           <div className="flex flex-col items-center gap-3">
-            <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground/40" />
-            <span className="text-sm text-muted-foreground/60">Loading questions...</span>
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40" />
+            <span className="text-sm text-muted-foreground/60">
+              Loading questions...
+            </span>
           </div>
         </main>
       </div>
@@ -84,7 +84,9 @@ export default function ProblemsPage() {
 
             {shuffled.length === 0 ? (
               <div className="flex items-center justify-center py-16">
-                <p className="text-sm text-muted-foreground/40">No questions available yet.</p>
+                <p className="text-sm text-muted-foreground/40">
+                  No questions available yet.
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -115,12 +117,12 @@ export default function ProblemsPage() {
                           className="border-b border-white/[0.02] hover:bg-white/[0.03] cursor-pointer transition-colors last:border-b-0"
                         >
                           <td className="px-6 py-3.5">
-                            {status === 'solved' ? (
-                              <RadixCheckCircledIcon className="h-4 w-4 text-green-400" />
-                            ) : status === 'attempted' ? (
-                              <RadixCrossCircledIcon className="h-4 w-4 text-yellow-400" />
+                            {status === "solved" ? (
+                              <CheckCircle className="h-4 w-4 text-green-400" />
+                            ) : status === "attempted" ? (
+                              <XCircle className="h-4 w-4 text-yellow-400" />
                             ) : (
-                              <RadixDotFilledIcon className="h-4 w-4 text-muted-foreground/30" />
+                              <Circle className="h-4 w-4 text-muted-foreground/30" />
                             )}
                           </td>
                           <td className="px-4 py-3.5 font-medium text-foreground/80">
@@ -129,8 +131,8 @@ export default function ProblemsPage() {
                           <td className="px-4 py-3.5">
                             <span
                               className={cn(
-                                'text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wide',
-                                difficultyStyles[q.difficulty]
+                                "text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wide",
+                                difficultyStyles[q.difficulty],
                               )}
                             >
                               {q.difficulty}

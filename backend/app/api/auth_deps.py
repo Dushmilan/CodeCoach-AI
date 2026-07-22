@@ -10,6 +10,7 @@ from app.models.auth_schemas import UserResponse
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=True)
+security_optional = HTTPBearer(auto_error=False)
 
 
 def get_auth_service(
@@ -35,7 +36,7 @@ async def get_current_user(
 
 
 async def get_optional_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security_optional),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> Optional[UserResponse]:
     if credentials is None:
@@ -49,7 +50,6 @@ async def get_optional_current_user(
 async def require_admin(
     current_user: UserResponse = Depends(get_current_user),
 ):
-    """Middleware to require admin role or higher."""
     if current_user.role not in ["admin", "super_admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -61,7 +61,6 @@ async def require_admin(
 async def require_super_admin(
     current_user: UserResponse = Depends(get_current_user),
 ):
-    """Middleware to require super_admin role."""
     if current_user.role != "super_admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

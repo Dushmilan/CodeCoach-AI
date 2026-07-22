@@ -1,5 +1,5 @@
 import { render, screen, act } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { HydrationGuard } from './HydrationGuard';
 
 describe('HydrationGuard', () => {
@@ -19,7 +19,9 @@ describe('HydrationGuard', () => {
         <div data-testid="content">Content</div>
       </HydrationGuard>,
     );
-    act(() => { vi.runAllTimers(); });
+    act(() => {
+      vi.runAllTimers();
+    });
   });
 
   it('renders children without fallback prop', () => {

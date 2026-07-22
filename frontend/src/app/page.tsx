@@ -1,17 +1,10 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { Header } from '@/components/header/Header';
 import { cn } from '@/lib/utils';
-import {
-  LightningBoltIcon,
-  CodeIcon,
-  ReaderIcon,
-  StarFilledIcon,
-  GlobeIcon,
-  RocketIcon,
-} from '@radix-ui/react-icons';
+import { motion } from 'framer-motion';
+import { BookOpen, Code, Globe, Rocket, Star, Zap } from 'lucide-react';
+import Link from 'next/link';
 
 const staggerVariants = {
   hidden: { opacity: 0, y: 24 },
@@ -28,53 +21,51 @@ const staggerVariants = {
 
 const features = [
   {
-    icon: LightningBoltIcon,
+    icon: Zap,
     title: '100% Free',
-    description:
-      'No paywalls, no premium tiers. Just bring your own API key and code.',
+    description: 'No paywalls, no premium tiers. Just bring your own API key and code.',
     accent: 'border-l-emerald-500/40',
   },
   {
-    icon: ReaderIcon,
+    icon: BookOpen,
     title: 'AI Coaching',
     description:
       'Context-aware hints and explanations powered by NVIDIA NIM — like a teaching assistant, 24/7.',
     accent: 'border-l-blue-500/40',
   },
   {
-    icon: CodeIcon,
+    icon: Code,
     title: 'Language Curriculum',
     description:
       'Structured C, Python, and Java paths blending theory with hands-on coding exercises.',
     accent: 'border-l-violet-500/40',
   },
   {
-    icon: GlobeIcon,
+    icon: Globe,
     title: 'Open Source & Professor-Ready',
-    description:
-      'Curriculum-mapped, privacy-first, and free for every institution to recommend.',
+    description: 'Curriculum-mapped, privacy-first, and free for every institution to recommend.',
     accent: 'border-l-amber-500/40',
   },
 ];
 
 const audiences = [
   {
-    icon: RocketIcon,
+    icon: Rocket,
     title: 'Interview Grinders',
     description: 'Prepare for tech internships and jobs with DSA practice.',
   },
   {
-    icon: ReaderIcon,
+    icon: BookOpen,
     title: 'Struggling Students',
     description: 'Get hand-holding through the basics with instant AI feedback.',
   },
   {
-    icon: StarFilledIcon,
+    icon: Star,
     title: 'Curious Learners',
     description: 'Non-CS majors who want to learn programming on their own.',
   },
   {
-    icon: GlobeIcon,
+    icon: Globe,
     title: 'Professors',
     description: 'A free, curriculum-aligned tool to recommend to your class.',
   },
@@ -91,7 +82,11 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] as const, delay: 0.15 }}
+            transition={{
+              duration: 0.9,
+              ease: [0.32, 0.72, 0, 1] as const,
+              delay: 0.15,
+            }}
           >
             <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium tracking-widest uppercase text-emerald-400/80 bg-emerald-500/5 rounded-full border border-emerald-500/10 mb-8">
               Free &bull; Open Source &bull; AI-Powered
@@ -101,7 +96,11 @@ export default function LandingPage() {
           <motion.h1
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] as const, delay: 0.25 }}
+            transition={{
+              duration: 0.9,
+              ease: [0.32, 0.72, 0, 1] as const,
+              delay: 0.25,
+            }}
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-medium tracking-tighter leading-[0.9] text-foreground/90 max-w-4xl mx-auto"
           >
             A free AI-powered
@@ -114,24 +113,32 @@ export default function LandingPage() {
           <motion.p
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] as const, delay: 0.4 }}
+            transition={{
+              duration: 0.8,
+              ease: [0.32, 0.72, 0, 1] as const,
+              delay: 0.4,
+            }}
             className="mt-6 text-sm md:text-base text-muted-foreground/60 max-w-2xl mx-auto leading-relaxed text-balance"
           >
-            Practice DSA problems and learn programming languages through
-            structured lessons with real-time AI coaching — no payment needed.
+            Practice DSA problems and learn programming languages through structured lessons with
+            real-time AI coaching — no payment needed.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] as const, delay: 0.55 }}
+            transition={{
+              duration: 0.8,
+              ease: [0.32, 0.72, 0, 1] as const,
+              delay: 0.55,
+            }}
             className="mt-10 flex items-center justify-center gap-4 flex-wrap"
           >
             <Link
               href="/problems"
               className="group relative inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-primary/80 hover:bg-primary rounded-full transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] shadow-lg shadow-primary/10"
             >
-              <CodeIcon className="h-4 w-4" />
+              <Code className="h-4 w-4" />
               Start Practicing
               <span className="inline-block transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
                 &rarr;
@@ -141,7 +148,7 @@ export default function LandingPage() {
               href="/learn"
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-foreground/70 hover:text-foreground bg-white/[0.04] hover:bg-white/[0.08] rounded-full transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] border border-white/[0.06]"
             >
-              <ReaderIcon className="h-4 w-4" />
+              <BookOpen className="h-4 w-4" />
               View Curriculum
             </Link>
           </motion.div>
@@ -174,8 +181,7 @@ export default function LandingPage() {
               Why CodeCoach AI?
             </h2>
             <p className="text-sm text-muted-foreground/50 mt-3 max-w-[45ch] leading-relaxed">
-              Everything you need to level up your coding — without burning a
-              hole in your wallet.
+              Everything you need to level up your coding — without burning a hole in your wallet.
             </p>
           </motion.div>
 
@@ -195,7 +201,7 @@ export default function LandingPage() {
                     'transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                     'hover:bg-white/[0.04] hover:border-white/[0.10]',
                     'h-full',
-                    feature.accent
+                    feature.accent,
                   )}
                   style={{
                     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
@@ -233,8 +239,7 @@ export default function LandingPage() {
               Built for everyone
             </h2>
             <p className="text-sm text-muted-foreground/50 mt-3 max-w-[45ch] leading-relaxed">
-              Whether you&apos;re grinding for interviews or writing your first
-              loop.
+              Whether you&apos;re grinding for interviews or writing your first loop.
             </p>
           </motion.div>
 
@@ -284,22 +289,22 @@ export default function LandingPage() {
               Start coding, for free.
             </h2>
             <p className="text-sm text-muted-foreground/50 max-w-[40ch] mx-auto leading-relaxed mb-8">
-              No credit card. No premium tier. Just you, the code, and an AI
-              coach that&apos;s always awake.
+              No credit card. No premium tier. Just you, the code, and an AI coach that&apos;s
+              always awake.
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <Link
                 href="/problems"
                 className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-primary/80 hover:bg-primary rounded-full transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] shadow-lg shadow-primary/10"
               >
-                <CodeIcon className="h-4 w-4" />
+                <Code className="h-4 w-4" />
                 Start Practicing
               </Link>
               <Link
                 href="/learn"
                 className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-foreground/70 hover:text-foreground bg-white/[0.04] hover:bg-white/[0.08] rounded-full transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] border border-white/[0.06]"
               >
-                <ReaderIcon className="h-4 w-4" />
+                <BookOpen className="h-4 w-4" />
                 View Curriculum
               </Link>
             </div>

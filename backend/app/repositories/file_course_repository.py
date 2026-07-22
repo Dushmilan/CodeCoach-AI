@@ -33,6 +33,13 @@ class FileCourseRepository(CourseRepository):
                     os.path.join(root, "lessons.json"), self._lessons, Lesson
                 )
 
+    def reload(self):
+        """Re-read all data from disk. Call after admin mutations."""
+        self._courses.clear()
+        self._modules.clear()
+        self._lessons.clear()
+        self._load()
+
     def _load_file(self, path: str, target: Dict, model):
         if not os.path.exists(path):
             return
@@ -85,13 +92,6 @@ class FileCourseRepository(CourseRepository):
 
     async def get_modules_by_course_batch(self, course_ids: List[str]) -> List[Module]:
         result = []
-        seen = set()
         for cid in course_ids:
-            course = self._courses.get(cid)
-            if not course:
-                continue
-            for mid in course.modules:
-                if mid in self._modules and mid not in seen:
-                    result.append(self._modules[mid])
-                    seen.add(mid)
+            result.extend(await self.get_modules_by_course(cid))
         return result

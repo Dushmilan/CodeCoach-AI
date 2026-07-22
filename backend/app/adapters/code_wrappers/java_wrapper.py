@@ -9,16 +9,20 @@ class JavaCodeWrapper(CodeWrapper):
     def wrap(self, code: str) -> str:
         if "public static void main" in code:
             return code
-        method_pattern = r'public\s+(?:static\s+)?([\w<>[\],\s?]+)\s+(\w+)\s*\(([^)]*)\)'
+        method_pattern = (
+            r"public\s+(?:static\s+)?([\w<>[\],\s?]+)\s+(\w+)\s*\(([^)]*)\)"
+        )
         method_match = re.search(method_pattern, code)
         if not method_match:
             return code
         method_name = method_match.group(2)
         return_type = method_match.group(1).strip()
         params_str = method_match.group(3).strip()
-        is_static = bool(re.search(r'public\s+static', code))
+        is_static = bool(re.search(r"public\s+static", code))
         param_count = len([p for p in params_str.split(",") if p.strip()])
-        first_param_type = params_str.split(",")[0].strip().split(" ")[0] if params_str else ""
+        first_param_type = (
+            params_str.split(",")[0].strip().split(" ")[0] if params_str else ""
+        )
         is_single_string = param_count == 1 and first_param_type == "String"
 
         if is_single_string:
@@ -28,7 +32,12 @@ class JavaCodeWrapper(CodeWrapper):
             main_code = self._build_multi_param_main(method_name, is_static)
             helper_code = self._helper_code()
 
-        insertion = "\n" + main_code + "\n" + (helper_code + "\n" if not is_single_string else "")
+        insertion = (
+            "\n"
+            + main_code
+            + "\n"
+            + (helper_code + "\n" if not is_single_string else "")
+        )
         class_match = re.search(r"(public\s+class\s+\w+\s*\{)", code)
         if class_match:
             insertion_point = class_match.end(1)
@@ -50,65 +59,75 @@ class JavaCodeWrapper(CodeWrapper):
 }}"""
 
     def _build_single_string_main(self, method_name: str, return_type: str) -> str:
-        output_line = ('System.out.println(String.valueOf(result).toLowerCase());' if return_type == "boolean" else 'System.out.println(result);')
-        return "\n".join([
-            "    public static void main(String[] args) throws Exception {",
-            "        java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));",
-            "        StringBuilder sb = new StringBuilder();",
-            "        String line;",
-            "        while ((line = reader.readLine()) != null) {",
-            '            if (sb.length() > 0) sb.append("\\n");',
-            "            sb.append(line);",
-            "        }",
-            "        String input = sb.toString().trim();",
-            '        if (input.startsWith("\\"") && input.endsWith("\\"") && input.length() >= 2) {',
-            "            input = input.substring(1, input.length() - 1);",
-            "        }",
-            f"        {return_type} result = {method_name}(input);",
-            f"        {output_line}",
-            "    }",
-        ])
+        output_line = (
+            "System.out.println(String.valueOf(result).toLowerCase());"
+            if return_type == "boolean"
+            else "System.out.println(result);"
+        )
+        return "\n".join(
+            [
+                "    public static void main(String[] args) throws Exception {",
+                "        java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));",
+                "        StringBuilder sb = new StringBuilder();",
+                "        String line;",
+                "        while ((line = reader.readLine()) != null) {",
+                '            if (sb.length() > 0) sb.append("\\n");',
+                "            sb.append(line);",
+                "        }",
+                "        String input = sb.toString().trim();",
+                '        if (input.startsWith("\\"") && input.endsWith("\\"") && input.length() >= 2) {',
+                "            input = input.substring(1, input.length() - 1);",
+                "        }",
+                f"        {return_type} result = {method_name}(input);",
+                f"        {output_line}",
+                "    }",
+            ]
+        )
 
     def _build_multi_param_main(self, method_name: str, is_static: bool = True) -> str:
         instance_code = "null" if is_static else "new Solution()"
-        return "\n".join([
-            "    public static void main(String[] args) throws Exception {",
-            "        java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));",
-            "        StringBuilder sb = new StringBuilder();",
-            "        String line;",
-            "        while ((line = reader.readLine()) != null) {",
-            '            if (sb.length() > 0) sb.append("\\n");',
-            "            sb.append(line);",
-            "        }",
-            "        String input = sb.toString().trim();",
-            '        String[] lines = input.isEmpty() ? new String[]{""} : input.split("\\n", -1);',
-            "        java.util.List<Object> parsedArgs = new java.util.ArrayList<>();",
-            "        for (String l : lines) {",
-            "            l = l.trim();",
-            "            if (l.isEmpty()) { parsedArgs.add(\"\"); }",
-            "            else {",
-            "                try { parsedArgs.add(__JsonParser.parse(l)); }",
-            "                catch (Exception e) { parsedArgs.add(l); }",
-            "            }",
-            "        }",
-            "        java.lang.reflect.Method method = null;",
-            "        for (java.lang.reflect.Method m : Solution.class.getDeclaredMethods()) {",
-            f'            if (m.getName().equals("{method_name}")) {{ method = m; break; }}',
-            "        }",
-            "        if (method == null) throw new NoSuchMethodException(\"" + method_name + "\");",
-            "        java.lang.reflect.Parameter[] paramTypes = method.getParameters();",
-            "        Object[] callArgs = new Object[parsedArgs.size()];",
-            "        for (int i = 0; i < parsedArgs.size() && i < paramTypes.length; i++) {",
-            "            callArgs[i] = __convertArg(parsedArgs.get(i), paramTypes[i].getType());",
-            "        }",
-            f"        Object result = method.invoke({instance_code}, callArgs);",
-        "        if (result == null && method.getReturnType() == void.class && callArgs.length > 0) {",
-        "            System.out.println(__toJson(callArgs[0]));",
-        "        } else if (result instanceof Boolean) { System.out.println(String.valueOf(result).toLowerCase()); }",
-        "        else if (result instanceof String) { System.out.println(result); }",
-        "        else { System.out.println(__toJson(result)); }",
-            "    }",
-        ])
+        return "\n".join(
+            [
+                "    public static void main(String[] args) throws Exception {",
+                "        java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));",
+                "        StringBuilder sb = new StringBuilder();",
+                "        String line;",
+                "        while ((line = reader.readLine()) != null) {",
+                '            if (sb.length() > 0) sb.append("\\n");',
+                "            sb.append(line);",
+                "        }",
+                "        String input = sb.toString().trim();",
+                '        String[] lines = input.isEmpty() ? new String[]{""} : input.split("\\n", -1);',
+                "        java.util.List<Object> parsedArgs = new java.util.ArrayList<>();",
+                "        for (String l : lines) {",
+                "            l = l.trim();",
+                '            if (l.isEmpty()) { parsedArgs.add(""); }',
+                "            else {",
+                "                try { parsedArgs.add(__JsonParser.parse(l)); }",
+                "                catch (Exception e) { parsedArgs.add(l); }",
+                "            }",
+                "        }",
+                "        java.lang.reflect.Method method = null;",
+                "        for (java.lang.reflect.Method m : Solution.class.getDeclaredMethods()) {",
+                f'            if (m.getName().equals("{method_name}")) {{ method = m; break; }}',
+                "        }",
+                '        if (method == null) throw new NoSuchMethodException("'
+                + method_name
+                + '");',
+                "        java.lang.reflect.Parameter[] paramTypes = method.getParameters();",
+                "        Object[] callArgs = new Object[parsedArgs.size()];",
+                "        for (int i = 0; i < parsedArgs.size() && i < paramTypes.length; i++) {",
+                "            callArgs[i] = __convertArg(parsedArgs.get(i), paramTypes[i].getType());",
+                "        }",
+                f"        Object result = method.invoke({instance_code}, callArgs);",
+                "        if (result == null && method.getReturnType() == void.class && callArgs.length > 0) {",
+                "            System.out.println(__toJson(callArgs[0]));",
+                "        } else if (result instanceof Boolean) { System.out.println(String.valueOf(result).toLowerCase()); }",
+                "        else if (result instanceof String) { System.out.println(result); }",
+                "        else { System.out.println(__toJson(result)); }",
+                "    }",
+            ]
+        )
 
     def _helper_code(self) -> str:
         return """
@@ -249,7 +268,12 @@ class JavaCodeWrapper(CodeWrapper):
     def wrap_with_tests(self, _code: str, test_cases: List[Dict[str, Any]]) -> str:
         tc_json = json.dumps(
             [
-                {"input": tc["input"], "expected": tc["expected_output"], "hidden": tc.get("hidden", False), "index": i + 1}
+                {
+                    "input": tc["input"],
+                    "expected": tc["expected_output"],
+                    "hidden": tc.get("hidden", False),
+                    "index": i + 1,
+                }
                 for i, tc in enumerate(test_cases)
             ]
         )
@@ -260,8 +284,7 @@ class JavaCodeWrapper(CodeWrapper):
             "import java.util.*;\n"
             "import java.lang.reflect.*;\n"
             "\n"
-            "public class Solution {\n"
-            + _code + "\n"
+            "public class Solution {\n" + _code + "\n"
             "\n"
             "    public static void main(String[] args) throws Exception {\n"
             '        String tcJson = "' + tc_json.replace('"', '\\"') + '";\n'
@@ -279,16 +302,22 @@ class JavaCodeWrapper(CodeWrapper):
             '                String[] lines = input.isEmpty() ? new String[]{""} : input.split("\\n", -1);\n'
             "                Object result;\n"
             "                if (lines.length == 1) {\n"
-            '                    result = callSolution("' + func_name + '", lines[0].trim());\n'
+            '                    result = callSolution("'
+            + func_name
+            + '", lines[0].trim());\n'
             "                } else if (lines.length == 2) {\n"
-            '                    result = callSolution("' + func_name + '", lines[0].trim(), lines[1].trim());\n'
+            '                    result = callSolution("'
+            + func_name
+            + '", lines[0].trim(), lines[1].trim());\n'
             "                } else {\n"
-            '                    result = callSolution("' + func_name + '", (Object) lines);\n'
+            '                    result = callSolution("'
+            + func_name
+            + '", (Object) lines);\n'
             "                }\n"
             "                if (result == null && _lastFirstArg != null) {\n"
             "                    actual = toJson(_lastFirstArg);\n"
             "                } else {\n"
-            '                    actual = toJson(result);\n'
+            "                    actual = toJson(result);\n"
             "                }\n"
             "                passed = actual.trim().equals(expected.trim());\n"
             "            } catch (Exception e) {\n"
@@ -304,10 +333,10 @@ class JavaCodeWrapper(CodeWrapper):
             "\n"
             "    static Object _lastFirstArg = null;\n"
             "\n"
-            '    static Object callSolution(String methodName, Object... args) throws Exception {\n'
+            "    static Object callSolution(String methodName, Object... args) throws Exception {\n"
             "        Class<?> clazz = Solution.class;\n"
             "        for (Method m : clazz.getDeclaredMethods()) {\n"
-            '            if (m.getName().equals(methodName) && m.getParameterCount() == args.length) {\n'
+            "            if (m.getName().equals(methodName) && m.getParameterCount() == args.length) {\n"
             "                Object[] converted = new Object[args.length];\n"
             "                Class<?>[] types = m.getParameterTypes();\n"
             "                for (int i = 0; i < args.length; i++) {\n"
@@ -319,7 +348,7 @@ class JavaCodeWrapper(CodeWrapper):
             "                return m.invoke(obj, converted);\n"
             "            }\n"
             "        }\n"
-            '        throw new NoSuchMethodException(methodName);\n'
+            "        throw new NoSuchMethodException(methodName);\n"
             "    }\n"
             "\n"
             "    static Object convert(Object arg, Class<?> type) {\n"
@@ -383,11 +412,11 @@ class JavaCodeWrapper(CodeWrapper):
             "        for (String p : pairs) {\n"
             "            int colon = p.indexOf(':');\n"
             "            if (colon < 0) continue;\n"
-            '            String key = p.substring(0, colon).trim().replaceAll("\\\"", "");\n'
+            '            String key = p.substring(0, colon).trim().replaceAll("\\"", "");\n'
             "            String val = p.substring(colon + 1).trim();\n"
             '            if (val.equals("true")) m.put(key, true);\n'
             '            else if (val.equals("false")) m.put(key, false);\n'
-            '            else if (val.startsWith("\\\"")) m.put(key, val.substring(1, val.length() - 1));\n'
+            '            else if (val.startsWith("\\"")) m.put(key, val.substring(1, val.length() - 1));\n'
             "            else m.put(key, val);\n"
             "        }\n"
             "        return m;\n"
@@ -401,7 +430,7 @@ class JavaCodeWrapper(CodeWrapper):
             "            int[] arr = (int[]) obj;\n"
             '            StringBuilder sb = new StringBuilder("[");\n'
             "            for (int i = 0; i < arr.length; i++) {\n"
-            "                if (i > 0) sb.append(\",\");\n"
+            '                if (i > 0) sb.append(",");\n'
             "                sb.append(arr[i]);\n"
             "            }\n"
             '            return sb.append("]").toString();\n'
@@ -410,7 +439,7 @@ class JavaCodeWrapper(CodeWrapper):
             "            boolean[] arr = (boolean[]) obj;\n"
             '            StringBuilder sb = new StringBuilder("[");\n'
             "            for (int i = 0; i < arr.length; i++) {\n"
-            "                if (i > 0) sb.append(\",\");\n"
+            '                if (i > 0) sb.append(",");\n'
             "                sb.append(arr[i]);\n"
             "            }\n"
             '            return sb.append("]").toString();\n'
@@ -419,7 +448,7 @@ class JavaCodeWrapper(CodeWrapper):
             "            double[] arr = (double[]) obj;\n"
             '            StringBuilder sb = new StringBuilder("[");\n'
             "            for (int i = 0; i < arr.length; i++) {\n"
-            "                if (i > 0) sb.append(\",\");\n"
+            '                if (i > 0) sb.append(",");\n'
             "                sb.append(arr[i]);\n"
             "            }\n"
             '            return sb.append("]").toString();\n'
@@ -428,7 +457,7 @@ class JavaCodeWrapper(CodeWrapper):
             "            Object[] arr = (Object[]) obj;\n"
             '            StringBuilder sb = new StringBuilder("[");\n'
             "            for (int i = 0; i < arr.length; i++) {\n"
-            "                if (i > 0) sb.append(\",\");\n"
+            '                if (i > 0) sb.append(",");\n'
             "                sb.append(toJson(arr[i]));\n"
             "            }\n"
             '            return sb.append("]").toString();\n'
@@ -437,7 +466,7 @@ class JavaCodeWrapper(CodeWrapper):
             '            StringBuilder sb = new StringBuilder("{");\n'
             "            boolean first = true;\n"
             "            for (Map.Entry<?, ?> e : ((Map<?, ?>) obj).entrySet()) {\n"
-            "                if (!first) sb.append(\",\");\n"
+            '                if (!first) sb.append(",");\n'
             '                sb.append("\\"" + e.getKey() + "\\":").append(toJson(e.getValue()));\n'
             "                first = false;\n"
             "            }\n"
@@ -447,7 +476,7 @@ class JavaCodeWrapper(CodeWrapper):
             '            StringBuilder sb = new StringBuilder("[");\n'
             "            boolean first = true;\n"
             "            for (Object item : (Collection<?>) obj) {\n"
-            "                if (!first) sb.append(\",\");\n"
+            '                if (!first) sb.append(",");\n'
             "                sb.append(toJson(item));\n"
             "                first = false;\n"
             "            }\n"

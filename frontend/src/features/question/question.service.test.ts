@@ -33,8 +33,20 @@ describe('QuestionService', () => {
 
     it('returns questions array from response', async () => {
       const mockQuestions = [
-        { id: '1', title: 'Two Sum', difficulty: 'easy', category: 'arrays', company_tags: [] },
-        { id: '2', title: 'Add Two Numbers', difficulty: 'medium', category: 'linked-list', company_tags: [] },
+        {
+          id: '1',
+          title: 'Two Sum',
+          difficulty: 'easy',
+          category: 'arrays',
+          company_tags: [],
+        },
+        {
+          id: '2',
+          title: 'Add Two Numbers',
+          difficulty: 'medium',
+          category: 'linked-list',
+          company_tags: [],
+        },
       ];
       vi.mocked(http.get).mockResolvedValue({ questions: mockQuestions });
 
@@ -83,7 +95,16 @@ describe('QuestionService', () => {
         category: 'arrays',
         company_tags: [],
         description: '...',
-        starter: { python: '', javascript: '', java: '' },
+        starter: {
+          python: '',
+          javascript: '',
+          java: '',
+          cpp: '',
+          c: '',
+          go: '',
+          rust: '',
+          typescript: '',
+        },
         examples: [],
         test_cases: [],
         hints: [],
@@ -107,7 +128,16 @@ describe('QuestionService', () => {
         category: 'dp',
         company_tags: ['Google'],
         description: 'Solve this problem',
-        starter: { python: 'def solve():', javascript: 'function solve() {}', java: 'class Solution {}' },
+        starter: {
+          python: 'def solve():',
+          javascript: 'function solve() {}',
+          java: 'class Solution {}',
+          cpp: '',
+          c: '',
+          go: '',
+          rust: '',
+          typescript: '',
+        },
         examples: [{ input: '1', output: '1' }],
         test_cases: [{ input: '1', expected_output: '1' }],
         hints: [],

@@ -59,7 +59,12 @@ class CoachingResponseParser:
                 for field in ["summary", "hints", "suggestions", "edge_cases"]:
                     if field not in structured_data:
                         structured_data[field] = [] if field != "summary" else ""
-                for field in ["code_review", "complexity_analysis", "explanation", "debug_help"]:
+                for field in [
+                    "code_review",
+                    "complexity_analysis",
+                    "explanation",
+                    "debug_help",
+                ]:
                     if field not in structured_data:
                         structured_data[field] = None
                 return structured_data
@@ -71,7 +76,9 @@ class CoachingResponseParser:
         clean_content = re.sub(r"\s+", " ", clean_content).strip()
 
         return {
-            "summary": clean_content[:200] if clean_content else "Unable to generate structured response. Please try again.",
+            "summary": clean_content[:200]
+            if clean_content
+            else "Unable to generate structured response. Please try again.",
             "hints": [],
             "code_review": None,
             "complexity_analysis": None,

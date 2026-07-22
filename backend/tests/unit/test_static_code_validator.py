@@ -20,7 +20,9 @@ class TestStaticCodeValidator:
         assert "sys.stdin" in result["warnings"][0]
 
     def test_python_with_input_and_sys_stdin_no_warning(self, validator):
-        result = validator.validate("python", "import sys\ndef read():\n    return sys.stdin.read()")
+        result = validator.validate(
+            "python", "import sys\ndef read():\n    return sys.stdin.read()"
+        )
         assert result["warnings"] == []
 
     def test_python_unclosed_parentheses(self, validator):
@@ -29,22 +31,21 @@ class TestStaticCodeValidator:
         assert "parentheses" in result["warnings"][0]
 
     def test_javascript_unclosed_parentheses(self, validator):
-        result = validator.validate("javascript", "function hello() {\n  console.log(\n  return 1;\n}")
+        result = validator.validate(
+            "javascript", "function hello() {\n  console.log(\n  return 1;\n}"
+        )
         assert len(result["warnings"]) == 1
         assert "parentheses" in result["warnings"][0]
 
     def test_javascript_clean_code(self, validator):
-        result = validator.validate("javascript", "function add(a, b) {\n  return a + b;\n}")
+        result = validator.validate(
+            "javascript", "function add(a, b) {\n  return a + b;\n}"
+        )
         assert result["valid"] is True
         assert result["warnings"] == []
 
-    def test_javascript_unclosed_parentheses(self, validator):
-        result = validator.validate("javascript", "function hello() {\n  console.log(\n  return 1;\n}")
-        assert len(result["warnings"]) == 1
-        assert "parentheses" in result["warnings"][0]
-
     def test_unknown_language_no_warnings(self, validator):
-        result = validator.validate("rust", "fn main() {\n    println!(\"hi\");\n}")
+        result = validator.validate("rust", 'fn main() {\n    println!("hi");\n}')
         assert result["valid"] is True
         assert result["warnings"] == []
 

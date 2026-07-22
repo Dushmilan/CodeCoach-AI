@@ -1,8 +1,7 @@
 """
 Input validation security tests.
 """
-import json
-import pytest
+
 from fastapi.testclient import TestClient
 
 
@@ -34,8 +33,12 @@ class TestInputValidation:
         payloads = ["'; DROP TABLE users; --", "' OR 1=1--", "1' AND 1=1--"]
         for payload in payloads:
             body = {
-                "problem": payload, "code": "x=1", "language": "python",
-                "message": payload, "mode": "hint", "difficulty": "easy"
+                "problem": payload,
+                "code": "x=1",
+                "language": "python",
+                "message": payload,
+                "mode": "hint",
+                "difficulty": "easy",
             }
             response = test_client.post("/api/coach/", json=body)
             assert response.status_code in [200, 401, 422]
@@ -43,8 +46,12 @@ class TestInputValidation:
     def test_nosql_injection_where(self, test_client: TestClient):
         """NoSQL $where injection in JSON body should be handled."""
         body = {
-            "problem": {"$where": "1==1"}, "code": "x=1", "language": "python",
-            "message": "test", "mode": "hint", "difficulty": "easy"
+            "problem": {"$where": "1==1"},
+            "code": "x=1",
+            "language": "python",
+            "message": "test",
+            "mode": "hint",
+            "difficulty": "easy",
         }
         response = test_client.post("/api/coach/", json=body)
         assert response.status_code in [200, 401, 422]
@@ -52,8 +59,12 @@ class TestInputValidation:
     def test_nosql_injection_regex(self, test_client: TestClient):
         """NoSQL $regex injection in JSON body should be handled."""
         body = {
-            "problem": {"$regex": ".*"}, "code": "x=1", "language": "python",
-            "message": {"$gt": ""}, "mode": "hint", "difficulty": "easy"
+            "problem": {"$regex": ".*"},
+            "code": "x=1",
+            "language": "python",
+            "message": {"$gt": ""},
+            "mode": "hint",
+            "difficulty": "easy",
         }
         response = test_client.post("/api/coach/", json=body)
         assert response.status_code in [200, 401, 422]
@@ -66,9 +77,9 @@ class TestInputValidation:
             'import os; os.system("curl http://internal-service/")',
         ]
         for code in code_payloads:
-            response = test_client.post("/api/run/", json={
-                "language": "python", "code": code, "stdin": ""
-            })
+            response = test_client.post(
+                "/api/run/", json={"language": "python", "code": code, "stdin": ""}
+            )
             assert response.status_code in [200, 401]
             if response.status_code == 200:
                 result = response.json()
@@ -97,7 +108,7 @@ class TestInputValidation:
             response = test_client.post(
                 "/api/coach/",
                 data=payload,
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
             assert response.status_code in [200, 401, 422]
 

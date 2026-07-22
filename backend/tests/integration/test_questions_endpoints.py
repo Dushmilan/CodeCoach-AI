@@ -54,13 +54,13 @@ class TestQuestionsEndpoints:
         app.dependency_overrides[get_questions_service] = lambda: MockQuestions()
         try:
             response = test_client.get("/api/questions/categories")
-            assert (
-                response.status_code == 200
-            ), f"Got {response.status_code}: {response.json()['detail']}"
+            assert response.status_code == 200, (
+                f"Got {response.status_code}: {response.json()['detail']}"
+            )
             data = response.json()
             assert data["categories"] == ["mock-category"]
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_questions_service, None)
 
     def test_get_all_questions_basic(self, test_client: TestClient):
         """Test getting all questions with basic parameters."""
@@ -349,6 +349,6 @@ class TestQuestionsEndpoints:
 
         # Response should be fast (< 200ms)
         response_time = (end_time - start_time) * 1000
-        assert (
-            response_time < 200
-        ), f"Questions endpoint took {response_time}ms, expected < 200ms"
+        assert response_time < 200, (
+            f"Questions endpoint took {response_time}ms, expected < 200ms"
+        )

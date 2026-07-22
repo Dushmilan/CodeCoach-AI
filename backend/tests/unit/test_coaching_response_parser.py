@@ -78,7 +78,7 @@ class TestParseStreamChunk:
 
 class TestFallbackParse:
     def test_extracts_json_from_markdown_block(self, parser):
-        content = "Some text\n```json\n{\"summary\": \"Extracted\"}\n```\nmore text"
+        content = 'Some text\n```json\n{"summary": "Extracted"}\n```\nmore text'
         result = parser._fallback_parse(content)
         assert result["summary"] == "Extracted"
 
@@ -89,7 +89,7 @@ class TestFallbackParse:
 
     def test_auto_closes_unclosed_brackets(self, parser):
         content = '{"summary": "Test", "hints": ["a", "b"'
-        result = parser._fallback_parse(content)
+        parser._fallback_parse(content)
 
     def test_ensures_all_eight_fields_present(self, parser):
         content = '{"summary": "Minimal"}'

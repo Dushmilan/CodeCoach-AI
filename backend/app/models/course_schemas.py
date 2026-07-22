@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class LessonType(str, Enum):
@@ -23,9 +23,16 @@ class Lesson(BaseModel):
     type: LessonType = Field(..., description="Theory or exercise")
     content: str = Field(..., description="Markdown lesson body")
     order: int = Field(..., description="Display order within module")
-    starter_code: Optional[str] = Field(None, description="Starter code for exercises (legacy, prefer question_id)")
-    test_cases: Optional[List[TestCase]] = Field(None, description="Test assertions for exercises (legacy, prefer question_id)")
-    question_id: Optional[str] = Field(None, description="Linked Question ID for exercises — preferred over embedded starter_code/test_cases")
+    starter_code: Optional[str] = Field(
+        None, description="Starter code for exercises (legacy, prefer question_id)"
+    )
+    test_cases: Optional[List[TestCase]] = Field(
+        None, description="Test assertions for exercises (legacy, prefer question_id)"
+    )
+    question_id: Optional[str] = Field(
+        None,
+        description="Linked Question ID for exercises — preferred over embedded starter_code/test_cases",
+    )
     language: str = Field(..., description="Language this lesson belongs to")
 
 
@@ -62,6 +69,10 @@ class CourseProgress(BaseModel):
     user_id: str = Field(..., description="User ID")
     course_id: str = Field(..., description="Course ID")
     completed_lessons: List[str] = Field(default=[], description="Completed lesson IDs")
-    last_accessed_lesson_id: Optional[str] = Field(None, description="Last accessed lesson ID")
-    started_at: datetime = Field(default_factory=datetime.utcnow)
-    last_accessed_at: datetime = Field(default_factory=datetime.utcnow)
+    last_accessed_lesson_id: Optional[str] = Field(
+        None, description="Last accessed lesson ID"
+    )
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_accessed_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

@@ -1,4 +1,3 @@
-import json
 import re
 from typing import Any, Dict, List
 
@@ -9,7 +8,7 @@ class PythonCodeWrapper(CodeWrapper):
     def wrap(self, code: str) -> str:
         if "input(" in code or "sys.stdin" in code or "print(" in code:
             return code
-        code = re.sub(r'(\(\s*)self\s*,?\s*', r'\1', code)
+        code = re.sub(r"(\(\s*)self\s*,?\s*", r"\1", code)
 
         func_match = re.search(r"def\s+(\w+)\s*\(", code)
         if not func_match:
@@ -48,7 +47,7 @@ except Exception as e:
         return runner.strip()
 
     def wrap_with_tests(self, code: str, test_cases: List[Dict[str, Any]]) -> str:
-        code = re.sub(r'(\(\s*)self\s*,?\s*', r'\1', code)
+        code = re.sub(r"(\(\s*)self\s*,?\s*", r"\1", code)
         tc_clean = [
             {"input": tc["input"], "expected": tc["expected_output"], "index": i + 1}
             for i, tc in enumerate(test_cases)

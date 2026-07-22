@@ -1,20 +1,26 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock
-from datetime import datetime
 
 from app.models.schemas import Question, Difficulty, StarterCode, Example, TestCase
 from app.models.question_validation_schemas import (
-    ValidationUseCase, QuestionValidationResult,
-    UseCaseValidationResult, ValidationSeverity, ValidationIssue,
+    ValidationUseCase,
+    QuestionValidationResult,
 )
 
 
 @pytest.fixture
 def valid_question():
     return Question(
-        id="test-q", title="Test", difficulty=Difficulty.EASY,
-        category="arrays", description="A test problem",
-        starter=StarterCode(python="def f(): pass", javascript="function f(){}", java="class S{public static void f(){}}"),
+        id="test-q",
+        title="Test",
+        difficulty=Difficulty.EASY,
+        category="arrays",
+        description="A test problem",
+        starter=StarterCode(
+            python="def f(): pass",
+            javascript="function f(){}",
+            java="class S{public static void f(){}}",
+        ),
         examples=[Example(input="1", output="1")],
         test_cases=[TestCase(input="1", expected_output="1")],
     )
@@ -31,6 +37,7 @@ class TestQuestionValidatorService:
     @pytest.mark.asyncio
     async def test_validate_all_use_cases(self, valid_question, mock_executor):
         from app.services.question_validator import QuestionValidatorService
+
         service = QuestionValidatorService(executor=mock_executor)
 
         result = await service.validate_question(valid_question)
@@ -41,6 +48,7 @@ class TestQuestionValidatorService:
     @pytest.mark.asyncio
     async def test_validate_selected_use_cases(self, valid_question, mock_executor):
         from app.services.question_validator import QuestionValidatorService
+
         service = QuestionValidatorService(executor=mock_executor)
 
         result = await service.validate_question(
@@ -55,6 +63,7 @@ class TestQuestionValidatorService:
     @pytest.mark.asyncio
     async def test_validate_batch(self, valid_question, mock_executor):
         from app.services.question_validator import QuestionValidatorService
+
         service = QuestionValidatorService(executor=mock_executor)
 
         results = await service.validate_batch([valid_question, valid_question])
@@ -62,8 +71,11 @@ class TestQuestionValidatorService:
         assert all(r.question_id == "test-q" for r in results)
 
     @pytest.mark.asyncio
-    async def test_quick_validate_runs_fast_use_cases(self, valid_question, mock_executor):
+    async def test_quick_validate_runs_fast_use_cases(
+        self, valid_question, mock_executor
+    ):
         from app.services.question_validator import QuestionValidatorService
+
         service = QuestionValidatorService(executor=mock_executor)
 
         result = await service.quick_validate(valid_question)
@@ -75,6 +87,7 @@ class TestQuestionValidatorService:
     @pytest.mark.asyncio
     async def test_full_validate_runs_all(self, valid_question, mock_executor):
         from app.services.question_validator import QuestionValidatorService
+
         service = QuestionValidatorService(executor=mock_executor)
 
         result = await service.full_validate(valid_question)
@@ -84,6 +97,7 @@ class TestQuestionValidatorService:
 
     def test_get_use_case_order(self, mock_executor):
         from app.services.question_validator import QuestionValidatorService
+
         service = QuestionValidatorService(executor=mock_executor)
 
         order = service.get_use_case_order()
@@ -93,6 +107,7 @@ class TestQuestionValidatorService:
     @pytest.mark.asyncio
     async def test_get_validation_summary(self, valid_question, mock_executor):
         from app.services.question_validator import QuestionValidatorService
+
         service = QuestionValidatorService(executor=mock_executor)
 
         result = await service.validate_question(valid_question)
@@ -107,9 +122,8 @@ class TestQuestionValidatorService:
     async def test_skipped_use_cases(self, valid_question, mock_executor):
         from app.services.question_validator import QuestionValidatorService
         from app.models.question_validation_schemas import QuestionValidationConfig
-        config = QuestionValidationConfig(
-            skip_use_cases=[ValidationUseCase.SOLUTION]
-        )
+
+        config = QuestionValidationConfig(skip_use_cases=[ValidationUseCase.SOLUTION])
         service = QuestionValidatorService(executor=mock_executor, config=config)
 
         result = await service.validate_question(valid_question)

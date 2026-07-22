@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { FetchClient } from '@/lib/fetch-client';
-import { CourseSummary, CourseDetail, LessonSummary } from '@/types';
+import { useState, useEffect, useCallback } from "react";
+import { FetchClient } from "@/lib/fetch-client";
+import { CourseSummary, CourseDetail, LessonSummary } from "@/types";
 
 const api = new FetchClient();
 
@@ -15,10 +15,10 @@ export function useCurriculum() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await api.get<{ courses: CourseSummary[] }>('/api/courses/');
+      const data = await api.get<{ courses: CourseSummary[] }>("/api/courses/");
       setCourses(data.courses);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load courses');
+      setError(err instanceof Error ? err.message : "Failed to load courses");
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +44,7 @@ export function useCourse(courseId: string) {
       const data = await api.get<CourseDetail>(`/api/courses/${courseId}`);
       setCourse(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load course');
+      setError(err instanceof Error ? err.message : "Failed to load course");
     } finally {
       setIsLoading(false);
     }
@@ -67,10 +67,12 @@ export function useLesson(lessonId: string) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await api.get<LessonSummary>(`/api/courses/lessons/${lessonId}`);
+      const data = await api.get<LessonSummary>(
+        `/api/courses/lessons/${lessonId}`,
+      );
       setLesson(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load lesson');
+      setError(err instanceof Error ? err.message : "Failed to load lesson");
     } finally {
       setIsLoading(false);
     }

@@ -8,7 +8,7 @@ made available to users. Each validation use case has its own result model.
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ValidationSeverity(str, Enum):
@@ -75,7 +75,8 @@ class QuestionValidationResult(BaseModel):
     error_count: int = Field(default=0, description="Number of errors")
     warning_count: int = Field(default=0, description="Number of warnings")
     validated_at: datetime = Field(
-        default_factory=datetime.utcnow, description="When validation occurred"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When validation occurred",
     )
     validation_version: str = Field(
         default="1.0.0", description="Version of validation logic"

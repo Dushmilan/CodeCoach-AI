@@ -48,7 +48,9 @@ class TestAuthRegister:
         assert data["user"]["username"] == "newuser"
         assert data["user"]["email"] == "new@example.com"
 
-    def test_register_duplicate_username(self, test_client: TestClient, mock_auth_service):
+    def test_register_duplicate_username(
+        self, test_client: TestClient, mock_auth_service
+    ):
         mock_auth_service.register = AsyncMock(
             side_effect=ValueError("Username already taken")
         )
@@ -181,7 +183,7 @@ class TestAuthLogin:
 
 class TestAuthMe:
     def test_get_me_authenticated(self, test_client: TestClient):
-        from app.api.auth import get_current_user
+        from app.api.auth_deps import get_current_user
 
         async def override_get_current_user():
             return UserResponse(
@@ -204,7 +206,7 @@ class TestAuthMe:
             assert data["email"] == "test@example.com"
             assert data["is_active"] is True
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_current_user, None)
 
     def test_get_me_no_auth(self, test_client: TestClient):
         response = test_client.get("/api/auth/me")

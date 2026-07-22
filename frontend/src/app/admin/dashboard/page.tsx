@@ -1,9 +1,9 @@
-'use client';
-export const dynamic = 'force-dynamic';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/providers';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/providers";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AdminStats {
   users?: { total: number; active: number; admin: number; inactive: number };
@@ -14,7 +14,7 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [stats, setStats] = useState<AdminStats>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,21 +22,20 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
-        const res = await fetch('/api/admin/stats', {
+        const res = await fetch("/api/admin/stats", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error('Failed to fetch stats');
+        if (!res.ok) throw new Error("Failed to fetch stats");
         const data = await res.json();
         setStats(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error loading stats');
+        setError(err instanceof Error ? err.message : "Error loading stats");
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
-  }, []);
+  }, [token]);
 
   return (
     <div className="space-y-6">
@@ -48,7 +47,9 @@ export default function AdminDashboard() {
       </div>
 
       {error && (
-        <div className="text-sm text-red-400 bg-red-500/10 rounded-lg px-4 py-2">{error}</div>
+        <div className="text-sm text-red-400 bg-red-500/10 rounded-lg px-4 py-2">
+          {error}
+        </div>
       )}
 
       {loading ? (
@@ -66,9 +67,12 @@ export default function AdminDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stats.users?.total ?? 0}</div>
+                <div className="text-3xl font-bold">
+                  {stats.users?.total ?? 0}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats.users?.active ?? 0} active, {stats.users?.admin ?? 0} admins
+                  {stats.users?.active ?? 0} active, {stats.users?.admin ?? 0}{" "}
+                  admins
                 </p>
               </CardContent>
             </Card>
@@ -80,27 +84,19 @@ export default function AdminDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stats.questions?.total ?? 0}</div>
+                <div className="text-3xl font-bold">
+                  {stats.questions?.total ?? 0}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {stats.questions?.by_difficulty
-                    ? Object.entries(stats.questions.by_difficulty).map(([d, c]) => (
-                        <span key={d} className="mr-2">
-                          {d}: {c}
-                        </span>
-                      ))
-                    : 'No data'}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Courses</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{stats.courses?.total ?? 0}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.courses?.modules ?? 0} modules, {stats.courses?.lessons ?? 0} lessons
+                    ? Object.entries(stats.questions.by_difficulty).map(
+                        ([d, c]) => (
+                          <span key={d} className="mr-2">
+                            {d}: {c}
+                          </span>
+                        ),
+                      )
+                    : "No data"}
                 </p>
               </CardContent>
             </Card>
@@ -108,14 +104,16 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Generation Jobs
+                  Courses
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stats.generation?.total_jobs ?? 0}</div>
+                <div className="text-3xl font-bold">
+                  {stats.courses?.total ?? 0}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats.generation?.pending ?? 0} pending, {stats.generation?.completed ?? 0}{' '}
-                  completed
+                  {stats.courses?.modules ?? 0} modules,{" "}
+                  {stats.courses?.lessons ?? 0} lessons
                 </p>
               </CardContent>
             </Card>
@@ -136,7 +134,9 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <div className="text-sm font-medium">Users</div>
-                  <div className="text-xs text-muted-foreground">Manage accounts</div>
+                  <div className="text-xs text-muted-foreground">
+                    Manage accounts
+                  </div>
                 </div>
               </a>
               <a
@@ -148,7 +148,9 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <div className="text-sm font-medium">Questions</div>
-                  <div className="text-xs text-muted-foreground">Review & import</div>
+                  <div className="text-xs text-muted-foreground">
+                    Review & import
+                  </div>
                 </div>
               </a>
               <a
@@ -160,7 +162,9 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <div className="text-sm font-medium">Curriculum</div>
-                  <div className="text-xs text-muted-foreground">Manage courses</div>
+                  <div className="text-xs text-muted-foreground">
+                    Manage courses
+                  </div>
                 </div>
               </a>
               <a
@@ -172,7 +176,9 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <div className="text-sm font-medium">Settings</div>
-                  <div className="text-xs text-muted-foreground">System config</div>
+                  <div className="text-xs text-muted-foreground">
+                    System config
+                  </div>
                 </div>
               </a>
             </CardContent>

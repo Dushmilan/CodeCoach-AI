@@ -1,9 +1,9 @@
-from sqlalchemy import select, or_, text
+from sqlalchemy import select, or_, text, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List, Dict, Any
 import logging
 
-from app.models.schemas import Question, QuestionSummary, Difficulty
+from app.models.schemas import Question, Difficulty
 from app.models.orm import QuestionORM
 from app.ports.question_repository import QuestionRepository
 
@@ -44,6 +44,17 @@ class SqlQuestionRepository(QuestionRepository):
         stmt = stmt.order_by(QuestionORM.title)
         result = await self.session.execute(stmt)
         return [self._orm_to_model(q) for q in result.scalars().all()]
+
+    async def count(
+        self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None
+    ) -> int:
+        stmt = select(func.count()).select_from(QuestionORM)
+        if difficulty:
+            stmt = stmt.where(QuestionORM.difficulty == difficulty.value)
+        if category:
+            stmt = stmt.where(QuestionORM.category.ilike(category))
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
 
     async def get_by_id(self, question_id: str) -> Optional[Question]:
         result = await self.session.execute(
@@ -133,9 +144,7 @@ class SqlQuestionRepository(QuestionRepository):
         self.session.add(orm)
         await self.session.flush()
 
-    async def save_validation_status(
-        self, question_id: str, status: Any
-    ) -> None:
+    async def save_validation_status(self, question_id: str, status: Any) -> None:
         pass
 
     async def get_validation_statuses(self) -> Dict[str, Any]:

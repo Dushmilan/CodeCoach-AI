@@ -16,8 +16,24 @@ async def test_db():
     )
 
     async with async_session() as session:
-        session.add(UserORM(id="u-1", username="testuser", email="test@test.com", hashed_password="hash"))
-        session.add(CourseORM(id="c-1", title="Python", description="Learn Python", language="python", icon="python", order=1))
+        session.add(
+            UserORM(
+                id="u-1",
+                username="testuser",
+                email="test@test.com",
+                hashed_password="hash",
+            )
+        )
+        session.add(
+            CourseORM(
+                id="c-1",
+                title="Python",
+                description="Learn Python",
+                language="python",
+                icon="python",
+                order=1,
+            )
+        )
         await session.commit()
         yield session
 
@@ -27,6 +43,7 @@ async def test_db():
 @pytest_asyncio.fixture
 async def repo(test_db):
     from app.repositories.sql_progress_repository import SqlProgressRepository
+
     return SqlProgressRepository(test_db)
 
 
@@ -73,7 +90,16 @@ class TestSqlProgressRepository:
     @pytest.mark.asyncio
     async def test_get_all_progress_multiple_courses(self, repo):
         session = repo.session
-        session.add(CourseORM(id="c-2", title="Java", description="Learn Java", language="java", icon="java", order=2))
+        session.add(
+            CourseORM(
+                id="c-2",
+                title="Java",
+                description="Learn Java",
+                language="java",
+                icon="java",
+                order=2,
+            )
+        )
         await session.commit()
 
         await repo.mark_lesson_complete("u-1", "c-1", "l-1")
@@ -89,7 +115,9 @@ class TestSqlProgressRepository:
 
     @pytest.mark.asyncio
     async def test_save_progress(self, repo):
-        progress = CourseProgress(user_id="u-1", course_id="c-1", completed_lessons=["l-1", "l-2"])
+        progress = CourseProgress(
+            user_id="u-1", course_id="c-1", completed_lessons=["l-1", "l-2"]
+        )
         await repo.save(progress)
 
         fetched = await repo.get_progress("u-1", "c-1")

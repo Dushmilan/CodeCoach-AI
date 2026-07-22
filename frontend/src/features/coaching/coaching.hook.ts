@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef } from 'react';
-import { ChatMessage } from '@/types';
-import { coachingService } from './coaching.service';
-import { CoachingFeature, CoachingMode } from './coaching.types';
-import { showToast } from '@/components/ui/Toast';
+import { useState, useCallback, useRef } from "react";
+import { ChatMessage } from "@/types";
+import { coachingService } from "./coaching.service";
+import { CoachingFeature, CoachingMode } from "./coaching.types";
+import { showToast } from "@/components/ui/Toast";
 
 export function useCoaching(): CoachingFeature {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -21,11 +21,11 @@ export function useCoaching(): CoachingFeature {
       code: string,
       language: string,
       lessonContext?: string,
-      difficulty?: string
+      difficulty?: string,
     ) => {
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
-        role: 'user',
+        role: "user",
         content: message || `${mode} requested`,
         timestamp: new Date(),
       };
@@ -48,14 +48,14 @@ export function useCoaching(): CoachingFeature {
           code,
           message,
           mode,
-          difficulty || 'medium',
+          difficulty || "medium",
           lessonContext,
-          chatHistory
+          chatHistory,
         );
 
         const assistantMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
-          role: 'assistant',
+          role: "assistant",
           content: data.response,
           structured: data.structured,
           timestamp: new Date(),
@@ -63,15 +63,18 @@ export function useCoaching(): CoachingFeature {
 
         setMessages((prev) => [...prev, assistantMessage]);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to get coaching response';
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to get coaching response";
         setError(errorMessage);
-        showToast(errorMessage, 'error');
-        console.error('Error getting coach response:', err);
+        showToast(errorMessage, "error");
+        console.error("Error getting coach response:", err);
 
         const errorAssistantMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          role: "assistant",
+          content: "Sorry, I encountered an error. Please try again.",
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, errorAssistantMessage]);
@@ -79,7 +82,7 @@ export function useCoaching(): CoachingFeature {
         setIsTyping(false);
       }
     },
-    []
+    [],
   );
 
   const clearMessages = useCallback(() => {

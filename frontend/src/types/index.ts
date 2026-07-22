@@ -1,7 +1,7 @@
 export interface QuestionSummary {
   id: string;
   title: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   category: string;
   company_tags: string[];
   solved?: boolean;
@@ -50,7 +50,7 @@ export interface StructuredCoachingResponse {
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   structured?: StructuredCoachingResponse | null;
   timestamp: Date;
@@ -65,7 +65,7 @@ export interface CodeExecutionResult {
 
 export interface UserProgress {
   question_id: string;
-  status: 'attempted' | 'solved';
+  status: "attempted" | "solved";
   language: string;
   code: string;
   solved_at?: Date;
@@ -73,14 +73,7 @@ export interface UserProgress {
 }
 
 export type Language =
-  | 'python'
-  | 'javascript'
-  | 'java'
-  | 'cpp'
-  | 'c'
-  | 'go'
-  | 'rust'
-  | 'typescript';
+  "python" | "javascript" | "java" | "cpp" | "c" | "go" | "rust" | "typescript";
 
 export interface CourseSummary {
   id: string;
@@ -116,7 +109,7 @@ export interface LessonSummary {
   course_id: string;
   module_id: string;
   title: string;
-  type: 'theory' | 'exercise';
+  type: "theory" | "exercise";
   content: string;
   order: number;
   starter_code: string | null;

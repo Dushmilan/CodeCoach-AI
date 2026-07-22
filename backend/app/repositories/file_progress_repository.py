@@ -33,14 +33,13 @@ class FileProgressRepository(ProgressRepository):
     def _key(self, user_id: str, course_id: str) -> str:
         return f"{user_id}:{course_id}"
 
-    async def get_progress(self, user_id: str, course_id: str) -> Optional[CourseProgress]:
+    async def get_progress(
+        self, user_id: str, course_id: str
+    ) -> Optional[CourseProgress]:
         return self._progress.get(self._key(user_id, course_id))
 
     async def get_all_progress(self, user_id: str) -> List[CourseProgress]:
-        return [
-            p for key, p in self._progress.items()
-            if key.startswith(f"{user_id}:")
-        ]
+        return [p for key, p in self._progress.items() if key.startswith(f"{user_id}:")]
 
     async def mark_lesson_complete(
         self, user_id: str, course_id: str, lesson_id: str

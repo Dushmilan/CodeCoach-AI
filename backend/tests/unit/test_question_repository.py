@@ -3,7 +3,7 @@ import json
 import tempfile
 import os
 
-from app.models.schemas import Question, Difficulty
+from app.models.schemas import Difficulty
 
 
 class TestFileQuestionRepository:
@@ -17,9 +17,15 @@ class TestFileQuestionRepository:
                 "category": "arrays",
                 "company_tags": ["Acme"],
                 "description": "First test question.",
-                "starter": {"python": "def one():\n    pass", "javascript": "function one() {}", "java": "class One {}"},
+                "starter": {
+                    "python": "def one():\n    pass",
+                    "javascript": "function one() {}",
+                    "java": "class One {}",
+                },
                 "examples": [{"input": "1", "output": "1", "explanation": "Basic"}],
-                "test_cases": [{"input": "1", "expected_output": "1", "description": "TC1"}],
+                "test_cases": [
+                    {"input": "1", "expected_output": "1", "description": "TC1"}
+                ],
             },
             {
                 "id": "test-two",
@@ -28,9 +34,15 @@ class TestFileQuestionRepository:
                 "category": "arrays",
                 "company_tags": ["Acme", "Beta"],
                 "description": "Second test question about summing.",
-                "starter": {"python": "def two():\n    pass", "javascript": "function two() {}", "java": "class Two {}"},
+                "starter": {
+                    "python": "def two():\n    pass",
+                    "javascript": "function two() {}",
+                    "java": "class Two {}",
+                },
                 "examples": [{"input": "2", "output": "2", "explanation": "Basic"}],
-                "test_cases": [{"input": "2", "expected_output": "2", "description": "TC1"}],
+                "test_cases": [
+                    {"input": "2", "expected_output": "2", "description": "TC1"}
+                ],
             },
             {
                 "id": "test-three",
@@ -39,9 +51,15 @@ class TestFileQuestionRepository:
                 "category": "strings",
                 "company_tags": ["Gamma"],
                 "description": "Reverse a string in place.",
-                "starter": {"python": "def reverse(s):\n    pass", "javascript": "function reverse(s) {}", "java": "class Reverse {}"},
+                "starter": {
+                    "python": "def reverse(s):\n    pass",
+                    "javascript": "function reverse(s) {}",
+                    "java": "class Reverse {}",
+                },
                 "examples": [{"input": "abc", "output": "cba", "explanation": "Basic"}],
-                "test_cases": [{"input": "abc", "expected_output": "cba", "description": "TC1"}],
+                "test_cases": [
+                    {"input": "abc", "expected_output": "cba", "description": "TC1"}
+                ],
             },
         ]
         fd, path = tempfile.mkstemp(suffix=".json")
@@ -212,7 +230,9 @@ class TestFileQuestionRepository:
         from app.repositories.file_question_repository import FileQuestionRepository
 
         repo = FileQuestionRepository(sample_json)
-        status = QuestionValidationStatus(is_validated=True, validation_passed=True, last_validated=None)
+        status = QuestionValidationStatus(
+            is_validated=True, validation_passed=True, last_validated=None
+        )
         await repo.save_validation_status("test-one", status)
 
         statuses = await repo.get_validation_statuses()

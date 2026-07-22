@@ -7,9 +7,10 @@ import logging
 import os
 
 from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language
+from app.ports.coaching_provider import CoachingProvider
 from app.services.nim_service import NIMService
 from app.services.redis_service import RedisCache
-from app.api.auth import get_current_user
+from app.api.auth_deps import get_current_user
 from app.api.dependencies import get_redis_cache
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
@@ -18,70 +19,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def get_nim_service(
+def get_coaching_provider(
     x_nvidia_api_key: Optional[str] = Header(None, alias="X-NVIDIA-API-Key"),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
-) -> NIMService:
-    """Dependency injection for NIM service."""
+) -> CoachingProvider:
     api_key = x_nvidia_api_key or os.getenv("NVIDIA_API_KEY")
-    environment = os.getenv("ENVIRONMENT", "production")
-
-    if not api_key:
-        api_key = os.getenv("NVIDIA_API_KEY")
-
-    if environment == "testing":
-
-        class MockNIMService:
-            responses = {
-                "hint": "Consider using a hash map to solve this problem.",
-                "review": "Your code looks good, but consider edge cases like empty arrays.",
-                "explain": "This is a classic problem that requires understanding of data structures.",
-                "debug": "The issue appears to be in your loop condition. Check line 5.",
-            }
-
-            async def get_coaching_response(
-                self,
-                problem: str,
-                code: str,
-                language: str,
-                message: str,
-                mode: str,
-                difficulty: str,
-                lesson_context: str = None,
-                **kwargs,
-            ):
-                yield self.responses.get(mode, "Here's some guidance for your problem.")
-
-            async def get_structured_coaching_response(
-                self,
-                problem: str,
-                code: str,
-                language: str,
-                message: str,
-                mode: str,
-                difficulty: str,
-                lesson_context: str = None,
-                **kwargs,
-            ):
-                return {
-                    "summary": self.responses.get(
-                        mode, "Here's some guidance for your problem."
-                    ),
-                    "hints": [],
-                    "code_review": None,
-                    "complexity_analysis": None,
-                    "suggestions": [],
-                    "edge_cases": [],
-                    "explanation": None,
-                    "debug_help": None,
-                }
-
-        logger.info("Using MockNIMService for testing environment")
-        return MockNIMService()
-
     if not api_key:
         raise HTTPException(status_code=500, detail="NVIDIA API key not configured")
-
     return NIMService(api_key=api_key, cache=cache)
 
 
@@ -90,7 +34,7 @@ def get_nim_service(
 async def get_coaching(
     request: Request,
     coaching_request: CoachingRequest,
-    nim_service: NIMService = Depends(get_nim_service),
+    provider: CoachingProvider = Depends(get_coaching_provider),
     user: UserResponse = Depends(get_current_user),
 ):
     """
@@ -110,7 +54,6 @@ async def get_coaching(
     logger.debug(f"Message: {coaching_request.message}")
     logger.debug(f"Mode: {coaching_request.mode.value}")
     logger.debug(f"Difficulty: {coaching_request.difficulty.value}")
-    logger.debug(f"NIM Service initialized: {nim_service is not None}")
     logger.debug("=========================================")
 
     try:
@@ -120,7 +63,7 @@ async def get_coaching(
             else []
         )
 
-        structured_data = await nim_service.get_structured_coaching_response(
+        structured_data = await provider.get_structured(
             problem=coaching_request.problem,
             code=coaching_request.code,
             language=coaching_request.language.value,
@@ -131,7 +74,6 @@ async def get_coaching(
             chat_history=chat_history_list,
         )
 
-        # Create raw text response from structured data for backward compatibility
         raw_response = _format_structured_as_text(structured_data)
 
         logger.debug("=== COACH API RESPONSE ===")
@@ -218,7 +160,7 @@ def _format_structured_as_text(structured_data: dict) -> str:
 async def get_coaching_stream(
     request: Request,
     coaching_request: CoachingRequest,
-    nim_service: NIMService = Depends(get_nim_service),
+    provider: CoachingProvider = Depends(get_coaching_provider),
     user: UserResponse = Depends(get_current_user),
 ):
     """
@@ -238,20 +180,19 @@ async def get_coaching_stream(
     logger.debug(f"Message: {coaching_request.message}")
     logger.debug(f"Mode: {coaching_request.mode.value}")
     logger.debug(f"Difficulty: {coaching_request.difficulty.value}")
-    logger.debug(f"NIM Service initialized: {nim_service is not None}")
     logger.debug("================================")
 
     async def generate_stream() -> AsyncIterator[str]:
         chunk_count = 0
         try:
-            logger.debug("Starting to stream chunks from NIM service...")
+            logger.debug("Starting to stream chunks from coaching provider...")
             chat_history_list = (
                 [m.model_dump() for m in coaching_request.chat_history]
                 if coaching_request.chat_history
                 else []
             )
 
-            async for chunk in nim_service.get_coaching_response(
+            async for chunk in provider.stream(
                 problem=coaching_request.problem,
                 code=coaching_request.code,
                 language=coaching_request.language.value,
