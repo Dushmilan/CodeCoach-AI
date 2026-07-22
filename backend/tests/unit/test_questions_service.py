@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
 
-from app.models.schemas import Question, QuestionSummary, Difficulty, StarterCode, Example, TestCase
+from app.models.schemas import QuestionSummary, Difficulty
 
 
 @pytest.fixture
@@ -21,7 +21,10 @@ def mock_repo():
 
 
 def _qs(id_, title, difficulty, category):
-    return QuestionSummary(id=id_, title=title, difficulty=difficulty, category=category)
+    return QuestionSummary(
+        id=id_, title=title, difficulty=difficulty, category=category
+    )
+
 
 @pytest.fixture
 def sample_questions():
@@ -36,26 +39,31 @@ class TestQuestionsServiceGetAll:
     async def test_get_all_questions(self, mock_repo, sample_questions):
         mock_repo.get_summaries = AsyncMock(return_value=sample_questions)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
-        result = await service.get_all_questions()
+        items, total = await service.get_all_questions()
 
-        assert len(result) == 2
-        assert result[0].id == "two-sum"
-        assert result[1].id == "rev-list"
+        assert total == 2
+        assert len(items) == 2
+        assert items[0].id == "two-sum"
+        assert items[1].id == "rev-list"
 
     @pytest.mark.asyncio
     async def test_get_all_with_pagination(self, mock_repo, sample_questions):
         mock_repo.get_summaries = AsyncMock(return_value=sample_questions)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
-        page1 = await service.get_all_questions(page=1, per_page=1)
+        page1, total1 = await service.get_all_questions(page=1, per_page=1)
         assert len(page1) == 1
+        assert total1 == 2
         assert page1[0].id == "two-sum"
 
-        page2 = await service.get_all_questions(page=2, per_page=1)
+        page2, total2 = await service.get_all_questions(page=2, per_page=1)
         assert len(page2) == 1
+        assert total2 == 2
         assert page2[0].id == "rev-list"
 
     @pytest.mark.asyncio
@@ -63,11 +71,13 @@ class TestQuestionsServiceGetAll:
         easy_only = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
         mock_repo.get_summaries = AsyncMock(return_value=easy_only)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
-        result = await service.get_all_questions(difficulty=Difficulty.EASY)
-        assert len(result) == 1
-        assert result[0].difficulty == Difficulty.EASY
+        items, total = await service.get_all_questions(difficulty=Difficulty.EASY)
+        assert total == 1
+        assert len(items) == 1
+        assert items[0].difficulty == Difficulty.EASY
 
 
 class TestQuestionsServiceGetById:
@@ -75,6 +85,7 @@ class TestQuestionsServiceGetById:
     async def test_get_by_id_found(self, mock_repo, sample_questions):
         mock_repo.get_by_id = AsyncMock(return_value=sample_questions[0])
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         result = await service.get_question_by_id("two-sum")
@@ -85,6 +96,7 @@ class TestQuestionsServiceGetById:
     async def test_get_by_id_not_found(self, mock_repo):
         mock_repo.get_by_id = AsyncMock(return_value=None)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         with pytest.raises(HTTPException) as exc:
@@ -97,6 +109,7 @@ class TestQuestionsServiceSearch:
     async def test_search_questions(self, mock_repo, sample_questions):
         mock_repo.search_summaries = AsyncMock(return_value=[sample_questions[0]])
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         result = await service.search_questions(query="two")
@@ -109,6 +122,7 @@ class TestQuestionsServiceStats:
     async def test_get_categories(self, mock_repo):
         mock_repo.get_categories = AsyncMock(return_value=["arrays", "strings"])
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         result = await service.get_categories()
@@ -118,6 +132,7 @@ class TestQuestionsServiceStats:
     async def test_get_company_tags(self, mock_repo):
         mock_repo.get_company_tags = AsyncMock(return_value=["Google", "Amazon"])
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         result = await service.get_company_tags()
@@ -127,6 +142,7 @@ class TestQuestionsServiceStats:
     async def test_get_total_count(self, mock_repo, sample_questions):
         mock_repo.get_all = AsyncMock(return_value=sample_questions)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         result = await service.get_total_count()
@@ -136,6 +152,7 @@ class TestQuestionsServiceStats:
     async def test_get_difficulty_counts(self, mock_repo, sample_questions):
         mock_repo.get_all = AsyncMock(return_value=sample_questions)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         counts = await service.get_difficulty_counts()
@@ -147,6 +164,7 @@ class TestQuestionsServiceStats:
     async def test_get_category_counts(self, mock_repo, sample_questions):
         mock_repo.get_all = AsyncMock(return_value=sample_questions)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         counts = await service.get_category_counts()
@@ -160,6 +178,7 @@ class TestQuestionsServiceByCategory:
         arrays = [q for q in sample_questions if q.category == "arrays"]
         mock_repo.get_summaries = AsyncMock(return_value=arrays)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         result = await service.get_questions_by_category("arrays")
@@ -171,6 +190,7 @@ class TestQuestionsServiceByCategory:
         easy = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
         mock_repo.get_summaries = AsyncMock(return_value=easy)
         from app.services.questions_service import QuestionsService
+
         service = QuestionsService(repository=mock_repo)
 
         result = await service.get_questions_by_difficulty(Difficulty.EASY)

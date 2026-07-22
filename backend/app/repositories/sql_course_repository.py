@@ -115,3 +115,16 @@ class SqlCourseRepository(CourseRepository):
         for orm in result.scalars().all():
             modules.append(await self._hydrate_module(orm))
         return modules
+
+    async def get_modules_by_course_batch(self, course_ids: List[str]) -> List[Module]:
+        if not course_ids:
+            return []
+        result = await self.session.execute(
+            select(ModuleORM)
+            .where(ModuleORM.course_id.in_(course_ids))
+            .order_by(ModuleORM.order)
+        )
+        modules = []
+        for orm in result.scalars().all():
+            modules.append(await self._hydrate_module(orm))
+        return modules

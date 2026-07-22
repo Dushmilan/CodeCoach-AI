@@ -21,23 +21,29 @@ class FileCourseRepository(CourseRepository):
     def _load(self):
         for root, _, files in os.walk(self.courses_dir):
             if "course.json" in files:
-                self._load_file(os.path.join(root, "course.json"), self._courses, Course)
+                self._load_file(
+                    os.path.join(root, "course.json"), self._courses, Course
+                )
             if "modules.json" in files:
-                self._load_file(os.path.join(root, "modules.json"), self._modules, Module)
+                self._load_file(
+                    os.path.join(root, "modules.json"), self._modules, Module
+                )
             if "lessons.json" in files:
-                self._load_file(os.path.join(root, "lessons.json"), self._lessons, Lesson)
+                self._load_file(
+                    os.path.join(root, "lessons.json"), self._lessons, Lesson
+                )
 
     def _load_file(self, path: str, target: Dict, model):
         if not os.path.exists(path):
             return
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        
+
         if "items" in data:
             items = data["items"]
         else:
             items = [data]
-            
+
         for item in items:
             try:
                 obj = model(**item)
@@ -76,3 +82,16 @@ class FileCourseRepository(CourseRepository):
             for module_id in course.modules
             if module_id in self._modules
         ]
+
+    async def get_modules_by_course_batch(self, course_ids: List[str]) -> List[Module]:
+        result = []
+        seen = set()
+        for cid in course_ids:
+            course = self._courses.get(cid)
+            if not course:
+                continue
+            for mid in course.modules:
+                if mid in self._modules and mid not in seen:
+                    result.append(self._modules[mid])
+                    seen.add(mid)
+        return result
