@@ -101,6 +101,9 @@ class SqlAdminRepository(AdminRepository):
     async def update_lesson(self, lesson_id: str, data: Dict[str, Any]) -> bool:
         return await self._courses.update_lesson(lesson_id, data)
 
+    async def exists(self, entity_type: str, entity_id: str) -> bool:
+        return await self._courses.exists(entity_type, entity_id)
+
     # ── Stats ──
     async def get_system_stats(self) -> StatsResponse:
         users_count = await self.session.execute(
