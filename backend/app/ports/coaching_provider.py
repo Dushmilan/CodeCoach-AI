@@ -38,6 +38,4 @@ class CoachingProvider(ABC):
         chat_history: Optional[list] = None,
     ) -> AsyncIterator[str]:
         """Yield streaming text chunks from the coaching backend."""
-        ...
-        # Make this an async generator
-        yield  # pragma: no cover
+        ...  # pragma: no cover

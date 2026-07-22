@@ -10,6 +10,16 @@ class SqlCourseAdminRepository(CourseAdminRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 
+    async def exists(self, entity_type: str, entity_id: str) -> bool:
+        model_map = {"course": CourseORM, "module": ModuleORM, "lesson": LessonORM}
+        model = model_map.get(entity_type)
+        if not model:
+            return False
+        result = await self.session.execute(
+            select(model.id).where(model.id == entity_id).limit(1)
+        )
+        return result.scalar_one_or_none() is not None
+
     async def get_course_tree(self) -> Dict[str, Any]:
         courses_result = await self.session.execute(
             select(CourseORM).order_by(CourseORM.order)

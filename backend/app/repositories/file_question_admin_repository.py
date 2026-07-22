@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import uuid
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
@@ -20,6 +21,7 @@ class FileQuestionAdminRepository(QuestionAdminRepository):
                 / "sample_questions.json"
             )
         )
+        self._lock = threading.Lock()
 
     def _load_questions(self) -> List[Dict[str, Any]]:
         if not self._questions_file.exists():
@@ -41,22 +43,24 @@ class FileQuestionAdminRepository(QuestionAdminRepository):
     async def update_question(
         self, question_id: str, update_data: Dict[str, Any]
     ) -> bool:
-        questions = self._load_questions()
-        for q in questions:
-            if q["id"] == question_id:
-                q.update(update_data)
-                self._save_questions(questions)
-                return True
-        return False
+        with self._lock:
+            questions = self._load_questions()
+            for q in questions:
+                if q["id"] == question_id:
+                    q.update(update_data)
+                    self._save_questions(questions)
+                    return True
+            return False
 
     async def delete_question(self, question_id: str) -> bool:
-        questions = self._load_questions()
-        for i, q in enumerate(questions):
-            if q["id"] == question_id:
-                questions.pop(i)
-                self._save_questions(questions)
-                return True
-        return False
+        with self._lock:
+            questions = self._load_questions()
+            for i, q in enumerate(questions):
+                if q["id"] == question_id:
+                    questions.pop(i)
+                    self._save_questions(questions)
+                    return True
+            return False
 
     async def list_questions(
         self, filter: QuestionFilter
@@ -80,36 +84,38 @@ class FileQuestionAdminRepository(QuestionAdminRepository):
         if dry_run:
             result.successful = len(questions)
             return result
-        existing = self._load_questions()
-        for q in questions:
-            if "id" not in q:
-                q["id"] = str(uuid.uuid4())
-            existing.append(q)
-            result.successful += 1
-        self._save_questions(existing)
+        with self._lock:
+            existing = self._load_questions()
+            for q in questions:
+                if "id" not in q:
+                    q["id"] = str(uuid.uuid4())
+                existing.append(q)
+                result.successful += 1
+            self._save_questions(existing)
         return result
 
     async def create_question(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        questions = self._load_questions()
-        question = {
-            "id": data["id"],
-            "title": data["title"],
-            "difficulty": data.get("difficulty", "medium"),
-            "category": data.get("category", ""),
-            "company_tags": data.get("company_tags", []),
-            "description": data.get("description", ""),
-            "starter_code": data.get(
-                "starter_code", {"python": "", "javascript": "", "java": ""}
-            ),
-            "examples": data.get("examples", []),
-            "test_cases": data.get("test_cases", []),
-            "hints": data.get("hints", []),
-            "solution": data.get("solution", None),
-            "time_complexity": data.get("time_complexity", ""),
-            "space_complexity": data.get("space_complexity", ""),
-            "constraints": data.get("constraints", []),
-            "is_interactive": data.get("is_interactive", False),
-        }
-        questions.append(question)
-        self._save_questions(questions)
-        return question
+        with self._lock:
+            questions = self._load_questions()
+            question = {
+                "id": data["id"],
+                "title": data["title"],
+                "difficulty": data.get("difficulty", "medium"),
+                "category": data.get("category", ""),
+                "company_tags": data.get("company_tags", []),
+                "description": data.get("description", ""),
+                "starter_code": data.get(
+                    "starter_code", {"python": "", "javascript": "", "java": ""}
+                ),
+                "examples": data.get("examples", []),
+                "test_cases": data.get("test_cases", []),
+                "hints": data.get("hints", []),
+                "solution": data.get("solution", None),
+                "time_complexity": data.get("time_complexity", ""),
+                "space_complexity": data.get("space_complexity", ""),
+                "constraints": data.get("constraints", []),
+                "is_interactive": data.get("is_interactive", False),
+            }
+            questions.append(question)
+            self._save_questions(questions)
+            return question

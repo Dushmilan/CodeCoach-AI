@@ -89,3 +89,9 @@ class FileCourseRepository(CourseRepository):
             for module_id in course.modules
             if module_id in self._modules
         ]
+
+    async def get_modules_by_course_batch(self, course_ids: List[str]) -> List[Module]:
+        result = []
+        for cid in course_ids:
+            result.extend(await self.get_modules_by_course(cid))
+        return result

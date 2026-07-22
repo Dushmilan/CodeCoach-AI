@@ -35,8 +35,8 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _reload_course_repo():
-    """Reload the shared FileCourseRepository after admin mutations."""
+def _invalidate_course_cache():
+    """Reload the shared FileCourseRepository after admin mutations. No-op for SQL."""
     repo = get_file_course_repo()
     if repo is not None:
         repo.reload()
@@ -407,7 +407,7 @@ async def delete_course(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Course not found",
             )
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Course {course_id} deleted by {current_user.id}")
         return {"message": "Course deleted successfully"}
     except HTTPException:
@@ -434,7 +434,7 @@ async def delete_module(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Module not found",
             )
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Module {module_id} deleted by {current_user.id}")
         return {"message": "Module deleted successfully"}
     except HTTPException:
@@ -461,7 +461,7 @@ async def delete_lesson(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Lesson not found",
             )
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Lesson {lesson_id} deleted by {current_user.id}")
         return {"message": "Lesson deleted successfully"}
     except HTTPException:
@@ -485,14 +485,7 @@ async def check_id_exists(
     current_user: UserResponse = Depends(require_admin),
 ):
     """Check if an entity ID already exists."""
-    tree = await admin_repo.get_course_tree()
-    exists = False
-    if entity_type == "course":
-        exists = any(c.get("id") == entity_id for c in tree.get("courses", []))
-    elif entity_type == "module":
-        exists = any(m.get("id") == entity_id for m in tree.get("modules", []))
-    elif entity_type == "lesson":
-        exists = any(les.get("id") == entity_id for les in tree.get("lessons", []))
+    exists = await admin_repo.exists(entity_type, entity_id)
     return {"exists": exists}
 
 
@@ -505,7 +498,7 @@ async def create_course(
     """Create a new course (admins only)."""
     try:
         result = await admin_repo.create_course(data.model_dump())
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Course '{data.id}' created by {current_user.id}")
         return result
     except FileExistsError as e:
@@ -534,7 +527,7 @@ async def update_course(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
             )
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Course '{course_id}' updated by {current_user.id}")
         return {"message": "Course updated successfully"}
     except HTTPException:
@@ -556,7 +549,7 @@ async def create_module(
     """Create a new module (admins only)."""
     try:
         result = await admin_repo.create_module(data.model_dump())
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Module '{data.id}' created by {current_user.id}")
         return result
     except FileNotFoundError as e:
@@ -585,7 +578,7 @@ async def update_module(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Module not found"
             )
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Module '{module_id}' updated by {current_user.id}")
         return {"message": "Module updated successfully"}
     except HTTPException:
@@ -607,7 +600,7 @@ async def create_lesson(
     """Create a new lesson (admins only)."""
     try:
         result = await admin_repo.create_lesson(data.model_dump())
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Lesson '{data.id}' created by {current_user.id}")
         return result
     except FileNotFoundError as e:
@@ -636,7 +629,7 @@ async def update_lesson(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found"
             )
-        _reload_course_repo()
+        _invalidate_course_cache()
         logger.info(f"Lesson '{lesson_id}' updated by {current_user.id}")
         return {"message": "Lesson updated successfully"}
     except HTTPException:

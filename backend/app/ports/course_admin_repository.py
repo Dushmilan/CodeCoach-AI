@@ -4,6 +4,9 @@ from typing import Dict, Any
 
 class CourseAdminRepository(ABC):
     @abstractmethod
+    async def exists(self, entity_type: str, entity_id: str) -> bool: ...
+
+    @abstractmethod
     async def get_course_tree(self) -> Dict[str, Any]: ...
 
     @abstractmethod

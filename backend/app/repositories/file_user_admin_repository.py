@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 
@@ -17,6 +18,7 @@ class FileUserAdminRepository(UserAdminRepository):
                 Path(__file__).resolve().parent.parent.parent / "data" / "users.json"
             )
         )
+        self._lock = threading.Lock()
 
     def _load_users(self) -> List[Dict[str, Any]]:
         if not self._users_file.exists():
@@ -44,28 +46,30 @@ class FileUserAdminRepository(UserAdminRepository):
     async def update_user_role(
         self, user_id: str, role: str, current_user_id: str
     ) -> bool:
-        users = self._load_users()
-        for u in users:
-            if u["id"] == user_id:
-                if u["id"] == current_user_id:
-                    return False
-                u["role"] = role
-                self._save_users(users)
-                return True
-        return False
+        with self._lock:
+            users = self._load_users()
+            for u in users:
+                if u["id"] == user_id:
+                    if u["id"] == current_user_id:
+                        return False
+                    u["role"] = role
+                    self._save_users(users)
+                    return True
+            return False
 
     async def update_user_status(
         self, user_id: str, is_active: bool, current_user_id: str
     ) -> bool:
-        users = self._load_users()
-        for u in users:
-            if u["id"] == user_id:
-                if u["id"] == current_user_id:
-                    return False
-                u["is_active"] = is_active
-                self._save_users(users)
-                return True
-        return False
+        with self._lock:
+            users = self._load_users()
+            for u in users:
+                if u["id"] == user_id:
+                    if u["id"] == current_user_id:
+                        return False
+                    u["is_active"] = is_active
+                    self._save_users(users)
+                    return True
+            return False
 
     async def list_users(
         self, skip: int = 0, limit: int = 20

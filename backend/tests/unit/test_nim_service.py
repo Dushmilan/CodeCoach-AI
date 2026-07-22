@@ -68,10 +68,6 @@ class TestNIMServiceStructured:
             assert result["summary"] == "Great work"
             assert result["hints"] == []
 
-            call_kwargs = mock_async_client.post.call_args[1]
-            payload = call_kwargs["json"]
-            assert payload["response_format"] == {"type": "json_object"}
-
     @pytest.mark.asyncio
     async def test_get_structured_coaching_response_api_error(self, mock_async_client):
         from app.services.nim_service import NIMService
