@@ -22,3 +22,9 @@ class CourseRepository(ABC):
 
     @abstractmethod
     async def get_modules_by_course(self, course_id: str) -> List[Module]: ...
+
+    async def get_modules_by_course_batch(self, course_ids: List[str]) -> List[Module]:
+        modules: List[Module] = []
+        for cid in course_ids:
+            modules.extend(await self.get_modules_by_course(cid))
+        return modules

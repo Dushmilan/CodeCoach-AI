@@ -84,13 +84,14 @@ class QuestionsService:
         category: Optional[str] = None,
         page: int = 1,
         per_page: int = 20,
-    ) -> List[QuestionSummary]:
+    ) -> tuple[list[QuestionSummary], int]:
         summaries = await self.repository.get_summaries(
             difficulty=difficulty, category=category
         )
+        total = len(summaries)
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
-        return summaries[start_idx:end_idx]
+        return summaries[start_idx:end_idx], total
 
     async def get_question_by_id(self, question_id: str) -> Question:
         if self.cache:

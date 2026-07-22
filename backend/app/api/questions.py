@@ -32,27 +32,12 @@ async def get_questions(
     """
 
     try:
-        questions = await questions_service.get_all_questions(
+        questions, total = await questions_service.get_all_questions(
             difficulty=difficulty, category=category, page=page, per_page=per_page
         )
 
-        total = await questions_service.get_total_count()
-
-        # Apply filtering to total count
-        if difficulty or category:
-            filtered_total = len(
-                await questions_service.get_all_questions(
-                    difficulty=difficulty,
-                    category=category,
-                    page=1,
-                    per_page=10000,  # Get all for count
-                )
-            )
-        else:
-            filtered_total = total
-
         return QuestionsListResponse(
-            questions=questions, total=filtered_total, page=page, per_page=per_page
+            questions=questions, total=total, page=page, per_page=per_page
         )
 
     except Exception as e:
@@ -158,66 +143,6 @@ async def get_question_stats(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error fetching statistics: {str(e)}"
-        )
-
-
-@router.get("/category/{category}")
-async def get_questions_by_category(
-    category: str,
-    page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
-    questions_service: QuestionsService = Depends(get_questions_service),
-):
-    """Get questions filtered by category."""
-
-    try:
-        questions = await questions_service.get_questions_by_category(category)
-
-        # Pagination
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated_questions = questions[start_idx:end_idx]
-
-        return QuestionsListResponse(
-            questions=paginated_questions,
-            total=len(questions),
-            page=page,
-            per_page=per_page,
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching questions by category: {str(e)}"
-        )
-
-
-@router.get("/difficulty/{difficulty}")
-async def get_questions_by_difficulty(
-    difficulty: Difficulty,
-    page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
-    questions_service: QuestionsService = Depends(get_questions_service),
-):
-    """Get questions filtered by difficulty."""
-
-    try:
-        questions = await questions_service.get_questions_by_difficulty(difficulty)
-
-        # Pagination
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated_questions = questions[start_idx:end_idx]
-
-        return QuestionsListResponse(
-            questions=paginated_questions,
-            total=len(questions),
-            page=page,
-            per_page=per_page,
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching questions by difficulty: {str(e)}"
         )
 
 
