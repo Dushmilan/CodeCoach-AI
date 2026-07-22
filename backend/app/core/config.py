@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./codecoach.db"
-    USE_DATABASE: bool = False
+    DATABASE_URL: str = "mysql+aiomysql://root:%23Dush%4017897%40%24%23@localhost:3306/codecoach?charset=utf8mb4"
+    USE_DATABASE: bool = True
 
     # Auth
     JWT_SECRET_KEY: str = ""

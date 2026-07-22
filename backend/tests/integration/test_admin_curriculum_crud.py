@@ -1,11 +1,10 @@
-import json
 import os
 
+import pymysql
 from fastapi.testclient import TestClient
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
 COURSES_DIR = os.path.join(DATA_DIR, "courses")
-USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
 
 def _cleanup_test_dirs():
@@ -26,21 +25,33 @@ def _cleanup_test_dirs():
             shutil.rmtree(path, ignore_errors=True)
 
 
-def _load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE) as f:
-            return json.load(f)
-    return []
-
-
-def _save_users(users):
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
+def _cleanup_test_data():
+    """Remove test courses from MySQL between tests."""
+    conn = pymysql.connect(
+        host="localhost",
+        port=3306,
+        user="root",
+        password="#Dush@17897@$#",
+        db="codecoach",
+        charset="utf8mb4",
+    )
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM lessons WHERE course_id IN ('test-python','dup-course','update-course','course-for-modules','course-mod-update','course-for-lessons')"
+        )
+        cur.execute(
+            "DELETE FROM modules WHERE course_id IN ('test-python','dup-course','update-course','course-for-modules','course-mod-update','course-for-lessons')"
+        )
+        cur.execute(
+            "DELETE FROM courses WHERE id IN ('test-python','dup-course','update-course','course-for-modules','course-mod-update','course-for-lessons')"
+        )
+        cur.execute("DELETE FROM questions WHERE id IN ('test-q-1')")
+        conn.commit()
+    conn.close()
 
 
 def _admin_headers(test_client: TestClient) -> dict:
-    """Register a user and promote to admin by directly editing the JSON file."""
+    """Register a user and promote to admin via MySQL."""
     res = test_client.post(
         "/api/auth/register",
         json={
@@ -59,13 +70,21 @@ def _admin_headers(test_client: TestClient) -> dict:
         )
     token = res.json()["access_token"]
 
-    # Promote to admin directly in the JSON file
-    users = _load_users()
-    for u in users:
-        if u.get("username") == "admincurriculum":
-            u["role"] = "admin"
-            break
-    _save_users(users)
+    # Promote to admin directly in MySQL
+    conn = pymysql.connect(
+        host="localhost",
+        port=3306,
+        user="root",
+        password="#Dush@17897@$#",
+        db="codecoach",
+        charset="utf8mb4",
+    )
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE users SET role = 'admin' WHERE username = %s", ("admincurriculum",)
+        )
+        conn.commit()
+    conn.close()
 
     return {"Authorization": f"Bearer {token}"}
 
@@ -75,7 +94,12 @@ def teardown_module():
 
 
 class TestAdminCurriculumCRUD:
-    """Integration tests for admin curriculum CRUD endpoints."""
+    """Integration tests for admin curriculum CRUD endpoints.
+    Tests run sequentially; each builds on state created by previous tests."""
+
+    @classmethod
+    def setup_class(cls):
+        _cleanup_test_data()
 
     def test_create_course(self, test_client: TestClient):
         headers = _admin_headers(test_client)

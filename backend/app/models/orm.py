@@ -1,12 +1,10 @@
 from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, Index, JSON
 from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime, timezone
 
 Base = declarative_base()
 
-# Use JSONB for PostgreSQL, JSON for SQLite
-JSONType = JSONB().with_variant(JSON, "sqlite")
+JSONType = JSON
 
 
 class UserORM(Base):
@@ -44,9 +42,7 @@ class QuestionORM(Base):
     constraints = Column(JSONType, default=list, nullable=False)
     is_interactive = Column(Integer, default=0, nullable=False)
 
-    __table_args__ = (
-        Index("ix_questions_company_tags", "company_tags", postgresql_using="gin"),
-    )
+    __table_args__ = ()
 
 
 class CourseORM(Base):

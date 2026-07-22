@@ -11,8 +11,8 @@ services:
     environment:
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./codecoach.db}
-      - USE_DATABASE=${USE_DATABASE:-false}
+      - DATABASE_URL=${DATABASE_URL:-mysql+aiomysql://root:%23Dush%4017897%40%24%23@host.docker.internal:3306/codecoach?charset=utf8mb4}
+      - USE_DATABASE=${USE_DATABASE:-true}
       - PISTON_API_URL=http://piston:2000/api/v2
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
@@ -54,21 +54,8 @@ services:
     networks:
       - codecoach-network
 
-  # PostgreSQL Database — enable when USE_DATABASE=true (Supabase or local PG)
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: codecoach-postgres
-  #   restart: unless-stopped
-  #   environment:
-  #     POSTGRES_DB: codecoach
-  #     POSTGRES_USER: codecoach
-  #     POSTGRES_PASSWORD: codecoach
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   networks:
-  #     - codecoach-network
+  # MySQL is expected to be running on the host machine at port 3306.
+  # The backend uses host.docker.internal to connect.
 
   # Redis Cache
   redis:
@@ -116,4 +103,3 @@ volumes:
   piston-data:
     external: true
   redis-data:
-  postgres-data:

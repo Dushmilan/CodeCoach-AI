@@ -1,5 +1,5 @@
-from typing import AsyncGenerator, Optional
-from pathlib import Path
+from collections.abc import AsyncGenerator
+from typing import Optional
 
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,143 +19,70 @@ from app.repositories.sql_course_repository import SqlCourseRepository
 from app.repositories.sql_progress_repository import SqlProgressRepository
 from app.repositories.sql_user_repository import SqlUserRepository
 from app.repositories.sql_admin_repository import SqlAdminRepository
-from app.repositories.file_admin_repository import FileAdminRepository
-from app.repositories.file_question_repository import FileQuestionRepository
-from app.repositories.file_course_repository import FileCourseRepository
-from app.repositories.file_progress_repository import FileProgressRepository
-from app.repositories.file_user_repository import FileUserRepository
+from app.repositories.sql_user_admin_repository import SqlUserAdminRepository
+from app.repositories.sql_question_admin_repository import SqlQuestionAdminRepository
+from app.repositories.sql_course_admin_repository import SqlCourseAdminRepository
 from app.services.redis_service import RedisCache
 from app.ports.code_executor import CodeExecutor
 from app.services.piston_service import PistonService
 from app.services.question_bank import QuestionBank
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
-# Shared file-based course repository instance (for cache invalidation)
-_file_course_repo: Optional[FileCourseRepository] = None
-
-
-def get_file_course_repo() -> Optional[FileCourseRepository]:
-    """Get the shared FileCourseRepository instance (None if using SQL)."""
-    return _file_course_repo
-
 
 async def get_redis_cache(
     request: Request,
     settings: Settings = Depends(get_settings),
-) -> Optional[RedisCache]:
+) -> RedisCache | None:
     if settings.REDIS_ENABLED and hasattr(request.app.state, "redis_cache"):
         return request.app.state.redis_cache
     return None
 
 
 async def get_question_repo(
-    db: Optional[AsyncSession] = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[QuestionRepository, None]:
-    if settings.USE_DATABASE:
-        yield SqlQuestionRepository(db)
-    else:
-        yield FileQuestionRepository(
-            str(BASE_DIR / "questions" / "sample_questions.json")
-        )
+    yield SqlQuestionRepository(db)
 
 
 async def get_course_repo(
-    db: Optional[AsyncSession] = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[CourseRepository, None]:
-    global _file_course_repo
-    if settings.USE_DATABASE:
-        yield SqlCourseRepository(db)
-    else:
-        if _file_course_repo is None:
-            _file_course_repo = FileCourseRepository(
-                courses_dir=str(BASE_DIR / "data" / "courses")
-            )
-        yield _file_course_repo
+    yield SqlCourseRepository(db)
 
 
 async def get_progress_repo(
-    db: Optional[AsyncSession] = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[ProgressRepository, None]:
-    if settings.USE_DATABASE:
-        yield SqlProgressRepository(db)
-    else:
-        yield FileProgressRepository(
-            file_path=str(BASE_DIR / "data" / "user_progress.json")
-        )
+    yield SqlProgressRepository(db)
 
 
 async def get_user_repo(
-    db: Optional[AsyncSession] = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[UserRepository, None]:
-    if settings.USE_DATABASE:
-        yield SqlUserRepository(db)
-    else:
-        yield FileUserRepository(file_path=str(BASE_DIR / "data" / "users.json"))
+    yield SqlUserRepository(db)
 
 
 async def get_admin_repo(
-    db: Optional[AsyncSession] = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[AdminRepository, None]:
-    if settings.USE_DATABASE:
-        yield SqlAdminRepository(db)
-    else:
-        yield FileAdminRepository()
+    yield SqlAdminRepository(db)
 
 
 async def get_user_admin_repo(
-    db: Optional[AsyncSession] = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[UserAdminRepository, None]:
-    if settings.USE_DATABASE:
-        from app.repositories.sql_user_admin_repository import SqlUserAdminRepository
-
-        yield SqlUserAdminRepository(db)
-    else:
-        from app.repositories.file_user_admin_repository import FileUserAdminRepository
-
-        yield FileUserAdminRepository()
+    yield SqlUserAdminRepository(db)
 
 
 async def get_question_admin_repo(
-    db: Optional[AsyncSession] = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[QuestionAdminRepository, None]:
-    if settings.USE_DATABASE:
-        from app.repositories.sql_question_admin_repository import (
-            SqlQuestionAdminRepository,
-        )
-
-        yield SqlQuestionAdminRepository(db)
-    else:
-        from app.repositories.file_question_admin_repository import (
-            FileQuestionAdminRepository,
-        )
-
-        yield FileQuestionAdminRepository()
+    yield SqlQuestionAdminRepository(db)
 
 
 async def get_course_admin_repo(
-    db: Optional[AsyncSession] = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[CourseAdminRepository, None]:
-    if settings.USE_DATABASE:
-        from app.repositories.sql_course_admin_repository import (
-            SqlCourseAdminRepository,
-        )
-
-        yield SqlCourseAdminRepository(db)
-    else:
-        from app.repositories.file_course_admin_repository import (
-            FileCourseAdminRepository,
-        )
-
-        yield FileCourseAdminRepository()
+    yield SqlCourseAdminRepository(db)
 
 
 def get_executor(

@@ -1,18 +1,19 @@
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models.auth_schemas import TokenResponse, UserResponse
+from app.api.auth_deps import get_auth_service
 
 
 @pytest.fixture
 def mock_auth_service():
-    with patch("app.api.auth.AuthService") as mock:
-        instance = MagicMock()
-        mock.return_value = instance
-        yield instance
+    mock_instance = AsyncMock()
+    app.dependency_overrides[get_auth_service] = lambda: mock_instance
+    yield mock_instance
+    app.dependency_overrides.pop(get_auth_service, None)
 
 
 class TestAuthRegister:

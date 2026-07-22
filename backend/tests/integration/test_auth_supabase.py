@@ -1,18 +1,19 @@
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models.auth_schemas import TokenResponse, UserResponse
+from app.api.auth_deps import get_auth_service
 
 
 @pytest.fixture
 def mock_auth_service():
-    with patch("app.api.auth.AuthService") as mock:
-        instance = MagicMock()
-        mock.return_value = instance
-        yield instance
+    mock_instance = AsyncMock()
+    app.dependency_overrides[get_auth_service] = lambda: mock_instance
+    yield mock_instance
+    app.dependency_overrides.pop(get_auth_service, None)
 
 
 class TestAuthSupabase:
@@ -44,7 +45,9 @@ class TestAuthSupabase:
         assert data["user"]["username"] == "google_user"
         assert data["user"]["email"] == "google_user@example.com"
 
-    def test_supabase_login_invalid_token(self, test_client: TestClient, mock_auth_service):
+    def test_supabase_login_invalid_token(
+        self, test_client: TestClient, mock_auth_service
+    ):
         mock_auth_service.login_with_supabase = AsyncMock(
             side_effect=ValueError("Invalid Supabase token")
         )

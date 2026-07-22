@@ -6,11 +6,12 @@ are made available to users. Tests focus on Python coverage using Piston.
 """
 
 import pytest
+import pytest_asyncio
 from typing import Dict, Any
 from unittest.mock import AsyncMock
-import json
-import os
-import tempfile
+
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from app.models.orm import Base
 
 from app.models.schemas import Question, Difficulty
 from app.models.question_validation_schemas import (
@@ -774,15 +775,19 @@ print(json.dumps(result))
 class TestQuestionBankValidationIntegration:
     """Tests for validation integration with QuestionBank."""
 
-    @pytest.fixture
-    def empty_repo(self):
-        from app.repositories.file_question_repository import FileQuestionRepository
+    @pytest_asyncio.fixture
+    async def empty_repo(self):
+        from app.repositories.sql_question_repository import SqlQuestionRepository
 
-        fd, path = tempfile.mkstemp(suffix=".json")
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump([], f)
-        yield FileQuestionRepository(path)
-        os.unlink(path)
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        session_factory = async_sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
+        async with session_factory() as session:
+            yield SqlQuestionRepository(session)
+        await engine.dispose()
 
     @pytest.mark.asyncio
     async def test_invalid_question_not_loaded(

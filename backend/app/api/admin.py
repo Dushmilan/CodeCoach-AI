@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional, List, Dict, Any
 import logging
+from sqlalchemy.exc import IntegrityError
 
 from app.ports.admin_repository import AdminRepository
 from app.ports.user_admin_repository import UserAdminRepository
@@ -12,7 +13,6 @@ from app.api.dependencies import (
     get_user_admin_repo,
     get_question_admin_repo,
     get_course_admin_repo,
-    get_file_course_repo,
 )
 from app.models.auth_schemas import UserResponse
 from app.models.admin_models import (
@@ -33,13 +33,6 @@ from app.models.admin_models import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-def _invalidate_course_cache():
-    """Reload the shared FileCourseRepository after admin mutations. No-op for SQL."""
-    repo = get_file_course_repo()
-    if repo is not None:
-        repo.reload()
 
 
 # Dashboard and Analytics Endpoints
@@ -407,7 +400,6 @@ async def delete_course(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Course not found",
             )
-        _invalidate_course_cache()
         logger.info(f"Course {course_id} deleted by {current_user.id}")
         return {"message": "Course deleted successfully"}
     except HTTPException:
@@ -434,7 +426,6 @@ async def delete_module(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Module not found",
             )
-        _invalidate_course_cache()
         logger.info(f"Module {module_id} deleted by {current_user.id}")
         return {"message": "Module deleted successfully"}
     except HTTPException:
@@ -461,7 +452,6 @@ async def delete_lesson(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Lesson not found",
             )
-        _invalidate_course_cache()
         logger.info(f"Lesson {lesson_id} deleted by {current_user.id}")
         return {"message": "Lesson deleted successfully"}
     except HTTPException:
@@ -498,11 +488,15 @@ async def create_course(
     """Create a new course (admins only)."""
     try:
         result = await admin_repo.create_course(data.model_dump())
-        _invalidate_course_cache()
         logger.info(f"Course '{data.id}' created by {current_user.id}")
         return result
     except FileExistsError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Course '{data.id}' already exists",
+        )
     except Exception as e:
         logger.error(f"Error creating course: {e}")
         raise HTTPException(
@@ -527,7 +521,6 @@ async def update_course(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
             )
-        _invalidate_course_cache()
         logger.info(f"Course '{course_id}' updated by {current_user.id}")
         return {"message": "Course updated successfully"}
     except HTTPException:
@@ -549,11 +542,20 @@ async def create_module(
     """Create a new module (admins only)."""
     try:
         result = await admin_repo.create_module(data.model_dump())
-        _invalidate_course_cache()
         logger.info(f"Module '{data.id}' created by {current_user.id}")
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except IntegrityError as e:
+        if "foreign key" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Course '{data.course_id}' not found",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Module '{data.id}' already exists",
+        )
     except Exception as e:
         logger.error(f"Error creating module: {e}")
         raise HTTPException(
@@ -578,7 +580,6 @@ async def update_module(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Module not found"
             )
-        _invalidate_course_cache()
         logger.info(f"Module '{module_id}' updated by {current_user.id}")
         return {"message": "Module updated successfully"}
     except HTTPException:
@@ -600,11 +601,20 @@ async def create_lesson(
     """Create a new lesson (admins only)."""
     try:
         result = await admin_repo.create_lesson(data.model_dump())
-        _invalidate_course_cache()
         logger.info(f"Lesson '{data.id}' created by {current_user.id}")
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except IntegrityError as e:
+        if "foreign key" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Module '{data.module_id}' not found",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Lesson '{data.id}' already exists",
+        )
     except Exception as e:
         logger.error(f"Error creating lesson: {e}")
         raise HTTPException(
@@ -629,7 +639,6 @@ async def update_lesson(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found"
             )
-        _invalidate_course_cache()
         logger.info(f"Lesson '{lesson_id}' updated by {current_user.id}")
         return {"message": "Lesson updated successfully"}
     except HTTPException:
@@ -653,6 +662,11 @@ async def create_question(
         result = await admin_repo.create_question(data.model_dump())
         logger.info(f"Question '{data.id}' created by {current_user.id}")
         return result
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Question '{data.id}' already exists",
+        )
     except Exception as e:
         logger.error(f"Error creating question: {e}")
         raise HTTPException(

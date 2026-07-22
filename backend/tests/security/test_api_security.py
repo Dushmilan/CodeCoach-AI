@@ -1,7 +1,7 @@
 """
 API-level security tests (CORS, headers, methods, size limits).
 """
-import pytest
+
 from fastapi.testclient import TestClient
 
 
@@ -33,7 +33,7 @@ class TestApiSecurity:
             response = test_client.post(
                 "/api/coach/",
                 data='{"test": "data"}',
-                headers={"Content-Type": content_type}
+                headers={"Content-Type": content_type},
             )
             assert response.status_code in [401, 415, 422]
 
@@ -41,15 +41,19 @@ class TestApiSecurity:
         """Overly large payloads should be rejected or handled."""
         large_payload = "x" * (1024 * 1024 + 1)
         body = {
-            "problem": large_payload, "code": "x=1", "language": "python",
-            "message": "test", "mode": "hint", "difficulty": "easy"
+            "problem": large_payload,
+            "code": "x=1",
+            "language": "python",
+            "message": "test",
+            "mode": "hint",
+            "difficulty": "easy",
         }
         response = test_client.post("/api/coach/", json=body)
         assert response.status_code in [200, 401, 413, 422]
 
     def test_wrong_http_method(self, test_client: TestClient):
         """Wrong HTTP methods should return 405."""
-        get_only_endpoints = ["/api/auth/me", "/health/health", "/api/questions/categories"]
+        get_only_endpoints = ["/api/auth/me", "/health/", "/api/questions/categories"]
         for endpoint in get_only_endpoints:
             response = test_client.post(endpoint, json={"test": "data"})
             assert response.status_code in [405, 401, 200]
@@ -66,12 +70,12 @@ class TestApiSecurity:
             {"User-Agent": "Mozilla\r\nLocation: http://evil.com"},
         ]
         for headers in payloads:
-            response = test_client.get("/health/health", headers=headers)
+            response = test_client.get("/health/", headers=headers)
             assert response.status_code in [200, 401]
 
     def test_hsts_header(self, test_client: TestClient):
         """HSTS header should be present on responses (if configured)."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
         hsts = response.headers.get("strict-transport-security")
         if hsts:
             assert "max-age=" in hsts
@@ -85,6 +89,6 @@ class TestApiSecurity:
 
     def test_server_header_not_leaked(self, test_client: TestClient):
         """Server header should not leak version info."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
         server = response.headers.get("server", "")
         assert "uvicorn" not in server.lower(), f"Server header leaks version: {server}"

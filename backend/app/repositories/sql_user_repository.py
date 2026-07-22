@@ -21,6 +21,7 @@ class SqlUserRepository(UserRepository):
             is_active=bool(orm.is_active),
             oauth_provider=orm.oauth_provider,
             oauth_id=orm.oauth_id,
+            role=orm.role,
         )
 
     async def get_by_username(self, username: str) -> Optional[UserInDB]:
@@ -44,9 +45,7 @@ class SqlUserRepository(UserRepository):
         orm = result.scalar_one_or_none()
         return self._orm_to_model(orm) if orm else None
 
-    async def get_by_oauth(
-        self, provider: str, oauth_id: str
-    ) -> Optional[UserInDB]:
+    async def get_by_oauth(self, provider: str, oauth_id: str) -> Optional[UserInDB]:
         result = await self.session.execute(
             select(UserORM).where(
                 UserORM.oauth_provider == provider,

@@ -52,9 +52,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    if settings.USE_DATABASE:
-        await init_db()
-        logger.info("Database tables created/verified")
+    await init_db()
+    logger.info("Database tables created/verified")
 
     if settings.REDIS_ENABLED:
         try:

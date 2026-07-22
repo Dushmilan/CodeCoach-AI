@@ -10,8 +10,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-from sqlalchemy import Text
 
 # revision identifiers, used by Alembic.
 revision: str = "4476164f80b7"
@@ -34,13 +32,13 @@ def upgrade() -> None:
     op.create_table(
         "feature_flags",
         sa.Column("key", sa.String(length=100), nullable=False),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("0")),
         sa.Column("rollout_pct", sa.Integer(), nullable=False, server_default="0"),
         sa.Column(
             "target_roles",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            sa.JSON(),
             nullable=False,
-            server_default="[]",
+            server_default=sa.text("(JSON_ARRAY())"),
         ),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column(
@@ -62,7 +60,7 @@ def upgrade() -> None:
         sa.Column("resource_id", sa.String(length=100), nullable=True),
         sa.Column(
             "metadata",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            sa.JSON(),
             nullable=True,
         ),
         sa.Column("ip_address", sa.String(length=45), nullable=True),
@@ -94,7 +92,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "result",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            sa.JSON(),
             nullable=True,
         ),
         sa.Column("error", sa.Text(), nullable=True),

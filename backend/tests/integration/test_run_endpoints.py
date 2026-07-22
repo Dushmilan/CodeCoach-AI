@@ -2,12 +2,15 @@
 Integration tests for code execution endpoints.
 """
 
+import os
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
 from app.main import app
 from contextlib import contextmanager
+
+PISTON_AVAILABLE = os.environ.get("PISTON_API_URL") is not None
 
 
 @contextmanager
@@ -32,6 +35,7 @@ def mock_auth():
         app.dependency_overrides.pop(get_current_user, None)
 
 
+@pytest.mark.skipif(not PISTON_AVAILABLE, reason="Piston service not configured")
 class TestRunEndpoints:
     """Test cases for code execution endpoints."""
 
