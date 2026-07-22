@@ -18,11 +18,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _require_jwt_key_in_production(self):
-        env = (
-            self.ENVIRONMENT
-            if hasattr(self, "ENVIRONMENT")
-            else os.getenv("ENVIRONMENT", "development")
-        )
+        env = os.getenv("ENVIRONMENT", "development")
         if env == "production" and not self.JWT_SECRET_KEY:
             raise ValueError("JWT_SECRET_KEY must be set in production")
         return self

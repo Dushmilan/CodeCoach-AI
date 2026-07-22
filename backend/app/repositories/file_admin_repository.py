@@ -45,7 +45,7 @@ class FileAdminRepository(AdminRepository):
     def _load_progress(self) -> List[Dict[str, Any]]:
         if not self._progress_file.exists():
             return []
-        with open(self._progress_file) as f:
+        with open(self._progress_file, encoding="utf-8") as f:
             return json.load(f)
 
     # ── User delegation ──

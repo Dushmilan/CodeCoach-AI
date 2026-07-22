@@ -21,12 +21,12 @@ class FileUserAdminRepository(UserAdminRepository):
     def _load_users(self) -> List[Dict[str, Any]]:
         if not self._users_file.exists():
             return []
-        with open(self._users_file) as f:
+        with open(self._users_file, encoding="utf-8") as f:
             return json.load(f)
 
     def _save_users(self, users: List[Dict[str, Any]]):
         self._users_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._users_file, "w") as f:
+        with open(self._users_file, "w", encoding="utf-8") as f:
             json.dump(users, f, indent=2)
 
     async def get_user_by_id(self, user_id: str) -> Optional[UserInDB]:

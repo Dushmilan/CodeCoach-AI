@@ -22,12 +22,12 @@ class FileCourseAdminRepository(CourseAdminRepository):
     def _read_json(self, path: Path) -> Dict[str, Any]:
         if not path.exists():
             return {}
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def _write_json(self, path: Path, data: Any):
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
     def _load_courses(self) -> Dict[str, Any]:
@@ -36,7 +36,7 @@ class FileCourseAdminRepository(CourseAdminRepository):
             return tree
         for path in self._courses_dir.rglob("*.json"):
             try:
-                with open(path) as f:
+                with open(path, encoding="utf-8") as f:
                     data = json.load(f)
                 if path.name == "course.json":
                     tree["courses"].append(data)

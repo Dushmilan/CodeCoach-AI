@@ -24,12 +24,12 @@ class FileQuestionAdminRepository(QuestionAdminRepository):
     def _load_questions(self) -> List[Dict[str, Any]]:
         if not self._questions_file.exists():
             return []
-        with open(self._questions_file) as f:
+        with open(self._questions_file, encoding="utf-8") as f:
             return json.load(f)
 
     def _save_questions(self, questions: List[Dict[str, Any]]):
         self._questions_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._questions_file, "w") as f:
+        with open(self._questions_file, "w", encoding="utf-8") as f:
             json.dump(questions, f, indent=2)
 
     async def get_question_by_id(self, question_id: str) -> Optional[Dict[str, Any]]:
