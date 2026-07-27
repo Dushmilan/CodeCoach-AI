@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional, List, Dict, Any
+import json
 import logging
+from pathlib import Path
 
 from app.ports.admin_repository import AdminRepository
 from app.ports.user_admin_repository import UserAdminRepository
@@ -29,6 +31,12 @@ from app.models.admin_models import (
     LessonUpdate,
     QuestionCreate,
     QuestionUpdate,
+)
+from app.models.admin_schemas import (
+    UserAnalyticsResponse,
+    QuestionProgressResponse,
+    SystemSettings,
+    SettingsUpdateRequest,
 )
 
 router = APIRouter()
@@ -86,6 +94,129 @@ async def get_user_stats(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching user stats: {str(e)}",
         )
+
+
+# Analytics Endpoints
+
+
+@router.get("/analytics/users", response_model=UserAnalyticsResponse)
+async def get_user_analytics(
+    admin_repo: UserAdminRepository = Depends(get_user_admin_repo),
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Get user analytics (total, active, new in 30d, role distribution)."""
+    try:
+        from datetime import datetime, timedelta, timezone
+
+        users, total = await admin_repo.list_users(skip=0, limit=10000)
+        active = sum(1 for u in users if u.is_active)
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).replace(tzinfo=None)
+
+        new_30d = 0
+        for u in users:
+            if u.created_at:
+                try:
+                    created = (
+                        u.created_at
+                        if isinstance(u.created_at, datetime)
+                        else datetime.fromisoformat(
+                            str(u.created_at).replace("Z", "+00:00")
+                        )
+                    )
+                    if created.replace(tzinfo=None) >= cutoff:
+                        new_30d += 1
+                except (ValueError, TypeError):
+                    pass
+
+        role_dist: dict = {}
+        for u in users:
+            role_dist[u.role] = role_dist.get(u.role, 0) + 1
+
+        return UserAnalyticsResponse(
+            total_users=total,
+            active_users=active,
+            new_users_30d=new_30d,
+            role_distribution=role_dist,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching user analytics: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching user analytics: {str(e)}",
+        )
+
+
+@router.get("/analytics/question-progress", response_model=QuestionProgressResponse)
+async def get_question_progress(
+    admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Get question progress analytics (total, by difficulty)."""
+    try:
+        from app.models.admin_models import QuestionFilter
+
+        filter_model = QuestionFilter()
+        questions, total = await admin_repo.list_questions(filter_model)
+
+        by_difficulty: dict = {}
+        for q in questions:
+            diff = q.get("difficulty", "unknown")
+            by_difficulty[diff] = by_difficulty.get(diff, 0) + 1
+
+        return QuestionProgressResponse(
+            total=total,
+            by_difficulty=by_difficulty,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching question progress: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching question progress: {str(e)}",
+        )
+
+
+# Settings Endpoints
+
+SETTINGS_FILE = Path("data/system_settings.json")
+
+
+def _load_settings() -> SystemSettings:
+    """Load settings from disk, falling back to env defaults."""
+    if SETTINGS_FILE.exists():
+        try:
+            return SystemSettings(**json.loads(SETTINGS_FILE.read_text()))
+        except Exception:
+            pass
+    from app.core.config import get_settings
+
+    s = get_settings()
+    return SystemSettings(
+        piston_url=s.PISTON_API_URL,
+        piston_timeout=30,
+        piston_memory_limit="256m",
+        piston_cpu_limit="0.5",
+        enabled_languages=["python", "javascript", "java", "c"],
+    )
+
+
+@router.get("/settings", response_model=SystemSettings)
+async def get_settings(current_user: UserResponse = Depends(require_admin)):
+    """Get current system settings."""
+    return _load_settings()
+
+
+@router.patch("/settings", response_model=SystemSettings)
+async def update_settings(
+    req: SettingsUpdateRequest,
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Update system settings (persists to disk)."""
+    current = _load_settings()
+    updates = req.model_dump(exclude_unset=True)
+    merged = current.model_copy(update=updates)
+    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SETTINGS_FILE.write_text(merged.model_dump_json(indent=2))
+    return merged
 
 
 # User Management Endpoints

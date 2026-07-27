@@ -22,13 +22,44 @@ class ValidationSeverity(str, Enum):
 class ValidationUseCase(str, Enum):
     """Enumeration of all validation use cases."""
 
-    STRUCTURE = "structure"
-    TEST_CASES = "test_cases"
-    STARTER_CODE = "starter_code"
-    SOLUTION = "solution"
-    TIME_LIMITS = "time_limits"
-    FUNCTION_SIGNATURE = "function_signature"
-    OUTPUT_FORMAT = "output_format"
+    STRUCTURE = (
+        "structure",
+        "Validates question structure including required fields, field types, and basic data integrity.",
+    )
+    TEST_CASES = (
+        "test_cases",
+        "Validates test cases for executability, proper format, and deterministic outputs.",
+    )
+    STARTER_CODE = (
+        "starter_code",
+        "Validates that starter code for all languages compiles and runs without errors.",
+    )
+    SOLUTION = (
+        "solution",
+        "Validates that the reference solution passes all test cases. This is the most critical validation.",
+    )
+    TIME_LIMITS = (
+        "time_limits",
+        "Validates time complexity and time limits are reasonable for the problem difficulty.",
+    )
+    FUNCTION_SIGNATURE = (
+        "function_signature",
+        "Validates function signatures in starter code are properly defined with correct types.",
+    )
+    OUTPUT_FORMAT = (
+        "output_format",
+        "Validates expected outputs have consistent formats across all test cases.",
+    )
+
+    def __new__(cls, value, description):
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        obj._desc = description
+        return obj
+
+    @property
+    def description(self) -> str:
+        return self._desc
 
 
 class ValidationIssue(BaseModel):
