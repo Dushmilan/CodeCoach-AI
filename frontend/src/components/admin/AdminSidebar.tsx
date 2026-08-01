@@ -4,15 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers";
-import { useSettings } from "@/hooks/use-settings";
 import { useTheme } from "next-themes";
 
 import {
   LayoutDashboard,
   Users,
   FileText,
-  Settings,
-  BarChart3,
   Database,
 } from "lucide-react";
 
@@ -57,18 +54,6 @@ export default function AdminSidebar({
       title: "Curriculum",
       href: "/admin/curriculum",
       icon: Database,
-      permission: "admin",
-    },
-    {
-      title: "Analytics",
-      href: "/admin/analytics",
-      icon: BarChart3,
-      permission: "admin",
-    },
-    {
-      title: "Settings",
-      href: "/admin/settings",
-      icon: Settings,
       permission: "admin",
     },
   ];

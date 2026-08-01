@@ -167,20 +167,6 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </a>
-              <a
-                href="/admin/settings"
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 font-bold">
-                  S
-                </div>
-                <div>
-                  <div className="text-sm font-medium">Settings</div>
-                  <div className="text-xs text-muted-foreground">
-                    System config
-                  </div>
-                </div>
-              </a>
             </CardContent>
           </Card>
         </>
