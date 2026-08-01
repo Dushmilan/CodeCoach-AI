@@ -26,6 +26,7 @@ class SqlUserAdminRepository(UserAdminRepository):
             oauth_provider=user.oauth_provider,
             oauth_id=user.oauth_id,
             created_at=str(user.created_at) if user.created_at else None,
+            hashed_password=user.hashed_password,
         )
 
     async def get_user_by_username(self, username: str) -> Optional[UserInDB]:
@@ -43,6 +44,7 @@ class SqlUserAdminRepository(UserAdminRepository):
             oauth_provider=user.oauth_provider,
             oauth_id=user.oauth_id,
             created_at=str(user.created_at) if user.created_at else None,
+            hashed_password=user.hashed_password,
         )
 
     async def update_user_role(
@@ -98,6 +100,7 @@ class SqlUserAdminRepository(UserAdminRepository):
                     oauth_provider=u.oauth_provider,
                     oauth_id=u.oauth_id,
                     created_at=str(u.created_at) if u.created_at else None,
+                    hashed_password=u.hashed_password,
                 )
             )
         return parsed, total
