@@ -102,7 +102,11 @@ export class FetchClient implements HttpClient {
       if (error instanceof HttpError) {
         throw error;
       }
-      if (error instanceof Error && error.name === "AbortError") {
+      const isAbort =
+        error instanceof DOMException
+          ? error.name === "AbortError"
+          : error instanceof Error && error.name === "AbortError";
+      if (isAbort) {
         throw new HttpError("Request timeout", 408);
       }
       throw error;

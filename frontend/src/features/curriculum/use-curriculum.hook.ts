@@ -37,7 +37,10 @@ export function useCourse(courseId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const loadCourse = useCallback(async () => {
-    if (!courseId) return;
+    if (!courseId) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -63,7 +66,10 @@ export function useLesson(lessonId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const loadLesson = useCallback(async () => {
-    if (!lessonId) return;
+    if (!lessonId) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {

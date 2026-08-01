@@ -45,15 +45,6 @@ vi.mock("@/components/settings/SettingsModal", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/icons", () => ({
-  MoonIcon: () => <div data-testid="moon-icon" />,
-  SunIcon: () => <div data-testid="sun-icon" />,
-  SettingsIcon: () => <div data-testid="settings-icon" />,
-  UserIcon: () => <div data-testid="user-icon" />,
-  XIcon: () => <div data-testid="x-icon" />,
-  GraduationCapIcon: () => <div data-testid="grad-icon" />,
-}));
-
 import { Header } from "./Header";
 
 describe("Header", () => {
@@ -82,9 +73,9 @@ describe("Header", () => {
     expect(screen.getByTitle("Settings")).toBeInTheDocument();
   });
 
-  it("shows sun icon when theme is dark", () => {
+  it("shows 'Light Mode' label when resolved theme is dark", async () => {
     render(<Header />);
-    expect(screen.getByTestId("sun-icon")).toBeInTheDocument();
+    expect(await screen.findByText("Light Mode")).toBeInTheDocument();
   });
 
   it("toggles theme when theme button is clicked", async () => {
@@ -106,13 +97,13 @@ describe("Header", () => {
     expect(screen.getByText("Settings Modal test-key")).toBeInTheDocument();
   });
 
-  it("shows moon icon when theme is light", () => {
+  it("shows 'Dark Mode' label when resolved theme is light", async () => {
     mockUseTheme.mockReturnValue({
       theme: "light",
       setTheme: mockSetTheme,
       resolvedTheme: "light",
     });
     render(<Header />);
-    expect(screen.getByTestId("moon-icon")).toBeInTheDocument();
+    expect(await screen.findByText("Dark Mode")).toBeInTheDocument();
   });
 });
