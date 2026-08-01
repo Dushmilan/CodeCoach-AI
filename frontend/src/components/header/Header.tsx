@@ -199,7 +199,11 @@ export function Header() {
             }}
             className="px-5 py-2 text-sm text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
           >
-            {resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            {mounted
+              ? resolvedTheme === 'dark'
+                ? 'Light Mode'
+                : 'Dark Mode'
+              : 'Theme'}
           </button>
         </div>
       </div>
