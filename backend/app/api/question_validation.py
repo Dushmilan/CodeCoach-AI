@@ -97,7 +97,7 @@ async def get_available_use_cases():
     """Get list of all available validation use cases."""
     return {
         "use_cases": [
-            {"name": uc.value, "description": _get_use_case_description(uc)}
+            {"name": uc.value, "description": uc.description}
             for uc in ValidationUseCase
         ]
     }
@@ -145,35 +145,3 @@ async def get_validation_summary(
         )
 
 
-def _get_use_case_description(use_case: ValidationUseCase) -> str:
-    """Get human-readable description for a use case."""
-    descriptions = {
-        ValidationUseCase.STRUCTURE: (
-            "Validates question structure including required fields, "
-            "field types, and basic data integrity."
-        ),
-        ValidationUseCase.TEST_CASES: (
-            "Validates test cases for executability, proper format, "
-            "and deterministic outputs."
-        ),
-        ValidationUseCase.STARTER_CODE: (
-            "Validates that starter code for all languages compiles "
-            "and runs without errors."
-        ),
-        ValidationUseCase.SOLUTION: (
-            "Validates that the reference solution passes all test cases. "
-            "This is the most critical validation."
-        ),
-        ValidationUseCase.TIME_LIMITS: (
-            "Validates time complexity and time limits are reasonable "
-            "for the problem difficulty."
-        ),
-        ValidationUseCase.FUNCTION_SIGNATURE: (
-            "Validates function signatures in starter code are properly "
-            "defined with correct types."
-        ),
-        ValidationUseCase.OUTPUT_FORMAT: (
-            "Validates expected outputs have consistent formats across all test cases."
-        ),
-    }
-    return descriptions.get(use_case, "No description available.")

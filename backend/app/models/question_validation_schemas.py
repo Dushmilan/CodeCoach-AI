@@ -30,6 +30,40 @@ class ValidationUseCase(str, Enum):
     FUNCTION_SIGNATURE = "function_signature"
     OUTPUT_FORMAT = "output_format"
 
+    @property
+    def description(self) -> str:
+        """Human-readable description for this use case."""
+        return {
+            ValidationUseCase.STRUCTURE: (
+                "Validates question structure including required fields, "
+                "field types, and basic data integrity."
+            ),
+            ValidationUseCase.TEST_CASES: (
+                "Validates test cases for executability, proper format, "
+                "and deterministic outputs."
+            ),
+            ValidationUseCase.STARTER_CODE: (
+                "Validates that starter code for all languages compiles "
+                "and runs without errors."
+            ),
+            ValidationUseCase.SOLUTION: (
+                "Validates that the reference solution passes all test cases. "
+                "This is the most critical validation."
+            ),
+            ValidationUseCase.TIME_LIMITS: (
+                "Validates time complexity and time limits are reasonable "
+                "for the problem difficulty."
+            ),
+            ValidationUseCase.FUNCTION_SIGNATURE: (
+                "Validates function signatures in starter code are properly "
+                "defined with correct types."
+            ),
+            ValidationUseCase.OUTPUT_FORMAT: (
+                "Validates expected outputs have consistent formats across "
+                "all test cases."
+            ),
+        }.get(self, "No description available.")
+
 
 class ValidationIssue(BaseModel):
     """A single validation issue found during validation."""

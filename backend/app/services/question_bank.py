@@ -113,23 +113,22 @@ class QuestionBank:
     async def add(
         self, question: Question, validate: bool = True
     ) -> QuestionValidationStatus:
+        validated = False
+        passed = False
+
         if validate and self._validator:
             result = await self._validator.validate_question(question)
             await self._persist_validation_status(question.id, result)
-
-            if not result.valid:
+            validated = True
+            passed = bool(result.valid)
+            if not passed:
                 logger.warning("Question %s failed validation", question.id)
-                await self._repo.add(question)
-                return QuestionValidationStatus(
-                    is_validated=True, validation_passed=False
-                )
-        else:
-            await self._repo.add(question)
-            return QuestionValidationStatus(is_validated=False)
 
         await self._repo.add(question)
-        await self._invalidate_cache()
-        return QuestionValidationStatus(is_validated=True, validation_passed=True)
+        if validated and passed:
+            await self._invalidate_cache()
+
+        return QuestionValidationStatus(is_validated=validated, validation_passed=passed)
 
     async def stats(self) -> QuestionStats:
         total = await self._cached_or_fetch("total_count", self._compute_total)
