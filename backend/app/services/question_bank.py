@@ -128,7 +128,9 @@ class QuestionBank:
         if validated and passed:
             await self._invalidate_cache()
 
-        return QuestionValidationStatus(is_validated=validated, validation_passed=passed)
+        return QuestionValidationStatus(
+            is_validated=validated, validation_passed=passed
+        )
 
     async def stats(self) -> QuestionStats:
         total = await self._cached_or_fetch("total_count", self._compute_total)

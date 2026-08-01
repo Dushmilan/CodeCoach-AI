@@ -143,5 +143,3 @@ async def get_validation_summary(
         raise HTTPException(
             status_code=500, detail=f"Error generating summary: {str(e)}"
         )
-
-
