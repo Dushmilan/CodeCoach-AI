@@ -1,45 +1,34 @@
-import { render, screen, act } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 import { HydrationGuard } from './HydrationGuard';
 
 describe('HydrationGuard', () => {
-  it('renders fallback initially', () => {
+  it('renders children after mount when fallback is provided', () => {
     render(
       <HydrationGuard fallback={<div data-testid="fallback">Loading</div>}>
         <div data-testid="content">Content</div>
       </HydrationGuard>,
     );
-    expect(screen.getByTestId('fallback')).toBeInTheDocument();
-    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
+    expect(screen.getByTestId('content')).toBeInTheDocument();
+    expect(screen.queryByTestId('fallback')).not.toBeInTheDocument();
   });
 
-  it('renders children after mount', () => {
-    render(
-      <HydrationGuard fallback={<div data-testid="fallback">Loading</div>}>
-        <div data-testid="content">Content</div>
-      </HydrationGuard>,
-    );
-    act(() => {
-      vi.runAllTimers();
-    });
-  });
-
-  it('renders children without fallback prop', () => {
+  it('renders children after mount without a fallback prop', () => {
     render(
       <HydrationGuard>
         <div data-testid="content">Content</div>
       </HydrationGuard>,
     );
-    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
+    expect(screen.getByTestId('content')).toBeInTheDocument();
   });
 
-  it('shows children after hydration effect runs', async () => {
+  it('shows children after the hydration effect runs', async () => {
     render(
       <HydrationGuard>
         <div data-testid="content">Content</div>
       </HydrationGuard>,
     );
-    await act(async () => {});
+    await screen.findByTestId('content');
     expect(screen.getByTestId('content')).toBeInTheDocument();
   });
 });

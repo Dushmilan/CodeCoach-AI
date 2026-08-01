@@ -4,15 +4,17 @@ import userEvent from "@testing-library/user-event";
 import { QuestionItem } from "./QuestionItem";
 import { QuestionSummary } from "@/types";
 
-// Mock icons
-vi.mock("@/components/ui/icons", async () => {
-  const actual = await vi.importActual("@/components/ui/icons");
+// Mock icons used by the component (imported from lucide-react)
+vi.mock("lucide-react", async () => {
+  const actual = await vi.importActual<typeof import("lucide-react")>(
+    "lucide-react",
+  );
   return {
-    ...(actual as any),
-    RadixCheckCircledIcon: vi.fn(({ className }) => (
+    ...actual,
+    CheckCircle: vi.fn(({ className }: { className?: string }) => (
       <div className={className} data-testid="check-icon" />
     )),
-    RadixCrossCircledIcon: vi.fn(({ className }) => (
+    XCircle: vi.fn(({ className }: { className?: string }) => (
       <div className={className} data-testid="cross-icon" />
     )),
   };

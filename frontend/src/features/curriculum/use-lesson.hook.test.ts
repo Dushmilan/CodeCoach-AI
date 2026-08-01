@@ -2,10 +2,12 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useLesson } from "./use-curriculum.hook";
 
-const mockGet = vi.fn();
+const mockGet = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/fetch-client", () => ({
-  FetchClient: vi.fn(() => ({ get: mockGet })),
+  FetchClient: vi.fn().mockImplementation(function () {
+    return { get: mockGet };
+  }),
 }));
 
 describe("useLesson", () => {
