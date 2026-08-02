@@ -2,10 +2,19 @@
 
 import { cn } from "@/lib/utils";
 import { Language } from "@/types";
-import Editor from "@monaco-editor/react";
+import dynamic from "next/dynamic";
 import { CheckCircle, Play, RotateCcw } from "lucide-react";
 import { useRef } from "react";
 import { LANGUAGE_OPTIONS } from "./constants";
+
+const Editor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground/40">
+      Loading editor…
+    </div>
+  ),
+});
 
 interface CodeEditorProps {
   language: Language;
