@@ -1,11 +1,22 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 import os
 import logging
 import httpx
 from app.services.nim_service import NIMService
 
-router = APIRouter()
+
+def _debug_enabled() -> bool:
+    """Only expose debug endpoints outside production (request-time check).
+
+    Fail-closed: an unset ENVIRONMENT is treated as production, so the debug
+    endpoints return 404 unless ENVIRONMENT is explicitly non-production."""
+    if os.getenv("ENVIRONMENT", "production") == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+    return True
+
+
+router = APIRouter(dependencies=[Depends(_debug_enabled)])
 logger = logging.getLogger(__name__)
 
 
