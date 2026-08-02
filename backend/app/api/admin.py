@@ -6,6 +6,7 @@ from app.ports.admin_repository import AdminRepository
 from app.ports.user_admin_repository import UserAdminRepository
 from app.ports.question_admin_repository import QuestionAdminRepository
 from app.ports.course_admin_repository import CourseAdminRepository
+from app.ports.code_executor import CodeExecutor
 from app.api.auth_deps import require_admin, require_super_admin
 from app.api.dependencies import (
     get_admin_repo,
@@ -13,7 +14,10 @@ from app.api.dependencies import (
     get_question_admin_repo,
     get_course_admin_repo,
     get_file_course_repo,
+    get_executor,
 )
+from app.services.question_validator import QuestionValidatorService
+from app.models.schemas import Question
 from app.models.auth_schemas import UserResponse
 from app.models.admin_models import (
     UserAdminUpdate,
@@ -353,9 +357,10 @@ async def import_questions(
 async def validate_question(
     question_id: str,
     admin_repo: QuestionAdminRepository = Depends(get_question_admin_repo),
+    executor: CodeExecutor = Depends(get_executor),
     current_user: UserResponse = Depends(require_admin),
 ):
-    """Validate question test cases (admins only)."""
+    """Run the full validation pipeline on a question (admins only)."""
     try:
         question = await admin_repo.get_question_by_id(question_id)
         if not question:
@@ -364,7 +369,31 @@ async def validate_question(
                 detail="Question not found",
             )
 
-        return {"message": "Validation completed", "result": "All test cases passed"}
+        question_data = dict(question)
+        if "starter_code" in question_data and "starter" not in question_data:
+            question_data["starter"] = question_data.pop("starter_code")
+
+        validator = QuestionValidatorService(executor=executor)
+        result = await validator.validate_question(Question(**question_data))
+
+        logger.info(
+            f"Question {question_id} validated by {current_user.id}: "
+            f"valid={result.valid}, issues={result.total_issues}"
+        )
+        return {
+            "question_id": question_id,
+            "valid": result.valid,
+            "total_issues": result.total_issues,
+            "error_count": result.error_count,
+            "warning_count": result.warning_count,
+            "results": {
+                uc.value: {
+                    "passed": r.passed,
+                    "issues": [i.message for i in r.issues],
+                }
+                for uc, r in result.results.items()
+            },
+        }
     except HTTPException:
         raise
     except Exception as e:
