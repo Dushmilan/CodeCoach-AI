@@ -17,7 +17,7 @@ async def test_ramp_up_rps(async_client: AsyncClient):
     duration = 10.0
     for i in range(1, target_users + 1):
         delay = i * (duration / target_users)
-        tasks = [async_client.get("/health/health") for _ in range(i)]
+        tasks = [async_client.get("/health/") for _ in range(i)]
         batch = await asyncio.gather(*tasks)
         results.extend(batch)
         if delay < duration:
@@ -41,7 +41,7 @@ async def test_sustained_load(async_client: AsyncClient):
     results = []
     start = time.time()
     while time.time() - start < 10:
-        batch = [async_client.get("/health/health") for _ in range(5)]
+        batch = [async_client.get("/health/") for _ in range(5)]
         results.extend(await asyncio.gather(*batch))
         await asyncio.sleep(0.25)
     assert all(r.status_code == 200 for r in results)

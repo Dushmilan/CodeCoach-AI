@@ -45,7 +45,7 @@ class TestLoadLimits:
     @pytest.mark.asyncio
     async def test_concurrent_requests_health(self, async_client: AsyncClient):
         """Test concurrent health check requests."""
-        tasks = [async_client.get("/health/health") for _ in range(100)]
+        tasks = [async_client.get("/health/") for _ in range(100)]
         responses = await asyncio.gather(*tasks)
 
         for response in responses:
@@ -86,7 +86,7 @@ class TestLoadLimits:
 
         for _ in range(100):
             start_time = time.time()
-            response = await async_client.get("/health/health")
+            response = await async_client.get("/health/")
             end_time = time.time()
 
             assert response.status_code == 200
@@ -109,7 +109,7 @@ class TestLoadLimits:
         responses = []
 
         for i in range(20):
-            response = await async_client.get("/health/health")
+            response = await async_client.get("/health/")
             responses.append(response.status_code)
 
         assert all(status == 200 for status in responses)
@@ -158,7 +158,7 @@ class TestLoadLimits:
     async def test_stress_test_endpoints(self, async_client: AsyncClient):
         """Stress test all endpoints."""
         endpoints = [
-            "/health/health",
+            "/health/",
             "/api/questions/",
             "/api/questions/categories",
             "/api/questions/companies",
@@ -236,7 +236,7 @@ print(len(large_list))
     @pytest.mark.asyncio
     async def test_connection_pool_limits(self, async_client: AsyncClient):
         """Test connection pool limits."""
-        tasks = [async_client.get("/health/health") for _ in range(100)]
+        tasks = [async_client.get("/health/") for _ in range(100)]
         results = await asyncio.gather(*tasks)
 
         assert all(r.status_code == 200 for r in results)
@@ -272,7 +272,7 @@ while True:
     async def test_load_balancing_simulation(self, async_client: AsyncClient):
         """Simulate load across different endpoints."""
         endpoints = [
-            "/health/health",
+            "/health/",
             "/api/questions/",
             "/api/coach/modes",
         ]
@@ -294,7 +294,7 @@ while True:
         times = []
         for _ in range(20):
             start = time.time()
-            response = await async_client.get("/health/health")
+            response = await async_client.get("/health/")
             elapsed = (time.time() - start) * 1000
             assert response.status_code == 200
             times.append(elapsed)

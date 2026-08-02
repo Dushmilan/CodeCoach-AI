@@ -192,7 +192,7 @@ class TestSecurityVulnerabilities:
         ]
 
         for headers in bypass_attempts:
-            response = test_client.get("/health/health", headers=headers)
+            response = test_client.get("/health/", headers=headers)
 
             # Should still work normally
             assert response.status_code in [200, 401]
@@ -229,7 +229,7 @@ class TestSecurityVulnerabilities:
         ]
 
         for origin in origins:
-            response = test_client.get("/health/health", headers={"Origin": origin})
+            response = test_client.get("/health/", headers={"Origin": origin})
 
             # Should handle CORS properly
             assert response.status_code in [200, 401]
@@ -297,7 +297,7 @@ class TestSecurityVulnerabilities:
 
         # Only check health endpoint; data endpoints legitimately contain these words
         endpoints = [
-            "/health/health",
+            "/health/",
         ]
 
         for endpoint in endpoints:
@@ -344,7 +344,7 @@ class TestSecurityVulnerabilities:
         ]
 
         for headers in header_injection_payloads:
-            response = test_client.get("/health/health", headers=headers)
+            response = test_client.get("/health/", headers=headers)
 
             # Should handle gracefully
             assert response.status_code in [200, 401]
@@ -360,14 +360,14 @@ class TestSecurityVulnerabilities:
         ]
 
         for headers in session_headers:
-            response = test_client.get("/health/health", headers=headers)
+            response = test_client.get("/health/", headers=headers)
 
             # Should work normally
             assert response.status_code in [200, 401]
 
     def test_clickjacking_prevention(self, test_client: TestClient):
         """Test clickjacking prevention headers (if set)."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
 
         assert response.status_code in [200, 401]
 
@@ -382,7 +382,7 @@ class TestSecurityVulnerabilities:
 
     def test_secure_headers_presence(self, test_client: TestClient):
         """Test presence of security headers (skip headers not configured)."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
 
         assert response.status_code in [200, 401]
 

@@ -2,6 +2,14 @@
 Test configuration and fixtures for CodeCoach AI API testing.
 """
 
+import os
+
+# Set safe defaults BEFORE app.main is imported so that Settings() does not
+# fail-fast at collection time (ENVIRONMENT unset = production = requires a
+# JWT secret). Individual tests override via monkeypatch/test_env_vars.
+os.environ.setdefault("ENVIRONMENT", "testing")
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only-32chars!!")
+
 import pytest
 import pytest_asyncio
 import asyncio
