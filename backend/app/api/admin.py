@@ -67,8 +67,8 @@ async def get_user_stats(
 ):
     """Get user statistics (admins only)."""
     try:
-        # Get all users
-        users, total = await admin_repo.list_users(skip=0, limit=1000)
+        # Load the full user list so active/admin counts are not truncated
+        users, total = await admin_repo.list_users(skip=0, limit=1_000_000)
 
         # Calculate stats
         active_users = sum(1 for u in users if u.is_active)
@@ -100,16 +100,17 @@ async def list_users(
     """List all users with pagination and filtering (admins only)."""
     try:
         skip = (page - 1) * per_page
-        all_users, total = await admin_repo.list_users(skip=0, limit=10000)
-
         if search:
             q = search.lower()
+            all_users, _ = await admin_repo.list_users(skip=0, limit=1_000_000)
             all_users = [
                 u for u in all_users if q in u.username.lower() or q in u.email.lower()
             ]
             total = len(all_users)
+            page_users = all_users[skip : skip + per_page]
+        else:
+            page_users, total = await admin_repo.list_users(skip=skip, limit=per_page)
 
-        page_users = all_users[skip : skip + per_page]
         user_list = []
         for user in page_users:
             user_list.append(

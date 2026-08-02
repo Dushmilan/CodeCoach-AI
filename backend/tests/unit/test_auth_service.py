@@ -15,7 +15,9 @@ from app.services.auth_service import (
     hash_password,
     verify_password,
     create_access_token,
+    create_refresh_token,
     decode_access_token,
+    decode_refresh_token,
 )
 
 
@@ -80,6 +82,87 @@ class TestTokenCreation:
 
         decoded = decode_access_token(token)
         assert decoded is None
+
+
+class TestRefreshToken:
+    def test_create_and_decode_refresh_token(self):
+        token, _ = create_refresh_token(
+            TokenData(user_id="user-1", username="testuser")
+        )
+        decoded = decode_refresh_token(token)
+        assert decoded is not None
+        assert decoded.user_id == "user-1"
+        assert decoded.username == "testuser"
+
+    def test_access_token_is_not_a_refresh_token(self):
+        access, _ = create_access_token(TokenData(user_id="u", username="n"))
+        refresh, _ = create_refresh_token(TokenData(user_id="u", username="n"))
+
+        # An access token must not be accepted as a refresh token and vice versa
+        assert decode_refresh_token(access) is None
+        assert decode_access_token(refresh) is None
+
+    def test_decode_invalid_refresh_token(self):
+        assert decode_refresh_token("not.a.token") is None
+
+
+class TestAuthServiceRefresh:
+    @pytest.mark.asyncio
+    async def test_refresh_issues_new_token_pair(self, mock_repo):
+        user = UserInDB(
+            id="user-1",
+            username="testuser",
+            email="test@test.com",
+            hashed_password=hash_password("pw"),
+            created_at=datetime.now(timezone.utc),
+        )
+        mock_repo.get_by_id = AsyncMock(return_value=user)
+
+        service = AuthService(repository=mock_repo)
+        refresh_token, _ = create_refresh_token(
+            TokenData(user_id="user-1", username="testuser")
+        )
+
+        result = await service.refresh(refresh_token)
+
+        assert result.access_token is not None
+        assert result.refresh_token is not None
+        assert result.user.id == "user-1"
+
+    @pytest.mark.asyncio
+    async def test_refresh_rejects_deactivated_user(self, mock_repo):
+        user = UserInDB(
+            id="user-1",
+            username="disabled",
+            email="disabled@test.com",
+            hashed_password=hash_password("pw"),
+            created_at=datetime.now(timezone.utc),
+            is_active=False,
+        )
+        mock_repo.get_by_id = AsyncMock(return_value=user)
+
+        service = AuthService(repository=mock_repo)
+        refresh_token, _ = create_refresh_token(
+            TokenData(user_id="user-1", username="disabled")
+        )
+
+        with pytest.raises(ValueError):
+            await service.refresh(refresh_token)
+
+    @pytest.mark.asyncio
+    async def test_refresh_rejects_invalid_token(self, mock_repo):
+        service = AuthService(repository=mock_repo)
+        with pytest.raises(ValueError):
+            await service.refresh("garbage.token.value")
+
+    @pytest.mark.asyncio
+    async def test_refresh_rejects_access_token(self, mock_repo):
+        service = AuthService(repository=mock_repo)
+        access, _ = create_access_token(
+            TokenData(user_id="user-1", username="testuser")
+        )
+        with pytest.raises(ValueError):
+            await service.refresh(access)
 
 
 class TestAuthServiceRegister:

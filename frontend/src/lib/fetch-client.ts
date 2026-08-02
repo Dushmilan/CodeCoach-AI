@@ -15,9 +15,39 @@ function getAuthToken(): string | null {
   }
 }
 
+function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = localStorage.getItem("auth_refresh_token");
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setAuthTokens(accessToken: string | null, refreshToken: string | null) {
+  if (typeof window === "undefined") return;
+  if (accessToken) {
+    localStorage.setItem("auth_token", JSON.stringify(accessToken));
+  } else {
+    localStorage.removeItem("auth_token");
+  }
+  if (refreshToken) {
+    localStorage.setItem("auth_refresh_token", JSON.stringify(refreshToken));
+  } else {
+    localStorage.removeItem("auth_refresh_token");
+  }
+}
+
+interface RefreshPayload {
+  access_token: string;
+  refresh_token?: string | null;
+}
+
 export class FetchClient implements HttpClient {
   private baseUrl: string;
   private getToken: () => string | null;
+  private refreshInFlight: Promise<boolean> | null = null;
 
   constructor(
     baseUrl: string = DEFAULT_BASE_URL,
@@ -51,6 +81,39 @@ export class FetchClient implements HttpClient {
     return this.request<T>("DELETE", path, undefined, options);
   }
 
+  private async refreshAccessToken(): Promise<boolean> {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return false;
+
+    if (!this.refreshInFlight) {
+      this.refreshInFlight = (async () => {
+        try {
+          const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          });
+          if (!response.ok) {
+            setAuthTokens(null, null);
+            return false;
+          }
+          const data = (await response.json()) as RefreshPayload;
+          setAuthTokens(
+            data.access_token,
+            data.refresh_token ?? refreshToken,
+          );
+          return true;
+        } catch {
+          return false;
+        } finally {
+          this.refreshInFlight = null;
+        }
+      })();
+    }
+
+    return this.refreshInFlight;
+  }
+
   private async request<T>(
     method: HttpMethod,
     path: string,
@@ -82,6 +145,24 @@ export class FetchClient implements HttpClient {
       });
 
       clearTimeout(timeoutId);
+
+      if (
+        !response.ok &&
+        response.status === 401 &&
+        path !== "/api/auth/refresh" &&
+        !options?.skipAuthRefresh
+      ) {
+        const refreshed = await this.refreshAccessToken();
+        if (refreshed) {
+          const retryHeaders = { ...options?.headers };
+          delete retryHeaders.Authorization;
+          return this.request<T>(method, path, body, {
+            ...options,
+            headers: retryHeaders,
+            skipAuthRefresh: true,
+          });
+        }
+      }
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => "");
