@@ -35,7 +35,7 @@ const STEPS = [
   {
     title: "NVIDIA API Key",
     description:
-      "Open Settings and add your free NVIDIA API key to enable the AI Coach. Your key stays in your browser — never sent to our server.",
+      "AI coaching runs on the server-side API key. You can optionally add your own NVIDIA key in Settings — it stays in your browser and is never sent to our server.",
     icon: Settings,
   },
 ];

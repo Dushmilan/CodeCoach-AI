@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from typing import AsyncIterator, Optional
 import asyncio
@@ -20,10 +20,12 @@ router = APIRouter()
 
 
 def get_coaching_provider(
-    x_nvidia_api_key: Optional[str] = Header(None, alias="X-NVIDIA-API-Key"),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ) -> CoachingProvider:
-    api_key = x_nvidia_api_key or os.getenv("NVIDIA_API_KEY")
+    # Server-side only: the API key is configured on the backend, never
+    # supplied by clients. Accepting it from a request header would let any
+    # user substitute their own key (billing) and leak it to the server.
+    api_key = os.getenv("NVIDIA_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="NVIDIA API key not configured")
     return NIMService(api_key=api_key, cache=cache)
