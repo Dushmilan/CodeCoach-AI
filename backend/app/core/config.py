@@ -1,6 +1,5 @@
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from functools import lru_cache
 from typing import Optional
 from pydantic import model_validator
 
@@ -35,6 +34,7 @@ class Settings(BaseSettings):
     REDIS_ENABLED: bool = True
 
 
-@lru_cache
 def get_settings() -> Settings:
+    """Construct fresh settings — no caching so env overrides (e.g. from test
+    fixtures) take effect and runtime env changes are picked up."""
     return Settings()
