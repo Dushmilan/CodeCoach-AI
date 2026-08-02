@@ -183,7 +183,9 @@ class PistonService(CodeExecutor):
         results = self._parse_suite_output(exec_result, test_cases)
 
         if self.cache and cache_key:
-            await self.cache.set(cache_key, [r.model_dump() for r in results], ttl=3600)
+            await self.cache.set(
+                cache_key, [dataclasses.asdict(r) for r in results], ttl=3600
+            )
 
         return results
 
