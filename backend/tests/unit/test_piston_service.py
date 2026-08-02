@@ -350,6 +350,82 @@ class TestPistonServiceEvaluateSuite:
             assert results[0].passed is True
 
     @pytest.mark.asyncio
+    async def test_evaluate_suite_caches_results_with_enabled_cache(self):
+        """Regression: with a live cache, evaluate_suite must serialize dataclass
+        results (dataclasses.asdict) instead of calling nonexistent model_dump()."""
+        store: dict = {}
+
+        class FakeCache:
+            async def get(self, key):
+                return store.get(key)
+
+            async def set(self, key, value, ttl=300):
+                store[key] = value
+
+        service = PistonService(cache=FakeCache())
+
+        with patch.object(service, "execute", new=AsyncMock()) as mock_exec:
+            mock_exec.return_value = ExecutionResult(
+                stdout='@@SUITE_RESULT@@[{"index":1,"passed":true,"actual":"6"}]@@SUITE_RESULT@@',
+                stderr="",
+                exit_code=0,
+            )
+            results = await service.evaluate_suite(
+                "python",
+                "def add(a, b): return a + b",
+                [{"input": "2\n4", "expected_output": "6", "hidden": False}],
+            )
+
+            assert len(results) == 1
+            assert results[0].passed is True
+            assert len(store) == 1
+            cached = next(iter(store.values()))
+            assert cached == [
+                {
+                    "index": 1,
+                    "passed": True,
+                    "input": "2\n4",
+                    "expected": "6",
+                    "actual": "6",
+                    "hidden": False,
+                }
+            ]
+
+    @pytest.mark.asyncio
+    async def test_evaluate_suite_reads_cached_results(self):
+        """Regression: cache hits should hydrate TestCaseResult dataclasses."""
+        cached = [
+            {
+                "index": 1,
+                "passed": True,
+                "input": "2\n4",
+                "expected": "6",
+                "actual": "6",
+                "hidden": False,
+            }
+        ]
+
+        class FakeCache:
+            async def get(self, key):
+                return cached
+
+            async def set(self, key, value, ttl=300):
+                pass
+
+        service_with_cache = PistonService(cache=FakeCache())
+
+        with patch.object(service_with_cache, "execute", new=AsyncMock()) as mock_exec:
+            results = await service_with_cache.evaluate_suite(
+                "python",
+                "def add(a, b): return a + b",
+                [{"input": "2\n4", "expected_output": "6", "hidden": False}],
+            )
+            mock_exec.assert_not_called()
+            assert len(results) == 1
+            assert results[0].passed is True
+            assert results[0].expected == "6"
+
+    @pytest.mark.asyncio
     async def test_evaluate_suite_build_runner_fallback(self, service):
         with patch.object(service, "execute", new=AsyncMock()) as mock_exec:
             mock_exec.return_value = ExecutionResult(
