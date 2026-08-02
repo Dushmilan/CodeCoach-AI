@@ -55,7 +55,7 @@ class TestApiSecurity:
         """Wrong HTTP methods should return 405."""
         get_only_endpoints = [
             "/api/auth/me",
-            "/health/health",
+            "/health/",
             "/api/questions/categories",
         ]
         for endpoint in get_only_endpoints:
@@ -74,12 +74,12 @@ class TestApiSecurity:
             {"User-Agent": "Mozilla\r\nLocation: http://evil.com"},
         ]
         for headers in payloads:
-            response = test_client.get("/health/health", headers=headers)
+            response = test_client.get("/health/", headers=headers)
             assert response.status_code in [200, 401]
 
     def test_hsts_header(self, test_client: TestClient):
         """HSTS header should be present on responses (if configured)."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
         hsts = response.headers.get("strict-transport-security")
         if hsts:
             assert "max-age=" in hsts
@@ -93,6 +93,6 @@ class TestApiSecurity:
 
     def test_server_header_not_leaked(self, test_client: TestClient):
         """Server header should not leak version info."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
         server = response.headers.get("server", "")
         assert "uvicorn" not in server.lower(), f"Server header leaks version: {server}"

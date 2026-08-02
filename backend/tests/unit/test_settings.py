@@ -14,6 +14,7 @@ class TestSettings:
     def test_get_settings_respects_env_file_defaults(self, monkeypatch):
         from app.core.config import get_settings
 
+        monkeypatch.setenv("ENVIRONMENT", "testing")
         monkeypatch.delenv("REDIS_ENABLED", raising=False)
         monkeypatch.delenv("USE_DATABASE", raising=False)
         assert get_settings().REDIS_ENABLED is True
@@ -21,5 +22,7 @@ class TestSettings:
 
     def test_get_settings_returns_new_instance(self, monkeypatch):
         from app.core.config import get_settings
+
+        monkeypatch.setenv("ENVIRONMENT", "testing")
 
         assert get_settings() is not get_settings()

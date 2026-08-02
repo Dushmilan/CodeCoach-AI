@@ -42,13 +42,11 @@ from app.api import (  # noqa: E402
     progress,
     admin,
 )
-from app.core.config import get_settings  # noqa: E402
+from app.core.config import get_settings, is_production  # noqa: E402
 from app.core.database import init_db  # noqa: E402
 from app.middleware.rate_limit import limiter  # noqa: E402
 from app.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
 from app.services.redis_service import RedisCache  # noqa: E402
-
-settings = get_settings()
 
 
 @asynccontextmanager
@@ -77,15 +75,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         logger.info("Redis cache connection closed")
 
 
+settings = get_settings()
+
+_production = is_production()
 app = FastAPI(
     title="CodeCoach AI Backend",
     description="AI-powered coding interview practice platform backend",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if not _production else None,
+    redoc_url="/redoc" if not _production else None,
     lifespan=lifespan,
 )
-
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 

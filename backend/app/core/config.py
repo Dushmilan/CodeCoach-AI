@@ -1,4 +1,3 @@
-import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 from pydantic import model_validator
@@ -6,6 +5,9 @@ from pydantic import model_validator
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    # Environment (fail-closed: unset = production for security gates)
+    ENVIRONMENT: str = "production"
 
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./codecoach.db"
@@ -17,8 +19,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _require_jwt_key_in_production(self):
-        env = os.getenv("ENVIRONMENT", "development")
-        if env == "production" and not self.JWT_SECRET_KEY:
+        if self.ENVIRONMENT == "production" and not self.JWT_SECRET_KEY:
             raise ValueError("JWT_SECRET_KEY must be set in production")
         return self
 
@@ -38,3 +39,8 @@ def get_settings() -> Settings:
     """Construct fresh settings — no caching so env overrides (e.g. from test
     fixtures) take effect and runtime env changes are picked up."""
     return Settings()
+
+
+def is_production() -> bool:
+    """Fail-closed environment check: unset ENVIRONMENT = production."""
+    return get_settings().ENVIRONMENT == "production"

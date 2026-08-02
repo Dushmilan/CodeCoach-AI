@@ -4,6 +4,7 @@ import os
 import logging
 import httpx
 from app.services.nim_service import NIMService
+from app.core.config import is_production
 
 
 def _debug_enabled() -> bool:
@@ -11,7 +12,7 @@ def _debug_enabled() -> bool:
 
     Fail-closed: an unset ENVIRONMENT is treated as production, so the debug
     endpoints return 404 unless ENVIRONMENT is explicitly non-production."""
-    if os.getenv("ENVIRONMENT", "production") == "production":
+    if is_production():
         raise HTTPException(status_code=404, detail="Not found")
     return True
 

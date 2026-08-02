@@ -12,7 +12,7 @@ class TestHealthEndpoints:
 
     def test_health_check_basic(self, test_client: TestClient):
         """Test basic health check endpoint."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
 
         assert response.status_code == 200
         data = response.json()
@@ -22,22 +22,19 @@ class TestHealthEndpoints:
 
     def test_health_check_detailed(self, test_client: TestClient):
         """Test detailed health check endpoint."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
 
         assert response.status_code == 200
         data = response.json()
 
         assert data["status"] == "ok"
         assert "timestamp" in data
-        assert "system" in data
         assert "features" in data
         assert "dependencies" in data
 
-        # Check system information
-        system = data["system"]
-        assert "python_version" in system
-        assert "fastapi_version" in system
-        assert "uvicorn_version" in system
+        # The health payload must not leak version/stack details
+        assert "system" not in data
+        assert "python_version" not in data
 
         # Check features
         features = data["features"]
@@ -55,7 +52,7 @@ class TestHealthEndpoints:
     @pytest.mark.asyncio
     async def test_health_check_async(self, async_client: AsyncClient):
         """Test health check with async client."""
-        response = await async_client.get("/health/health", follow_redirects=True)
+        response = await async_client.get("/health/", follow_redirects=True)
 
         assert response.status_code == 200
         data = response.json()
@@ -64,7 +61,7 @@ class TestHealthEndpoints:
 
     def test_health_check_response_format(self, test_client: TestClient):
         """Test health check response format consistency."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
@@ -85,18 +82,18 @@ class TestHealthEndpoints:
     def test_health_check_error_handling(self, test_client: TestClient):
         """Test health check error handling."""
         # Test with invalid HTTP method
-        response = test_client.post("/health/health")
+        response = test_client.post("/health/")
         assert response.status_code == 405
 
-        response = test_client.put("/health/health")
+        response = test_client.put("/health/")
         assert response.status_code == 405
 
-        response = test_client.delete("/health/health")
+        response = test_client.delete("/health/")
         assert response.status_code == 405
 
     def test_health_check_caching_headers(self, test_client: TestClient):
         """Test health check caching headers."""
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
 
         assert response.status_code == 200
 
@@ -109,7 +106,7 @@ class TestHealthEndpoints:
         import time
 
         start_time = time.time()
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
         end_time = time.time()
 
         assert response.status_code == 200
@@ -125,7 +122,7 @@ class TestHealthEndpoints:
         import time
 
         start_time = time.time()
-        response = test_client.get("/health/health")
+        response = test_client.get("/health/")
         end_time = time.time()
 
         assert response.status_code == 200
