@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+
+from app.utils.ids import validate_entity_id
 
 
 class UserAdminUpdate(BaseModel):
@@ -63,6 +65,11 @@ class CourseCreate(BaseModel):
     icon: str = Field(default="code", description="Icon identifier for UI")
     order: int = Field(..., description="Display order")
 
+    @field_validator("id")
+    @classmethod
+    def _safe_id(cls, v: str) -> str:
+        return validate_entity_id(v, "id")
+
 
 class CourseUpdate(BaseModel):
     title: Optional[str] = None
@@ -78,6 +85,11 @@ class ModuleCreate(BaseModel):
     title: str = Field(..., description="Module title")
     description: str = Field(..., description="Module overview")
     order: int = Field(..., description="Display order within course")
+
+    @field_validator("id", "course_id")
+    @classmethod
+    def _safe_ids(cls, v: str, info) -> str:
+        return validate_entity_id(v, info.field_name)
 
 
 class ModuleUpdate(BaseModel):
@@ -102,6 +114,11 @@ class LessonCreate(BaseModel):
         None, description="Linked question ID for exercises"
     )
     language: str = Field(..., description="Programming language")
+
+    @field_validator("id", "course_id", "module_id")
+    @classmethod
+    def _safe_ids(cls, v: str, info) -> str:
+        return validate_entity_id(v, info.field_name)
 
 
 class LessonUpdate(BaseModel):

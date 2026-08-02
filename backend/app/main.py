@@ -106,14 +106,20 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 def _sanitize_errors(error_data):
-    """Recursively convert bytes to strings in error structures."""
+    """Recursively make error structures JSON-serializable.
+
+    Handles bytes (decode), Pydantic ``ValueError`` instances in ``ctx``
+    (stringify) and any other non-serializable objects.
+    """
     if isinstance(error_data, bytes):
         return error_data.decode("utf-8", errors="replace")
-    if isinstance(error_data, list):
-        return [_sanitize_errors(e) for e in error_data]
     if isinstance(error_data, dict):
         return {k: _sanitize_errors(v) for k, v in error_data.items()}
-    return error_data
+    if isinstance(error_data, list):
+        return [_sanitize_errors(e) for e in error_data]
+    if isinstance(error_data, (str, int, float, bool)) or error_data is None:
+        return error_data
+    return str(error_data)
 
 
 # Configure CORS
