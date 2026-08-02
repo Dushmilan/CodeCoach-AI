@@ -22,6 +22,7 @@ export interface TokenResponse {
   token_type: string;
   expires_in: number;
   user: User;
+  refresh_token?: string | null;
 }
 
 export class AuthService {
@@ -37,6 +38,12 @@ export class AuthService {
 
   async loginWithSupabase(data: SupabaseAuthRequest): Promise<TokenResponse> {
     return this.http.post<TokenResponse>("/api/auth/supabase", data);
+  }
+
+  async refresh(refreshToken: string): Promise<TokenResponse> {
+    return this.http.post<TokenResponse>("/api/auth/refresh", {
+      refresh_token: refreshToken,
+    });
   }
 
   async getMe(token: string): Promise<User> {

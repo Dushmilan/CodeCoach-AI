@@ -35,12 +35,27 @@ function getStoredToken(): string | null {
   }
 }
 
-function setStoredToken(token: string | null) {
+function getStoredRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = localStorage.getItem("auth_refresh_token");
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredTokens(token: string | null, refreshToken: string | null) {
   if (typeof window === "undefined") return;
   if (token) {
     localStorage.setItem("auth_token", JSON.stringify(token));
   } else {
     localStorage.removeItem("auth_token");
+  }
+  if (refreshToken) {
+    localStorage.setItem("auth_refresh_token", JSON.stringify(refreshToken));
+  } else {
+    localStorage.removeItem("auth_refresh_token");
   }
 }
 
@@ -53,19 +68,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isHydrated: false,
   });
 
-  const setAuth = useCallback((user: User | null, token: string | null) => {
-    setState({
-      user,
-      token,
-      isLoading: false,
-      isAuthenticated: !!user && !!token,
-      isHydrated: true,
-    });
-    setStoredToken(token);
-  }, []);
+  const setAuth = useCallback(
+    (user: User | null, token: string | null, refreshToken?: string | null) => {
+      setState({
+        user,
+        token,
+        isLoading: false,
+        isAuthenticated: !!user && !!token,
+        isHydrated: true,
+      });
+      setStoredTokens(token, refreshToken ?? null);
+    },
+    [],
+  );
 
   useEffect(() => {
     const storedToken = getStoredToken();
+    const storedRefreshToken = getStoredRefreshToken();
     if (!storedToken) {
       setState((prev) => ({ ...prev, isLoading: false, isHydrated: true }));
       return;
@@ -83,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       })
       .catch(() => {
-        setStoredToken(null);
+        setStoredTokens(null, null);
         setState({
           user: null,
           token: null,
@@ -97,7 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (username: string, password: string) => {
       const response = await authService.login({ username, password });
-      setAuth(response.user, response.access_token);
+      setAuth(
+        response.user,
+        response.access_token,
+        response.refresh_token ?? null,
+      );
       showToast("Signed in successfully", "success");
     },
     [setAuth],
@@ -110,7 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
       });
-      setAuth(response.user, response.access_token);
+      setAuth(
+        response.user,
+        response.access_token,
+        response.refresh_token ?? null,
+      );
       showToast("Account created successfully", "success");
     },
     [setAuth],
@@ -121,13 +148,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authService.loginWithSupabase({
         access_token: accessToken,
       });
-      setAuth(response.user, response.access_token);
+      setAuth(
+        response.user,
+        response.access_token,
+        response.refresh_token ?? null,
+      );
     },
     [setAuth],
   );
 
   const logout = useCallback(() => {
-    setAuth(null, null);
+    setAuth(null, null, null);
     showToast("Signed out", "info");
   }, [setAuth]);
 

@@ -286,4 +286,175 @@ describe("FetchClient", () => {
       expect(callArgs.signal).toBeDefined();
     });
   });
+
+  describe("refresh-on-401", () => {
+    let storage: Map<string, string>;
+
+    beforeEach(() => {
+      storage = new Map();
+      vi.stubGlobal("localStorage", {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      });
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("refreshes token and retries original request on 401", async () => {
+      storage.set("auth_token", JSON.stringify("expired_jwt"));
+      storage.set("auth_refresh_token", JSON.stringify("valid_refresh"));
+      client = new FetchClient();
+
+      fetchSpy
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: "Unauthorized",
+            text: vi.fn().mockResolvedValue("expired"),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            json: vi.fn().mockResolvedValue({
+              access_token: "new_jwt",
+              refresh_token: "rotated_refresh",
+              token_type: "bearer",
+              expires_in: 1800,
+              user: { id: "1", username: "u" },
+            }),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            json: vi.fn().mockResolvedValue({ protected: true }),
+          }),
+        );
+
+      const result = await client.get("/api/protected");
+
+      expect(result).toEqual({ protected: true });
+      expect(fetchSpy).toHaveBeenNthCalledWith(
+        2,
+        "http://localhost:8000/api/auth/refresh",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ refresh_token: "valid_refresh" }),
+        }),
+      );
+      expect(storage.get("auth_token")).toBe(JSON.stringify("new_jwt"));
+      expect(storage.get("auth_refresh_token")).toBe(
+        JSON.stringify("rotated_refresh"),
+      );
+      const retryCall = fetchSpy.mock.calls[2][1] as RequestInit;
+      const retryHeaders = retryCall.headers as Record<string, string>;
+      expect(retryHeaders["Authorization"]).toBe("Bearer new_jwt");
+    });
+
+    it("does not retry when no refresh token is stored", async () => {
+      storage.set("auth_token", JSON.stringify("expired_jwt"));
+      client = new FetchClient();
+
+      fetchSpy.mockResolvedValue(
+        createMockResponse({
+          ok: false,
+          status: 401,
+          statusText: "Unauthorized",
+          text: vi.fn().mockResolvedValue("expired"),
+        }),
+      );
+
+      await expect(client.get("/api/protected")).rejects.toMatchObject({
+        status: 401,
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("clears tokens and does not retry when refresh fails", async () => {
+      storage.set("auth_token", JSON.stringify("expired_jwt"));
+      storage.set("auth_refresh_token", JSON.stringify("bad_refresh"));
+      client = new FetchClient();
+
+      fetchSpy
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: "Unauthorized",
+            text: vi.fn().mockResolvedValue("expired"),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: "Unauthorized",
+            text: vi.fn().mockResolvedValue("invalid refresh"),
+          }),
+        );
+
+      await expect(client.get("/api/protected")).rejects.toMatchObject({
+        status: 401,
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(localStorage.getItem("auth_token")).toBeNull();
+      expect(localStorage.getItem("auth_refresh_token")).toBeNull();
+    });
+
+    it("single-flights concurrent refresh requests", async () => {
+      storage.set("auth_token", JSON.stringify("expired_jwt"));
+      storage.set("auth_refresh_token", JSON.stringify("valid_refresh"));
+      client = new FetchClient();
+
+      fetchSpy
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: "Unauthorized",
+            text: vi.fn().mockResolvedValue("expired"),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: "Unauthorized",
+            text: vi.fn().mockResolvedValue("expired"),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            json: vi.fn().mockResolvedValue({
+              access_token: "new_jwt",
+              token_type: "bearer",
+              expires_in: 1800,
+              user: { id: "1", username: "u" },
+            }),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({ json: vi.fn().mockResolvedValue({ a: 1 }) }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({ json: vi.fn().mockResolvedValue({ b: 2 }) }),
+        );
+
+      const [resultA, resultB] = await Promise.all([
+        client.get("/api/a"),
+        client.get("/api/b"),
+      ]);
+
+      expect(resultA).toEqual({ a: 1 });
+      expect(resultB).toEqual({ b: 2 });
+      const refreshCalls = fetchSpy.mock.calls.filter(
+        ([url]) => url === "http://localhost:8000/api/auth/refresh",
+      );
+      expect(refreshCalls).toHaveLength(1);
+    });
+  });
 });

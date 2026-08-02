@@ -23,7 +23,10 @@ from app.repositories.file_user_repository import FileUserRepository
 logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+ACCESS_TOKEN_TYPE = "access"
+REFRESH_TOKEN_TYPE = "refresh"
 _USERS_FILE = str(Path(__file__).parent.parent.parent / "data" / "users.json")
 
 
@@ -48,22 +51,49 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     )
 
 
-def create_access_token(
-    data: TokenData, expires_delta: Optional[timedelta] = None
+def _create_token(
+    data: TokenData,
+    expires_delta: timedelta,
+    token_type: str,
 ) -> tuple[str, int]:
-    to_encode = {"sub": data.user_id or "", "username": data.username or ""}
-    expire = datetime.now(timezone.utc) + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
+    to_encode = {
+        "sub": data.user_id or "",
+        "username": data.username or "",
+        "type": token_type,
+    }
+    now = datetime.now(timezone.utc)
+    expire = now + expires_delta
     to_encode["exp"] = expire
     encoded = jwt.encode(to_encode, _get_secret_key(), algorithm=ALGORITHM)
-    expires_in = int((expire - datetime.now(timezone.utc)).total_seconds())
+    expires_in = int((expire - now).total_seconds())
     return encoded, expires_in
 
 
-def decode_access_token(token: str) -> Optional[TokenData]:
+def create_access_token(
+    data: TokenData, expires_delta: Optional[timedelta] = None
+) -> tuple[str, int]:
+    return _create_token(
+        data,
+        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        ACCESS_TOKEN_TYPE,
+    )
+
+
+def create_refresh_token(
+    data: TokenData, expires_delta: Optional[timedelta] = None
+) -> tuple[str, int]:
+    return _create_token(
+        data,
+        expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+        REFRESH_TOKEN_TYPE,
+    )
+
+
+def _decode_token(token: str, expected_type: str) -> Optional[TokenData]:
     try:
         payload = jwt.decode(token, _get_secret_key(), algorithms=[ALGORITHM])
+        if payload.get("type") != expected_type:
+            return None
         user_id: str = payload.get("sub")
         username: str = payload.get("username")
         if user_id is None:
@@ -71,6 +101,14 @@ def decode_access_token(token: str) -> Optional[TokenData]:
         return TokenData(user_id=user_id, username=username)
     except JWTError:
         return None
+
+
+def decode_access_token(token: str) -> Optional[TokenData]:
+    return _decode_token(token, ACCESS_TOKEN_TYPE)
+
+
+def decode_refresh_token(token: str) -> Optional[TokenData]:
+    return _decode_token(token, REFRESH_TOKEN_TYPE)
 
 
 def _user_to_response(user: UserInDB) -> UserResponse:
@@ -106,14 +144,7 @@ class AuthService:
         )
         await self.repository.add(user)
 
-        token, expires_in = create_access_token(
-            TokenData(user_id=user.id, username=user.username)
-        )
-        return TokenResponse(
-            access_token=token,
-            expires_in=expires_in,
-            user=_user_to_response(user),
-        )
+        return self._issue_tokens(user)
 
     async def login(self, request: UserLoginRequest) -> TokenResponse:
         user = await self.repository.get_by_username(request.username)
@@ -129,14 +160,32 @@ class AuthService:
         if not user.is_active:
             raise ValueError("Account is deactivated")
 
-        token, expires_in = create_access_token(
-            TokenData(user_id=user.id, username=user.username)
-        )
+        return self._issue_tokens(user)
+
+    def _issue_tokens(self, user: UserInDB) -> TokenResponse:
+        """Issue a fresh access token plus a rotating refresh token."""
+        token_data = TokenData(user_id=user.id, username=user.username)
+        access_token, expires_in = create_access_token(token_data)
+        refresh_token, _ = create_refresh_token(token_data)
         return TokenResponse(
-            access_token=token,
+            access_token=access_token,
             expires_in=expires_in,
             user=_user_to_response(user),
+            refresh_token=refresh_token,
         )
+
+    async def refresh(self, refresh_token: str) -> TokenResponse:
+        token_data = decode_refresh_token(refresh_token)
+        if not token_data or not token_data.user_id:
+            raise ValueError("Invalid or expired refresh token")
+
+        user = await self.repository.get_by_id(token_data.user_id)
+        if not user:
+            raise ValueError("User not found")
+        if not user.is_active:
+            raise ValueError("Account is deactivated")
+
+        return self._issue_tokens(user)
 
     async def login_with_supabase(self, access_token: str) -> TokenResponse:
         supabase_url = os.getenv("SUPABASE_URL")
@@ -165,14 +214,7 @@ class AuthService:
 
         existing = await self.repository.get_by_oauth("google", oauth_id)
         if existing:
-            token, expires_in = create_access_token(
-                TokenData(user_id=existing.id, username=existing.username)
-            )
-            return TokenResponse(
-                access_token=token,
-                expires_in=expires_in,
-                user=_user_to_response(existing),
-            )
+            return self._issue_tokens(existing)
 
         username = email.split("@")[0] if email else f"user_{oauth_id[:8]}"
         base_username = username
@@ -193,14 +235,7 @@ class AuthService:
         )
         await self.repository.add(user)
 
-        token, expires_in = create_access_token(
-            TokenData(user_id=user.id, username=user.username)
-        )
-        return TokenResponse(
-            access_token=token,
-            expires_in=expires_in,
-            user=_user_to_response(user),
-        )
+        return self._issue_tokens(user)
 
     async def get_current_user(self, token: str) -> UserResponse:
         token_data = decode_access_token(token)

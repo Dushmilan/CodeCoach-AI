@@ -5,6 +5,8 @@ export interface HttpRequestOptions {
   signal?: AbortSignal;
   timeout?: number;
   cache?: RequestCache;
+  /** Internal: prevents infinite retry loops after a token refresh (401). */
+  skipAuthRefresh?: boolean;
 }
 
 export interface HttpClient {

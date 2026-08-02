@@ -7,6 +7,7 @@ from app.models.auth_schemas import (
     SupabaseAuthRequest,
     TokenResponse,
     UserResponse,
+    RefreshRequest,
 )
 from app.services.auth_service import AuthService
 from app.api.auth_deps import get_auth_service, get_current_user
@@ -27,6 +28,22 @@ async def register(
         return await auth_service.register(request)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_tokens(
+    request: RefreshRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Exchange a refresh token for a fresh access + refresh token pair."""
+    try:
+        return await auth_service.refresh(request.refresh_token)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 @router.post("/login", response_model=TokenResponse)

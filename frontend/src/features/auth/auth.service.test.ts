@@ -127,6 +127,32 @@ describe("AuthService", () => {
     });
   });
 
+  describe("refresh", () => {
+    it("calls POST /api/auth/refresh with refresh token", async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        access_token: "new_jwt",
+        refresh_token: "rotated_refresh",
+        token_type: "bearer",
+        expires_in: 1800,
+        user: {
+          id: "1",
+          username: "u",
+          email: "u@t.com",
+          created_at: "2024-01-01",
+          is_active: true,
+        },
+      });
+
+      const result = await service.refresh("refresh_token_123");
+
+      expect(http.post).toHaveBeenCalledWith("/api/auth/refresh", {
+        refresh_token: "refresh_token_123",
+      });
+      expect(result.access_token).toBe("new_jwt");
+      expect(result.refresh_token).toBe("rotated_refresh");
+    });
+  });
+
   describe("getMe", () => {
     it("calls GET /api/auth/me with Authorization header", async () => {
       vi.mocked(http.get).mockResolvedValue({

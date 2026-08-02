@@ -28,6 +28,16 @@ class TestQuestionsEndpoints:
             async def get_categories(self):
                 return ["mock-category"]
 
+            async def stats(self):
+                class Stats:
+                    total = 0
+                    difficulty_counts = {}
+                    category_counts = {}
+                    categories = ["mock-category"]
+                    companies = []
+
+                return Stats()
+
             async def get_company_tags(self):
                 return []
 
@@ -49,9 +59,9 @@ class TestQuestionsEndpoints:
             async def get_questions_by_difficulty(self, difficulty):
                 return []
 
-        from app.api.questions import get_questions_service
+        from app.api.dependencies import get_question_bank
 
-        app.dependency_overrides[get_questions_service] = lambda: MockQuestions()
+        app.dependency_overrides[get_question_bank] = lambda: MockQuestions()
         try:
             response = test_client.get("/api/questions/categories")
             assert response.status_code == 200, (
@@ -60,7 +70,7 @@ class TestQuestionsEndpoints:
             data = response.json()
             assert data["categories"] == ["mock-category"]
         finally:
-            app.dependency_overrides.pop(get_questions_service, None)
+            app.dependency_overrides.pop(get_question_bank, None)
 
     def test_get_all_questions_basic(self, test_client: TestClient):
         """Test getting all questions with basic parameters."""

@@ -28,6 +28,13 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserResponse
+    refresh_token: Optional[str] = Field(
+        None, description="Long-lived refresh token for silent re-authentication"
+    )
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(..., description="Refresh token issued at login")
 
 
 class TokenData(BaseModel):

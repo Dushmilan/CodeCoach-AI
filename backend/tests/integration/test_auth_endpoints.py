@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -9,10 +9,18 @@ from app.models.auth_schemas import TokenResponse, UserResponse
 
 @pytest.fixture
 def mock_auth_service():
-    with patch("app.api.auth.AuthService") as mock:
-        instance = MagicMock()
-        mock.return_value = instance
+    from app.api.auth_deps import get_auth_service
+
+    instance = MagicMock()
+
+    async def override_get_auth_service():
+        return instance
+
+    app.dependency_overrides[get_auth_service] = override_get_auth_service
+    try:
         yield instance
+    finally:
+        app.dependency_overrides.pop(get_auth_service, None)
 
 
 class TestAuthRegister:
@@ -218,6 +226,54 @@ class TestAuthMe:
             headers={"Authorization": "Bearer invalid_token"},
         )
         assert response.status_code == 401
+
+
+class TestAuthRefresh:
+    def test_refresh_returns_new_tokens(
+        self, test_client: TestClient, mock_auth_service
+    ):
+        mock_auth_service.refresh = AsyncMock(
+            return_value=TokenResponse(
+                access_token="new_access_abc",
+                token_type="bearer",
+                expires_in=1800,
+                refresh_token="new_refresh_xyz",
+                user=UserResponse(
+                    id="user-1",
+                    username="newuser",
+                    email="new@example.com",
+                    created_at=datetime.now(timezone.utc),
+                    is_active=True,
+                ),
+            )
+        )
+
+        response = test_client.post(
+            "/api/auth/refresh", json={"refresh_token": "old_refresh_token"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["access_token"] == "new_access_abc"
+        assert data["refresh_token"] == "new_refresh_xyz"
+
+    def test_refresh_rejects_invalid_token(
+        self, test_client: TestClient, mock_auth_service
+    ):
+        mock_auth_service.refresh = AsyncMock(
+            side_effect=ValueError("Invalid or expired refresh token")
+        )
+
+        response = test_client.post(
+            "/api/auth/refresh", json={"refresh_token": "garbage"}
+        )
+
+        assert response.status_code == 401
+        assert "Invalid or expired refresh token" in response.json()["detail"]
+
+    def test_refresh_without_token(self, test_client: TestClient):
+        response = test_client.post("/api/auth/refresh", json={})
+        assert response.status_code == 422
 
 
 class TestAuthErrorHandling:

@@ -105,6 +105,7 @@ describe("AuthProvider", () => {
     vi.spyOn(authService, "getMe").mockRejectedValue(new Error("No token"));
     vi.spyOn(authService, "login").mockResolvedValue({
       access_token: "new_jwt",
+      refresh_token: "new_refresh",
       token_type: "bearer",
       expires_in: 86400,
       user: {
@@ -129,10 +130,45 @@ describe("AuthProvider", () => {
       expect(screen.getByTestId("token-present").textContent).toBe("yes");
     });
     expect(localStorage.getItem("auth_token")).toBe(JSON.stringify("new_jwt"));
+    expect(localStorage.getItem("auth_refresh_token")).toBe(
+      JSON.stringify("new_refresh"),
+    );
   });
 
-  it("logout clears user and token", async () => {
+  it("register stores refresh token", async () => {
+    vi.spyOn(authService, "getMe").mockRejectedValue(new Error("No token"));
+    vi.spyOn(authService, "login").mockResolvedValue({
+      access_token: "reg_jwt",
+      refresh_token: "reg_refresh",
+      token_type: "bearer",
+      expires_in: 86400,
+      user: {
+        id: "3",
+        username: "reguser",
+        email: "r@t.com",
+        created_at: "2024-01-01",
+        is_active: true,
+      },
+    });
+
+    renderWithProvider();
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-status").textContent).toBe("Logged out");
+    });
+
+    await userEvent.click(screen.getByTestId("register-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-status").textContent).toBe("Logged in");
+    });
+    expect(localStorage.getItem("auth_refresh_token")).toBe(
+      JSON.stringify("reg_refresh"),
+    );
+  });
+
+  it("logout clears both access and refresh tokens", async () => {
     localStorage.setItem("auth_token", JSON.stringify("valid_jwt"));
+    localStorage.setItem("auth_refresh_token", JSON.stringify("valid_refresh"));
     vi.spyOn(authService, "getMe").mockResolvedValue({
       id: "1",
       username: "testuser",
@@ -152,5 +188,6 @@ describe("AuthProvider", () => {
       expect(screen.getByTestId("auth-status").textContent).toBe("Logged out");
     });
     expect(localStorage.getItem("auth_token")).toBeNull();
+    expect(localStorage.getItem("auth_refresh_token")).toBeNull();
   });
 });
