@@ -75,8 +75,8 @@ export function SettingsModal({
                 NVIDIA API Key
               </label>
               <p className="text-[10px] text-muted-foreground/50 mb-3 leading-relaxed">
-                Required for AI coaching features. Your key is stored locally
-                and never sent to our servers.
+                Optional. Stored locally in your browser and never sent to our
+                servers. AI coaching uses the server-side API key.
               </p>
               <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-0.5">
                 <div className="relative rounded-[calc(1rem-0.125rem)]">

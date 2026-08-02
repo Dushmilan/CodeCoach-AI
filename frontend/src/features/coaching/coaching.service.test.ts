@@ -72,7 +72,6 @@ describe("CoachingService", () => {
           language: "python",
           difficulty: "medium",
         },
-        expect.objectContaining({ headers: {} }),
       );
       expect(result.response).toBe("Try using a hash map");
       expect(result.structured).toBeNull();
@@ -95,11 +94,10 @@ describe("CoachingService", () => {
       expect(http.post).toHaveBeenCalledWith(
         "/api/coach/",
         expect.objectContaining({ difficulty: "medium" }),
-        expect.anything(),
       );
     });
 
-    it("sends API key from localStorage as header", async () => {
+    it("never sends the API key from localStorage to the server", async () => {
       localStorage.setItem("nvidia_api_key", "nvapi-test-key");
       vi.mocked(http.post).mockResolvedValue({
         response: "Here is a hint",
@@ -114,15 +112,13 @@ describe("CoachingService", () => {
         defaultArgs.mode,
       );
 
-      const callHeaders = (
-        vi.mocked(http.post).mock.calls[0][2] as {
-          headers: Record<string, string>;
-        }
-      ).headers;
-      expect(callHeaders["X-NVIDIA-API-Key"]).toBe("nvapi-test-key");
+      const call = vi.mocked(http.post).mock.calls[0];
+      expect(call[2]).toBeUndefined();
+      expect(JSON.stringify(call)).not.toContain("nvapi-test-key");
+      expect(JSON.stringify(call)).not.toContain("X-NVIDIA-API-Key");
     });
 
-    it("does not send API key header when not in localStorage", async () => {
+    it("does not pass request options to http.post", async () => {
       vi.mocked(http.post).mockResolvedValue({
         response: "Sure",
         structured: null,
@@ -136,12 +132,7 @@ describe("CoachingService", () => {
         defaultArgs.mode,
       );
 
-      const callHeaders = (
-        vi.mocked(http.post).mock.calls[0][2] as {
-          headers: Record<string, string>;
-        }
-      ).headers;
-      expect(callHeaders["X-NVIDIA-API-Key"]).toBeUndefined();
+      expect(vi.mocked(http.post).mock.calls[0][2]).toBeUndefined();
     });
 
     it("returns structured response when present", async () => {
@@ -187,7 +178,6 @@ describe("CoachingService", () => {
           mode: "hint",
           language: "python",
         }),
-        expect.anything(),
       );
     });
 
