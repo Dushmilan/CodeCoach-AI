@@ -425,3 +425,50 @@ for i in range(10):
         assert response_time < 2000, (
             f"Code execution took {response_time}ms, expected < 2000ms"
         )
+
+    def test_execute_code_fractional_wall_time_returns_200(
+        self,
+        test_client: TestClient,
+    ):
+        """Regression: Piston returns wall_time as a float (e.g. 0.012s).
+
+        CodeExecutionResult.execution_time must accept floats; an int-typed
+        field caused a Pydantic ValidationError -> 500 on every real run.
+        """
+        from app.api.dependencies import get_executor
+        from app.ports.code_executor import ExecutionResult
+
+        class MockPiston:
+            async def execute(self, language, code, stdin="", version=None):
+                return ExecutionResult(
+                    stdout="ok\n",
+                    stderr="",
+                    exit_code=0,
+                    execution_time=0.012,
+                    memory_usage=1024,
+                    language=language,
+                    version=version or "3.10.0",
+                )
+
+            def validate_code(self, language, code):
+                return {"valid": True, "warnings": [], "errors": []}
+
+            async def get_runtimes(self):
+                return []
+
+        app.dependency_overrides[get_executor] = lambda: MockPiston()
+        try:
+            with mock_auth():
+                response = test_client.post(
+                    "/api/run/",
+                    json={
+                        "language": "python",
+                        "code": "print('ok')",
+                        "stdin": "",
+                    },
+                )
+        finally:
+            app.dependency_overrides.pop(get_executor, None)
+
+        assert response.status_code == 200
+        assert response.json()["execution_time"] == 0.012
