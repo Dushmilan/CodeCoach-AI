@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from app.ports.course_admin_repository import CourseAdminRepository
+from app.utils.ids import validate_entity_id
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class FileCourseAdminRepository(CourseAdminRepository):
         self._lock = threading.Lock()
 
     def _course_dir(self, course_id: str) -> Path:
+        validate_entity_id(course_id, "course_id")
         return self._courses_dir / course_id
 
     def _read_json(self, path: Path) -> Dict[str, Any]:

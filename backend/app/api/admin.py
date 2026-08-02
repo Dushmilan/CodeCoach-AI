@@ -410,6 +410,8 @@ async def delete_course(
         _invalidate_course_cache()
         logger.info(f"Course {course_id} deleted by {current_user.id}")
         return {"message": "Course deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -530,6 +532,8 @@ async def update_course(
         _invalidate_course_cache()
         logger.info(f"Course '{course_id}' updated by {current_user.id}")
         return {"message": "Course updated successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
