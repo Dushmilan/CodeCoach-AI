@@ -1,0 +1,18 @@
+.git
+.gitignore
+.env
+.env.*
+*.log
+
+# Node / Next.js artifacts
+node_modules
+.next
+out
+build
+coverage
+playwright-report
+test-results
+.vscode
+
+# Docs not needed at runtime
+Docs
