@@ -154,7 +154,7 @@ export function useCodeExecution(): CodeExecutionFeature {
       setError(null);
 
       try {
-        const result = executeClientJS(code, question);
+        const result = await executeClientJS(code, question);
         const outputText = formatClientJsOutput(result, question);
         setOutput(outputText);
         return outputText;
