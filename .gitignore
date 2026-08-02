@@ -204,9 +204,6 @@ cython_debug/
 *.sqlite
 *.sqlite3
 
-# Docker
-.dockerignore
-
 # Piston runtime (code execution engine)
 piston/
 

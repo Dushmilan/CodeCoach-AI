@@ -1,0 +1,26 @@
+.git
+.gitignore
+.env
+.env.*
+*.log
+
+# Python caches / venvs
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# Local runtime data & databases (provided via volume mount)
+data
+*.db
+*.sqlite3
+
+# Tests / docs not needed at runtime
+tests
+Docs
