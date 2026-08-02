@@ -45,6 +45,7 @@ from app.api import (  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import init_db  # noqa: E402
 from app.middleware.rate_limit import limiter  # noqa: E402
+from app.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
 from app.services.redis_service import RedisCache  # noqa: E402
 
 settings = get_settings()
@@ -87,6 +88,8 @@ app = FastAPI(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 # Add validation error handler for detailed error messages
