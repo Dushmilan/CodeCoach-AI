@@ -6,15 +6,27 @@ interface MarkdownRendererProps {
   content: string;
 }
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-function renderMarkdown(md: string): string {
+const DANGEROUS_TAGS_RE = /<\s*\/?\s*(script|iframe|object|embed|link|meta|base|form)\b[^>]*>/gi;
+const EVENT_HANDLER_ATTR_RE = /\son[a-z]+\s*=\s*(["'])[^"']*\1/gi;
+const JAVASCRIPT_URL_RE = /(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi;
+
+export function sanitizeHtml(html: string): string {
+  return html
+    .replace(DANGEROUS_TAGS_RE, "")
+    .replace(EVENT_HANDLER_ATTR_RE, "")
+    .replace(JAVASCRIPT_URL_RE, "");
+}
+
+export function renderMarkdown(md: string): string {
   const lines = md.split("\n");
   const html: string[] = [];
   let inCodeBlock = false;
@@ -89,7 +101,10 @@ function renderMarkdown(md: string): string {
 }
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
-  const html = useMemo(() => renderMarkdown(content), [content]);
+  const html = useMemo(
+    () => sanitizeHtml(renderMarkdown(content)),
+    [content],
+  );
 
   return (
     <div
