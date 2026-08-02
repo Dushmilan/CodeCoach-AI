@@ -15,8 +15,9 @@ from app.models.question_validation_schemas import (
 from app.ports.code_executor import CodeExecutor
 from app.services.question_validator import QuestionValidatorService
 from app.api.dependencies import get_executor
+from app.api.auth_deps import require_admin
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_admin)])
 
 
 def get_validator_service(

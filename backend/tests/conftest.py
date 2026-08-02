@@ -177,6 +177,43 @@ def test_env_vars():
 
 
 @pytest.fixture
+def admin_headers(test_client: TestClient) -> dict:
+    """Return Authorization headers for an admin user.
+
+    Registers (or logs in) a fixed admin user and promotes it to admin by
+    editing the users file directly, mirroring test_admin_curriculum_crud.py.
+    """
+    users_path = os.path.join(os.path.dirname(__file__), "..", "data", "users.json")
+
+    res = test_client.post(
+        "/api/auth/register",
+        json={
+            "username": "auditadmin",
+            "email": "auditadmin@test.com",
+            "password": "testpass123",
+        },
+    )
+    if res.status_code != 201:
+        res = test_client.post(
+            "/api/auth/login",
+            json={"username": "auditadmin", "password": "testpass123"},
+        )
+    token = res.json()["access_token"]
+
+    if os.path.exists(users_path):
+        with open(users_path) as f:
+            users = json.load(f)
+        for u in users:
+            if u.get("username") == "auditadmin":
+                u["role"] = "admin"
+                break
+        with open(users_path, "w") as f:
+            json.dump(users, f, indent=2)
+
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
 def sample_question_data():
     """Provide sample question data for testing."""
     return {

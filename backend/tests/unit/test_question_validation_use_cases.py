@@ -828,6 +828,36 @@ class TestQuestionBankValidationIntegration:
 class TestQuestionValidationAPI:
     """Tests for question validation API endpoints."""
 
+    def _admin_headers(self, client) -> dict:
+        """Register an admin and promote it via the users file."""
+        res = client.post(
+            "/api/auth/register",
+            json={
+                "username": "unitvaladmin",
+                "email": "unitvaladmin@test.com",
+                "password": "testpass123",
+            },
+        )
+        if res.status_code != 201:
+            res = client.post(
+                "/api/auth/login",
+                json={"username": "unitvaladmin", "password": "testpass123"},
+            )
+        token = res.json()["access_token"]
+        users_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "data", "users.json"
+        )
+        if os.path.exists(users_path):
+            with open(users_path) as f:
+                users = json.load(f)
+            for u in users:
+                if u.get("username") == "unitvaladmin":
+                    u["role"] = "admin"
+                    break
+            with open(users_path, "w") as f:
+                json.dump(users, f, indent=2)
+        return {"Authorization": f"Bearer {token}"}
+
     @pytest.mark.asyncio
     async def test_validate_endpoint_returns_validation_result(
         self, valid_question_data
@@ -837,15 +867,32 @@ class TestQuestionValidationAPI:
         from app.main import app
 
         client = TestClient(app)
+        headers = self._admin_headers(client)
 
         response = client.post(
-            "/api/question-validation/validate", json=valid_question_data
+            "/api/question-validation/validate",
+            json=valid_question_data,
+            headers=headers,
         )
 
         assert response.status_code == 200
         data = response.json()
         assert "valid" in data
         assert "results" in data
+
+    @pytest.mark.asyncio
+    async def test_validate_endpoint_rejects_unauthenticated(self, valid_question_data):
+        """Test that the validate endpoint rejects unauthenticated requests."""
+        from fastapi.testclient import TestClient
+        from app.main import app
+
+        client = TestClient(app)
+
+        response = client.post(
+            "/api/question-validation/validate", json=valid_question_data
+        )
+
+        assert response.status_code == 401
 
     @pytest.mark.asyncio
     async def test_batch_validate_endpoint_validates_multiple_questions(
@@ -856,12 +903,15 @@ class TestQuestionValidationAPI:
         from app.main import app
 
         client = TestClient(app)
+        headers = self._admin_headers(client)
 
         questions = [valid_question_data, valid_question_data.copy()]
         questions[1]["id"] = "test-question-2"
 
         response = client.post(
-            "/api/question-validation/batch-validate", json=questions
+            "/api/question-validation/batch-validate",
+            json=questions,
+            headers=headers,
         )
 
         assert response.status_code == 200

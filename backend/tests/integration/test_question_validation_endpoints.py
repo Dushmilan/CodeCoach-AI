@@ -54,7 +54,7 @@ def make_mock_result(valid: bool = True) -> QuestionValidationResult:
 
 
 class TestQuestionValidationValidate:
-    def test_validate_full_success(self, test_client: TestClient):
+    def test_validate_full_success(self, test_client: TestClient, admin_headers: dict):
         mock_validator = MagicMock()
         mock_validator.validate_question = AsyncMock(
             return_value=make_mock_result(valid=True)
@@ -67,6 +67,7 @@ class TestQuestionValidationValidate:
             response = test_client.post(
                 "/api/question-validation/validate",
                 json=VALID_QUESTION,
+                headers=admin_headers,
             )
             assert response.status_code == 200
             data = response.json()
@@ -75,7 +76,14 @@ class TestQuestionValidationValidate:
         finally:
             app.dependency_overrides.pop(get_validator_service, None)
 
-    def test_validate_full_failure(self, test_client: TestClient):
+    def test_validate_requires_auth(self, test_client: TestClient):
+        response = test_client.post(
+            "/api/question-validation/validate",
+            json=VALID_QUESTION,
+        )
+        assert response.status_code == 401
+
+    def test_validate_full_failure(self, test_client: TestClient, admin_headers: dict):
         mock_validator = MagicMock()
         result = make_mock_result(valid=False)
         result.results[ValidationUseCase.STRUCTURE] = UseCaseValidationResult(
@@ -101,6 +109,7 @@ class TestQuestionValidationValidate:
             response = test_client.post(
                 "/api/question-validation/validate",
                 json=VALID_QUESTION,
+                headers=admin_headers,
             )
             assert response.status_code == 200
             data = response.json()
@@ -109,16 +118,17 @@ class TestQuestionValidationValidate:
         finally:
             app.dependency_overrides.pop(get_validator_service, None)
 
-    def test_validate_invalid_input(self, test_client: TestClient):
+    def test_validate_invalid_input(self, test_client: TestClient, admin_headers: dict):
         response = test_client.post(
             "/api/question-validation/validate",
             json={"id": "no-fields"},
+            headers=admin_headers,
         )
         assert response.status_code == 422
 
 
 class TestQuestionValidationQuick:
-    def test_quick_validate_success(self, test_client: TestClient):
+    def test_quick_validate_success(self, test_client: TestClient, admin_headers: dict):
         mock_validator = MagicMock()
         mock_validator.quick_validate = AsyncMock(
             return_value=make_mock_result(valid=True)
@@ -131,6 +141,7 @@ class TestQuestionValidationQuick:
             response = test_client.post(
                 "/api/question-validation/validate/quick",
                 json=VALID_QUESTION,
+                headers=admin_headers,
             )
             assert response.status_code == 200
             data = response.json()
@@ -140,7 +151,9 @@ class TestQuestionValidationQuick:
 
 
 class TestQuestionValidationUseCases:
-    def test_validate_with_specific_use_cases(self, test_client: TestClient):
+    def test_validate_with_specific_use_cases(
+        self, test_client: TestClient, admin_headers: dict
+    ):
         mock_validator = MagicMock()
         mock_validator.validate_question = AsyncMock(
             return_value=make_mock_result(valid=True)
@@ -156,12 +169,15 @@ class TestQuestionValidationUseCases:
                     "question": VALID_QUESTION,
                     "use_cases": ["structure", "output_format"],
                 },
+                headers=admin_headers,
             )
             assert response.status_code == 200
         finally:
             app.dependency_overrides.pop(get_validator_service, None)
 
-    def test_validate_with_invalid_use_case_name(self, test_client: TestClient):
+    def test_validate_with_invalid_use_case_name(
+        self, test_client: TestClient, admin_headers: dict
+    ):
         mock_validator = MagicMock()
 
         from app.api.question_validation import get_validator_service
@@ -174,6 +190,7 @@ class TestQuestionValidationUseCases:
                     "question": VALID_QUESTION,
                     "use_cases": ["nonexistent_use_case"],
                 },
+                headers=admin_headers,
             )
             assert response.status_code == 400
             assert "Invalid use case" in response.json()["detail"]
@@ -182,7 +199,7 @@ class TestQuestionValidationUseCases:
 
 
 class TestQuestionValidationBatch:
-    def test_batch_validate(self, test_client: TestClient):
+    def test_batch_validate(self, test_client: TestClient, admin_headers: dict):
         mock_validator = MagicMock()
         mock_validator.validate_batch = AsyncMock(
             return_value=[make_mock_result(valid=True), make_mock_result(valid=False)]
@@ -195,6 +212,7 @@ class TestQuestionValidationBatch:
             response = test_client.post(
                 "/api/question-validation/batch-validate",
                 json=[VALID_QUESTION, VALID_QUESTION],
+                headers=admin_headers,
             )
             assert response.status_code == 200
             data = response.json()
@@ -206,8 +224,10 @@ class TestQuestionValidationBatch:
 
 
 class TestQuestionValidationInfo:
-    def test_get_use_cases(self, test_client: TestClient):
-        response = test_client.get("/api/question-validation/use-cases")
+    def test_get_use_cases(self, test_client: TestClient, admin_headers: dict):
+        response = test_client.get(
+            "/api/question-validation/use-cases", headers=admin_headers
+        )
         assert response.status_code == 200
         data = response.json()
         assert "use_cases" in data
@@ -220,8 +240,10 @@ class TestQuestionValidationInfo:
         assert "function_signature" in use_case_names
         assert "output_format" in use_case_names
 
-    def test_get_config(self, test_client: TestClient):
-        response = test_client.get("/api/question-validation/config")
+    def test_get_config(self, test_client: TestClient, admin_headers: dict):
+        response = test_client.get(
+            "/api/question-validation/config", headers=admin_headers
+        )
         assert response.status_code == 200
         data = response.json()
         assert "config" in data
@@ -232,7 +254,7 @@ class TestQuestionValidationInfo:
 
 
 class TestQuestionValidationSummary:
-    def test_get_summary(self, test_client: TestClient):
+    def test_get_summary(self, test_client: TestClient, admin_headers: dict):
         mock_validator = MagicMock()
         mock_validator.get_validation_summary = MagicMock(
             return_value={
@@ -259,9 +281,10 @@ class TestQuestionValidationSummary:
                     "warning_count": 0,
                     "validated_at": "2025-01-01T00:00:00Z",
                 },
+                headers=admin_headers,
             )
             assert response.status_code == 200
             data = response.json()
             assert data["valid"] is True
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_validator_service, None)
