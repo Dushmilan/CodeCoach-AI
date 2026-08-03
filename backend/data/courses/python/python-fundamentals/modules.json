@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "id": "py-intro",
+      "course_id": "python-fundamentals",
+      "title": "Getting Started with Python",
+      "description": "Your first program, variables, and the core data types.",
+      "order": 1
+    },
+    {
+      "id": "py-control-flow",
+      "course_id": "python-fundamentals",
+      "title": "Control Flow",
+      "description": "Make decisions with conditionals and repeat work with loops.",
+      "order": 2
+    },
+    {
+      "id": "py-strings",
+      "course_id": "python-fundamentals",
+      "title": "Strings & Data Structures",
+      "description": "Manipulate text and organize data with lists, tuples, and dictionaries.",
+      "order": 3
+    }
+  ]
+}

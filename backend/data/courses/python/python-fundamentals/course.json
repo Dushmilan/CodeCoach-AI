@@ -1,0 +1,8 @@
+{
+  "id": "python-fundamentals",
+  "title": "Python Fundamentals",
+  "description": "Learn Python from first principles: syntax, variables, control flow, strings, and data structures. Each module pairs clear theory with a hands-on coding exercise.",
+  "language": "python",
+  "icon": "python",
+  "order": 1
+}
