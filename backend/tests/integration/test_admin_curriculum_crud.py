@@ -318,8 +318,8 @@ class TestAdminCurriculumCRUD:
         res = test_client.post(
             "/api/admin/questions",
             json={
-                "id": "test-q-1",
-                "title": "Reverse a String",
+                "id": "admin-create-question-1",
+                "title": "Admin Create Test Question",
                 "difficulty": "easy",
                 "category": "strings",
                 "description": "Write a function to reverse a string.",
@@ -328,7 +328,7 @@ class TestAdminCurriculumCRUD:
         )
         assert res.status_code == 200
         data = res.json()
-        assert data["id"] == "test-q-1"
+        assert data["id"] == "admin-create-question-1"
 
     def test_get_course_tree(self, test_client: TestClient):
         headers = _admin_headers(test_client)
