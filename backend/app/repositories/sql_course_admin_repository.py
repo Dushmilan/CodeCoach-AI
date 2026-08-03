@@ -91,6 +91,8 @@ class SqlCourseAdminRepository(CourseAdminRepository):
         return result.rowcount > 0
 
     async def create_course(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        if await self.exists("course", data["id"]):
+            raise FileExistsError(f"Course with id '{data['id']}' already exists")
         orm = CourseORM(
             id=data["id"],
             title=data["title"],
@@ -122,6 +124,8 @@ class SqlCourseAdminRepository(CourseAdminRepository):
         return result.rowcount > 0
 
     async def create_module(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        if not await self.exists("course", data["course_id"]):
+            raise FileNotFoundError(f"Course '{data['course_id']}' does not exist")
         orm = ModuleORM(
             id=data["id"],
             course_id=data["course_id"],
@@ -153,6 +157,8 @@ class SqlCourseAdminRepository(CourseAdminRepository):
     async def create_lesson(self, data: Dict[str, Any]) -> Dict[str, Any]:
         from app.models.course_schemas import LessonType
 
+        if not await self.exists("module", data["module_id"]):
+            raise FileNotFoundError(f"Module '{data['module_id']}' does not exist")
         lesson_type = data.get("type", LessonType.THEORY.value)
         orm = LessonORM(
             id=data["id"],

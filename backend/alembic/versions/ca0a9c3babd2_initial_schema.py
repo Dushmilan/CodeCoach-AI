@@ -42,7 +42,7 @@ def upgrade() -> None:
         sa.Column(
             "company_tags",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=False,
         ),
@@ -50,28 +50,28 @@ def upgrade() -> None:
         sa.Column(
             "starter_code",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=False,
         ),
         sa.Column(
             "examples",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=False,
         ),
         sa.Column(
             "test_cases",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=False,
         ),
         sa.Column(
             "hints",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=False,
         ),
@@ -81,11 +81,16 @@ def upgrade() -> None:
         sa.Column(
             "constraints",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=False,
         ),
         sa.Column("is_interactive", sa.Integer(), nullable=False),
+        sa.Column(
+            "validation_status",
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
+            nullable=True,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -121,7 +126,7 @@ def upgrade() -> None:
         sa.Column(
             "completed_lessons",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=False,
         ),
@@ -173,7 +178,7 @@ def upgrade() -> None:
         sa.Column(
             "test_cases",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=True,
         ),

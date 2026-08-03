@@ -13,7 +13,7 @@ services:
     environment:
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - DATABASE_URL=sqlite:///./codecoach.db
+      - DATABASE_URL=${DATABASE_URL:-mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach}
       - PISTON_API_URL=http://piston:2000/api/v2/piston
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}

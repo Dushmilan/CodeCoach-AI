@@ -103,7 +103,7 @@ Phase 3 ─── Future Modules
 | **AI Coach** | NVIDIA NIM (LLaMA 3.1 8B) via `integrate.api.nvidia.com/v1` or Google Gemini via `generativelanguage.googleapis.com` |
 | **Auth** | JWT (python-jose), bcrypt |
 | **Testing** | pytest (backend), Vitest + Playwright (frontend) |
-| **Infra** | Docker Compose, SQLite (file-based) |
+| **Infra** | Docker Compose, MySQL 8 |
 
 ## Architecture
 
@@ -115,7 +115,7 @@ backend/app/
   adapters/         Concrete implementations (PistonExecutor)
   use_cases/        Single-responsibility validation logic
   services/         Business logic wrapping ports
-  repositories/     File-based JSON storage
+  repositories/     SQLAlchemy repositories (MySQL)
   api/              Thin FastAPI route handlers
   models/           Pydantic schemas
   middleware/       Rate limiting
@@ -137,7 +137,7 @@ frontend/src/
 
 - **BYO API key** — NVIDIA API key is stored in browser localStorage, never sent to the backend. The backend proxies requests to NVIDIA NIM using the key from the request header.
 - **Code wrapping** — Every language supported by Piston has a `_wrap_<language>_code` method that adds a test harness converting stdin → function call → stdout. Without this, bare function definitions produce no output.
-- **File-based storage** — Questions and users are stored in JSON files (not SQLite yet). Simple, portable, version-controllable. Migrate to a database when content scales.
+- **MySQL storage** — Users, questions, and course progress are stored in MySQL via SQLAlchemy (async). Seed data is imported with `backend/scripts/migrate_to_sql.py`.
 - **Dependency injection** — FastAPI `Depends()` for services, constructor injection for use cases. Makes the backend testable with mocks.
 
 ## Getting Started
@@ -163,9 +163,14 @@ python -m venv venv
 # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your NVIDIA API key
+# Edit .env with your NVIDIA API key and MySQL DATABASE_URL
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+The backend requires a running MySQL 8 instance. `DATABASE_URL` defaults to
+`mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach`
+(set the actual password in `.env`). Tables are created automatically at
+startup; seed data can be imported with `python scripts/migrate_to_sql.py`.
 
 #### Frontend
 
@@ -221,11 +226,11 @@ CodeCoach-AI/
 │   │   ├── adapters/           # Concrete implementations
 │   │   ├── services/           # Business logic
 │   │   ├── use_cases/          # Validation use cases
-│   │   ├── repositories/       # File-based JSON storage
+│   │   ├── repositories/       # SQLAlchemy repositories (MySQL)
 │   │   ├── middleware/         # Rate limiting
 │   │   └── dependencies/       # FastAPI Depends injection
 │   ├── tests/                  # pytest test suite
-│   └── questions/              # JSON question bank
+│   └── questions/              # Question bank seed data
 ├── frontend/
 │   └── src/
 │       ├── app/                # Next.js App Router pages

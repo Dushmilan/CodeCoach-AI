@@ -16,9 +16,8 @@ class TestSettings:
 
         monkeypatch.setenv("ENVIRONMENT", "testing")
         monkeypatch.delenv("REDIS_ENABLED", raising=False)
-        monkeypatch.delenv("USE_DATABASE", raising=False)
         assert get_settings().REDIS_ENABLED is True
-        assert get_settings().USE_DATABASE is False
+        assert "mysql" in get_settings().DATABASE_URL
 
     def test_get_settings_returns_new_instance(self, monkeypatch):
         from app.core.config import get_settings

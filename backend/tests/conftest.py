@@ -9,20 +9,96 @@ import os
 # JWT secret). Individual tests override via monkeypatch/test_env_vars.
 os.environ.setdefault("ENVIRONMENT", "testing")
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only-32chars!!")
-os.environ.setdefault("USE_DATABASE", "false")
 
-import pytest
-import pytest_asyncio
-import asyncio
-from typing import Generator, AsyncGenerator
-from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
-import json
-import os
-import tempfile
+import re
+import urllib.parse
 
-from app.main import app
-from app.services.question_bank import QuestionBank
+_TEST_DB = "codecoach_test"
+
+
+def _ensure_test_database() -> str:
+    """Route tests to a dedicated MySQL `codecoach_test` database.
+
+    Loads credentials from the repository root `.env` (if present) so the
+    suite runs against the same MySQL instance as the app. Creates the
+    database if it does not exist and returns the test URL. Runs at import
+    time so Settings() picks it up before app.main is loaded.
+    """
+    from urllib.parse import urlparse
+
+    import pymysql
+    from dotenv import load_dotenv, find_dotenv
+
+    load_dotenv(find_dotenv())
+
+    base_url = os.environ.get(
+        "DATABASE_URL",
+        "mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach",
+    )
+    # When running on the host (not inside Docker), reach MySQL via localhost.
+    base_url = base_url.replace("host.docker.internal", "127.0.0.1")
+    match = re.match(r"^(mysql\+aiomysql://[^/]+)/(?:[^?]*)(\?.*)?$", base_url)
+    if not match:
+        raise RuntimeError(f"Unsupported DATABASE_URL for tests: {base_url}")
+    test_url = f"{match.group(1)}/{_TEST_DB}{match.group(2) or ''}"
+    os.environ["DATABASE_URL"] = test_url
+
+    parsed = urlparse(test_url.replace("mysql+aiomysql://", "mysql://"))
+    conn = pymysql.connect(
+        host=parsed.hostname,
+        port=parsed.port or 3306,
+        user=urllib.parse.unquote(parsed.username or ""),
+        password=urllib.parse.unquote(parsed.password or ""),
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"CREATE DATABASE IF NOT EXISTS {_TEST_DB} "
+                "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            )
+            cur.execute(f"USE {_TEST_DB}")
+            for table in (
+                "course_progress",
+                "lessons",
+                "modules",
+                "courses",
+                "questions",
+                "users",
+                "feature_flags",
+                "audit_logs",
+                "generation_jobs",
+            ):
+                cur.execute(f"DROP TABLE IF EXISTS {table}")
+        conn.commit()
+    finally:
+        conn.close()
+
+    # Create schema so API tests (ASGITransport does not run lifespan) see tables.
+    from sqlalchemy import create_engine
+    from app.models.orm import Base
+
+    sync_url = test_url.replace("mysql+aiomysql://", "mysql+pymysql://")
+    engine = create_engine(sync_url)
+    Base.metadata.create_all(engine)
+    engine.dispose()
+    return test_url
+
+
+_ensure_test_database()
+
+import pytest  # noqa: E402
+import pytest_asyncio  # noqa: E402
+import asyncio  # noqa: E402
+from typing import Generator, AsyncGenerator  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from httpx import AsyncClient, ASGITransport  # noqa: E402
+import json  # noqa: E402
+import os  # noqa: E402
+import tempfile  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+from app.main import app  # noqa: E402
+from app.services.question_bank import QuestionBank  # noqa: E402
 
 
 @pytest.fixture(scope="session")
@@ -40,12 +116,138 @@ def test_client() -> Generator:
         yield client
 
 
-@pytest_asyncio.fixture(scope="session")
+async def _seed_questions() -> int:
+    """Seed the sample question bank into the MySQL test database if empty.
+
+    The file-based question repository used to load sample_questions.json
+    automatically; with MySQL the test database starts empty, so the same
+    questions are seeded for API/integration tests. Unit SQL repository tests
+    truncate tables (test_db) for isolation.
+    """
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine,
+        AsyncSession,
+        async_sessionmaker,
+    )
+    from sqlalchemy.pool import NullPool
+    from app.models.orm import Base, QuestionORM
+
+    engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async_session = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    questions_path = (
+        Path(__file__).resolve().parent.parent / "questions" / "sample_questions.json"
+    )
+    count = 0
+    if questions_path.exists():
+        with open(questions_path, encoding="utf-8") as f:
+            data = json.load(f)
+        questions = data.get("questions", data) if isinstance(data, dict) else data
+
+        async with async_session() as session:
+            from sqlalchemy import select
+
+            existing = (await session.execute(select(QuestionORM.id))).scalars().all()
+            if not existing:
+                from app.models.schemas import Question
+
+                for item in questions:
+                    try:
+                        q = Question(**item)
+                    except Exception:
+                        continue
+                    session.add(
+                        QuestionORM(
+                            id=q.id,
+                            title=q.title,
+                            difficulty=q.difficulty.value,
+                            category=q.category,
+                            company_tags=q.company_tags,
+                            description=q.description,
+                            starter_code=q.starter.model_dump()
+                            if hasattr(q.starter, "model_dump")
+                            else q.starter,
+                            examples=[
+                                e.model_dump() if hasattr(e, "model_dump") else e
+                                for e in q.examples
+                            ],
+                            test_cases=[
+                                tc.model_dump() if hasattr(tc, "model_dump") else tc
+                                for tc in q.test_cases
+                            ],
+                            hints=q.hints,
+                            solution=q.solution,
+                            time_complexity=q.time_complexity,
+                            space_complexity=q.space_complexity,
+                            constraints=q.constraints,
+                            is_interactive=1 if q.is_interactive else 0,
+                        )
+                    )
+                    count += 1
+                await session.commit()
+    await engine.dispose()
+    return count
+
+
+def _seed_questions_sync() -> int:
+    """Sync variant of _seed_questions (only safe outside a running loop)."""
+    return asyncio.run(_seed_questions())
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def seed_test_questions():
+    """Seed the sample question bank once per session."""
+    await _seed_questions()
+    yield
+
+
+@pytest_asyncio.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create an async test client for asynchronous testing."""
+    await _seed_questions()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
+
+
+@pytest_asyncio.fixture
+async def test_db():
+    """Provide an isolated MySQL-backed session for SQL repository tests.
+
+    Truncates all tables before each test so tests do not interfere with
+    each other or with the running application's database. Schema is created
+    by the app at startup (init_db) and must not be dropped mid-session.
+    """
+    from sqlalchemy import text
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine,
+        AsyncSession,
+        async_sessionmaker,
+    )
+    from sqlalchemy.pool import NullPool
+    from app.models.orm import Base
+
+    test_engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(text(f"TRUNCATE TABLE {table.name}"))
+        await conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+
+    async_session = async_sessionmaker(
+        test_engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async with async_session() as session:
+        yield session
+
+    await test_engine.dispose()
+    await _seed_questions()
 
 
 @pytest.fixture
@@ -190,10 +392,8 @@ def admin_headers(test_client: TestClient) -> dict:
     """Return Authorization headers for an admin user.
 
     Registers (or logs in) a fixed admin user and promotes it to admin by
-    editing the users file directly, mirroring test_admin_curriculum_crud.py.
+    updating the users table directly, mirroring test_admin_curriculum_crud.py.
     """
-    users_path = os.path.join(os.path.dirname(__file__), "..", "data", "users.json")
-
     res = test_client.post(
         "/api/auth/register",
         json={
@@ -209,15 +409,28 @@ def admin_headers(test_client: TestClient) -> dict:
         )
     token = res.json()["access_token"]
 
-    if os.path.exists(users_path):
-        with open(users_path) as f:
-            users = json.load(f)
-        for u in users:
-            if u.get("username") == "auditadmin":
-                u["role"] = "admin"
-                break
-        with open(users_path, "w") as f:
-            json.dump(users, f, indent=2)
+    from urllib.parse import urlparse
+
+    import pymysql
+
+    parsed = urlparse(
+        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
+    )
+    conn = pymysql.connect(
+        host=parsed.hostname,
+        port=parsed.port or 3306,
+        user=urllib.parse.unquote(parsed.username or ""),
+        password=urllib.parse.unquote(parsed.password or ""),
+        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET role='admin' WHERE username=%s", ("auditadmin",)
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
     return {"Authorization": f"Bearer {token}"}
 

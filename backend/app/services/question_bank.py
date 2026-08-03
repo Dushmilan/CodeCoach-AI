@@ -118,13 +118,14 @@ class QuestionBank:
 
         if validate and self._validator:
             result = await self._validator.validate_question(question)
-            await self._persist_validation_status(question.id, result)
             validated = True
             passed = bool(result.valid)
             if not passed:
                 logger.warning("Question %s failed validation", question.id)
 
         await self._repo.add(question)
+        if validate and self._validator:
+            await self._persist_validation_status(question.id, result)
         if validated and passed:
             await self._invalidate_cache()
 

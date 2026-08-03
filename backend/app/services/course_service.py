@@ -4,29 +4,18 @@ from typing import List, Optional
 from app.models.course_schemas import Course, CourseProgress, CourseSummary, Lesson
 from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
-from app.repositories.file_course_repository import FileCourseRepository
-from app.repositories.file_progress_repository import FileProgressRepository
 from app.services.redis_service import RedisCache
-
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-DATA_DIR = BASE_DIR / "data"
 
 
 class CourseService:
     def __init__(
         self,
-        course_repo: Optional[CourseRepository] = None,
-        progress_repo: Optional[ProgressRepository] = None,
+        course_repo: CourseRepository,
+        progress_repo: ProgressRepository,
         cache: Optional[RedisCache] = None,
     ):
-        self.course_repo = course_repo or FileCourseRepository(
-            courses_dir=str(DATA_DIR / "courses"),
-        )
-        self.progress_repo = progress_repo or FileProgressRepository(
-            file_path=f"{DATA_DIR}/user_progress.json",
-        )
+        self.course_repo = course_repo
+        self.progress_repo = progress_repo
         self.cache = cache
 
     async def list_courses(self, user_id: Optional[str] = None) -> List[CourseSummary]:

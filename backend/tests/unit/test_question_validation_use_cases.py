@@ -8,9 +8,8 @@ are made available to users. Tests focus on Python coverage using Piston.
 import pytest
 from typing import Dict, Any
 from unittest.mock import AsyncMock
-import json
 import os
-import tempfile
+import urllib.parse
 
 from app.models.schemas import Question, Difficulty
 from app.models.question_validation_schemas import (
@@ -775,14 +774,10 @@ class TestQuestionBankValidationIntegration:
     """Tests for validation integration with QuestionBank."""
 
     @pytest.fixture
-    def empty_repo(self):
-        from app.repositories.file_question_repository import FileQuestionRepository
+    def empty_repo(self, test_db):
+        from app.repositories.sql_question_repository import SqlQuestionRepository
 
-        fd, path = tempfile.mkstemp(suffix=".json")
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump([], f)
-        yield FileQuestionRepository(path)
-        os.unlink(path)
+        return SqlQuestionRepository(test_db)
 
     @pytest.mark.asyncio
     async def test_invalid_question_not_loaded(
@@ -829,7 +824,7 @@ class TestQuestionValidationAPI:
     """Tests for question validation API endpoints."""
 
     def _admin_headers(self, client) -> dict:
-        """Register an admin and promote it via the users file."""
+        """Register an admin and promote it via the users table."""
         res = client.post(
             "/api/auth/register",
             json={
@@ -844,29 +839,37 @@ class TestQuestionValidationAPI:
                 json={"username": "unitvaladmin", "password": "testpass123"},
             )
         token = res.json()["access_token"]
-        users_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "users.json"
+
+        import pymysql
+
+        parsed = urllib.parse.urlparse(
+            os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
         )
-        if os.path.exists(users_path):
-            with open(users_path) as f:
-                users = json.load(f)
-            for u in users:
-                if u.get("username") == "unitvaladmin":
-                    u["role"] = "admin"
-                    break
-            with open(users_path, "w") as f:
-                json.dump(users, f, indent=2)
+        conn = pymysql.connect(
+            host=parsed.hostname,
+            port=parsed.port or 3306,
+            user=urllib.parse.unquote(parsed.username or ""),
+            password=urllib.parse.unquote(parsed.password or ""),
+            database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
+        )
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET role='admin' WHERE username=%s",
+                    ("unitvaladmin",),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
         return {"Authorization": f"Bearer {token}"}
 
     @pytest.mark.asyncio
     async def test_validate_endpoint_returns_validation_result(
-        self, valid_question_data
+        self, valid_question_data, test_client
     ):
         """Test that the validate endpoint returns proper validation result."""
-        from fastapi.testclient import TestClient
-        from app.main import app
-
-        client = TestClient(app)
+        client = test_client
         headers = self._admin_headers(client)
 
         response = client.post(
@@ -881,12 +884,11 @@ class TestQuestionValidationAPI:
         assert "results" in data
 
     @pytest.mark.asyncio
-    async def test_validate_endpoint_rejects_unauthenticated(self, valid_question_data):
+    async def test_validate_endpoint_rejects_unauthenticated(
+        self, valid_question_data, test_client
+    ):
         """Test that the validate endpoint rejects unauthenticated requests."""
-        from fastapi.testclient import TestClient
-        from app.main import app
-
-        client = TestClient(app)
+        client = test_client
 
         response = client.post(
             "/api/question-validation/validate", json=valid_question_data
@@ -896,13 +898,10 @@ class TestQuestionValidationAPI:
 
     @pytest.mark.asyncio
     async def test_batch_validate_endpoint_validates_multiple_questions(
-        self, valid_question_data
+        self, valid_question_data, test_client
     ):
         """Test that batch validate endpoint can validate multiple questions."""
-        from fastapi.testclient import TestClient
-        from app.main import app
-
-        client = TestClient(app)
+        client = test_client
         headers = self._admin_headers(client)
 
         questions = [valid_question_data, valid_question_data.copy()]

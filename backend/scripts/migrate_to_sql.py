@@ -35,7 +35,7 @@ from app.models.schemas import Question
 def _get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
-        url = "sqlite+aiosqlite:///./codecoach.db"
+        url = "mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach"
     return url
 
 

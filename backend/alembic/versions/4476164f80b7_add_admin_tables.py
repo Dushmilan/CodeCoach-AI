@@ -39,7 +39,7 @@ def upgrade() -> None:
         sa.Column(
             "target_roles",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=False,
             server_default="[]",
@@ -65,7 +65,7 @@ def upgrade() -> None:
         sa.Column(
             "metadata",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=True,
         ),
@@ -99,7 +99,7 @@ def upgrade() -> None:
         sa.Column(
             "result",
             postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "sqlite", "mysql"
+                sa.JSON(), "mysql"
             ),
             nullable=True,
         ),
