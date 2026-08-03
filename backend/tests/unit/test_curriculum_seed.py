@@ -141,17 +141,30 @@ class TestCurriculumSeedSchema:
         for entry in seed_content:
             for lesson in entry["lessons"]:
                 if lesson["type"] == "exercise":
-                    assert lesson.get("question_id"), (
-                        f"exercise '{lesson['id']}' is missing a question_id"
-                    )
-                    assert lesson["question_id"] in bank_ids, (
-                        f"exercise '{lesson['id']}' links unknown question "
-                        f"'{lesson['question_id']}'"
-                    )
+                    if lesson.get("question_id"):
+                        assert lesson["question_id"] in bank_ids, (
+                            f"exercise '{lesson['id']}' links unknown question "
+                            f"'{lesson['question_id']}'"
+                        )
 
-    def test_exercise_lessons_prefer_question_id_over_embedded_data(self, seed_content):
+    def test_exercises_are_question_linked_or_embedded(self, seed_content):
+        """Every exercise must link to a bank question OR carry embedded
+        starter_code + test_cases — never neither, never both."""
         for entry in seed_content:
             for lesson in entry["lessons"]:
                 if lesson["type"] == "exercise":
-                    assert not lesson.get("starter_code")
-                    assert not lesson.get("test_cases")
+                    has_question = bool(lesson.get("question_id"))
+                    has_embedded = bool(
+                        lesson.get("starter_code") or lesson.get("test_cases")
+                    )
+                    assert has_question != has_embedded, (
+                        f"exercise '{lesson['id']}' must link a question OR embed "
+                        f"starter_code/test_cases, not neither/both"
+                    )
+                    if has_embedded:
+                        assert lesson.get("starter_code"), (
+                            f"exercise '{lesson['id']}' is missing starter_code"
+                        )
+                        assert lesson.get("test_cases"), (
+                            f"exercise '{lesson['id']}' is missing test_cases"
+                        )

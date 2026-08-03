@@ -21,15 +21,86 @@
       "language": "python"
     },
     {
+      "id": "py-intro-constants-types",
+      "course_id": "python-fundamentals",
+      "module_id": "py-intro",
+      "title": "Constants and Built-in Data Types",
+      "type": "theory",
+      "content": "## Constants and Built-in Data Types\n\nPython lets you store values in variables and mark some of them as **constants** — values your program should never change.\n\n### Constants\n\nA **constant** is a variable whose value is meant to stay fixed for the whole program. Python does not enforce this — it is a convention. By convention, constants are declared at the **top of a module** and written in **ALL CAPITAL LETTERS**:\n\n```python\nPI = 3.14159\nMAX_RETRIES = 5\nDEFAULT_GREETING = \"Hello\"\n```\n\nThe all-caps name is a signal to other programmers (and to you) that the value should not be reassigned:\n\n```python\nPI = 3.14   # PEP 8 convention: constants use UPPER_CASE\n```\n\n### Built-in data types\n\nEvery value in Python has a type, and the type decides what you can do with it. Here are the core built-in types:\n\n| Type      | Example                  | Notes                                        |\n|-----------|--------------------------|----------------------------------------------|\n| `int`     | `42`, `-7`, `0`          | Whole numbers                                |\n| `float`   | `3.14`, `-0.5`           | Numbers with a decimal point                 |\n| `bool`    | `True` / `False`         | Logical values (capitalized)                 |\n| `str`     | `\"hello\"`                | Text (single or double quotes)               |\n| `list`    | `[1, 2, 3]`              | Ordered, changeable collection               |\n| `tuple`   | `(1, 2, 3)`              | Ordered, unchangeable collection             |\n| `dict`    | `{\"key\": \"value\"}`       | Key-value pairs                              |\n| `set`     | `{1, 2, 3}`              | Unordered collection of unique items         |\n\nUse the built-in `type()` function to ask Python what type a value is:\n\n```python\nprint(type(42))            # <class 'int'>\nprint(type(3.14))          # <class 'float'>\nprint(type(\"hi\"))          # <class 'str'>\nprint(type(True))          # <class 'bool'>\nprint(type([1, 2]))        # <class 'list'>\nprint(type({\"a\": 1}))      # <class 'dict'>\n```\n\n### Converting between types\n\nSometimes a value arrives as the wrong type — for example, user input is always a string:\n\n```python\nage = input(\"Your age: \")    # always a string, e.g. \"21\"\nprint(type(age))             # <class 'str'>\n\nage = int(age)               # convert to int\nprint(age + 1)               # 22\n```\n\nPython's conversion functions are named after their target type:\n\n```python\nint(\"42\")       # 42\nfloat(\"3.5\")    # 3.5\nstr(100)        # \"100\"\nbool(1)         # True\n```\n\n### Falsy and truthy values\n\nWhen a value is used in a condition, Python decides its truth value. Empty containers, `0`, `0.0`, `None`, and `\"\"` are falsy; everything else is truthy:\n\n```python\nprint(bool(0))        # False\nprint(bool(0.0))      # False\nprint(bool(\"\"))       # False\nprint(bool([]))       # False\nprint(bool({}))       # False\nprint(bool(\"x\"))      # True\nprint(bool([1]))      # True\n```\n\n---\n\n**Next up:** operators — the tools you use to combine values into expressions.",
+      "order": 3,
+      "language": "python"
+    },
+    {
+      "id": "py-intro-typecasting",
+      "course_id": "python-fundamentals",
+      "module_id": "py-intro",
+      "title": "Converting Between Types",
+      "type": "theory",
+      "content": "## Converting Between Types\n\nPython figures out most types for you, but sometimes you need to convert one type to another — especially when reading input.\n\n### Why conversion matters\n\n`input()` always returns a **string**, even if the user types a number:\n\n```python\nage = input(\"Age: \")     # user types 21\nprint(type(age))         # <class 'str'>  -> \"21\" is text!\n```\n\nIf you try to do arithmetic on that string, Python complains. You must convert it first.\n\n### The conversion functions\n\n| Function   | Converts to | Examples                            |\n|------------|-------------|-------------------------------------|\n| `int(x)`   | whole number| `int(\"42\")` -> 42, `int(3.9)` -> 3   |\n| `float(x)` | decimal     | `float(\"3.14\")` -> 3.14             |\n| `str(x)`   | text        | `str(100)` -> \"100\"                 |\n| `bool(x)`  | True/False  | `bool(0)` -> False, `bool(1)` -> True|\n\n```python\nraw = input(\"Enter a number: \")   # \"7\"\nnum = int(raw)                    # 7\nprint(num + 1)                    # 8\n```\n\n### Conversion pitfalls\n\nNot every string can be converted:\n\n```python\nint(\"hello\")    # ValueError: invalid literal for int()\nint(\"3.14\")     # ValueError: it is a float text, not an integer\nfloat(\"3.14\")   # 3.14  <- works because float() accepts decimals\n```\n\n`int(\"3.14\")` fails, but `float(\"3.14\")` succeeds. Choose the function that matches what you expect.\n\n### Truncation, not rounding\n\nConverting a `float` to `int` **truncates** — it drops the fractional part:\n\n```python\nint(3.99)   # 3   (not 4)\nint(-3.7)   # -3  (towards zero, not away)\n```\n\n### Checking types with type()\n\nYou can ask what type a value is with `type()`:\n\n```python\nprint(type(42))        # <class 'int'>\nprint(type(\"42\"))      # <class 'str'>\nprint(type(42.0))      # <class 'float'>\n```\n\n---\n\n**Next up:** your exercises — building greetings and a simple calculator from the values you convert.",
+      "language": "python",
+      "order": 4
+    },
+    {
       "id": "py-exercise-first-word",
       "course_id": "python-fundamentals",
       "module_id": "py-intro",
       "title": "Exercise: The Singularity's First Word",
       "type": "exercise",
       "content": "## Exercise: The Singularity's First Word\n\nTime to apply what you learned. This exercise asks you to write a small function that works with strings — a great first challenge.\n\nThe full problem statement, starter code, and test cases come from the linked question in the bank. Open the **Code** panel, write your solution, and run it to see the tests pass.\n\n### Skills you will use\n\n- Defining a function with `def`\n- Splitting a string with `.split()`\n- Indexing a list with `[0]`\n\n### Hint\n\nRead the function signature in the starter code carefully. It tells you exactly what the function receives and what it should return.\n\nGood luck!",
-      "order": 3,
+      "order": 5,
       "language": "python",
       "question_id": "c9d1a3f2-5b6e-4a7f-8c0d-1e2f3a4b5c6d"
+    },
+    {
+      "id": "py-exercise-greeting",
+      "course_id": "python-fundamentals",
+      "module_id": "py-intro",
+      "title": "Exercise: Personal Greeting",
+      "type": "exercise",
+      "content": "## Exercise: Personal Greeting\n\nWrite a program that builds a personalized greeting.\n\nRead a **name** and an **age** from standard input (one per line). Print a greeting of the form:\n\n```text\nHello, {name}! You are {age} years old.\n```\n\n### Sample\n\nInput:\n\n```text\nAda\n36\n```\n\nOutput:\n\n```text\nHello, Ada! You are 36 years old.\n```\n\n### Starter code\n\nThe skeleton reads the name and age and calls `build_greeting`. Complete the function so it returns the greeting string — use an f-string.\n\n### Skills you will use\n\n- Reading input with `input()`\n- Converting input with `int()`\n- Building strings with f-strings\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def build_greeting(name, age):\n    return \"\"\n\n\ndef main():\n    name = input().strip()\n    age = int(input().strip())\n    print(build_greeting(name, age))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "Ada\n36\n",
+          "expected_output": "Hello, Ada! You are 36 years old.",
+          "description": "Standard greeting"
+        },
+        {
+          "input": "Linus\n20\n",
+          "expected_output": "Hello, Linus! You are 20 years old.",
+          "description": "Another name and age"
+        }
+      ]
+    },
+    {
+      "id": "py-exercise-calculator",
+      "course_id": "python-fundamentals",
+      "module_id": "py-intro",
+      "title": "Exercise: Two-Number Calculator",
+      "type": "exercise",
+      "content": "## Exercise: Two-Number Calculator\n\nWrite a program that adds two whole numbers.\n\nRead **two integers** from standard input, one per line, and print their sum.\n\n### Sample\n\nInput:\n\n```text\n3\n5\n```\n\nOutput:\n\n```text\n8\n```\n\n### Starter code\n\nComplete the `add` function so it returns `a + b`. The `main()` already reads the numbers and prints the result.\n\n### Skills you will use\n\n- Defining and calling a function\n- Converting input with `int()`\n- Returning values with `return`\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "def add(a, b):\n    return 0\n\n\ndef main():\n    a = int(input())\n    b = int(input())\n    print(add(a, b))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "3\n5\n",
+          "expected_output": "8",
+          "description": "Small numbers"
+        },
+        {
+          "input": "10\n20\n",
+          "expected_output": "30",
+          "description": "Larger numbers"
+        },
+        {
+          "input": "-4\n9\n",
+          "expected_output": "5",
+          "description": "Negative operand"
+        }
+      ]
     },
     {
       "id": "py-control-conditionals",
@@ -52,15 +123,91 @@
       "language": "python"
     },
     {
+      "id": "py-control-loop-patterns",
+      "course_id": "python-fundamentals",
+      "module_id": "py-control-flow",
+      "title": "Loop Patterns: Interactive, Sentinel & Post-Test",
+      "type": "theory",
+      "content": "## Loop Patterns: Interactive, Sentinel & Post-Test\n\nPlain `for` and `while` loops get you far, but real programs need a few common loop patterns. This lesson covers three of them.\n\n### Interactive loops\n\nAn **interactive loop** repeatedly asks the user for input and processes each answer. Because you do not know in advance how many answers there will be, an interactive loop is usually a `while` loop that breaks on a special value:\n\n```python\ntotal = 0\ncount = 0\n\nwhile True:\n    value = input(\"Enter a number (or 'done' to stop): \")\n    if value == \"done\":\n        break\n    total += int(value)\n    count += 1\n\nprint(\"Average:\", total / count)\n```\n\nThe `break` statement exits the loop immediately. This is the classic way to build a menu or a data-entry prompt.\n\n### Sentinel loops\n\nA **sentinel loop** keeps reading input until it reaches a special *sentinel* value that marks the end of the data — a value that could never be a legitimate input.\n\n```python\nsentinel = -999\ntotal = 0\ncount = 0\n\nwhile True:\n    value = int(input(\"Enter a score (-999 to stop): \"))\n    if value == sentinel:\n        break\n    total += value\n    count += 1\n\nprint(\"Sum:\", total)\n```\n\nThe sentinel is usually a constant defined at the top of the module so the condition is easy to read.\n\n### Post-test loops\n\nIn many languages a \"do-while\" loop checks its condition *after* the body runs at least once. Python has no `do-while`, but you can simulate it with `while True` + `break`:\n\n```python\nwhile True:\n    age = int(input(\"Enter your age: \"))\n    if 0 <= age <= 120:\n        break\n    print(\"Invalid age — try again.\")\n```\n\nThis guarantees the body runs at least once, which is exactly what you want for validation loops: prompt, check, repeat until valid.\n\n### Choosing the right loop\n\n| Pattern        | Use when                                          |\n|----------------|---------------------------------------------------|\n| `for`          | You know the sequence to iterate over              |\n| `while`        | You keep going while a condition stays true        |\n| Interactive    | You ask for input repeatedly until the user stops  |\n| Sentinel       | A special value marks the end of the data          |\n| Post-test      | The body must run at least once before checking    |\n\n---\n\n**Next up:** operators and strings — the building blocks of every expression.",
+      "order": 3,
+      "language": "python"
+    },
+    {
+      "id": "py-control-nested-loops",
+      "course_id": "python-fundamentals",
+      "module_id": "py-control-flow",
+      "title": "Nested Loops and Break/Continue",
+      "type": "theory",
+      "content": "## Nested Loops and Break/Continue\n\nA loop *inside* another loop is a **nested loop**. The inner loop runs to completion for every single pass of the outer loop.\n\n### The multiplication table\n\n```python\nfor row in range(1, 4):\n    for col in range(1, 4):\n        print(row * col, end=\" \")\n    print()          # new line after each row\n# 1 2 3\n# 2 4 6\n# 3 6 9\n```\n\nFor each value of `row`, the inner loop prints the full row.\n\n### The pattern: outer controls rows, inner controls columns\n\n```python\nfor i in range(3):\n    for j in range(3):\n        print(i, j)\n```\n\nOutput order is `(0,0) (0,1) (0,2) (1,0) (1,1) ...` — the inner variable cycles fastest.\n\n### break and continue inside nested loops\n\n`break` exits **only the innermost loop** it is in:\n\n```python\nfor i in range(3):\n    for j in range(3):\n        if j == 2:\n            break              # exits inner loop only\n        print(i, j)\n# prints pairs where j is 0 or 1\n```\n\n`continue` skips to the next iteration of the innermost loop:\n\n```python\nfor i in range(3):\n    if i == 1:\n        continue               # skip i == 1\n    for j in range(2):\n        print(i, j)\n```\n\n### Early-exit with a flag\n\nA common pattern is scanning nested loops and stopping everything once you find something:\n\n```python\nfound = False\nfor i in range(3):\n    for j in range(3):\n        if i * j == 4:\n            found = True\n            break\n    if found:\n        break\n```\n\nA boolean **flag** lets the outer loop know the inner loop finished early.\n\n---\n\n**Next up:** nested loops meet strings and data structures.",
+      "language": "python",
+      "order": 4
+    },
+    {
       "id": "py-exercise-palindrome",
       "course_id": "python-fundamentals",
       "module_id": "py-control-flow",
       "title": "Exercise: Quantum Palindrome Detector",
       "type": "exercise",
       "content": "## Exercise: Quantum Palindrome Detector\n\nThis exercise tests your understanding of loops and conditionals. A **palindrome** is a word that reads the same forwards and backwards (like `radar`).\n\nYour job is to inspect a string and decide whether it \"stabilizes\" the system — check the linked problem for the exact rule.\n\nThe full problem statement, starter code, and test cases come from the linked question. Open the **Code** panel and implement the function.\n\n### Skills you will use\n\n- A `for` loop over the characters of a string\n- Comparing characters\n- Returning a boolean from a function\n\n### Approach idea\n\nLoop from both ends toward the middle, or compare each character with the one at the mirrored position. If any pair mismatches, return `False`.\n\nGood luck!",
-      "order": 3,
+      "order": 5,
       "language": "python",
       "question_id": "f7e2d4a1-3b5c-4d6e-8f9a-0b1c2d3e4f5a"
+    },
+    {
+      "id": "py-exercise-even-odd",
+      "course_id": "python-fundamentals",
+      "module_id": "py-control-flow",
+      "title": "Exercise: Even or Odd",
+      "type": "exercise",
+      "content": "## Exercise: Even or Odd\n\nWrite a program that classifies a number as `even` or `odd`.\n\nRead a single integer from standard input and print `even` if it is divisible by 2, otherwise `odd`.\n\n### Sample\n\nInput:\n\n```text\n7\n```\n\nOutput:\n\n```text\nodd\n```\n\n### Starter code\n\nComplete the `classify` function using the modulus operator `%`. The `main()` reads the number and prints the result.\n\n### Skills you will use\n\n- The modulus operator `%`\n- An `if`/`else` decision\n- Returning strings from a function\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def classify(n):\n    return \"odd\"\n\n\ndef main():\n    n = int(input())\n    print(classify(n))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "4\n",
+          "expected_output": "even",
+          "description": "Even number"
+        },
+        {
+          "input": "7\n",
+          "expected_output": "odd",
+          "description": "Odd number"
+        },
+        {
+          "input": "0\n",
+          "expected_output": "even",
+          "description": "Zero is even"
+        }
+      ]
+    },
+    {
+      "id": "py-exercise-fizzbuzz",
+      "course_id": "python-fundamentals",
+      "module_id": "py-control-flow",
+      "title": "Exercise: FizzBuzz",
+      "type": "exercise",
+      "content": "## Exercise: FizzBuzz\n\nWrite a program that prints the classic FizzBuzz sequence.\n\nRead an integer `n`, then for every number from 1 to `n`:\n\n- Print `FizzBuzz` if the number is divisible by both 3 and 5.\n- Print `Fizz` if it is divisible by 3 only.\n- Print `Buzz` if it is divisible by 5 only.\n- Otherwise print the number itself.\n\nPrint each result on its own line.\n\n### Sample\n\nInput:\n\n```text\n5\n```\n\nOutput:\n\n```text\n1\n2\nFizz\n4\nBuzz\n```\n\n### Starter code\n\nThe skeleton builds a list of plain numbers. Replace the logic so it applies the FizzBuzz rules, then returns the list joined with newlines.\n\n### Skills you will use\n\n- A `for` loop with `range()`\n- Chained conditions with `if`/`elif`\n- `%` for divisibility\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "def fizzbuzz(n):\n    result = []\n    for i in range(1, n + 1):\n        result.append(str(i))\n    return \"\\n\".join(result)\n\n\ndef main():\n    n = int(input())\n    print(fizzbuzz(n))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "5\n",
+          "expected_output": "1\n2\nFizz\n4\nBuzz",
+          "description": "Up to five"
+        },
+        {
+          "input": "15\n",
+          "expected_output": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz",
+          "description": "Fifteen"
+        },
+        {
+          "input": "3\n",
+          "expected_output": "1\n2\nFizz",
+          "description": "Fizz at three"
+        }
+      ]
     },
     {
       "id": "py-strings-methods",
@@ -73,14 +220,44 @@
       "language": "python"
     },
     {
+      "id": "py-ops-precedence",
+      "course_id": "python-fundamentals",
+      "module_id": "py-strings",
+      "title": "Operators and Operator Precedence",
+      "type": "theory",
+      "content": "## Operators and Operator Precedence\n\nOperators are the symbols that combine values into expressions. Python groups them into a handful of categories, and each operator has a *precedence* that decides the order of evaluation.\n\n### Arithmetic operators\n\n| Operator | Meaning          | Example        | Result  |\n|----------|------------------|----------------|---------|\n| `+`      | addition         | `10 + 3`       | `13`    |\n| `-`      | subtraction      | `10 - 3`       | `7`     |\n| `*`      | multiplication   | `10 * 3`       | `30`    |\n| `/`      | true division    | `10 / 3`       | `3.333` |\n| `//`     | floor division   | `10 // 3`      | `3`     |\n| `%`      | modulus          | `10 % 3`       | `1`     |\n| `**`     | exponentiation   | `2 ** 3`       | `8`     |\n\n```python\nprint(10 / 3)     # 3.3333333333333335  (always float)\nprint(10 // 3)    # 3                   (floor division)\nprint(10 % 3)     # 1                   (remainder)\nprint(2 ** 3)     # 8                   (power)\n```\n\n### Comparison operators\n\nComparisons return a boolean — `True` or `False`:\n\n| Operator | Meaning              |\n|----------|----------------------|\n| `>`      | greater than         |\n| `<`      | less than            |\n| `>=`     | greater or equal     |\n| `<=`     | less or equal        |\n| `==`     | equal to             |\n| `!=`     | not equal to         |\n\n```python\nprint(5 > 3)     # True\nprint(5 == 3)    # False\nprint(5 != 3)    # True\n```\n\n### Assignment operators\n\n`=` stores a value; the compound operators update a variable in place:\n\n```python\nx = 10\nx += 5      # x = x + 5  -> 15\nx -= 3      # 12\nx *= 2      # 24\nx /= 4      # 6.0\nx //= 2     # 3.0\nx %= 2      # 1.0\n```\n\n### Logical operators\n\nCombine conditions with `and`, `or`, and `not`:\n\n```python\nage = 20\nhas_id = True\n\nprint(age >= 18 and has_id)    # True\nprint(age < 18 or has_id)      # True\nprint(not has_id)              # False\n```\n\n### Membership and identity operators\n\n- `in` / `not in` check whether a value is inside a collection.\n- `is` / `is not` check whether two names refer to the *same object* (not just equal values).\n\n```python\nfruits = [\"apple\", \"mango\"]\nprint(\"apple\" in fruits)     # True\nprint(\"pear\" in fruits)      # False\n\na = [1, 2]\nb = [1, 2]\nprint(a == b)                # True  (same values)\nprint(a is b)                # False (different objects)\n```\n\n### Operator precedence\n\nPython evaluates expressions using precedence — higher-precedence operators bind first. From highest to lowest:\n\n1. `**` — exponentiation\n2. unary `-`, `+`, `~`\n3. `*`, `/`, `//`, `%`\n4. `+`, `-`\n5. `<<`, `>>` — bitwise shifts\n6. `&` — bitwise and\n7. `^` — bitwise xor\n8. `|` — bitwise or\n9. comparisons (`<`, `>`, `==`, ...) and `in`, `is`\n10. `not`\n11. `and`\n12. `or` — lowest\n\n```python\nprint(2 + 3 * 4)        # 14  (3 * 4 first)\nprint((2 + 3) * 4)      # 20  (parentheses override)\nprint(2 ** 3 ** 2)      # 512 (** binds right to left: 2 ** 9)\n```\n\nWhen in doubt, add parentheses — they never hurt readability.\n\n---\n\n**Next up:** tuples, sets, and dictionary methods — more ways to organize data.",
+      "order": 2,
+      "language": "python"
+    },
+    {
       "id": "py-strings-dicts",
       "course_id": "python-fundamentals",
       "module_id": "py-strings",
       "title": "Lists and Dictionaries",
       "type": "theory",
       "content": "## Lists and Dictionaries\n\nTwo workhorse containers in Python: ordered sequences (`list`) and key-value mappings (`dict`).\n\n### Lists\n\n```python\nfruits = [\"apple\", \"pear\"]\nfruits.append(\"mango\")      # add to the end\nfruits[0] = \"peach\"         # replace an item\nprint(len(fruits))          # 3\nprint(fruits[1])            # \"pear\"\n```\n\nLooping over a list is natural:\n\n```python\ntotal = 0\nfor price in [10, 20, 30]:\n    total += price\n```\n\n### Dictionaries\n\nA dictionary maps **keys** to **values**:\n\n```python\nscores = {\"ada\": 95, \"linus\": 88}\nscores[\"grace\"] = 92        # add or update\nprint(scores[\"ada\"])        # 95\n```\n\nUse `.get()` to avoid errors when a key might be missing:\n\n```python\nprint(scores.get(\"ada\"))     # 95\nprint(scores.get(\"alice\"))   # None (no KeyError)\nprint(scores.get(\"alice\", 0))  # 0  (default value)\n```\n\n### The counting pattern\n\nDictionaries are perfect for counting occurrences — exactly what the final exercise needs:\n\n```python\ndef count_letters(text: str) -> dict:\n    counts = {}\n    for ch in text:\n        counts[ch] = counts.get(ch, 0) + 1\n    return counts\n```\n\nEach time we see a character, we bump its count by one, using `.get(ch, 0)` so a first occurrence starts at `0`.\n\n### Finding the maximum\n\nCombine the counting pattern with a scan to find the most frequent item:\n\n```python\ndef most_frequent(counts: dict):\n    best_key = None\n    best_value = -1\n    for key, value in counts.items():\n        if value > best_value:\n            best_key = key\n            best_value = value\n    return best_key\n```\n\n---\n\n**Final challenge:** your last exercise — count characters and report the dominant one.",
-      "order": 2,
+      "order": 3,
       "language": "python"
+    },
+    {
+      "id": "py-tuples-sets-dicts",
+      "course_id": "python-fundamentals",
+      "module_id": "py-strings",
+      "title": "Tuples, Sets and Dictionary Methods",
+      "type": "theory",
+      "content": "## Tuples, Sets and Dictionary Methods\n\nBeyond lists, Python ships three more built-in collections: tuples, sets, and dictionaries.\n\n### Tuples\n\nA **tuple** is an ordered collection that is *unchangeable* after creation. You create one with parentheses:\n\n```python\npoint = (3, 4)\nmixed = (1, \"two\", 3.0)\n\nprint(point[0])       # 3\nprint(point[1:])      # (4,)\n```\n\nTuples can hold duplicates and mixed data types, but you cannot add, remove, or replace items:\n\n```python\npoint = (3, 4)\npoint[0] = 9          # TypeError: 'tuple' object does not support item assignment\n```\n\n### Tuple unpacking\n\nBecause a tuple's length is fixed, you can unpack it directly into variables:\n\n```python\npoint = (3, 4)\nx, y = point\nprint(x)              # 3\nprint(y)              # 4\n```\n\n### Sets\n\nA **set** is an unordered, unindexed collection that *cannot contain duplicates*:\n\n```python\ncolors = {\"red\", \"green\", \"blue\"}\ncolors.add(\"yellow\")\nprint(colors)          # {'red', 'yellow', 'blue', 'green'}\n\ncolors.add(\"red\")      # already present — ignored\nprint(len(colors))     # 4\n```\n\nSince sets are unordered, you cannot index them (`colors[0]` fails). You can, however, combine them:\n\n```python\na = {1, 2, 3}\nb = {2, 3, 4}\n\nprint(a.union(b))            # {1, 2, 3, 4}\nprint(a.intersection(b))     # {2, 3}\nprint(a.difference(b))       # {1}\n```\n\n### Dictionaries\n\nA **dictionary** maps keys to values. Keys are unique; values can repeat. The four most useful methods are `get()`, `keys()`, `values()`, and `items()`:\n\n```python\nscores = {\"ada\": 95, \"linus\": 88}\n\nprint(scores.get(\"ada\"))          # 95\nprint(scores.get(\"grace\"))        # None  (no KeyError)\nprint(scores.get(\"grace\", 0))     # 0     (default value)\n\nprint(scores.keys())              # dict_keys(['ada', 'linus'])\nprint(scores.values())            # dict_values([95, 88])\nprint(scores.items())             # dict_items([('ada', 95), ('linus', 88)])\n```\n\n`items()` gives you key-value pairs, ideal for looping:\n\n```python\nfor name, score in scores.items():\n    print(f\"{name}: {score}\")\n```\n\nYou can merge dictionaries or add several pairs at once with `update()`:\n\n```python\nscores.update({\"grace\": 92, \"ada\": 97})\nprint(scores)          # {'ada': 97, 'linus': 88, 'grace': 92}\n```\n\n### Picking a collection\n\n| Collection  | Ordered? | Changeable? | Duplicates? | Best for                          |\n|-------------|----------|-------------|-------------|-----------------------------------|\n| `list`      | Yes      | Yes         | Yes         | Ordered data you will modify      |\n| `tuple`     | Yes      | No          | Yes         | Fixed data (coordinates, config)  |\n| `set`       | No       | Yes         | No          | Unique items, membership checks   |\n| `dict`      | Yes      | Yes         | Keys: No    | Key-value lookups                 |\n\n---\n\n**Next up:** functions — packaging logic into reusable blocks.",
+      "order": 4,
+      "language": "python"
+    },
+    {
+      "id": "py-strings-formatting",
+      "course_id": "python-fundamentals",
+      "module_id": "py-strings",
+      "title": "String Formatting: f-strings, join, split",
+      "type": "theory",
+      "content": "## String Formatting: f-strings, join, split\n\nBuilding readable strings is one of the most common tasks in Python. Modern Python uses **f-strings** — with a couple of powerful helpers alongside.\n\n### f-strings with format specifiers\n\n```python\nprice = 19.956\nprint(f\"{price:.2f}\")      # 19.96  (two decimal places)\nprint(f\"{price:.1f}\")      # 20.0\nprint(f\"{price:10.2f}\")    # \"     19.96\"  (pad to 10 wide)\n```\n\n| Specifier | Meaning                        | Example        |\n|-----------|--------------------------------|----------------|\n| `:d`      | integer                        | `f\"{42:d}\"`    |\n| `:.2f`    | float, 2 decimals              | `f\"{3.14159:.2f}\"` -> \"3.14\" |\n| `:>10`    | right-align to width 10        | `f\"{42:>10}\"`  |\n| `:<10`    | left-align to width 10         | `f\"{42:<10}\"`  |\n\n### Concatenation and repetition\n\n```python\nfirst = \"Ada\"\nlast = \"Lovelace\"\nfull = first + \" \" + last        # \"Ada Lovelace\"\nborder = \"-\" * 20                # \"--------------------\"\n```\n\n### Building strings from a list: join()\n\n`\", \".join(list)` glues items together with a separator:\n\n```python\nwords = [\"alpha\", \"beta\", \"gamma\"]\nprint(\" | \".join(words))         # alpha | beta | gamma\n```\n\n### Splitting into pieces: split()\n\n`split()` breaks a string into a list — by default on whitespace:\n\n```python\nsentence = \"the quick brown fox\"\nwords = sentence.split()         # ['the', 'quick', 'brown', 'fox']\nprint(words[0])                  # 'the'\n\ndata = \"1,2,3\"\nprint(data.split(\",\"))           # ['1', '2', '3']\n```\n\n### The classic pipeline: split -> process -> join\n\n```python\nsentence = \"one two three\"\nreversed_words = sentence.split()[::-1]\nprint(\" \".join(reversed_words))  # \"three two one\"\n```\n\n---\n\n**Next up:** your string exercises — reversing words and counting vowels.",
+      "language": "python",
+      "order": 5
     },
     {
       "id": "py-exercise-dominant",
@@ -89,9 +266,308 @@
       "title": "Exercise: Exoplanet Atmospheric Composition Analyzer",
       "type": "exercise",
       "content": "## Exercise: Exoplanet Atmospheric Composition Analyzer\n\nThe grand finale! This exercise combines strings, loops, and dictionaries to find the most common character in a string.\n\nThe full problem statement, starter code, and test cases come from the linked question. Open the **Code** panel and implement the function.\n\n### Skills you will use\n\n- The **counting pattern** with a dictionary\n- Looping over a string\n- Tracking the character with the highest count\n\n### Hint\n\nReuse the `count_letters` idea from the theory lesson. Then scan the resulting dictionary to find the key with the largest value. Watch out: the question may define tie-breaking rules — read the problem statement carefully.\n\nGood luck — you have earned it!",
-      "order": 3,
+      "order": 6,
       "language": "python",
       "question_id": "7b9d2c1a-3e4f-5a6b-7c8d-9e0f1a2b3c4d"
+    },
+    {
+      "id": "py-exercise-reverse-string",
+      "course_id": "python-fundamentals",
+      "module_id": "py-strings",
+      "title": "Exercise: Reverse a Word",
+      "type": "exercise",
+      "content": "## Exercise: Reverse a Word\n\nWrite a program that reverses a word.\n\nRead a single word from standard input and print it backwards.\n\n### Sample\n\nInput:\n\n```text\nhello\n```\n\nOutput:\n\n```text\nolleh\n```\n\n### Starter code\n\nComplete the `reverse_word` function. The easiest way is a slice with a step of `-1`.\n\n### Skills you will use\n\n- String slicing with a step\n- Returning a new string\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "def reverse_word(word):\n    return word\n\n\ndef main():\n    word = input().strip()\n    print(reverse_word(word))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "hello\n",
+          "expected_output": "olleh",
+          "description": "Simple word"
+        },
+        {
+          "input": "python\n",
+          "expected_output": "nohtyp",
+          "description": "Programming language"
+        },
+        {
+          "input": "radar\n",
+          "expected_output": "radar",
+          "description": "Palindrome"
+        }
+      ]
+    },
+    {
+      "id": "py-exercise-vowel-counter",
+      "course_id": "python-fundamentals",
+      "module_id": "py-strings",
+      "title": "Exercise: Vowel Counter",
+      "type": "exercise",
+      "content": "## Exercise: Vowel Counter\n\nWrite a program that counts the vowels in a string.\n\nRead a line of text from standard input, convert it to lowercase, and print how many of the letters `a`, `e`, `i`, `o`, `u` it contains.\n\n### Sample\n\nInput:\n\n```text\nhello\n```\n\nOutput:\n\n```text\n2\n```\n\n### Starter code\n\nComplete the `count_vowels` function. Loop over each character and count the vowels.\n\n### Skills you will use\n\n- A `for` loop over a string\n- The membership operator `in`\n- Returning an integer count\n\nGood luck!",
+      "order": 8,
+      "language": "python",
+      "starter_code": "def count_vowels(text):\n    return 0\n\n\ndef main():\n    text = input().strip().lower()\n    print(count_vowels(text))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "hello\n",
+          "expected_output": "2",
+          "description": "hello has two vowels"
+        },
+        {
+          "input": "python\n",
+          "expected_output": "1",
+          "description": "python has one vowel"
+        },
+        {
+          "input": "aeiou\n",
+          "expected_output": "5",
+          "description": "All vowels"
+        }
+      ]
+    },
+    {
+      "id": "py-functions-defs",
+      "course_id": "python-fundamentals",
+      "module_id": "py-functions",
+      "title": "Functions: Definitions, Parameters & Scope",
+      "type": "theory",
+      "content": "## Functions: Definitions, Parameters & Scope\n\nFunctions are reusable blocks of code. They give your programs **modularity** — you write a piece of logic once and call it from anywhere.\n\n### Anatomy of a function\n\nA function has a header, an optional body, and an optional `return`:\n\n```python\ndef greet(name):            # header: def + name + parentheses\n    message = f\"Hello, {name}!\"   # body (indented)\n    return message           # optional return value\n```\n\nCall it by name:\n\n```python\nprint(greet(\"Ada\"))          # Hello, Ada!\nprint(greet(\"Linus\"))        # Hello, Linus!\n```\n\n### Parameters vs arguments\n\n- A **parameter** is the name in the definition (`name`).\n- An **argument** is the value you pass in (`\"Ada\"`).\n\n### Return values\n\nA function *without* `return` still runs but gives back `None`:\n\n```python\ndef add(a, b):\n    total = a + b\n\nprint(add(2, 3))     # None  (no return statement)\n```\n\nAlways `return` the result when the caller needs it:\n\n```python\ndef add(a, b):\n    return a + b\n\nprint(add(2, 3))     # 5\n```\n\n### Arguments are passed by reference\n\nPython passes objects **by reference**: if you modify a *mutable* object (like a list) inside a function, the caller sees the change:\n\n```python\ndef add_item(items, item):\n    items.append(item)\n\ncart = [\"apple\"]\nadd_item(cart, \"mango\")\nprint(cart)          # ['apple', 'mango']\n```\n\nRebinding a *name* (with `=`) inside the function does not affect the caller:\n\n```python\ndef try_swap(items):\n    items = [\"changed\"]      # rebinds the local name only\n\ncart = [\"apple\"]\ntry_swap(cart)\nprint(cart)          # ['apple']  (unchanged)\n```\n\n### Argument types\n\nPython functions accept several kinds of arguments:\n\n```python\ndef describe(name, age=0, *hobbies, **extra):\n    print(\"Name:\", name)\n    print(\"Age:\", age)\n    print(\"Hobbies:\", hobbies)\n    print(\"Extra:\", extra)\n\ndescribe(\"Ada\", 36, \"math\", \"piano\", country=\"UK\")\n# Name: Ada\n# Age: 36\n# Hobbies: ('math', 'piano')\n# Extra: {'country': 'UK'}\n```\n\n- **Required positional:** `name` must always be provided.\n- **Default arguments:** `age=0` is optional and falls back to `0`.\n- **Variable-length positional (`*args`):** extra positional values collected into a tuple.\n- **Variable-length keyword (`**kwargs`):** extra `key=value` pairs collected into a dict.\n\nYou can also pass arguments by keyword, in any order:\n\n```python\ndescribe(age=30, name=\"Bob\")\n```\n\n### Lambda (anonymous) functions\n\nA **lambda** is a single-expression function with no name:\n\n```python\nsquare = lambda x: x * x\nprint(square(5))          # 25\n```\n\nLambdas shine where a function is needed as an argument:\n\n```python\npairs = [(1, 3), (2, 1), (3, 2)]\npairs.sort(key=lambda pair: pair[1])   # sort by second element\nprint(pairs)             # [(2, 1), (3, 2), (1, 3)]\n```\n\n### The `__name__ == \"__main__\"` guard\n\nWhen a script runs, Python sets the built-in `__name__` to `\"__main__\"`. The standard entry point pattern is:\n\n```python\ndef main():\n    print(\"Program starting...\")\n\nif __name__ == \"__main__\":\n    main()\n```\n\nThis way the code under the guard runs only when you execute the file directly — and is skipped when the file is imported elsewhere.\n\n---\n\n**Next up:** file handling — persisting data to disk.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "py-functions-args",
+      "course_id": "python-fundamentals",
+      "module_id": "py-functions",
+      "title": "Arguments: Positional, Keyword, Default, and *args",
+      "type": "theory",
+      "content": "## Arguments: Positional, Keyword, Default, and *args\n\nFunctions accept arguments in several flexible ways. Knowing each style lets you write clearer, more reusable code.\n\n### Required positional arguments\n\n```python\ndef greet(name, greeting):\n    return f\"{greeting}, {name}!\"\n\ngreet(\"Ada\", \"Hello\")     # positional: order matters\n```\n\n### Keyword arguments\n\nPass arguments by name — order no longer matters:\n\n```python\ngreet(greeting=\"Hi\", name=\"Ada\")   # \"Hi, Ada!\"\n```\n\n### Default arguments\n\nGive a parameter a default so it becomes optional:\n\n```python\ndef greet(name, greeting=\"Hello\"):\n    return f\"{greeting}, {name}!\"\n\ngreet(\"Ada\")              # \"Hello, Ada!\"\ngreet(\"Ada\", \"Hi\")        # \"Hi, Ada!\"\n```\n\nDefaults are evaluated once at definition time — use them for simple values.\n\n### Variable-length positional arguments: *args\n\n`*args` collects any number of extra positional arguments into a tuple:\n\n```python\ndef total(*args):\n    return sum(args)\n\nprint(total(1, 2, 3))      # 6\nprint(total(5))            # 5\n```\n\n### Variable-length keyword arguments: **kwargs\n\n`**kwargs` collects extra `key=value` arguments into a dictionary:\n\n```python\ndef show(**kwargs):\n    for key, value in kwargs.items():\n        print(f\"{key}={value}\")\n\nshow(name=\"Ada\", year=1815)\n# name=Ada\n# year=1815\n```\n\n### The ordering rule\n\nParameters must appear in this order: required positional, then default, then `*args`, then `**kwargs`.\n\n```python\ndef recipe(name, servings=2, *ingredients, **options):\n    pass\n```\n\n---\n\n**Next up:** anonymous functions with lambda.",
+      "language": "python",
+      "order": 2
+    },
+    {
+      "id": "py-functions-lambda",
+      "course_id": "python-fundamentals",
+      "module_id": "py-functions",
+      "title": "Lambda Functions",
+      "type": "theory",
+      "content": "## Lambda Functions\n\nA **lambda** is a tiny, single-expression function with no name. It is handy when you need a function just long enough to pass it somewhere.\n\n### Syntax\n\n```python\nsquare = lambda x: x * x\nprint(square(5))          # 25\n```\n\nThat is equivalent to:\n\n```python\ndef square(x):\n    return x * x\n```\n\nA lambda takes arguments before the colon and returns the single expression after it. No `return` keyword, no body — one line only.\n\n### Use with sort key\n\nThe most common use of lambdas is sorting custom data:\n\n```python\npairs = [(1, \"pear\"), (2, \"apple\"), (3, \"kiwi\")]\npairs.sort(key=lambda p: p[1])   # sort by the string\nprint(pairs)                     # [(2, 'apple'), (3, 'kiwi'), (1, 'pear')]\n```\n\n### Use with max/min\n\n```python\nwords = [\"a\", \"bbb\", \"cc\"]\nlongest = max(words, key=len)    # \"bbb\"\nprint(max(words, key=lambda w: w[-1]))   # word ending in the largest letter\n```\n\n### Use with map and filter\n\n```python\nnumbers = [1, 2, 3, 4]\ndoubled = list(map(lambda n: n * 2, numbers))       # [2, 4, 6, 8]\nevens = list(filter(lambda n: n % 2 == 0, numbers)) # [2, 4]\n```\n\n### When NOT to use lambda\n\nIf the logic needs more than one expression or becomes hard to read, write a named `def` instead. Lambdas are for *short*, throwaway logic.\n\n---\n\n**Next up:** scope — where your names live.",
+      "language": "python",
+      "order": 3
+    },
+    {
+      "id": "py-functions-scope",
+      "course_id": "python-fundamentals",
+      "module_id": "py-functions",
+      "title": "Scope and __name__ == '__main__'",
+      "type": "theory",
+      "content": "## Scope and __name__ == \"__main__\"\n\nNames in Python live in **scopes** — regions of code where they are visible. Understanding scope prevents one of the most confusing bugs in Python.\n\n### Local vs global scope\n\n```python\nmessage = \"global\"          # module-level: visible everywhere\n\ndef greet():\n    message = \"local\"       # inside the function: a NEW variable\n    print(message)\n\ngreet()                     # \"local\"\nprint(message)              # \"global\"\n```\n\nAssigning a variable inside a function creates a **local** variable — it does not touch the global one.\n\n### Reading globals is fine, reassigning is not\n\n```python\ncount = 0\n\ndef bump():\n    print(count)            # reads the global (works)\n    count += 1              # ERROR: count is local here but used before assignment\n```\n\nPython treats `count` as local the moment you assign it anywhere in the function, so the `print` above fails.\n\n### The global keyword\n\nIf you truly need to modify a module-level variable inside a function, declare it:\n\n```python\ncount = 0\n\ndef bump():\n    global count\n    count += 1\n\nbump()\nprint(count)                # 1\n```\n\nUse `global` sparingly — most code is cleaner with parameters and return values.\n\n### The __name__ guard\n\nEvery module has a special variable `__name__`:\n\n- When run directly, it is `\"__main__\"`.\n- When imported, it is the module's name.\n\n```python\ndef main():\n    print(\"Program starting...\")\n\nif __name__ == \"__main__\":\n    main()\n```\n\nThis is the **standard entry point** pattern. Code under the guard runs only when the file is executed directly — not when it is imported.\n\n---\n\n**Next up:** your function exercises — implementing helpers and the main guard.",
+      "language": "python",
+      "order": 4
+    },
+    {
+      "id": "py-exercise-celsius",
+      "course_id": "python-fundamentals",
+      "module_id": "py-functions",
+      "title": "Exercise: Celsius Converter",
+      "type": "exercise",
+      "content": "## Exercise: Celsius Converter\n\nWrite a program that reads a temperature in Celsius from standard input and prints the equivalent temperature in Fahrenheit.\n\nYou must use a function named `celsius_to_fahrenheit` that takes one argument (the Celsius value) and returns the Fahrenheit value:\n\n```text\nF = (C * 9/5) + 32\n```\n\nThe program reads a single line from standard input and prints only the result.\n\n### Sample\n\nInput:\n\n```text\n0\n```\n\nOutput:\n\n```text\n32.0\n```\n\n### Starter code\n\nYour starter code already defines the function skeleton and the `main()` that reads the input. Complete the body of `celsius_to_fahrenheit` so the program prints the correct result.\n\n### Skills you will use\n\n- Defining a function with `def`\n- Returning a value with `return`\n- Reading input with `input()`\n- The `__name__ == \"__main__\"` guard\n\nGood luck!",
+      "order": 5,
+      "language": "python",
+      "starter_code": "def celsius_to_fahrenheit(celsius):\n    return 0\n\n\ndef main():\n    celsius = float(input())\n    print(celsius_to_fahrenheit(celsius))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "0\n",
+          "expected_output": "32.0",
+          "description": "Freezing point of water"
+        },
+        {
+          "input": "100\n",
+          "expected_output": "212.0",
+          "description": "Boiling point of water"
+        },
+        {
+          "input": "-40\n",
+          "expected_output": "-40.0",
+          "description": "Celsius and Fahrenheit meet"
+        }
+      ]
+    },
+    {
+      "id": "py-exercise-max-three",
+      "course_id": "python-fundamentals",
+      "module_id": "py-functions",
+      "title": "Exercise: Maximum of Three",
+      "type": "exercise",
+      "content": "## Exercise: Maximum of Three\n\nWrite a program that finds the largest of three numbers.\n\nRead three integers from standard input, one per line, and print the largest.\n\n### Sample\n\nInput:\n\n```text\n3\n5\n4\n```\n\nOutput:\n\n```text\n5\n```\n\n### Starter code\n\nComplete the `largest_of_three` function using `if`/`elif` comparisons. The `main()` reads the numbers and prints the result.\n\n### Skills you will use\n\n- Comparing values with `>` and `>=`\n- Chained `if`/`elif`/`else`\n- Returning values from a function\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def largest_of_three(a, b, c):\n    return a\n\n\ndef main():\n    a = int(input())\n    b = int(input())\n    c = int(input())\n    print(largest_of_three(a, b, c))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "3\n5\n4\n",
+          "expected_output": "5",
+          "description": "Middle is largest"
+        },
+        {
+          "input": "10\n2\n8\n",
+          "expected_output": "10",
+          "description": "First is largest"
+        },
+        {
+          "input": "1\n1\n1\n",
+          "expected_output": "1",
+          "description": "All equal"
+        }
+      ]
+    },
+    {
+      "id": "py-exercise-area",
+      "course_id": "python-fundamentals",
+      "module_id": "py-functions",
+      "title": "Exercise: Rectangle Area",
+      "type": "exercise",
+      "content": "## Exercise: Rectangle Area\n\nWrite a program that computes the area of a rectangle.\n\nRead a **width** and a **height** from standard input (one per line, possibly decimal) and print their product.\n\n### Sample\n\nInput:\n\n```text\n5\n4\n```\n\nOutput:\n\n```text\n20.0\n```\n\n### Starter code\n\nComplete the `rectangle_area` function so it returns `width * height`. The `main()` reads both values as floats and prints the result.\n\n### Skills you will use\n\n- Defining a function with parameters\n- Converting input with `float()`\n- Returning a numeric value\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "def rectangle_area(width, height):\n    return 0\n\n\ndef main():\n    width = float(input())\n    height = float(input())\n    print(rectangle_area(width, height))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "5\n4\n",
+          "expected_output": "20.0",
+          "description": "Whole numbers"
+        },
+        {
+          "input": "2.5\n2\n",
+          "expected_output": "5.0",
+          "description": "Decimal width"
+        }
+      ]
+    },
+    {
+      "id": "py-files-basics",
+      "course_id": "python-fundamentals",
+      "module_id": "py-file-handling",
+      "title": "File Handling, the os Module & Exceptions",
+      "type": "theory",
+      "content": "## File Handling, the os Module & Exceptions\n\nPrograms often need to persist data. Python makes reading and writing files straightforward with the built-in `open()` function.\n\n### Opening files\n\n`open()` returns a **file object**. The mode tells Python what you want to do:\n\n| Mode | Meaning                     |\n|------|-----------------------------|\n| `\"r\"` | read (default)              |\n| `\"w\"` | write — overwrites existing |\n| `\"x\"` | create — fails if exists    |\n| `\"a\"` | append — adds to the end    |\n| `\"b\"` | binary mode                 |\n\n```python\nf = open(\"notes.txt\", \"w\")\nf.write(\"hello\n\")\nf.close()\n```\n\nAlways close files when you finish — or better, use the `with` statement, which closes automatically:\n\n```python\nwith open(\"notes.txt\", \"w\") as f:\n    f.write(\"hello\n\")\n```\n\n### Reading a file\n\n| Method          | Returns                            |\n|-----------------|------------------------------------|\n| `read()`        | the whole contents as one string   |\n| `readline()`    | the next single line               |\n| `readlines()`   | a list of all lines                |\n\n```python\nwith open(\"notes.txt\", \"r\") as f:\n    content = f.read()          # \"hello\\n\"\n\nwith open(\"notes.txt\", \"r\") as f:\n    for line in f:              # iterate line by line\n        print(line.strip())\n```\n\n### Working with the os module\n\nThe `os` module gives you operating-system control from Python:\n\n```python\nimport os\n\nos.rename(\"notes.txt\", \"notes_old.txt\")   # rename a file\nos.remove(\"notes_old.txt\")                # delete a file\nos.mkdir(\"backup\")                        # create a directory\nos.chdir(\"backup\")                        # change working directory\n```\n\nBe careful with `remove()` and `mkdir()` — they raise errors if the target does not exist.\n\n### Exceptions\n\nNot everything goes smoothly: files go missing, numbers parse badly, networks drop. **Exceptions** are Python's way of signalling an error, and `try/except` is how you handle them:\n\n```python\ntry:\n    with open(\"missing.txt\", \"r\") as f:\n        print(f.read())\nexcept FileNotFoundError:\n    print(\"That file does not exist.\")\n```\n\nThe full structure is `try` -> `except` -> `else` -> `finally`:\n\n- `else` runs only if no exception occurred.\n- `finally` always runs, whether or not there was an error.\n\n```python\ntry:\n    age = int(input(\"Age: \"))\nexcept ValueError:\n    print(\"That is not a number.\")\nelse:\n    print(f\"Age is {age}\")\nfinally:\n    print(\"Done.\")\n```\n\nA program that handles exceptions does not crash — it degrades gracefully.\n\n---\n\n**Next up:** file modes and the `with` statement — choosing how to open a file.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "py-files-modes",
+      "course_id": "python-fundamentals",
+      "module_id": "py-file-handling",
+      "title": "File Modes and the with Statement",
+      "type": "theory",
+      "content": "## File Modes and the with Statement\n\nOpening files is only half the story. Choosing the right **mode** and using the **`with` statement** keeps your code safe and clean.\n\n### The five basic modes\n\n| Mode | Meaning                          | What happens if the file exists? |\n|------|----------------------------------|----------------------------------|\n| `\"r\"` | read (default)                   | Opens for reading                |\n| `\"w\"` | write                            | Truncated to empty               |\n| `\"x\"` | exclusive create                 | Fails if it already exists       |\n| `\"a\"` | append                           | Content kept, new data at end    |\n| `\"b\"` | binary                           | Combined: `\"rb\"`, `\"wb\"`, ...    |\n\n```python\nwith open(\"notes.txt\", \"w\") as f:\n    f.write(\"first line\n\")\n\nwith open(\"notes.txt\", \"a\") as f:\n    f.write(\"second line\n\")     # \"first line\nsecond line\n\"\n```\n\n### Why use with?\n\n`with` closes the file automatically, even if an error occurs inside the block. Without it, you must remember to call `.close()`:\n\n```python\nf = open(\"notes.txt\", \"w\")\nf.write(\"data\")\nf.close()                        # easy to forget!\n```\n\nUsing `with`:\n\n```python\nwith open(\"notes.txt\", \"w\") as f:\n    f.write(\"data\")              # auto-closed when the block ends\n```\n\n### Modes and errors\n\n- Opening a missing file with `\"r\"` raises `FileNotFoundError`.\n- Creating with `\"x\"` when it exists raises `FileExistsError`.\n- Writing with `\"w\"` **overwrites** silently — no warning.\n\n### Reading with loops\n\n```python\nwith open(\"notes.txt\", \"r\") as f:\n    for line in f:               # iterate line by line\n        print(line.strip())\n```\n\n---\n\n**Next up:** the os module — renaming, deleting, and directories.",
+      "language": "python",
+      "order": 2
+    },
+    {
+      "id": "py-files-os",
+      "course_id": "python-fundamentals",
+      "module_id": "py-file-handling",
+      "title": "The os Module",
+      "type": "theory",
+      "content": "## The os Module\n\nThe `os` module gives your Python program control over the operating system: renaming files, deleting them, and managing directories.\n\n### Importing\n\n```python\nimport os\n```\n\n### Working directory\n\n```python\nprint(os.getcwd())          # current working directory\nos.chdir(\"backup\")          # change directory (raises if it does not exist)\n```\n\n### Creating and removing directories\n\n```python\nos.mkdir(\"backup\")          # create one directory\nos.rmdir(\"backup\")          # remove an EMPTY directory\n```\n\n`os.mkdir` fails if the directory already exists — check first or use `try/except`.\n\n### Renaming and deleting files\n\n```python\nos.rename(\"old.txt\", \"new.txt\")    # rename or move a file\nos.remove(\"temp.txt\")              # delete a file (raises if missing)\n```\n\n### Checking existence\n\n```python\nif os.path.exists(\"notes.txt\"):\n    print(\"File exists!\")\nelse:\n    print(\"No such file.\")\n```\n\n### Combining paths safely\n\n`os.path.join` builds paths correctly on any platform:\n\n```python\npath = os.path.join(\"data\", \"users.txt\")\n# \"data/users.txt\" on Linux/macOS, \"data\\users.txt\" on Windows\n```\n\n### Putting it together\n\n```python\nimport os\n\nif not os.path.exists(\"backup\"):\n    os.mkdir(\"backup\")\n\nif os.path.exists(\"notes.txt\"):\n    os.rename(\"notes.txt\", os.path.join(\"backup\", \"notes.txt\"))\n    print(\"Moved to backup/\")\n```\n\n---\n\n**Next up:** exceptions — handling errors gracefully instead of crashing.",
+      "language": "python",
+      "order": 3
+    },
+    {
+      "id": "py-files-exceptions",
+      "course_id": "python-fundamentals",
+      "module_id": "py-file-handling",
+      "title": "Exception Handling: try, except, else, finally",
+      "type": "theory",
+      "content": "## Exception Handling: try, except, else, finally\n\nFiles disappear, numbers parse badly, networks drop. **Exceptions** are Python's way of reporting errors — and `try/except` is how you survive them.\n\n### What an exception is\n\nAn exception is an object describing an error. Common built-ins:\n\n| Exception            | Raised when                                   |\n|----------------------|-----------------------------------------------|\n| `ValueError`         | `int(\"abc\")`, invalid value for a type        |\n| `ZeroDivisionError`  | dividing by zero                              |\n| `FileNotFoundError`  | opening a missing file                        |\n| `TypeError`          | mixing incompatible types                     |\n| `KeyError`           | missing dict key                              |\n\n### Catching exceptions\n\n```python\ntry:\n    num = int(input(\"Number: \"))\n    print(100 / num)\nexcept ValueError:\n    print(\"That is not a number.\")\nexcept ZeroDivisionError:\n    print(\"Cannot divide by zero.\")\n```\n\nThe `try` block runs normally. If it raises, Python jumps to the matching `except` instead of crashing.\n\n### except with multiple types\n\n```python\ntry:\n    result = 100 / int(input())\nexcept (ValueError, ZeroDivisionError):\n    print(\"Bad input or division by zero.\")\n```\n\n### else and finally\n\n- `else` runs only if no exception occurred.\n- `finally` always runs — even on error or early return.\n\n```python\ntry:\n    num = int(input(\"Number: \"))\nexcept ValueError:\n    print(\"Not a number.\")\nelse:\n    print(f\"You entered {num}\")   # only if no error\nfinally:\n    print(\"Done.\")                # always runs\n```\n\n### The file-handling pattern\n\n```python\ntry:\n    with open(\"notes.txt\", \"r\") as f:\n        content = f.read()\nexcept FileNotFoundError:\n    content = \"\"\n```\n\n### Raising your own errors\n\nUse `raise` to signal invalid states:\n\n```python\ndef set_age(age):\n    if age < 0:\n        raise ValueError(\"Age cannot be negative.\")\n    return age\n```\n\nHandling exceptions keeps your programs running — failing gracefully instead of crashing.\n\n---\n\n**Next up:** your file exercises — writing, appending, and dividing safely.",
+      "language": "python",
+      "order": 4
+    },
+    {
+      "id": "py-exercise-journal",
+      "course_id": "python-fundamentals",
+      "module_id": "py-file-handling",
+      "title": "Exercise: Journal Writer",
+      "type": "exercise",
+      "content": "## Exercise: Journal Writer\n\nWrite a program that saves lines of text to a file and then reports how many lines were stored.\n\nThe program should:\n\n1. Read a **filename** from the first line of standard input.\n2. Read every remaining line as content.\n3. Write the content to the file (overwriting anything that was there before).\n4. Open the file again, read it back, and print the **number of lines** it contains.\n\n### Sample\n\nInput:\n\n```text\njournal.txt\nhello world\n```\n\nOutput:\n\n```text\n1\n```\n\n### Starter code\n\nThe skeleton reads the filename and the content lines, and it already prints `len(saved)`. Complete the two `with` blocks: write the lines to the file, then read the file back into `saved`.\n\n### Skills you will use\n\n- Opening a file with `open()` in `\"w\"` and `\"r\"` modes\n- The `with` statement\n- Handling `EOFError` with `try`/`except`\n- `readlines()` and `len()`\n\nGood luck!",
+      "order": 5,
+      "language": "python",
+      "starter_code": "def main():\n    filename = input().strip()\n    lines = []\n    try:\n        while True:\n            lines.append(input())\n    except EOFError:\n        pass\n\n    with open(filename, \"w\") as f:\n        pass\n\n    with open(filename, \"r\") as f:\n        saved = f.readlines()\n\n    print(len(saved))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "journal.txt\nhello world\n",
+          "expected_output": "1",
+          "description": "Single line saved"
+        },
+        {
+          "input": "journal.txt\nline one\nline two\nline three\n",
+          "expected_output": "3",
+          "description": "Multiple lines saved"
+        },
+        {
+          "input": "journal.txt\njust me\n",
+          "expected_output": "1",
+          "description": "One line again"
+        }
+      ]
+    },
+    {
+      "id": "py-exercise-append",
+      "course_id": "python-fundamentals",
+      "module_id": "py-file-handling",
+      "title": "Exercise: Append a Note",
+      "type": "exercise",
+      "content": "## Exercise: Append a Note\n\nWrite a program that appends notes to a file and reports how many lines it holds.\n\nThe program should:\n\n1. Read a **filename** from the first line of standard input.\n2. Read every remaining line as a note.\n3. **Append** each note to the file (do not erase existing content).\n4. Open the file again, read it back, and print the **number of lines**.\n\n### Sample\n\nInput:\n\n```text\nnotes.txt\nhello world\n```\n\nOutput:\n\n```text\n1\n```\n\n### Starter code\n\nThe skeleton reads the filename and the notes, and it already prints `len(saved)`. Complete the `with open(..., \"a\")` block so it appends each note.\n\n### Skills you will use\n\n- The `\"a\"` (append) mode\n- The `with` statement\n- Handling `EOFError` with `try`/`except`\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def main():\n    filename = input().strip()\n    notes = []\n    try:\n        while True:\n            notes.append(input())\n    except EOFError:\n        pass\n\n    with open(filename, \"a\") as f:\n        pass\n\n    with open(filename, \"r\") as f:\n        saved = f.readlines()\n\n    print(len(saved))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "notes.txt\nhello world\n",
+          "expected_output": "1",
+          "description": "Single note"
+        },
+        {
+          "input": "todo.txt\nfirst task\nsecond task\n",
+          "expected_output": "2",
+          "description": "Two notes appended"
+        },
+        {
+          "input": "notes.txt\none\ntwo\nthree\n",
+          "expected_output": "3",
+          "description": "Three notes"
+        }
+      ]
+    },
+    {
+      "id": "py-exercise-safe-division",
+      "course_id": "python-fundamentals",
+      "module_id": "py-file-handling",
+      "title": "Exercise: Safe Division",
+      "type": "exercise",
+      "content": "## Exercise: Safe Division\n\nWrite a program that divides two numbers without crashing.\n\nRead two values from standard input, one per line, and:\n\n- Print the quotient `a / b` on success.\n- Print `Cannot divide by zero` if `b` is zero.\n- Print `Not a number` if either value is not an integer.\n\n### Sample\n\nInput:\n\n```text\n10\n2\n```\n\nOutput:\n\n```text\n5.0\n```\n\n### Starter code\n\nThe skeleton calls `safe_divide` and prints the result — but it crashes on bad input. Wrap the conversion and division in `try`/`except` blocks so the program prints the friendly messages instead.\n\n### Skills you will use\n\n- `try`/`except` with `ZeroDivisionError` and `ValueError`\n- Converting input with `int()`\n- Reading input without assuming it is valid\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "def safe_divide(a, b):\n    return a / b\n\n\ndef main():\n    a = input()\n    b = input()\n    result = safe_divide(int(a), int(b))\n    print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "10\n2\n",
+          "expected_output": "5.0",
+          "description": "Normal division"
+        },
+        {
+          "input": "7\n0\n",
+          "expected_output": "Cannot divide by zero",
+          "description": "Division by zero"
+        },
+        {
+          "input": "abc\n2\n",
+          "expected_output": "Not a number",
+          "description": "Non-integer input"
+        }
+      ]
     }
   ]
 }

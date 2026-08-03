@@ -156,6 +156,9 @@ class TestCurriculumSeed:
             lessons = result.scalars().all()
             assert lessons, "no exercise lessons seeded"
             for lesson in lessons:
-                assert lesson.question_id, (
-                    f"exercise lesson '{lesson.id}' lost its question link"
+                has_question = bool(lesson.question_id)
+                has_embedded = bool(lesson.starter_code or lesson.test_cases)
+                assert has_question != has_embedded, (
+                    f"exercise lesson '{lesson.id}' must link a question OR embed "
+                    f"starter_code/test_cases, not neither/both"
                 )

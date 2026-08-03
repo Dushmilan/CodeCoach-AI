@@ -20,6 +20,20 @@
       "title": "Strings & Data Structures",
       "description": "Manipulate text and organize data with lists, tuples, and dictionaries.",
       "order": 3
+    },
+    {
+      "id": "py-functions",
+      "course_id": "python-fundamentals",
+      "title": "Functions",
+      "description": "Reusable blocks of code: parameters, argument types, scope, and lambdas.",
+      "order": 4
+    },
+    {
+      "id": "py-file-handling",
+      "course_id": "python-fundamentals",
+      "title": "File Handling",
+      "description": "Read and write files, work with the os module, and handle exceptions.",
+      "order": 5
     }
   ]
 }
