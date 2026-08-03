@@ -368,6 +368,14 @@ export default function LessonPage() {
             <div className="flex-1 grid grid-cols-[35%_1fr] min-h-0 divide-x divide-white/[0.04]">
               <div className="min-w-0 overflow-y-auto p-6">
                 <MarkdownRenderer content={lesson.content} />
+                {linkedQuestion?.description && (
+                  <div className="mt-6 pt-5 border-t border-white/[0.04]">
+                    <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground/40 mb-3 font-mono">
+                      Problem
+                    </h3>
+                    <MarkdownRenderer content={linkedQuestion.description} />
+                  </div>
+                )}
                 {resolvedTestCases.length > 0 && (
                   <div className="mt-6 pt-5 border-t border-white/[0.04]">
                     <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground/40 mb-3 font-mono">

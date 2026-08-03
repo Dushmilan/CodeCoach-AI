@@ -60,6 +60,24 @@ describe('QuestionDescriptionPanel', () => {
     expect(screen.getByText('Find two numbers that add up to target.')).toBeInTheDocument();
   });
 
+  it('renders markdown description without leaking raw syntax', () => {
+    const markdownQuestion: Question = {
+      ...fullQuestion,
+      description:
+        'Merge `strand1` and **strand2** into one sequence.\n\n- item one\n- item two',
+    };
+    const { container } = render(
+      <QuestionDescriptionPanel selectedQuestion={markdownQuestion} />,
+    );
+
+    expect(container.querySelector('code')?.textContent).toBe('strand1');
+    expect(container.querySelector('strong')?.textContent).toBe('strand2');
+    expect(screen.getByText('item one')).toBeInTheDocument();
+    expect(screen.getByText('item two')).toBeInTheDocument();
+    expect(screen.queryByText(/`strand1`/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\*\*strand2\*\*/)).not.toBeInTheDocument();
+  });
+
   it('renders examples', () => {
     render(<QuestionDescriptionPanel selectedQuestion={fullQuestion} />);
     expect(screen.getByText(/Example 1/)).toBeInTheDocument();
