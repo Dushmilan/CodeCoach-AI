@@ -41,38 +41,28 @@ def upgrade() -> None:
         sa.Column("category", sa.String(length=100), nullable=False),
         sa.Column(
             "company_tags",
-            postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "mysql"
-            ),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column(
             "starter_code",
-            postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "mysql"
-            ),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column(
             "examples",
-            postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "mysql"
-            ),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column(
             "test_cases",
-            postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "mysql"
-            ),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column(
             "hints",
-            postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "mysql"
-            ),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column("solution", sa.Text(), nullable=True),
@@ -80,9 +70,7 @@ def upgrade() -> None:
         sa.Column("space_complexity", sa.String(length=100), nullable=True),
         sa.Column(
             "constraints",
-            postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "mysql"
-            ),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column("is_interactive", sa.Integer(), nullable=False),
@@ -125,9 +113,7 @@ def upgrade() -> None:
         sa.Column("course_id", sa.String(length=36), nullable=False),
         sa.Column(
             "completed_lessons",
-            postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "mysql"
-            ),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column("last_accessed_lesson_id", sa.String(length=36), nullable=True),
@@ -177,9 +163,7 @@ def upgrade() -> None:
         sa.Column("starter_code", sa.Text(), nullable=True),
         sa.Column(
             "test_cases",
-            postgresql.JSONB(astext_type=Text()).with_variant(
-                sa.JSON(), "mysql"
-            ),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=True,
         ),
         sa.Column("question_id", sa.String(length=36), nullable=True),
