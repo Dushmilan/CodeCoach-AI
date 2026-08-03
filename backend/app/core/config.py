@@ -10,8 +10,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "production"
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./codecoach.db"
-    USE_DATABASE: bool = False
+    DATABASE_URL: str = (
+        "mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach"
+    )
 
     # Auth
     JWT_SECRET_KEY: str = ""

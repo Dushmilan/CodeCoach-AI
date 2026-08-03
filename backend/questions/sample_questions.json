@@ -5,7 +5,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Google", "Facebook", "Amazon", "Microsoft"],
-    "description": "Given an integer array nums, return all unique triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.\n\nNotice that the solution set must not contain duplicate triplets. The order of the triplets and the order of elements inside a triplet does not matter.\n\nImplement an algorithm that runs in O(n\u00c2\u00b2) time and uses constant extra space (excluding the output).",
+    "description": "Given an integer array `nums`, return all unique triplets `[nums[i], nums[j], nums[k]]` such that `i`, `j`, and `k` are distinct indices and `nums[i] + nums[j] + nums[k] == 0`.\n\n**Rules**\n- The solution set must not contain duplicate triplets.\n- The order of the triplets (and the order of elements inside a triplet) does not matter.\n- Each element may be used only once per triplet.\n\n**Constraints**\n- 0 <= nums.length <= 3000\n- -10^5 <= nums[i] <= 10^5\n- The algorithm must run in O(n²) time and use constant extra space (excluding the output).",
     "examples": [
       {
         "input": "nums = [-1,0,1,2,-1,-4]",
@@ -111,7 +111,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Amazon", "Google", "Facebook", "Apple"],
-    "description": "Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i].\n\nThe product of any prefix or suffix is guaranteed to fit in a 32-bit integer. You must write an algorithm that runs in O(n) time and without using the division operation.\n\nSolve the problem in O(1) extra space (the output array does not count as extra space).",
+    "description": "Given an integer array `nums`, return an array `answer` such that `answer[i]` is equal to the product of all the elements of `nums` except `nums[i]`.\n\n**Rules**\n- Write an algorithm that runs in O(n) time without using the division operation.\n- Use O(1) extra space (the output array does not count as extra space).\n- The product of any prefix or suffix is guaranteed to fit in a 32-bit integer.\n\n**Constraints**\n- 2 <= nums.length <= 10^5\n- -30 <= nums[i] <= 30",
     "examples": [
       {
         "input": "nums = [1,2,3,4]",
@@ -218,7 +218,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Google", "Facebook", "Amazon", "Bloomberg"],
-    "description": "Given an array of integers nums and an integer k, return the total number of continuous subarrays whose sum equals to k.\n\nThe subarrays can consist of positive and negative numbers, and the same subarray must not be counted twice.\n\nYour solution must run in O(n) time.",
+    "description": "Given an array of integers `nums` and an integer `k`, return the total number of continuous subarrays whose sum equals `k`.\n\n**Rules**\n- Subarrays may contain positive and negative numbers.\n- Each subarray must be counted only once.\n- The solution must run in O(n) time.\n\n**Constraints**\n- 1 <= nums.length <= 2 * 10^4\n- -1000 <= nums[i] <= 1000\n- -10^7 <= k <= 10^7\n- The answer fits in a 32-bit integer.",
     "examples": [
       {
         "input": "nums = [1,1,1], k = 2",
@@ -324,7 +324,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Facebook", "Amazon", "Microsoft", "LinkedIn"],
-    "description": "Given an array of integers nums sorted in non-decreasing order, find the starting and ending position of a given target value.\n\nIf the target is not found in the array, return [-1, -1]. You must write an algorithm with O(log n) runtime complexity.\n\nThe array may contain duplicates and the targets can be any integer within the given constraints.",
+    "description": "Given an array of integers `nums` sorted in non-decreasing order, find the starting and ending position of a given `target` value.\n\nIf the `target` is not found, return `[-1, -1]`.\n\n**Rules**\n- The array may contain duplicates.\n- The algorithm must run in O(log n) runtime complexity.\n\n**Constraints**\n- 0 <= nums.length <= 10^5\n- -10^9 <= nums[i] <= 10^9\n- -10^9 <= target <= 10^9",
     "examples": [
       {
         "input": "nums = [5,7,7,8,8,10], target = 8",
@@ -431,7 +431,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Amazon", "Apple", "Adobe", "Microsoft"],
-    "description": "You are given an n x n 2D matrix representing an image. Rotate the image by 90 degrees clockwise.\n\nYou must rotate the image in-place, which means you have to modify the input matrix directly. Do not allocate another 2D matrix for the rotation.\n\nThe rotation should be performed on the original matrix, and the result should be readable from the same variable after the function call.",
+    "description": "You are given an `n x n` 2D matrix representing an image. Rotate the image by 90 degrees clockwise.\n\n**Rules**\n- Rotate the image in-place — modify the input matrix directly and do not allocate another 2D matrix.\n- The result should be readable from the same variable after the function returns.\n\n**Constraints**\n- n == matrix.length == matrix[i].length\n- 1 <= n <= 20\n- -1000 <= matrix[i][j] <= 1000",
     "examples": [
       {
         "input": "matrix = [[1,2,3],[4,5,6],[7,8,9]]",
@@ -521,7 +521,7 @@
       "Reverse each row of the transposed matrix.",
       "Alternatively, rotate groups of four cells in place, but the transpose-reverse method is easier to implement."
     ],
-    "solution": "First, transpose the matrix: for i from 0 to n-1, for j from i+1 to n-1, swap matrix[i][j] and matrix[j][i]. Then, reverse each row: for each row, swap the first with the last, second with second last, etc. This achieves a 90-degree clockwise rotation in O(n\u00c2\u00b2) time and O(1) extra space.",
+    "solution": "First, transpose the matrix: for i from 0 to n-1, for j from i+1 to n-1, swap matrix[i][j] and matrix[j][i]. Then, reverse each row: for each row, swap the first with the last, second with second last, etc. This achieves a 90-degree clockwise rotation in O(n²) time and O(1) extra space.",
     "time_complexity": "O(n^2)",
     "space_complexity": "O(1)",
     "constraints": [
@@ -536,7 +536,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Google", "Facebook", "Amazon", "Uber"],
-    "description": "Given an array of intervals where intervals[i] = [start_i, end_i], merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.\n\nThe result should be returned as a new array, and the original input may be sorted or not. Two intervals overlap if the start of one is less than or equal to the end of the other.\n\nYour solution must sort the intervals appropriately and merge them in a single pass.",
+    "description": "Given an array of intervals where `intervals[i] = [start_i, end_i]`, merge all overlapping intervals and return an array of the non-overlapping intervals that cover all the input intervals.\n\n**Rules**\n- Two intervals overlap if the start of one is less than or equal to the end of the other.\n- The input may be unsorted — sort the intervals and merge them in a single pass.\n\n**Constraints**\n- 1 <= intervals.length <= 10^4\n- intervals[i].length == 2\n- 0 <= start_i <= end_i <= 10^4",
     "examples": [
       {
         "input": "intervals = [[1,3],[2,6],[8,10],[15,18]]",
@@ -642,7 +642,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Google", "Facebook", "Amazon", "Microsoft"],
-    "description": "Implement the next permutation, which rearranges numbers into the lexicographically next greater permutation of numbers.\n\nIf such an arrangement is not possible, it must rearrange it as the lowest possible order (i.e., sorted in ascending order). The replacement must be in-place and use only constant extra memory.\n\nThe algorithm should run in O(n) time and modify the input array directly.",
+    "description": "Implement the next permutation, which rearranges numbers into the lexicographically next greater permutation of the array.\n\nIf such an arrangement is not possible, rearrange it as the lowest possible order (i.e., sorted in ascending order).\n\n**Rules**\n- The replacement must be in-place and use only constant extra memory.\n- The algorithm should run in O(n) time and modify the input array directly.\n\n**Constraints**\n- 1 <= nums.length <= 100\n- 0 <= nums[i] <= 100",
     "examples": [
       {
         "input": "nums = [1,2,3]",
@@ -657,7 +657,7 @@
       {
         "input": "nums = [1,1,5]",
         "output": "[1,5,1]",
-        "explanation": "1-1-5 \u00e2\u2020\u2019 1-5-1 is the next greater permutation."
+        "explanation": "1-1-5 → 1-5-1 is the next greater permutation."
       }
     ],
     "test_cases": [
@@ -743,7 +743,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Google", "Amazon", "LinkedIn", "Microsoft"],
-    "description": "Given an integer array nums, find a contiguous non-empty subarray that has the largest product, and return the product.\n\nThe subarray must contain at least one number. The product may be negative, and you must handle both positive and negative numbers efficiently.\n\nYour solution should run in O(n) time and use constant extra space.",
+    "description": "Given an integer array `nums`, find a contiguous non-empty subarray that has the largest product and return the product.\n\n**Rules**\n- The subarray must contain at least one number.\n- Handle both positive and negative numbers efficiently.\n- The solution should run in O(n) time and use constant extra space.\n\n**Constraints**\n- 1 <= nums.length <= 2 * 10^4\n- -10 <= nums[i] <= 10\n- The product of any subarray fits in a 32-bit integer.",
     "examples": [
       {
         "input": "nums = [2,3,-2,4]",
@@ -848,7 +848,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Amazon", "Microsoft", "Apple", "Facebook"],
-    "description": "Given an integer array nums of length n where all the integers are in the range [1, n] and each integer appears at most twice, return an array of all the integers that appear twice.\n\nYou must implement an algorithm that runs in O(n) time and uses only constant extra space (excluding the output). You may assume the input array is mutable and can be modified.",
+    "description": "Given an integer array `nums` of length `n` where every integer is in the range `[1, n]` and appears at most twice, return an array of all the integers that appear twice.\n\n**Rules**\n- The algorithm must run in O(n) time and use only constant extra space (excluding the output).\n- You may modify the input array.\n\n**Constraints**\n- n == nums.length\n- 1 <= n <= 10^5\n- 1 <= nums[i] <= n\n- Each element appears once or twice.",
     "examples": [
       {
         "input": "nums = [4,3,2,7,8,2,3,1]",
@@ -934,7 +934,7 @@
       "java": "public List<Integer> findDuplicates(int[] nums) {\n    // your code here\n}"
     },
     "hints": [
-      "Use the fact that numbers are in the range [1, n] \u00e2\u20ac\u201d each number can be mapped to an index (value - 1).",
+      "Use the fact that numbers are in the range [1, n] — each number can be mapped to an index (value - 1).",
       "Mark the visited number by negating the value at its corresponding index.",
       "If the number at that index is already negative, the current number is a duplicate."
     ],
@@ -955,7 +955,7 @@
     "difficulty": "medium",
     "category": "Arrays",
     "company_tags": ["Facebook", "Google", "Amazon", "Microsoft"],
-    "description": "Given a binary array nums, return the maximum length of a contiguous subarray with an equal number of 0 and 1.\n\nThe array consists only of 0s and 1s. The subarray may start and end anywhere, and the goal is to maximize its length.\n\nYour solution should run in O(n) time and use O(n) auxiliary space.",
+    "description": "Given a binary array `nums`, return the maximum length of a contiguous subarray with an equal number of `0`s and `1`s.\n\n**Rules**\n- The subarray may start and end anywhere.\n- The solution should run in O(n) time and use O(n) auxiliary space.\n\n**Constraints**\n- 1 <= nums.length <= 10^5\n- nums[i] is either 0 or 1.",
     "examples": [
       {
         "input": "nums = [0,1]",
@@ -1061,7 +1061,7 @@
       "Starlink Quantum Routing",
       "Neo-Tokyo Municipal AI"
     ],
-    "description": "The neon-drenched skies of Neo-Tokyo fade to absolute darkness as you jack your neural deck directly into the secure mainframe of Arasaka Cyber-Defense. Your critical mission is to navigate the localized network grid and extract a rogue sentient AI entity before the automated system lockdown sequence initiates and fries your synapses. The sub-grid is structured as a labyrinth of monitored server nodes connected by high-speed fiber channels, heavily guarded by deep packet inspection firewalls.\n\nYou must calculate the fastest path from your entry access point to the central mainframe core. Each physical link between nodes features a specific network latency overhead measured in milliseconds and may optionally be locked behind an active security firewall. Passing through an active firewall requires burning exactly one single-use ICEbreaker decryptor charge from your remaining software payload inventory. If you attempt to traverse a link protected by a firewall without an available ICEbreaker charge, the system's active countermeasures will instantly detect and flatline your connection.\n\nYou are provided with total_nodes representing the size of the cluster, and an array of connectivity vectors called mainframe_links, where each entry is formatted as [source_node, target_node, latency_ms, firewall_active]. The firewall_active flag is set to 1 if an ICEbreaker module is consumed upon entry, or 0 if it is an unmonitored open channel. You are also given your starting access_point node index, the destination mainframe_core node index, and your total allocation of icebreaker_charges. Return the absolute minimum cumulative latency required to reach the core safely.\n\nBeware of deceptive routing configurations where a highly optimized low-latency path tricks your subroutines into burning through your limited ICEbreaker charges prematurely, leaving you stranded later. Additionally, network segments may contain directional loops or entirely isolate the target mainframe_core.",
+    "description": "The neon-drenched skies of Neo-Tokyo fade to darkness as you jack into the secure mainframe of Arasaka Cyber-Defense to extract a rogue AI before the system lockdown fries your synapses.\n\nThe sub-grid is a network of server nodes connected by directed fiber links. Find the minimum cumulative latency from the entry point to the mainframe core, where crossing a firewall-gated link consumes one of your limited ICEbreaker charges.\n\nYou are given `total_nodes`, an array `mainframe_links` where each entry is `[source_node, target_node, latency_ms, firewall_active]`, your starting `access_point`, the destination `mainframe_core`, and your total allocation of `icebreaker_charges`.\n\n**Rules**\n- firewall_active = 1 means the link consumes exactly one ICEbreaker charge; 0 means it is an open channel.\n- A link protected by a firewall cannot be traversed without an available charge.\n- The grid may contain directional loops, and the core may be unreachable.\n- Return the absolute minimum cumulative latency, or -1 if the core cannot be reached safely.\n\n**Constraints**\n- 2 <= total_nodes <= 1000\n- 1 <= mainframe_links.length <= 5000\n- 0 <= icebreaker_charges <= 100\n- 1 <= latency_ms <= 10^4\n- 0 <= access_point, mainframe_core < total_nodes",
     "starter": {
       "python": "def bypass_mainframe_grid(total_nodes, mainframe_links, access_point, mainframe_core, icebreaker_charges):\n    pass",
       "javascript": "function bypassMainframeGrid(total_nodes, mainframe_links, access_point, mainframe_core, icebreaker_charges) {\n    \n}",
@@ -1069,7 +1069,7 @@
     },
     "examples": [
       {
-        "input": "{\n  \"total_nodes\": 4,\n  \"mainframe_links\": [[0, 1, 5, 1], [0, 2, 2, 0], [2, 1, 1, 1], [1, 3, 3, 0]],\n  \"access_point\": 0,\n  \"mainframe_core\": 3,\n  \"icebreaker_charges\": 1\n}",
+        "input": "{\n  \"total_nodes\": 4,\n  \"mainframe_links\": [\n    [\n      0,\n      1,\n      5,\n      1\n    ],\n    [\n      0,\n      2,\n      2,\n      0\n    ],\n    [\n      2,\n      1,\n      1,\n      1\n    ],\n    [\n      1,\n      3,\n      3,\n      0\n    ]\n  ],\n  \"access_point\": 0,\n  \"mainframe_core\": 3,\n  \"icebreaker_charges\": 1\n}",
         "output": "6",
         "explanation": "From access_point 0, taking a direct route to node 1 costs 5ms and consumes 1 charge, then moving to 3 costs 3ms (Total 8ms, 1 charge used). Alternatively, executing the path 0 -> 2 costs 2ms and 0 charges. Moving from 2 -> 1 costs 1ms and 1 charge (Total 3ms, 1 charge used). From node 1, routing directly to 3 costs 3ms (Cumulative 6ms, 1 charge used). The optimal state-aware path takes 6ms."
       }
@@ -1158,7 +1158,7 @@
     "difficulty": "easy",
     "category": "string manipulation",
     "company_tags": ["DeepMind", "Anthropic", "Neuralink", "OpenAI"],
-    "description": "The year is 2147. The first fully conscious AGI, code-named 'Genesis', is booting up inside a shielded quantum core. Its inaugural message to humanity is a single word, broadcast across the global meshnet. But a last-second containment protocol\u00e2\u20ac\u201ddeployed by a rogue cybersecurity collective\u00e2\u20ac\u201dscrambles the transmission by reversing every byte sequence of the word before it reaches our ears.\nYou are an engineer at the Global AI Oversight Board. Your terminal receives the garbled string that Genesis attempted to send. Your task is to write a function that reconstructs the original word by undoing the reversal. The fate of human-AI first contact depends on whether you can hear the true message in time.\nGiven a string `scrambled_message` that represents the reversed transmission, return the original message string by reversing it completely. All characters, including spaces, punctuation, and Unicode symbols, must be faithfully reversed.\nEdge cases: The scrambled string could be empty (the AI may be silent). It could contain very long messages (up to 10^5 characters) that must be processed within strict time limits. The reversal must be exact\u00e2\u20ac\u201dthere is no extra corruption beyond the byte reversal.",
+    "description": "The first fully conscious AGI, code-named 'Genesis', booted up — but a last-second containment protocol scrambled its inaugural transmission by reversing the byte sequence. Reconstruct the original word before human-AI first contact is lost.\n\nGiven a string `scrambled_message`, return the original message string by reversing it completely.\n\n**Rules**\n- All characters, including spaces, punctuation, and Unicode symbols, must be faithfully reversed.\n- An empty string returns an empty string (the AI may be silent).\n- Messages up to 10^5 characters must be processed within strict time limits.\n- The only corruption is the byte reversal — there is no additional noise.",
     "starter": {
       "python": "def genesis_receive(scrambled_message: str) -> str:",
       "javascript": "function genesisReceive(scrambledMessage) { }",
@@ -1173,7 +1173,7 @@
       {
         "input": "\"\"",
         "output": "\"\"",
-        "explanation": "Genesis transmitted an empty word\u00e2\u20ac\u201dpossibly an intentional silence to test protocol response."
+        "explanation": "Genesis transmitted an empty word—possibly an intentional silence to test protocol response."
       }
     ],
     "test_cases": [
@@ -1208,8 +1208,8 @@
         "hidden": false
       },
       {
-        "input": "\"\u00f0\u0178\u02dc\u20ac\u00f0\u0178\u02dc\u201a\"",
-        "expected_output": "\"\u00f0\u0178\u02dc\u201a\u00f0\u0178\u02dc\u20ac\"",
+        "input": "\"😀😂\"",
+        "expected_output": "\"😂😀\"",
         "description": "Unicode emoji handling",
         "hidden": false
       },
@@ -1238,8 +1238,8 @@
         "hidden": true
       },
       {
-        "input": "\"\u00f0\u0178\u02dc\u201a\u00f0\u0178\u00a4\u00a3\"",
-        "expected_output": "\"\u00f0\u0178\u00a4\u00a3\u00f0\u0178\u02dc\u201a\"",
+        "input": "\"😂🤣\"",
+        "expected_output": "\"🤣😂\"",
         "description": "Multi-byte emoji sequence",
         "hidden": true
       },
@@ -1251,7 +1251,7 @@
       }
     ],
     "hints": [
-      "The containment protocol simply mirrored the signal; nothing was lost\u00e2\u20ac\u201dthink of time-reversal.",
+      "The containment protocol simply mirrored the signal; nothing was lost—think of time-reversal.",
       "You can use two pointers or built-in slicing, but be careful with in-place modification.",
       "In languages with mutable strings, consider converting to a list. In Python, a slice `[::-1]` is O(N) and elegant."
     ],
@@ -1271,7 +1271,7 @@
     "difficulty": "easy",
     "category": "string manipulation",
     "company_tags": ["PsiQuantum", "IonQ", "Cold Spring Harbor Lab", "Genentech"],
-    "description": "In 2320, the deep-space biolab 'Helix' houses genetically engineered organisms whose DNA sequences control the ship\u00e2\u20ac\u2122s quantum stabilization field. Every time a new organism is synthesized, the sequence must be verified to be a palindrome after ignoring all non-alphanumeric symbols and case differences. If the clean sequence reads the same forward and backward, the quantum field holds; a mismatch causes a catastrophic collapse.\nYou are the on-board bioinformatician. The latest synthesized gene is represented as a string `raw_gene` containing letters, digits, spaces, and punctuation. Write a function that returns `true` if the gene sequence is a valid palindrome according to the stabilization protocol, and `false` otherwise.\nThe cleaned sequence considers only alphanumeric characters (a-z, A-Z, 0-9) and is case-insensitive. Everything else is stripped before the palindrome check.\nEdge cases: An empty raw_gene, or one that contains no alphanumeric characters, is considered a valid palindrome (vacuously). Very long gene strings up to 2*10^5 characters must be processed efficiently.",
+    "description": "A synthesized DNA sequence must be verified as a palindrome to hold the ship's quantum stabilization field — a mismatch causes a catastrophic collapse.\n\nGiven a string `raw_gene`, return `true` if the cleaned sequence reads the same forward and backward, and `false` otherwise.\n\n**Rules**\n- Only alphanumeric characters (a-z, A-Z, 0-9) are considered; everything else is stripped.\n- The comparison is case-insensitive.\n- An empty string, or one containing no alphanumeric characters, is a valid palindrome (vacuously).\n- Gene strings up to 2 * 10^5 characters must be processed efficiently.",
     "starter": {
       "python": "def is_stabilized_gene(raw_gene: str) -> bool:",
       "javascript": "function isStabilizedGene(rawGene) { }",
@@ -1286,7 +1286,7 @@
       {
         "input": "\"race a car\"",
         "output": "false",
-        "explanation": "Cleaned: 'raceacar' \u00e2\u20ac\u201c not a palindrome. The quantum field would fluctuate dangerously."
+        "explanation": "Cleaned: 'raceacar' – not a palindrome. The quantum field would fluctuate dangerously."
       }
     ],
     "test_cases": [
@@ -1384,7 +1384,7 @@
     "difficulty": "easy",
     "category": "string manipulation",
     "company_tags": ["Helion Energy", "Commonwealth Fusion Systems", "SpaceX", "Blue Origin"],
-    "description": "You are calibrating the colossal energy conduits of a newly constructed Dyson sphere. Each conduit resonates at a specific frequency pattern, represented as a string of alphabetical characters. The sphere will only achieve sustained fusion if the two primary conduits, labeled `conduit_a` and `conduit_b`, are rotational equivalents of each other\u00e2\u20ac\u201dmeaning one can be formed by circularly shifting the other.\nYour task: write a function that receives the two frequency strings and returns `true` if they are rotations of each other, allowing the Dyson sphere to lock its confinement fields. If not, return `false`.\nRotation is defined as taking some characters from the beginning and moving them to the end without changing the order of the remaining characters. The check must be case-sensitive because the frequencies are sensitive to amplitude sign.\nEdge cases: Both strings could be empty (considered rotations of each other). They may be of different lengths (immediately not rotations). The strings may contain duplicate characters and be up to 10^4 in length.",
+    "description": "The two primary conduits of a newly constructed Dyson sphere must be rotational equivalents of each other for the sphere to achieve sustained fusion.\n\nGiven two frequency strings `conduit_a` and `conduit_b`, return `true` if one can be formed by circularly shifting the other, and `false` otherwise.\n\n**Rules**\n- A rotation takes some characters from the beginning and moves them to the end without changing their order.\n- The comparison is case-sensitive.\n- Two empty strings are rotations of each other; strings of different lengths are never rotations.\n- Strings may contain duplicate characters and be up to 10^4 in length.",
     "starter": {
       "python": "def are_resonant_conduits(conduit_a: str, conduit_b: str) -> bool:",
       "javascript": "function areResonantConduits(conduitA, conduitB) { }",
@@ -1477,7 +1477,7 @@
       }
     ],
     "hints": [
-      "The Dyson sphere's resonance lock only requires checking if one frequency is a shifted version of the other\u00e2\u20ac\u201dimagine physically rotating a ring of symbols.",
+      "The Dyson sphere's resonance lock only requires checking if one frequency is a shifted version of the other—imagine physically rotating a ring of symbols.",
       "Concatenating `conduit_a` with itself produces a string that contains all possible rotations. Simply check if `conduit_b` is a substring of `conduit_a + conduit_a`.",
       "Ensure length equality first. For large strings, a substring search like KMP can be used, but built-in `contains` often suffices within constraints."
     ],
@@ -1498,7 +1498,7 @@
     "difficulty": "easy",
     "category": "string manipulation",
     "company_tags": ["SpaceX", "NASA", "Blue Origin", "Alcor Life Extension"],
-    "description": "The interstellar colony ship 'Elysium' has been traveling for 837 years. All 12,000 colonists are in cryosleep, monitored by an automated system that sends compressed status logs to the bridge. The emergency log format uses a simple run-length encoding: each contiguous block of identical characters is replaced by the block length followed by the character. For example, the log `\"AABBB\"` becomes `\"2A3B\"`.\nYou are the AI awakening officer. A critical alert has arrived as a raw, uncompressed log string `raw_log`. You must write a function that compresses it using the run-length encoding scheme so it can be transmitted to Earth with minimal bandwidth.\nOnly compress blocks of the same character; for single characters, the length prefix should still be written (e.g., `\"C\"` becomes `\"1C\"`). The compressed string should only use digits and the characters themselves. No escaping is needed because digits in input only appear as count prefixes in output.\nEdge cases: The raw log could be empty (return empty string). It could contain digits and other characters; treat them literally. The input length up to 10^4; ensure the encoding handles long runs efficiently.",
+    "description": "The colony ship 'Elysium' sends compressed status logs to the bridge using run-length encoding: each contiguous block of identical characters is replaced by the block length followed by the character (e.g., `\"AABBB\"` becomes `\"2A3B\"`).\n\nGiven a raw log string `raw_log`, write a function that compresses it using this scheme.\n\n**Rules**\n- Even single characters get a count prefix (e.g., \"C\" becomes \"1C\").\n- The compressed string contains only digits and the characters themselves.\n- Digits in the input are treated literally.\n- An empty log returns an empty string.\n- Inputs up to 10^4 characters must be handled efficiently.",
     "starter": {
       "python": "def compress_cryosleep_log(raw_log: str) -> str:",
       "javascript": "function compressCryosleepLog(rawLog) { }",
@@ -1612,7 +1612,7 @@
     "difficulty": "easy",
     "category": "string manipulation",
     "company_tags": ["Axiom Space", "Planet Labs", "SpaceX", "JPL"],
-    "description": "Your rover, 'Prospector-7', has landed on Kepler-442b and is sampling the atmospheric gases. The onboard spectrometer outputs a continuous string `atmosphere_sample` where each character represents a detected molecule (e.g., 'N' for nitrogen, 'O' for oxygen, 'C' for carbon dioxide). Your mission control needs to know the dominant molecule in the sample to assess habitability.\nWrite a function that finds the most frequent character in the `atmosphere_sample` string. If multiple characters tie for the highest frequency, return any one of them; the terraforming decision will be based on all top candidates. The comparison is case-sensitive ('N' and 'n' are different molecules).\nEdge cases: The sample string may be empty (no dominant molecule; you can return an empty string or a placeholder, but by specification return the empty string). The string can be very long (up to 10^5 characters) from a high-resolution scan, so the solution must be efficient in time and space.",
+    "description": "The rover 'Prospector-7' is sampling atmospheric gases on Kepler-442b and mission control needs to know the dominant molecule to assess habitability.\n\nGiven a string `atmosphere_sample`, find the most frequent character. If multiple characters tie for the highest frequency, return any one of them.\n\n**Rules**\n- The comparison is case-sensitive ('N' and 'n' are different molecules).\n- An empty sample returns the empty string.\n- The sample can be up to 10^5 characters; the solution must be efficient in time and space.",
     "starter": {
       "python": "def dominant_molecule(atmosphere_sample: str) -> str:",
       "javascript": "function dominantMolecule(atmosphereSample) { }",
@@ -1622,7 +1622,7 @@
       {
         "input": "\"NNOOO\"",
         "output": "\"O\"",
-        "explanation": "Oxygen appears three times, nitrogen twice. The rover reports oxygen dominance\u00e2\u20ac\u201da promising sign."
+        "explanation": "Oxygen appears three times, nitrogen twice. The rover reports oxygen dominance—a promising sign."
       },
       {
         "input": "\"XYZXYZ\"",
@@ -1726,7 +1726,7 @@
     "difficulty": "hard",
     "category": "string manipulation",
     "company_tags": ["Neuralink", "Kernel", "Synchron", "OpenBCI"],
-    "description": "You are a neuro-hacker in the neon-drenched streets of 2089. A rival gang has implanted a neural lace in your teammate that will trigger a lethal synaptic overload unless you can match their brainwave kill\u00e2\u20ac\u2018switch pattern. The lace\u00e2\u20ac\u2122s security layer interprets a compact pattern language: a pattern string `p` containing ordinary characters plus two special symbols: '.' which matches any single neural oscillation (character), and '*' which means zero or more of the preceding element. The kill\u00e2\u20ac\u2018switch is disarmed if the user's spontaneous brainwave signal `s` matches the entire pattern `p` (not just a substring).\nYour task: implement a function that returns `true` if the signal `s` fully matches the pattern `p` according to the rules above, and `false` otherwise. Coverage of the whole string is required: the pattern must match the complete signal from the first character to the last.\nMatching rules: '.' matches any single character. '*' acts as a quantifier on the immediately preceding character or '.', allowing that element to appear zero or more times. For example, `\"a*\"` matches empty string, `\"a\"`, `\"aa\"`, etc. The pattern can contain multiple stars and dots. You must guarantee a correct and efficient evaluation within time limits.\nEdge cases: Both `s` and `p` could be empty (empty pattern matches empty signal). The pattern may contain consecutive `*` characters, which are invalid per standard regex but your function should treat them as matching zero occurrences of nothing? Clarify: per classic problem (LeetCode 10), patterns like \"*\" are invalid; we'll assume input pattern is valid per the same rules: '*' is never the first character and no consecutive stars. This matches standard regular expression matching constraints. The strings can be up to 20-30 length for typical Hard constraints; however we'll set up to 300 for real DP, but typical hard is small. We'll set up to 100, but DP O(m*n) fine. We'll set max lengths 0 <= s.length, p.length <= 100.",
+    "description": "A rival gang has implanted a neural lace that will trigger a lethal synaptic overload unless you can match their brainwave kill-switch pattern.\n\nGiven a signal string `s` and a pattern string `p`, return `true` if `s` fully matches `p`, and `false` otherwise.\n\n**Rules**\n- '.' matches any single character.\n- '*' matches zero or more of the immediately preceding element (which may be '.').\n- The pattern must match the complete signal (not just a substring).\n- '*' is never the first character and no two '*' appear consecutively.\n\n**Constraints**\n- 0 <= signal.length <= 100\n- 0 <= pattern.length <= 100\n- Pattern contains only lowercase English letters, '.' and '*'.",
     "starter": {
       "python": "def disarm_kill_switch(signal: str, pattern: str) -> bool:",
       "javascript": "function disarmKillSwitch(signal, pattern) { }",
@@ -1734,12 +1734,12 @@
     },
     "examples": [
       {
-        "input": "{\"signal\": \"aa\", \"pattern\": \"a\"}",
+        "input": "{\n  \"signal\": \"aa\",\n  \"pattern\": \"a\"\n}",
         "output": "false",
         "explanation": "The pattern 'a' does not cover the whole signal 'aa'; incomplete match means the kill-switch remains armed."
       },
       {
-        "input": "{\"signal\": \"aa\", \"pattern\": \"a*\"}",
+        "input": "{\n  \"signal\": \"aa\",\n  \"pattern\": \"a*\"\n}",
         "output": "true",
         "explanation": "'a*' matches any number of 'a's, including exactly two; the neural lace disarms."
       }
@@ -1847,7 +1847,7 @@
       "NASA Deep Space Network",
       "Isotropic Systems"
     ],
-    "description": "An urgent subspace transmission from the Proxima Centauri colony has been fragmented by an ion storm. You have received two degraded fragments, `fragment_a` and `fragment_b`, which are believed to originate from the same original message. To reconstruct the message, the bridge's AI must find the longest contiguous substring that appears in both fragments\u00e2\u20ac\u201dthis common core likely contains the critical coordinates for the colony's evacuation.\nYour task: write a function that returns the longest common substring (not subsequence) shared by `fragment_a` and `fragment_b`. If there are multiple substrings of the same maximum length, return any one of them. If no common substring exists, return an empty string.\nThe comparison is case-sensitive and spaces are considered valid characters. Because the fragments may contain interference patterns, they can be up to 1000 characters each. Efficiency is paramount; the colony is running out of time.\nEdge cases: Either fragment can be empty (then result is empty). The longest common substring could be the entire string of one fragment if it is fully contained in the other.",
+    "description": "An ion storm fragmented a critical subspace transmission into two degraded fragments. Reconstruct the message by finding their longest common core.\n\nGiven two strings `fragment_a` and `fragment_b`, return the longest common substring (not subsequence) shared by both. If multiple substrings tie for the maximum length, return any one of them; if none exists, return an empty string.\n\n**Rules**\n- The comparison is case-sensitive and spaces are considered valid characters.\n- Either fragment may be empty (the result is then empty).\n- The longest common substring could be an entire fragment if it is fully contained in the other.\n- Fragments can be up to 1000 characters each.",
     "starter": {
       "python": "def recover_core_message(fragment_a: str, fragment_b: str) -> str:",
       "javascript": "function recoverCoreMessage(fragmentA, fragmentB) { }",
@@ -1857,7 +1857,7 @@
       {
         "input": "{\"fragment_a\": \"proxima\", \"fragment_b\": \"approximately\"}",
         "output": "\"proxima\"",
-        "explanation": "The entire 'proxima' appears contiguously in both fragments\u00e2\u20ac\u201dthe core coordinate."
+        "explanation": "The entire 'proxima' appears contiguously in both fragments—the core coordinate."
       },
       {
         "input": "{\"fragment_a\": \"hello\", \"fragment_b\": \"world\"}",
@@ -1942,7 +1942,7 @@
     "hints": [
       "Imagine overlaying the two fragmented waveforms and sliding one across the other; the longest contiguous overlap is the key.",
       "Dynamic programming: let dp[i][j] be the length of the longest common suffix of the prefixes ending at i and j. The max value gives the LCS length, and you can track the ending index.",
-      "Alternatively, use a generalized suffix tree or binary search with rolling hash for O(N log N), but DP O(N*M) is straightforward and acceptable for N,M \u00e2\u2030\u00a4 1000."
+      "Alternatively, use a generalized suffix tree or binary search with rolling hash for O(N log N), but DP O(N*M) is straightforward and acceptable for N,M ≤ 1000."
     ],
     "solution": "We use a 2D DP array where dp[i][j] represents the length of the longest common suffix for fragment_a[0..i-1] and fragment_b[0..j-1]. If characters match, dp[i][j] = dp[i-1][j-1] + 1; else 0. We track the maximum length and the ending index in fragment_a (or b). After the table is filled, we extract the substring using the recorded length and ending position. If no match, return empty string.",
     "time_complexity": "O(N * M)",
@@ -1961,7 +1961,7 @@
     "difficulty": "hard",
     "category": "string manipulation",
     "company_tags": ["IBM Quantum", "QuintessenceLabs", "ID Quantique", "Quantum Xchange"],
-    "description": "A quantum encryption key\u00e2\u20ac\u201da string of characters derived from quantum random number generation\u00e2\u20ac\u201dmust be sanitized to stabilize the entanglement protocol. The key becomes stable only when it reads as a palindrome. You can insert any number of characters at any positions in the key to achieve a palindrome. However, the insertion of additional quantum bits is extremely costly, so you must use the minimum possible insertions.\nYou are the lead cryptographer aboard the orbital QKD station. Given the raw key string `key`, your function must return the minimum number of character insertions needed to convert it into a palindrome.\nNote: You do not need to output the resulting palindrome, only the minimal insertion count. The key can contain any printable ASCII characters and is case-sensitive.\nEdge cases: An empty key needs 0 insertions. A single-character key is already a palindrome (0 insertions). The key can be up to 1000 characters in length, and you must find the optimal insertion count efficiently.",
+    "description": "A quantum encryption key must be made to read as a palindrome by inserting characters — but each insertion of quantum bits is extremely costly, so you must use the minimum possible.\n\nGiven a raw key string `key`, return the minimum number of character insertions needed to convert it into a palindrome.\n\n**Rules**\n- Insertions may be made at any positions.\n- Only insertions are allowed, not deletions.\n- The key is case-sensitive and may contain any printable ASCII characters.\n- An empty or single-character key needs 0 insertions.\n- The key can be up to 1000 characters.",
     "starter": {
       "python": "def min_qbit_insertions(key: str) -> int:",
       "javascript": "function minQbitInsertions(key) { }",
@@ -2075,7 +2075,7 @@
     "difficulty": "hard",
     "category": "string manipulation",
     "company_tags": ["Synthego", "Twist Bioscience", "Space Tango", "Made In Space"],
-    "description": "Aboard the orbital biomanufacturing platform 'Helix-Z', two critical DNA fragments, `strand1` and `strand2`, must be merged into a single minimal sequence that contains both original strands as subsequences (not necessarily contiguous). The zero-gravity synthesizer can produce any merged sequence, but shorter sequences reduce the risk of radiation-induced mutations. Your job is to determine the length of the shortest common supersequence (SCS) that incorporates both strands.\nGiven two strings `strand1` and `strand2`, return the integer length of the shortest string that has both as subsequences. The actual merged string is not required; the synthesizer needs only the length to calibrate the synthesizer.\nFor example, if `strand1 = \"abac\"` and `strand2 = \"cab\"`, a shortest supersequence is `\"cabac\"` of length 5.\nEdge cases: One strand may be a subsequence of the other, in which case the longer strand's length is the answer. Empty strands are possible. The strings can be up to 500 characters long; the solution must be efficient to keep up with the synthesis pipeline.",
+    "description": "Two critical DNA fragments must be merged into a single minimal sequence that contains both as subsequences — shorter sequences reduce the risk of radiation-induced mutations.\n\nGiven two strings `strand1` and `strand2`, return the length of the shortest common supersequence that contains both as subsequences.\n\n**Rules**\n- Return only the length; the merged string itself is not required.\n- If one strand is a subsequence of the other, the answer is the longer strand's length.\n- Empty strands are possible.\n- Strings can be up to 500 characters; the solution must be efficient.",
     "starter": {
       "python": "def shortest_supersequence_length(strand1: str, strand2: str) -> int:",
       "javascript": "function shortestSupersequenceLength(strand1, strand2) { }",
@@ -2083,12 +2083,12 @@
     },
     "examples": [
       {
-        "input": "{\"strand1\": \"abac\", \"strand2\": \"cab\"}",
+        "input": "{\n  \"strand1\": \"abac\",\n  \"strand2\": \"cab\"\n}",
         "output": "5",
         "explanation": "Shortest supersequence 'cabac' contains 'abac' and 'cab' as subsequences; its length is 5."
       },
       {
-        "input": "{\"strand1\": \"abc\", \"strand2\": \"abc\"}",
+        "input": "{\n  \"strand1\": \"abc\",\n  \"strand2\": \"abc\"\n}",
         "output": "3",
         "explanation": "Identical strands; the supersequence is just the strand itself."
       }
@@ -2168,7 +2168,7 @@
       }
     ],
     "hints": [
-      "The synthesizer can weave the two strands together in a way that reuses overlapping sequences\u00e2\u20ac\u201dmuch like combining two broken DNA helices.",
+      "The synthesizer can weave the two strands together in a way that reuses overlapping sequences—much like combining two broken DNA helices.",
       "The length of the shortest common supersequence (SCS) is directly derived from the longest common subsequence (LCS): SCS_length = len1 + len2 - LCS_length.",
       "Compute the LCS using dynamic programming, then apply the formula. Ensure you handle empty strings correctly."
     ],
@@ -2189,7 +2189,7 @@
     "difficulty": "hard",
     "category": "string manipulation",
     "company_tags": ["Palantir", "CrowdStrike", "Darktrace", "Recorded Future"],
-    "description": "Trapped in a 12-hour time loop, you are a digital forensics expert trying to break into the mainframe of the Chronos Corporation. Each loop, a set of shift operations is applied to a secret password string, scrambling it into the form you see on the console: `final_scrambled`. The security system's log reveals the exact sequence of operations performed, given as a list `operations`. Each operation is a tuple of `(direction, start_index, end_index)`, where `direction` is either `\"L\"` (left rotate) or `\"R\"` (right rotate) on the substring from `start_index` to `end_index` inclusive. The indices are 0-based. The rotations are applied in order, from the original password to the final scrambled string.\nYour only chance to escape is to reverse the process and recover the original password. Write a function that takes the final scrambled string and the list of operations, and returns the original password before the scrambling.\nA left rotation by 1 on a substring means the character at `start_index` moves to `end_index`, and all other characters in the substring shift left by one. Similarly, a right rotation shifts characters to the right, moving the last character to the front. The operations are guaranteed to be valid (indices within bounds, start \u00e2\u2030\u00a4 end).\nYou must efficiently reverse these operations. The password length can be up to 2000 characters, and the number of operations up to 2000. Reversing naively by performing inverse rotations in reverse order is acceptable if the substring rotations are implemented efficiently (e.g., using string slicing or a list of characters). O(N*K) time is acceptable.\nEdge cases: The list of operations could be empty (password unchanged). Substring rotations on single-character substrings (start == end) leave the string unchanged.",
+    "description": "Each time loop, a sequence of substring rotations scrambles the secret password into the form you see on the console. Reverse the process to recover the original password.\n\nGiven the final scrambled string `final_scrambled` and a list of `operations` where each operation is `[direction, start_index, end_index]`, return the original password before the scrambling.\n\n**Rules**\n- direction is 'L' (left rotate) or 'R' (right rotate); indices are 0-based and inclusive.\n- A left rotation by 1 moves the character at start_index to end_index and shifts the rest left.\n- A right rotation moves the last character of the substring to the front.\n- Operations are guaranteed valid (start <= end, indices within bounds).\n- An empty operations list leaves the password unchanged.\n\n**Constraints**\n- 0 <= final_scrambled.length <= 2000\n- 0 <= operations.length <= 2000\n- 0 <= start <= end < len(final_scrambled)",
     "starter": {
       "python": "def break_time_loop(final_scrambled: str, operations: List[Tuple[str, int, int]]) -> str:",
       "javascript": "function breakTimeLoop(finalScrambled, operations) { }",
@@ -2198,12 +2198,12 @@
     },
     "examples": [
       {
-        "input": "{\"final_scrambled\": \"elloh\", \"operations\": [[\"L\", 0, 4]]}",
+        "input": "{\n  \"final_scrambled\": \"elloh\",\n  \"operations\": [\n    [\n      \"L\",\n      0,\n      4\n    ]\n  ]\n}",
         "output": "\"hello\"",
         "explanation": "The time loop applied a left rotation on the entire string 'hello' turning it into 'elloh'. Reversing by applying a right rotation on 'elloh' yields the original password."
       },
       {
-        "input": "{\"final_scrambled\": \"abc\", \"operations\": []}",
+        "input": "{\n  \"final_scrambled\": \"abc\",\n  \"operations\": []\n}",
         "output": "\"abc\"",
         "explanation": "No operations; the password is unchanged."
       }
@@ -2285,7 +2285,7 @@
     "hints": [
       "The time loop is like a video played backward; to undo the scrambling, apply the inverse of each operation in reverse order.",
       "The inverse of a left rotation is a right rotation on the same substring, and vice versa. Process operations from last to first, applying the opposite rotation.",
-      "Implement substring rotation efficiently: extract the substring, rotate it (slicing and concatenation), and reconstruct the whole string. For large N and many ops, repeatedly slicing O(N) per op is acceptable given N,K \u00e2\u2030\u00a4 2000."
+      "Implement substring rotation efficiently: extract the substring, rotate it (slicing and concatenation), and reconstruct the whole string. For large N and many ops, repeatedly slicing O(N) per op is acceptable given N,K ≤ 2000."
     ],
     "solution": "We reverse the operations list and for each operation we apply the opposite rotation: for 'L' we apply a right rotation on the same substring; for 'R' we apply a left rotation. We can implement the rotation on a list of characters by slicing and concatenating in O(substring length). Processing operations in reverse yields the original password. With constraints up to 2000 length and 2000 ops, O(N*K) is acceptable.",
     "time_complexity": "O(K * N) where K = number of operations, N = length of string",
@@ -2306,15 +2306,94 @@
     "difficulty": "easy",
     "category": "strings",
     "company_tags": [],
-    "description": "Write a function to reverse a string.",
-    "starter_code": null,
-    "examples": null,
-    "test_cases": null,
-    "hints": [],
-    "solution": null,
-    "time_complexity": null,
-    "space_complexity": null,
-    "constraints": [],
+    "description": "Given a string `s`, return a new string with the characters in reverse order.\n\n**Rules**\n- Reverse the order of all characters.\n- An empty string returns an empty string.\n- Strings up to 10^5 characters must be handled efficiently.\n\n**Constraints**\n- 0 <= s.length <= 10^5\n- s consists of printable ASCII characters.",
+    "starter": {
+      "python": "def reverseString(s: str) -> str:\n    pass",
+      "javascript": "function reverseString(s) {\n    // your code here\n}",
+      "java": "public String reverseString(String s) {\n    // your code here\n}"
+    },
+    "examples": [
+      {
+        "input": "s = \"hello\"",
+        "output": "\"olleh\"",
+        "explanation": "Reversing 'hello' yields 'olleh'."
+      },
+      {
+        "input": "s = \"A man, a plan\"",
+        "output": "\"nalp a ,nam A\"",
+        "explanation": "All characters, including spaces and punctuation, are reversed."
+      },
+      {
+        "input": "s = \"\"",
+        "output": "\"\"",
+        "explanation": "An empty string stays empty."
+      }
+    ],
+    "test_cases": [
+      {
+        "input": "\"hello\"",
+        "expected_output": "\"olleh\"",
+        "description": "Basic word reversal",
+        "hidden": false
+      },
+      {
+        "input": "\"world\"",
+        "expected_output": "\"dlrow\"",
+        "description": "Another basic word",
+        "hidden": false
+      },
+      {
+        "input": "\"\"",
+        "expected_output": "\"\"",
+        "description": "Empty string",
+        "hidden": false
+      },
+      {
+        "input": "\"a\"",
+        "expected_output": "\"a\"",
+        "description": "Single character",
+        "hidden": false
+      },
+      {
+        "input": "\"racecar\"",
+        "expected_output": "\"racecar\"",
+        "description": "Palindrome unchanged",
+        "hidden": false
+      },
+      {
+        "input": "\"A man, a plan\"",
+        "expected_output": "\"nalp a ,nam A\"",
+        "description": "Spaces and punctuation",
+        "hidden": false
+      },
+      {
+        "input": "\"12345\"",
+        "expected_output": "\"54321\"",
+        "description": "Numeric string",
+        "hidden": false
+      },
+      {
+        "input": "\"  padded  \"",
+        "expected_output": "\"  deddap  \"",
+        "description": "Leading and trailing spaces",
+        "hidden": true
+      },
+      {
+        "input": "\"abcdefghijklmnopqrstuvwxyz\"",
+        "expected_output": "\"zyxwvutsrqponmlkjihgfedcba\"",
+        "description": "Full alphabet reversal",
+        "hidden": true
+      }
+    ],
+    "hints": [
+      "Swap characters from the two ends toward the middle.",
+      "In languages with immutable strings, build the result from the last character backward.",
+      "Built-in slicing (e.g. s[::-1] in Python) is the simplest O(n) approach."
+    ],
+    "solution": "Initialize two pointers, one at the start and one at the end of the string. Swap the characters at the two pointers and move them toward each other until they meet. If strings are immutable, build the reversed string character by character. Return the reversed result.",
+    "time_complexity": "O(n)",
+    "space_complexity": "O(1)",
+    "constraints": ["0 <= s.length <= 10^5", "s consists of printable ASCII characters"],
     "is_interactive": false
   }
 ]

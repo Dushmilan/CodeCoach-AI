@@ -71,6 +71,9 @@ class SqlAdminRepository(AdminRepository):
         return await self._questions.create_question(data)
 
     # ── Course delegation ──
+    async def exists(self, entity_type: str, entity_id: str) -> bool:
+        return await self._courses.exists(entity_type, entity_id)
+
     async def get_course_tree(self) -> Dict[str, Any]:
         return await self._courses.get_course_tree()
 

@@ -1,50 +1,39 @@
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from app.models.orm import Base, UserORM, CourseORM
+from app.models.orm import UserORM, CourseORM
 from app.models.course_schemas import CourseProgress
 
 
 @pytest_asyncio.fixture
-async def test_db():
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
+async def seeded_db(test_db):
+    session = test_db
+    session.add(
+        UserORM(
+            id="u-1",
+            username="testuser",
+            email="test@test.com",
+            hashed_password="hash",
+        )
     )
-
-    async with async_session() as session:
-        session.add(
-            UserORM(
-                id="u-1",
-                username="testuser",
-                email="test@test.com",
-                hashed_password="hash",
-            )
+    session.add(
+        CourseORM(
+            id="c-1",
+            title="Python",
+            description="Learn Python",
+            language="python",
+            icon="python",
+            order=1,
         )
-        session.add(
-            CourseORM(
-                id="c-1",
-                title="Python",
-                description="Learn Python",
-                language="python",
-                icon="python",
-                order=1,
-            )
-        )
-        await session.commit()
-        yield session
-
-    await engine.dispose()
+    )
+    await session.commit()
+    return session
 
 
 @pytest_asyncio.fixture
-async def repo(test_db):
+async def repo(seeded_db):
     from app.repositories.sql_progress_repository import SqlProgressRepository
 
-    return SqlProgressRepository(test_db)
+    return SqlProgressRepository(seeded_db)
 
 
 class TestSqlProgressRepository:

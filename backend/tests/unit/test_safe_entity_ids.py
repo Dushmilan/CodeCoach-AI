@@ -1,15 +1,11 @@
 """Tests for safe entity-ID validation (path-traversal guard).
 
-Entity IDs (course/module/lesson) are used as filesystem paths by the file
-admin repository, so unsafe IDs must be rejected before any filesystem use.
+Entity IDs are validated by the Pydantic admin models before any storage use.
 """
 
-import tempfile
 import pytest
-from pathlib import Path
 
 from app.utils.ids import validate_entity_id
-from app.repositories.file_course_admin_repository import FileCourseAdminRepository
 
 
 # ── validate_entity_id unit tests ───────────────────────
@@ -50,61 +46,6 @@ class TestValidateEntityId:
     def test_rejects_unsafe_ids(self, entity_id):
         with pytest.raises(ValueError):
             validate_entity_id(entity_id)
-
-
-# ── FileCourseAdminRepository path-traversal guard ──────
-
-
-class TestCourseAdminRepositorySafePaths:
-    @pytest.fixture
-    def repo_and_tmp(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            courses_dir = Path(tmpdir) / "courses"
-            courses_dir.mkdir()
-            repo = FileCourseAdminRepository(courses_dir=str(courses_dir))
-            yield repo, Path(tmpdir)
-
-    @pytest.mark.asyncio
-    async def test_create_course_rejects_traversal(self, repo_and_tmp):
-        repo, tmpdir = repo_and_tmp
-        with pytest.raises(ValueError):
-            await repo.create_course({"id": "../../escaped", "title": "Bad"})
-        # No directory created outside the courses dir
-        assert not (tmpdir / "escaped").exists()
-        assert not (tmpdir / "courses" / "escaped").exists()
-
-    @pytest.mark.asyncio
-    async def test_delete_course_rejects_traversal(self, repo_and_tmp):
-        repo, tmpdir = repo_and_tmp
-        # Sentinel outside the courses dir must survive an attempted delete
-        sentinel = tmpdir / "sentinel.txt"
-        sentinel.write_text("keep me")
-        with pytest.raises(ValueError):
-            await repo.delete_course("../../sentinel.txt")
-        assert sentinel.exists()
-        assert sentinel.read_text() == "keep me"
-
-    @pytest.mark.asyncio
-    async def test_course_dir_rejects_unsafe_id(self, repo_and_tmp):
-        repo, _ = repo_and_tmp
-        for bad in ("../x", "a/b", "a\\b", "..", "has space"):
-            with pytest.raises(ValueError):
-                repo._course_dir(bad)
-
-    @pytest.mark.asyncio
-    async def test_valid_course_still_round_trips(self, repo_and_tmp):
-        repo, _ = repo_and_tmp
-        created = await repo.create_course(
-            {
-                "id": "valid-course",
-                "title": "OK",
-                "description": "",
-                "language": "python",
-                "order": 1,
-            }
-        )
-        assert created["id"] == "valid-course"
-        assert await repo.delete_course("valid-course") is True
 
 
 # ── Admin API rejects unsafe IDs (Pydantic layer) ───────

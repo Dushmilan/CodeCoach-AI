@@ -21,6 +21,7 @@ class SqlUserRepository(UserRepository):
             is_active=bool(orm.is_active),
             oauth_provider=orm.oauth_provider,
             oauth_id=orm.oauth_id,
+            role=orm.role or "user",
         )
 
     async def get_by_username(self, username: str) -> Optional[UserInDB]:
@@ -64,6 +65,7 @@ class SqlUserRepository(UserRepository):
             is_active=1 if user.is_active else 0,
             oauth_provider=user.oauth_provider,
             oauth_id=user.oauth_id,
+            role=user.role or "user",
         )
         self.session.add(orm)
-        await self.session.flush()
+        await self.session.commit()

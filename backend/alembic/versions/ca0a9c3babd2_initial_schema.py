@@ -41,28 +41,28 @@ def upgrade() -> None:
         sa.Column("category", sa.String(length=100), nullable=False),
         sa.Column(
             "company_tags",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column(
             "starter_code",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column(
             "examples",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column(
             "test_cases",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column(
             "hints",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column("solution", sa.Text(), nullable=True),
@@ -70,22 +70,28 @@ def upgrade() -> None:
         sa.Column("space_complexity", sa.String(length=100), nullable=True),
         sa.Column(
             "constraints",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column("is_interactive", sa.Integer(), nullable=False),
+        sa.Column(
+            "validation_status",
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
+            nullable=True,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
         op.f("ix_questions_category"), "questions", ["category"], unique=False
     )
-    op.create_index(
-        "ix_questions_company_tags",
-        "questions",
-        ["company_tags"],
-        unique=False,
-        postgresql_using="gin",
-    )
+    if op.get_bind().dialect.name == "postgresql":
+        op.create_index(
+            "ix_questions_company_tags",
+            "questions",
+            ["company_tags"],
+            unique=False,
+            postgresql_using="gin",
+        )
     op.create_table(
         "users",
         sa.Column("id", sa.String(length=36), nullable=False),
@@ -107,7 +113,7 @@ def upgrade() -> None:
         sa.Column("course_id", sa.String(length=36), nullable=False),
         sa.Column(
             "completed_lessons",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
         ),
         sa.Column("last_accessed_lesson_id", sa.String(length=36), nullable=True),
@@ -157,7 +163,7 @@ def upgrade() -> None:
         sa.Column("starter_code", sa.Text(), nullable=True),
         sa.Column(
             "test_cases",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=True,
         ),
         sa.Column("question_id", sa.String(length=36), nullable=True),
@@ -195,9 +201,12 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_users_username"), table_name="users")
     op.drop_index(op.f("ix_users_email"), table_name="users")
     op.drop_table("users")
-    op.drop_index(
-        "ix_questions_company_tags", table_name="questions", postgresql_using="gin"
-    )
+    if op.get_bind().dialect.name == "postgresql":
+        op.drop_index(
+            "ix_questions_company_tags",
+            table_name="questions",
+            postgresql_using="gin",
+        )
     op.drop_index(op.f("ix_questions_category"), table_name="questions")
     op.drop_table("questions")
     op.drop_table("courses")

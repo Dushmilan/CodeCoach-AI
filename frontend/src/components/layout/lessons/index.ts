@@ -1,0 +1,12 @@
+export { LessonChrome } from './LessonChrome';
+export { TheoryLessonLayout } from './TheoryLessonLayout';
+export { ExerciseLessonLayout } from './ExerciseLessonLayout';
+export { ExerciseDescriptionPane } from './ExerciseDescriptionPane';
+export { AICoachPane } from './AICoachPane';
+export { AIPanelDrawer } from './AIPanelDrawer';
+export { PanelResizer } from './PanelResizer';
+export { useResizablePanels } from './useResizablePanels';
+export { useWorkspaceMode } from './useWorkspaceMode';
+export type { WorkspaceMode } from './useWorkspaceMode';
+export type { PanelBoundary } from './useResizablePanels';
+export type { ExerciseTestCase } from './ExerciseDescriptionPane';

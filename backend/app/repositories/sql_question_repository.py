@@ -1,4 +1,4 @@
-from sqlalchemy import select, or_, text, func
+from sqlalchemy import select, or_, text, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List, Dict, Any
 import logging
@@ -91,8 +91,8 @@ class SqlQuestionRepository(QuestionRepository):
         return [r[0] for r in result.all()]
 
     async def get_company_tags(self) -> List[str]:
-        # JSONB array elements extracted via unnest for PostgreSQL, fallback for SQLite
-        dialect = self.session.bind.dialect.name if self.session.bind else "sqlite"
+        # JSONB array elements extracted via unnest for PostgreSQL, generic JSON path for MySQL
+        dialect = self.session.bind.dialect.name if self.session.bind else "mysql"
         if dialect == "postgresql":
             result = await self.session.execute(
                 text("""
@@ -142,10 +142,24 @@ class SqlQuestionRepository(QuestionRepository):
             is_interactive=1 if question.is_interactive else 0,
         )
         self.session.add(orm)
-        await self.session.flush()
+        await self.session.commit()
 
     async def save_validation_status(self, question_id: str, status: Any) -> None:
-        pass
+        stmt = (
+            update(QuestionORM)
+            .where(QuestionORM.id == question_id)
+            .values(validation_status=status.model_dump(mode="json"))
+            .execution_options(synchronize_session=False)
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
 
     async def get_validation_statuses(self) -> Dict[str, Any]:
-        return {}
+        result = await self.session.execute(
+            select(QuestionORM.id, QuestionORM.validation_status)
+        )
+        statuses = {}
+        for qid, status in result.all():
+            if status is not None:
+                statuses[qid] = status
+        return statuses

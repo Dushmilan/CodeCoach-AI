@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 
 Base = declarative_base()
 
-# Use JSONB for PostgreSQL, JSON for SQLite
-JSONType = JSONB().with_variant(JSON, "sqlite")
+# Use JSONB for PostgreSQL, JSON for MySQL
+JSONType = JSONB().with_variant(JSON, "mysql")
 
 
 class UserORM(Base):
@@ -43,10 +43,7 @@ class QuestionORM(Base):
     space_complexity = Column(String(200), nullable=True)
     constraints = Column(JSONType, default=list, nullable=False)
     is_interactive = Column(Integer, default=0, nullable=False)
-
-    __table_args__ = (
-        Index("ix_questions_company_tags", "company_tags", postgresql_using="gin"),
-    )
+    validation_status = Column(JSONType, default=None, nullable=True)
 
 
 class CourseORM(Base):
@@ -102,6 +99,8 @@ class LessonORM(Base):
         index=True,
     )
     language = Column(String(50), nullable=False)
+    course = relationship("CourseORM", backref="lessons")
+    module = relationship("ModuleORM", backref="lessons")
 
 
 class CourseProgressORM(Base):

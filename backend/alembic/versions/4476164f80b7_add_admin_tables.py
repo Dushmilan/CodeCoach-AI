@@ -38,7 +38,7 @@ def upgrade() -> None:
         sa.Column("rollout_pct", sa.Integer(), nullable=False, server_default="0"),
         sa.Column(
             "target_roles",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=False,
             server_default="[]",
         ),
@@ -62,7 +62,7 @@ def upgrade() -> None:
         sa.Column("resource_id", sa.String(length=100), nullable=True),
         sa.Column(
             "metadata",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=True,
         ),
         sa.Column("ip_address", sa.String(length=45), nullable=True),
@@ -94,7 +94,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "result",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
+            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "mysql"),
             nullable=True,
         ),
         sa.Column("error", sa.Text(), nullable=True),

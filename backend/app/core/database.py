@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -7,37 +7,30 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 from sqlalchemy.pool import NullPool
-from app.core.config import get_settings
+from app.core.config import get_settings, is_production
 
 settings = get_settings()
 
-engine: Optional[AsyncEngine] = None
-async_session_maker: Optional[async_sessionmaker] = None
-
-if settings.USE_DATABASE:
-    engine = create_async_engine(
-        settings.DATABASE_URL,
-        echo=settings.DATABASE_URL.startswith("sqlite"),
-        poolclass=NullPool if "sqlite" in settings.DATABASE_URL else None,
-        pool_pre_ping=True,
-    )
-    async_session_maker = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+# NullPool in testing avoids cross-event-loop connection reuse (FastAPI sync
+# TestClient + async tests run on different loops, which poisons pooled
+# connections). Production uses the default pooled engine.
+engine: AsyncEngine = create_async_engine(
+    settings.DATABASE_URL,
+    poolclass=NullPool if not is_production() else None,
+    pool_pre_ping=True,
+)
+async_session_maker: async_sessionmaker = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
-async def get_db() -> AsyncGenerator[Optional[AsyncSession], None]:
-    if not settings.USE_DATABASE:
-        yield None
-        return
-    async with async_session_maker() as session:  # type: ignore[union-attr]
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session_maker() as session:
         yield session
 
 
 async def init_db():
-    if not settings.USE_DATABASE:
-        return
     from app.models.orm import Base
 
-    async with engine.begin() as conn:  # type: ignore[union-attr]
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

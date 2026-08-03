@@ -1,46 +1,43 @@
-import json
 import os
+import urllib.parse
+from urllib.parse import urlparse
 
+import pymysql
 from fastapi.testclient import TestClient
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
-COURSES_DIR = os.path.join(DATA_DIR, "courses")
-USERS_FILE = os.path.join(DATA_DIR, "users.json")
+
+def _truncate_course_tables():
+    """Remove courses/modules/lessons created by these tests so other tests
+    see a clean course tree (mirrors the old file-based teardown_module)."""
+    parsed = urlparse(
+        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
+    )
+    conn = pymysql.connect(
+        host=parsed.hostname,
+        port=parsed.port or 3306,
+        user=urllib.parse.unquote(parsed.username or ""),
+        password=urllib.parse.unquote(parsed.password or ""),
+        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SET FOREIGN_KEY_CHECKS=0")
+            cur.execute("TRUNCATE TABLE course_progress")
+            cur.execute("TRUNCATE TABLE lessons")
+            cur.execute("TRUNCATE TABLE modules")
+            cur.execute("TRUNCATE TABLE courses")
+            cur.execute("SET FOREIGN_KEY_CHECKS=1")
+        conn.commit()
+    finally:
+        conn.close()
 
 
-def _cleanup_test_dirs():
-    """Remove leftover test course directories after tests."""
-    test_dirs = [
-        "test-python",
-        "dup-course",
-        "update-course",
-        "course-for-modules",
-        "course-mod-update",
-        "course-for-lessons",
-    ]
-    for d in test_dirs:
-        path = os.path.join(COURSES_DIR, d)
-        if os.path.isdir(path):
-            import shutil
-
-            shutil.rmtree(path, ignore_errors=True)
-
-
-def _load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE) as f:
-            return json.load(f)
-    return []
-
-
-def _save_users(users):
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
+def teardown_module():
+    _truncate_course_tables()
 
 
 def _admin_headers(test_client: TestClient) -> dict:
-    """Register a user and promote to admin by directly editing the JSON file."""
+    """Register a user and promote to admin by updating the users table."""
     res = test_client.post(
         "/api/auth/register",
         json={
@@ -59,19 +56,27 @@ def _admin_headers(test_client: TestClient) -> dict:
         )
     token = res.json()["access_token"]
 
-    # Promote to admin directly in the JSON file
-    users = _load_users()
-    for u in users:
-        if u.get("username") == "admincurriculum":
-            u["role"] = "admin"
-            break
-    _save_users(users)
+    parsed = urlparse(
+        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
+    )
+    conn = pymysql.connect(
+        host=parsed.hostname,
+        port=parsed.port or 3306,
+        user=urllib.parse.unquote(parsed.username or ""),
+        password=urllib.parse.unquote(parsed.password or ""),
+        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET role='admin' WHERE username=%s",
+                ("admincurriculum",),
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
     return {"Authorization": f"Bearer {token}"}
-
-
-def teardown_module():
-    _cleanup_test_dirs()
 
 
 class TestAdminCurriculumCRUD:
@@ -313,8 +318,8 @@ class TestAdminCurriculumCRUD:
         res = test_client.post(
             "/api/admin/questions",
             json={
-                "id": "test-q-1",
-                "title": "Reverse a String",
+                "id": "admin-create-question-1",
+                "title": "Admin Create Test Question",
                 "difficulty": "easy",
                 "category": "strings",
                 "description": "Write a function to reverse a string.",
@@ -323,7 +328,7 @@ class TestAdminCurriculumCRUD:
         )
         assert res.status_code == 200
         data = res.json()
-        assert data["id"] == "test-q-1"
+        assert data["id"] == "admin-create-question-1"
 
     def test_get_course_tree(self, test_client: TestClient):
         headers = _admin_headers(test_client)

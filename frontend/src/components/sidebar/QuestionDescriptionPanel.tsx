@@ -1,5 +1,6 @@
 "use client";
 
+import { MarkdownRenderer } from "@/components/learn/MarkdownRenderer";
 import { cn } from "@/lib/utils";
 import { Question, QuestionSummary } from "@/types";
 import { ChevronDown, ChevronRight, Lightbulb, Loader2 } from "lucide-react";
@@ -62,9 +63,9 @@ export function QuestionDescriptionPanel({
         ) : (
           <>
             <div className="mb-5">
-              <p className="text-sm text-foreground/70 leading-relaxed">
-                {(selectedQuestion as Question).description}
-              </p>
+              <MarkdownRenderer
+                content={(selectedQuestion as Question).description}
+              />
             </div>
 
             {(selectedQuestion as Question).examples &&

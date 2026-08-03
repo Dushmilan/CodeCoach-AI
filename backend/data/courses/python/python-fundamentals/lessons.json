@@ -1,0 +1,97 @@
+{
+  "items": [
+    {
+      "id": "py-intro-hello-world",
+      "course_id": "python-fundamentals",
+      "module_id": "py-intro",
+      "title": "Hello, World!",
+      "type": "theory",
+      "content": "## Hello, World!\n\nEvery programming journey starts with the simplest possible program that proves your environment works.\n\n### The classic one-liner\n\n```python\nprint(\"Hello, World!\")\n```\n\n`print()` is a built-in function that writes text to the screen. The text between the quotes is called a **string literal**.\n\n### How Python runs code\n\nPython executes your code **line by line, top to bottom**. There is no compilation step — you write a `.py` file (or type into a REPL) and the interpreter runs it immediately.\n\n### Comments\n\nText after a `#` is ignored by Python. Comments explain *why* code exists:\n\n```python\n# This is a comment — Python skips it\nprint(\"Visible output\")  # inline comments work too\n```\n\n### Multiple arguments\n\n`print` accepts several values and prints them separated by a space:\n\n```python\nprint(\"The answer is\", 42)\n```\n\n### Practice\n\nBefore moving on, try writing a program that prints your own name, then a second line with your favorite number.\n\n---\n\n**Next up:** Variables and data types — the building blocks you will store things in.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "py-intro-variables",
+      "course_id": "python-fundamentals",
+      "module_id": "py-intro",
+      "title": "Variables and Data Types",
+      "type": "theory",
+      "content": "## Variables and Data Types\n\nA **variable** is a name that refers to a value. In Python you create one with a simple `=`:\n\n```python\nmessage = \"hello\"\nage = 21\npi = 3.14\nis_active = True\n```\n\nNo type declaration is required — Python infers it. But every value still has a type, and the type determines what you can do with it.\n\n### Core types\n\n| Type     | Example          | Notes                                |\n|----------|------------------|--------------------------------------|\n| `int`    | `42`, `-7`       | Whole numbers                        |\n| `float`  | `3.14`, `-0.5`   | Numbers with a decimal point         |\n| `str`    | `\"hi\"`           | Text (single or double quotes)       |\n| `bool`   | `True` / `False` | Logical values (capitalized)         |\n| `None`   | `None`           | The \"no value\" value                 |\n\nYou can check a value's type with the built-in `type()` function:\n\n```python\nprint(type(42))      # <class 'int'>\nprint(type(3.14))    # <class 'float'>\nprint(type(\"hi\"))    # <class 'str'>\n```\n\n### Naming rules\n\n- Names are case-sensitive (`Age` and `age` differ).\n- Use lowercase with underscores: `user_name`, not `userName` or `username`.\n- They must start with a letter or underscore.\n\n### Arithmetic\n\n```python\na = 10\nb = 3\nprint(a + b)   # 13  addition\nprint(a - b)   # 7   subtraction\nprint(a * b)   # 30  multiplication\nprint(a / b)   # 3.333...  true division (always float)\nprint(a // b)  # 3   floor division\nprint(a % b)   # 1   remainder\nprint(a ** b)  # 1000  power\n```\n\n### String interpolation with f-strings\n\nF-strings let you embed expressions directly in text:\n\n```python\nname = \"Ada\"\nprint(f\"Hello, {name}!\")   # Hello, Ada!\nprint(f\"5 * 3 = {5 * 3}\")  # 5 * 3 = 15\n```\n\n### Converting between types\n\n```python\nage = \"21\"\nage_int = int(age)       # \"21\" -> 21\nprint(age_int + 1)       # 22\n```\n\n---\n\n**Next up:** your first exercise — splitting text and extracting the first word.",
+      "order": 2,
+      "language": "python"
+    },
+    {
+      "id": "py-exercise-first-word",
+      "course_id": "python-fundamentals",
+      "module_id": "py-intro",
+      "title": "Exercise: The Singularity's First Word",
+      "type": "exercise",
+      "content": "## Exercise: The Singularity's First Word\n\nTime to apply what you learned. This exercise asks you to write a small function that works with strings — a great first challenge.\n\nThe full problem statement, starter code, and test cases come from the linked question in the bank. Open the **Code** panel, write your solution, and run it to see the tests pass.\n\n### Skills you will use\n\n- Defining a function with `def`\n- Splitting a string with `.split()`\n- Indexing a list with `[0]`\n\n### Hint\n\nRead the function signature in the starter code carefully. It tells you exactly what the function receives and what it should return.\n\nGood luck!",
+      "order": 3,
+      "language": "python",
+      "question_id": "c9d1a3f2-5b6e-4a7f-8c0d-1e2f3a4b5c6d"
+    },
+    {
+      "id": "py-control-conditionals",
+      "course_id": "python-fundamentals",
+      "module_id": "py-control-flow",
+      "title": "Conditionals: if / elif / else",
+      "type": "theory",
+      "content": "## Conditionals: if / elif / else\n\nPrograms make decisions. In Python, decisions use the `if` statement.\n\n### The basic form\n\n```python\ntemperature = 30\n\nif temperature > 25:\n    print(\"It is hot today\")\n```\n\nNote the **colon** at the end of the condition and the **indented** block underneath. Indentation is how Python groups statements — it is part of the syntax, not just style.\n\n### Adding branches\n\n```python\nscore = 72\n\nif score >= 90:\n    grade = \"A\"\nelif score >= 75:\n    grade = \"B\"\nelif score >= 60:\n    grade = \"C\"\nelse:\n    grade = \"F\"\n\nprint(grade)\n```\n\n- `elif` means \"else if\" — it lets you chain conditions.\n- `else` catches everything that did not match.\n- Conditions are checked top to bottom; the **first** match wins.\n\n### Comparison operators\n\n| Operator | Meaning            |\n|----------|--------------------|\n| `==`     | equal to           |\n| `!=`     | not equal to       |\n| `<`      | less than          |\n| `>`      | greater than       |\n| `<=`     | less or equal      |\n| `>=`     | greater or equal   |\n\n### Boolean logic\n\nCombine conditions with `and`, `or`, and `not`:\n\n```python\nage = 20\nhas_id = True\n\nif age >= 18 and has_id:\n    print(\"Welcome in\")\n```\n\n### Truthiness\n\nPython treats empty values as falsy in a condition:\n\n```python\nname = \"\"\nif name:                # empty string is falsy\n    print(\"Hello\", name)\nelse:\n    print(\"No name given\")\n```\n\nFalsy values include `0`, `0.0`, `\"\"`, `[]`, `{}`, `None`, and `False`. Everything else is truthy.\n\n---\n\n**Next up:** loops — doing the same thing many times.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "py-control-loops",
+      "course_id": "python-fundamentals",
+      "module_id": "py-control-flow",
+      "title": "Loops: for and while",
+      "type": "theory",
+      "content": "## Loops: for and while\n\nLoops repeat a block of code. Python has two kinds.\n\n### `for` loops over sequences\n\n```python\nfor i in range(5):\n    print(i)\n# 0 1 2 3 4\n```\n\n`range(5)` produces the numbers `0` through `4`. You can also loop directly over strings and lists:\n\n```python\nfor letter in \"abc\":\n    print(letter)     # a b c\n\nfor fruit in [\"apple\", \"pear\", \"mango\"]:\n    print(fruit)\n```\n\n### `range` variations\n\n```python\nrange(2, 6)       # 2 3 4 5        (start, stop-exclusive)\nrange(0, 10, 2)   # 0 2 4 6 8      (step)\nrange(5, 0, -1)   # 5 4 3 2 1      (counting down)\n```\n\n### `while` loops\n\n`while` repeats **as long as** its condition is true:\n\n```python\ncount = 0\nwhile count < 3:\n    print(count)\n    count += 1\n```\n\nBe careful: if the condition never becomes false, the loop runs forever. That is called an **infinite loop**.\n\n### `break` and `continue`\n\n- `break` exits the loop immediately.\n- `continue` skips to the next iteration.\n\n```python\nfor n in range(10):\n    if n == 3:\n        continue   # skip 3\n    if n == 6:\n        break      # stop at 6\n    print(n)\n# 0 1 2 4 5\n```\n\n### The loop-and-check pattern\n\nA common pattern is looping over a string and checking each character — exactly what the next exercise needs:\n\n```python\ndef all_vowels(word):\n    for ch in word:\n        if ch.lower() not in \"aeiou\":\n            return False\n    return True\n```\n\n---\n\n**Next up:** your second exercise — using a loop to check whether text reads the same backwards and forwards.",
+      "order": 2,
+      "language": "python"
+    },
+    {
+      "id": "py-exercise-palindrome",
+      "course_id": "python-fundamentals",
+      "module_id": "py-control-flow",
+      "title": "Exercise: Quantum Palindrome Detector",
+      "type": "exercise",
+      "content": "## Exercise: Quantum Palindrome Detector\n\nThis exercise tests your understanding of loops and conditionals. A **palindrome** is a word that reads the same forwards and backwards (like `radar`).\n\nYour job is to inspect a string and decide whether it \"stabilizes\" the system — check the linked problem for the exact rule.\n\nThe full problem statement, starter code, and test cases come from the linked question. Open the **Code** panel and implement the function.\n\n### Skills you will use\n\n- A `for` loop over the characters of a string\n- Comparing characters\n- Returning a boolean from a function\n\n### Approach idea\n\nLoop from both ends toward the middle, or compare each character with the one at the mirrored position. If any pair mismatches, return `False`.\n\nGood luck!",
+      "order": 3,
+      "language": "python",
+      "question_id": "f7e2d4a1-3b5c-4d6e-8f9a-0b1c2d3e4f5a"
+    },
+    {
+      "id": "py-strings-methods",
+      "course_id": "python-fundamentals",
+      "module_id": "py-strings",
+      "title": "Strings and String Methods",
+      "type": "theory",
+      "content": "## Strings and String Methods\n\nStrings are everywhere in Python, and they ship with a rich toolkit of methods.\n\n### Indexing and slicing\n\n```python\nword = \"python\"\nprint(word[0])     # p  (first character)\nprint(word[-1])    # n  (last character)\nprint(word[0:2])   # py (slice: start to stop-exclusive)\nprint(word[2:])    # thon\nprint(word[::-1])  # nohtyp (reversed)\n```\n\n### Common methods\n\n```python\ntext = \"  Hello, World  \"\n\ntext.strip()     # \"Hello, World\"     remove surrounding whitespace\ntext.lower()     # \"  hello, world  \"\ntext.upper()     # \"  HELLO, WORLD  \"\ntext.split(\",\") # [\"  Hello\", \" World  \"]\ntext.replace(\"World\", \"Python\")  # \"  Hello, Python  \"\ntext.startswith(\"  Hello\")       # True\ntext.endswith(\"World  \")         # True\n```\n\nMethods return **new strings** — they do not modify the original.\n\n### Splitting into words\n\n```python\nsentence = \"the quick brown fox\"\nwords = sentence.split()     # default: split on whitespace\nprint(words)                 # ['the', 'quick', 'brown', 'fox']\nprint(words[0])              # 'the'  <- first word\n```\n\n### Length and membership\n\n```python\nlen(\"python\")     # 6\n\"th\" in \"python\"  # True\n\"z\" in \"python\"   # False\n```\n\n### Building strings\n\n```python\nparts = []\nfor letter in \"abc\":\n    parts.append(letter.upper())\njoined = \"\".join(parts)      # \"ABC\"\n```\n\n---\n\n**Next up:** lists and dictionaries — organizing collections of data.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "py-strings-dicts",
+      "course_id": "python-fundamentals",
+      "module_id": "py-strings",
+      "title": "Lists and Dictionaries",
+      "type": "theory",
+      "content": "## Lists and Dictionaries\n\nTwo workhorse containers in Python: ordered sequences (`list`) and key-value mappings (`dict`).\n\n### Lists\n\n```python\nfruits = [\"apple\", \"pear\"]\nfruits.append(\"mango\")      # add to the end\nfruits[0] = \"peach\"         # replace an item\nprint(len(fruits))          # 3\nprint(fruits[1])            # \"pear\"\n```\n\nLooping over a list is natural:\n\n```python\ntotal = 0\nfor price in [10, 20, 30]:\n    total += price\n```\n\n### Dictionaries\n\nA dictionary maps **keys** to **values**:\n\n```python\nscores = {\"ada\": 95, \"linus\": 88}\nscores[\"grace\"] = 92        # add or update\nprint(scores[\"ada\"])        # 95\n```\n\nUse `.get()` to avoid errors when a key might be missing:\n\n```python\nprint(scores.get(\"ada\"))     # 95\nprint(scores.get(\"alice\"))   # None (no KeyError)\nprint(scores.get(\"alice\", 0))  # 0  (default value)\n```\n\n### The counting pattern\n\nDictionaries are perfect for counting occurrences — exactly what the final exercise needs:\n\n```python\ndef count_letters(text: str) -> dict:\n    counts = {}\n    for ch in text:\n        counts[ch] = counts.get(ch, 0) + 1\n    return counts\n```\n\nEach time we see a character, we bump its count by one, using `.get(ch, 0)` so a first occurrence starts at `0`.\n\n### Finding the maximum\n\nCombine the counting pattern with a scan to find the most frequent item:\n\n```python\ndef most_frequent(counts: dict):\n    best_key = None\n    best_value = -1\n    for key, value in counts.items():\n        if value > best_value:\n            best_key = key\n            best_value = value\n    return best_key\n```\n\n---\n\n**Final challenge:** your last exercise — count characters and report the dominant one.",
+      "order": 2,
+      "language": "python"
+    },
+    {
+      "id": "py-exercise-dominant",
+      "course_id": "python-fundamentals",
+      "module_id": "py-strings",
+      "title": "Exercise: Exoplanet Atmospheric Composition Analyzer",
+      "type": "exercise",
+      "content": "## Exercise: Exoplanet Atmospheric Composition Analyzer\n\nThe grand finale! This exercise combines strings, loops, and dictionaries to find the most common character in a string.\n\nThe full problem statement, starter code, and test cases come from the linked question. Open the **Code** panel and implement the function.\n\n### Skills you will use\n\n- The **counting pattern** with a dictionary\n- Looping over a string\n- Tracking the character with the highest count\n\n### Hint\n\nReuse the `count_letters` idea from the theory lesson. Then scan the resulting dictionary to find the key with the largest value. Watch out: the question may define tie-breaking rules — read the problem statement carefully.\n\nGood luck — you have earned it!",
+      "order": 3,
+      "language": "python",
+      "question_id": "7b9d2c1a-3e4f-5a6b-7c8d-9e0f1a2b3c4d"
+    }
+  ]
+}

@@ -85,4 +85,4 @@ class SqlProgressRepository(ProgressRepository):
                 or datetime.now(timezone.utc),
             )
             self.session.add(orm)
-        await self.session.flush()
+        await self.session.commit()
