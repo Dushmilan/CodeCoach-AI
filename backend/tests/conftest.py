@@ -9,6 +9,7 @@ import os
 # JWT secret). Individual tests override via monkeypatch/test_env_vars.
 os.environ.setdefault("ENVIRONMENT", "testing")
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only-32chars!!")
+os.environ.setdefault("USE_DATABASE", "false")
 
 import pytest
 import pytest_asyncio

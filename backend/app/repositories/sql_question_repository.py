@@ -142,7 +142,7 @@ class SqlQuestionRepository(QuestionRepository):
             is_interactive=1 if question.is_interactive else 0,
         )
         self.session.add(orm)
-        await self.session.flush()
+        await self.session.commit()
 
     async def save_validation_status(self, question_id: str, status: Any) -> None:
         pass

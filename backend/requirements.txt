@@ -13,6 +13,8 @@ sqlalchemy[asyncio]>=2.0,<3
 alembic>=1.13,<2
 asyncpg>=0.29,<1
 aiosqlite>=0.20,<1
+aiomysql>=0.2,<1
+cryptography>=42.0,<45
 
 # Redis caching
 redis[hiredis]>=5.0,<6
