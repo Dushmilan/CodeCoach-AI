@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FetchClient, HttpError } from "./fetch-client";
+import { setAccessToken, clearTokens } from "./token-store";
 
 function createMockFetch(status: number, body: unknown) {
   return vi.fn().mockResolvedValue({
@@ -16,6 +17,7 @@ describe("FetchClient", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
     localStorage.clear();
+    clearTokens();
   });
 
   it("makes GET request", async () => {
@@ -90,8 +92,8 @@ describe("FetchClient", () => {
     await expect(client.get("/api/test/999")).rejects.toThrow(HttpError);
   });
 
-  it("includes auth token from localStorage", async () => {
-    localStorage.setItem("auth_token", JSON.stringify("test-token"));
+  it("includes auth token from token store", async () => {
+    setAccessToken("test-token");
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       status: 200,

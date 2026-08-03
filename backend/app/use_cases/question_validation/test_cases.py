@@ -2,7 +2,7 @@
 
 import json
 import re
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from app.ports.code_executor import CodeExecutor
 from app.models.schemas import Question, TestCase as QuestionTestCase
@@ -145,8 +145,8 @@ class TestCaseValidationUseCase(BaseValidationUseCase):
         return issues
 
     def _check_duplicate_test_cases(self, test_cases: List[QuestionTestCase]) -> List:
-        issues = []
-        seen_inputs = {}
+        issues: List = []
+        seen_inputs: Dict[str, int] = {}
         for i, test_case in enumerate(test_cases):
             input_key = test_case.input.strip() if test_case.input else ""
             if input_key in seen_inputs:
@@ -167,7 +167,7 @@ class TestCaseValidationUseCase(BaseValidationUseCase):
     def _check_hidden_visible_distribution(
         self, test_cases: List[QuestionTestCase]
     ) -> List:
-        issues = []
+        issues: List = []
         if not test_cases:
             return issues
         hidden_count = sum(1 for tc in test_cases if tc.hidden)
@@ -195,7 +195,7 @@ class TestCaseValidationUseCase(BaseValidationUseCase):
         return issues
 
     async def _validate_executability(self, question: Question) -> List:
-        issues = []
+        issues: List = []
         if not self.executor:
             return issues
         for i, test_case in enumerate(question.test_cases):

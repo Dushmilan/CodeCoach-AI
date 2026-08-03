@@ -103,6 +103,15 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
 
     def _validate_time_complexity(self, question: Question) -> List:
         issues = []
+        if not question.time_complexity:
+            issues.append(
+                self._create_issue(
+                    message="Missing time complexity",
+                    field="time_complexity",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
+            return issues
         complexity = question.time_complexity.strip()
         if not re.match(r"^O\([^)]+\)$", complexity):
             issues.append(
@@ -116,11 +125,11 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
         complexity_level = self._get_complexity_level(complexity)
         difficulty = question.difficulty.value
         thresholds = self.COMPLEXITY_THRESHOLDS.get(difficulty, {})
-        if thresholds:
-            max_level = self._get_complexity_level(thresholds.get("max_complexity"))
-            warning_level = self._get_complexity_level(
-                thresholds.get("warning_complexity")
-            )
+        max_complexity = thresholds.get("max_complexity")
+        warning_complexity = thresholds.get("warning_complexity")
+        if thresholds and max_complexity and warning_complexity:
+            max_level = self._get_complexity_level(max_complexity)
+            warning_level = self._get_complexity_level(warning_complexity)
             if complexity_level > max_level:
                 issues.append(
                     self._create_issue(
@@ -150,7 +159,7 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
         return issues
 
     def _validate_constraints_for_time(self, question: Question) -> List:
-        issues = []
+        issues: List = []
         if not question.constraints:
             return issues
         max_input_size = None

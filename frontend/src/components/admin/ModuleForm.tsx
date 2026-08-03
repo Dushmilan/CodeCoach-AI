@@ -48,7 +48,11 @@ export default function ModuleForm({
   };
 
   useEffect(() => {
-    const syncErrors = validateModuleForm(f);
+    const syncErrors = validateModuleForm({
+      id: f.id,
+      title: f.title,
+      order: f.order,
+    });
     setErrors(syncErrors);
   }, [f.id, f.title, f.order]);
 

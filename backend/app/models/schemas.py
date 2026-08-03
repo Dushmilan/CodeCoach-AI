@@ -115,10 +115,8 @@ class CodeExecutionResult(BaseModel):
 
 
 class TestCase(BaseModel):
-    input: Union[str, Dict[str, Any]] = Field(..., description="Test input")
-    expected_output: Union[str, Dict[str, Any]] = Field(
-        ..., description="Expected output"
-    )
+    input: str = Field(..., description="Test input")
+    expected_output: str = Field(..., description="Expected output")
     description: Optional[str] = Field(None, description="Test case description")
     hidden: bool = Field(
         default=False, description="Whether this is a hidden test case"
@@ -153,8 +151,8 @@ class ValidationResult(BaseModel):
 
 
 class Example(BaseModel):
-    input: Union[str, Dict[str, Any]] = Field(..., description="Example input")
-    output: Union[str, Dict[str, Any]] = Field(default="", description="Example output")
+    input: str = Field(..., description="Example input")
+    output: str = Field(default="", description="Example output")
     explanation: Optional[str] = Field(None, description="Explanation of the example")
 
     @field_validator("input", "output", mode="before")

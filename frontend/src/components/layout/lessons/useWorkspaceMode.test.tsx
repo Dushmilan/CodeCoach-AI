@@ -106,4 +106,12 @@ describe('useWorkspaceMode', () => {
     render(<Harness />);
     expect(screen.getByTestId('mode')).toHaveTextContent('wide');
   });
+
+  it('measures on mount when ResizeObserver is unavailable (fallback)', () => {
+    (globalThis as any).ResizeObserver = undefined;
+    const { rerender } = render(<Harness />);
+    expect(screen.getByTestId('ready')).toHaveTextContent('true');
+    rerender(<Harness />);
+    expect(screen.getByTestId('ready')).toHaveTextContent('true');
+  });
 });

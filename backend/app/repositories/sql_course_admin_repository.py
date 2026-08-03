@@ -1,9 +1,10 @@
-from typing import Dict, Any
+from typing import Dict, Any, Type
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update, delete, select
 
 from app.models.orm import CourseORM, ModuleORM, LessonORM
 from app.ports.course_admin_repository import CourseAdminRepository
+from app.utils.db import execute_write
 
 
 class SqlCourseAdminRepository(CourseAdminRepository):
@@ -11,7 +12,11 @@ class SqlCourseAdminRepository(CourseAdminRepository):
         self.session = session
 
     async def exists(self, entity_type: str, entity_id: str) -> bool:
-        model_map = {"course": CourseORM, "module": ModuleORM, "lesson": LessonORM}
+        model_map: Dict[str, Type[Any]] = {
+            "course": CourseORM,
+            "module": ModuleORM,
+            "lesson": LessonORM,
+        }
         model = model_map.get(entity_type)
         if not model:
             return False
@@ -74,19 +79,19 @@ class SqlCourseAdminRepository(CourseAdminRepository):
 
     async def delete_course(self, course_id: str) -> bool:
         stmt = delete(CourseORM).where(CourseORM.id == course_id)
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 
     async def delete_module(self, module_id: str) -> bool:
         stmt = delete(ModuleORM).where(ModuleORM.id == module_id)
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 
     async def delete_lesson(self, lesson_id: str) -> bool:
         stmt = delete(LessonORM).where(LessonORM.id == lesson_id)
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 
@@ -119,7 +124,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             .values(**data)
             .execution_options(synchronize_session=False)
         )
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 
@@ -150,7 +155,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             .values(**data)
             .execution_options(synchronize_session=False)
         )
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 
@@ -193,6 +198,6 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             .values(**data)
             .execution_options(synchronize_session=False)
         )
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0

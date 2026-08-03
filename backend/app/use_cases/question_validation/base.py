@@ -2,9 +2,9 @@
 
 import time
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from app.models.schemas import Question
+from app.models.schemas import Question, StarterCode
 from app.models.question_validation_schemas import (
     UseCaseValidationResult,
     ValidationUseCase,
@@ -69,3 +69,34 @@ class BaseValidationUseCase(ABC):
         return UseCaseValidationResult(
             use_case=self.use_case, passed=passed, issues=issues or []
         )
+
+    @staticmethod
+    def _get_starter(question: Question) -> StarterCode:
+        """Coerce the permissive starter union to a typed StarterCode.
+
+        The Question schema stores starter as a union for lenient ingestion;
+        validation use cases need structured per-language access. This handles
+        dicts (the common runtime form) and falls back to empty strings.
+        """
+        starter = question.starter
+        if isinstance(starter, StarterCode):
+            return starter
+        if isinstance(starter, dict):
+            return StarterCode(
+                python=str(starter.get("python") or ""),
+                javascript=str(starter.get("javascript") or ""),
+                java=str(starter.get("java") or ""),
+            )
+        return StarterCode()
+
+    @staticmethod
+    def _description_to_str(description: Any) -> str:
+        """Coerce the description union to a string (validator does the same)."""
+        if isinstance(description, str):
+            return description
+        if isinstance(description, dict):
+            parts = [v for v in description.values() if isinstance(v, str)]
+            return "\n\n".join(parts) if parts else str(description)
+        if isinstance(description, list):
+            return "\n\n".join(str(x) for x in description)
+        return str(description)

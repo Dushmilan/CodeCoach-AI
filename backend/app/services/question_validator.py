@@ -150,7 +150,7 @@ class QuestionValidatorService:
     def get_validation_summary(
         self, result: QuestionValidationResult
     ) -> Dict[str, Any]:
-        summary = {
+        summary: Dict[str, Any] = {
             "question_id": result.question_id,
             "valid": result.valid,
             "total_issues": result.total_issues,

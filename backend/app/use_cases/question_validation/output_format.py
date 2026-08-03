@@ -195,7 +195,7 @@ class OutputFormatValidationUseCase(BaseValidationUseCase):
         return issues
 
     def _check_examples_consistency(self, question: Question) -> List:
-        issues = []
+        issues: List = []
         if not question.examples or not question.test_cases:
             return issues
         test_case_format = self._detect_output_format(

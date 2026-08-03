@@ -1,6 +1,6 @@
-import { HttpClient } from "@/lib/http-client";
-import { FetchClient } from "@/lib/fetch-client";
-import { User } from "@/types";
+import { HttpClient } from '@/lib/http-client';
+import { FetchClient } from '@/lib/fetch-client';
+import { User } from '@/types';
 
 export interface LoginRequest {
   username: string;
@@ -29,25 +29,27 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   async login(data: LoginRequest): Promise<TokenResponse> {
-    return this.http.post<TokenResponse>("/api/auth/login", data);
+    return this.http.post<TokenResponse>('/api/auth/login', data);
   }
 
   async register(data: RegisterRequest): Promise<TokenResponse> {
-    return this.http.post<TokenResponse>("/api/auth/register", data);
+    return this.http.post<TokenResponse>('/api/auth/register', data);
   }
 
   async loginWithSupabase(data: SupabaseAuthRequest): Promise<TokenResponse> {
-    return this.http.post<TokenResponse>("/api/auth/supabase", data);
+    return this.http.post<TokenResponse>('/api/auth/supabase', data);
   }
 
-  async refresh(refreshToken: string): Promise<TokenResponse> {
-    return this.http.post<TokenResponse>("/api/auth/refresh", {
-      refresh_token: refreshToken,
-    });
+  async refresh(): Promise<TokenResponse> {
+    return this.http.post<TokenResponse>('/api/auth/refresh', {});
+  }
+
+  async logout(): Promise<void> {
+    await this.http.post<void>('/api/auth/logout', {});
   }
 
   async getMe(token: string): Promise<User> {
-    return this.http.get<User>("/api/auth/me", {
+    return this.http.get<User>('/api/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
     });
   }

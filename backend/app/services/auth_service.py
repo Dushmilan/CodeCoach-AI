@@ -2,7 +2,7 @@ import uuid
 import os
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import bcrypt
 import httpx
@@ -53,7 +53,7 @@ def _create_token(
     expires_delta: timedelta,
     token_type: str,
 ) -> tuple[str, int]:
-    to_encode = {
+    to_encode: Dict[str, Any] = {
         "sub": data.user_id or "",
         "username": data.username or "",
         "type": token_type,

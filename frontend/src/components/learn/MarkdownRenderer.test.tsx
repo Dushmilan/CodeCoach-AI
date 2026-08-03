@@ -42,6 +42,8 @@ describe("sanitizeHtml", () => {
       '<a href="javascript:alert(1)">x</a><img src="javascript:evil()"/>',
     );
     expect(out).not.toContain("javascript:");
+    expect(out).not.toContain("<img");
+    expect(out).not.toContain("<a");
   });
 });
 

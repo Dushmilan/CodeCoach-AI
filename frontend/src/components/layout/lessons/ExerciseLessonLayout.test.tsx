@@ -130,8 +130,8 @@ describe('ExerciseLessonLayout', () => {
     expect(screen.getByTestId('ai-pane')).toHaveStyle({ width: '480px' });
   });
 
-  it('respects persisted closed AI panel state (global key)', () => {
-    window.localStorage.setItem('codecoach:workspace:ai-open', '0');
+  it('respects persisted closed AI panel state (per-lesson key)', () => {
+    window.localStorage.setItem('codecoach:lesson:l1:ai-open', '0');
     render(<ExerciseLessonLayout {...baseProps} />);
     expect(screen.queryByTestId('mock-ai-panel')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open AI Panel' })).toBeInTheDocument();

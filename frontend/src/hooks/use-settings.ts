@@ -1,23 +1,20 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from 'react';
 
-const API_KEY_KEY = "nvidia_api_key";
-
+/**
+ * Session-only settings.
+ *
+ * The NVIDIA API key is intentionally NOT persisted anywhere (no localStorage):
+ * it is never sent to the backend — AI coaching uses the server-side
+ * NVIDIA_API_KEY — so storing it would only widen the XSS blast radius.
+ * The value lives for the current page session at most.
+ */
 export function useSettings() {
-  const [apiKey, setApiKeyState] = useState<string>("");
-
-  useEffect(() => {
-    setApiKeyState(localStorage.getItem(API_KEY_KEY) || "");
-  }, []);
+  const [apiKey, setApiKeyState] = useState<string>('');
 
   const setApiKey = useCallback((key: string) => {
     setApiKeyState(key);
-    if (key) {
-      localStorage.setItem(API_KEY_KEY, key);
-    } else {
-      localStorage.removeItem(API_KEY_KEY);
-    }
   }, []);
 
   return { apiKey, setApiKey };

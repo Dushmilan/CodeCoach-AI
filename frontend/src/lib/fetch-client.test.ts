@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FetchClient, HttpError } from "./fetch-client";
+import { setAccessToken, clearTokens, getAccessToken } from "./token-store";
 
 function createMockResponse(overrides: Partial<Response> = {}): Response {
   return {
@@ -29,6 +30,7 @@ describe("FetchClient", () => {
   beforeEach(() => {
     fetchSpy = vi.fn();
     globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch;
+    delete process.env.NEXT_PUBLIC_API_URL;
   });
 
   afterEach(() => {
@@ -36,12 +38,12 @@ describe("FetchClient", () => {
   });
 
   describe("constructor", () => {
-    it("uses default base URL when none provided", () => {
+    it("uses relative base URL by default (via Next.js rewrite)", () => {
       client = new FetchClient();
       fetchSpy.mockResolvedValue(createMockResponse());
       client.get("/api/test");
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/test",
+        "/api/test",
         expect.anything(),
       );
     });
@@ -68,7 +70,7 @@ describe("FetchClient", () => {
       const result = await client.get<{ items: number[] }>("/api/items");
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/items",
+        "/api/items",
         expect.objectContaining({ method: "GET" }),
       );
       expect(result).toEqual({ items: [1, 2] });
@@ -99,7 +101,7 @@ describe("FetchClient", () => {
       const result = await client.post<{ id: number }>("/api/items", body);
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/items",
+        "/api/items",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify(body),
@@ -160,7 +162,7 @@ describe("FetchClient", () => {
       const result = await client.put("/api/items/1", { name: "updated" });
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/items/1",
+        "/api/items/1",
         expect.objectContaining({ method: "PUT" }),
       );
       expect(result).toEqual({ updated: true });
@@ -175,7 +177,7 @@ describe("FetchClient", () => {
       await client.delete("/api/items/1");
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/items/1",
+        "/api/items/1",
         expect.objectContaining({ method: "DELETE" }),
       );
     });
@@ -298,15 +300,16 @@ describe("FetchClient", () => {
         removeItem: (key: string) => storage.delete(key),
         clear: () => storage.clear(),
       });
+      clearTokens();
     });
 
     afterEach(() => {
       vi.unstubAllGlobals();
+      clearTokens();
     });
 
     it("refreshes token and retries original request on 401", async () => {
-      storage.set("auth_token", JSON.stringify("expired_jwt"));
-      storage.set("auth_refresh_token", JSON.stringify("valid_refresh"));
+      setAccessToken("expired_jwt");
       client = new FetchClient();
 
       fetchSpy
@@ -340,23 +343,20 @@ describe("FetchClient", () => {
       expect(result).toEqual({ protected: true });
       expect(fetchSpy).toHaveBeenNthCalledWith(
         2,
-        "http://localhost:8000/api/auth/refresh",
+        "/api/auth/refresh",
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ refresh_token: "valid_refresh" }),
+          body: JSON.stringify({}),
+          credentials: "include",
         }),
       );
-      expect(storage.get("auth_token")).toBe(JSON.stringify("new_jwt"));
-      expect(storage.get("auth_refresh_token")).toBe(
-        JSON.stringify("rotated_refresh"),
-      );
+      expect(getAccessToken()).toBe("new_jwt");
       const retryCall = fetchSpy.mock.calls[2][1] as RequestInit;
       const retryHeaders = retryCall.headers as Record<string, string>;
       expect(retryHeaders["Authorization"]).toBe("Bearer new_jwt");
     });
 
-    it("does not retry when no refresh token is stored", async () => {
-      storage.set("auth_token", JSON.stringify("expired_jwt"));
+    it("does not retry when no access token is present", async () => {
       client = new FetchClient();
 
       fetchSpy.mockResolvedValue(
@@ -375,8 +375,7 @@ describe("FetchClient", () => {
     });
 
     it("clears tokens and does not retry when refresh fails", async () => {
-      storage.set("auth_token", JSON.stringify("expired_jwt"));
-      storage.set("auth_refresh_token", JSON.stringify("bad_refresh"));
+      setAccessToken("expired_jwt");
       client = new FetchClient();
 
       fetchSpy
@@ -401,13 +400,11 @@ describe("FetchClient", () => {
         status: 401,
       });
       expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(localStorage.getItem("auth_token")).toBeNull();
-      expect(localStorage.getItem("auth_refresh_token")).toBeNull();
+      expect(getAccessToken()).toBeNull();
     });
 
     it("single-flights concurrent refresh requests", async () => {
-      storage.set("auth_token", JSON.stringify("expired_jwt"));
-      storage.set("auth_refresh_token", JSON.stringify("valid_refresh"));
+      setAccessToken("expired_jwt");
       client = new FetchClient();
 
       fetchSpy
@@ -452,7 +449,7 @@ describe("FetchClient", () => {
       expect(resultA).toEqual({ a: 1 });
       expect(resultB).toEqual({ b: 2 });
       const refreshCalls = fetchSpy.mock.calls.filter(
-        ([url]) => url === "http://localhost:8000/api/auth/refresh",
+        ([url]) => url === "/api/auth/refresh",
       );
       expect(refreshCalls).toHaveLength(1);
     });

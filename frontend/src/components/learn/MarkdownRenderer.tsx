@@ -1,6 +1,7 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
+import DOMPurify from 'dompurify';
 
 interface MarkdownRendererProps {
   content: string;
@@ -8,41 +9,45 @@ interface MarkdownRendererProps {
 
 export function escapeHtml(text: string): string {
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-const DANGEROUS_TAGS_RE = /<\s*\/?\s*(script|iframe|object|embed|link|meta|base|form)\b[^>]*>/gi;
-const EVENT_HANDLER_ATTR_RE = /\son[a-z]+\s*=\s*(["'])[^"']*\1/gi;
-const JAVASCRIPT_URL_RE = /(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi;
-
+/**
+ * Sanitize generated HTML with DOMPurify.
+ *
+ * The markdown renderer escapes all user content, so only controlled tags
+ * (headings, paragraphs, code, strong, li) reach here. DOMPurify is applied
+ * as a robust, battle-tested final defense in depth instead of hand-rolled
+ * regexes (which are bypass-prone).
+ */
 export function sanitizeHtml(html: string): string {
-  return html
-    .replace(DANGEROUS_TAGS_RE, "")
-    .replace(EVENT_HANDLER_ATTR_RE, "")
-    .replace(JAVASCRIPT_URL_RE, "");
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'li', 'pre', 'code', 'strong', 'em', 'br'],
+    ALLOWED_ATTR: ['class'],
+  });
 }
 
 export function renderMarkdown(md: string): string {
-  const lines = md.split("\n");
+  const lines = md.split('\n');
   const html: string[] = [];
   let inCodeBlock = false;
   let codeBuffer: string[] = [];
-  let codeLang = "";
+  let codeLang = '';
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if (line.startsWith("```")) {
+    if (line.startsWith('```')) {
       if (inCodeBlock) {
         html.push(
-          `<pre><code class="language-${escapeHtml(codeLang)}">${escapeHtml(codeBuffer.join("\n"))}</code></pre>`,
+          `<pre><code class="language-${escapeHtml(codeLang)}">${escapeHtml(codeBuffer.join('\n'))}</code></pre>`,
         );
         codeBuffer = [];
-        codeLang = "";
+        codeLang = '';
         inCodeBlock = false;
       } else {
         inCodeBlock = true;
@@ -56,29 +61,27 @@ export function renderMarkdown(md: string): string {
       continue;
     }
 
-    if (line.startsWith("### ")) {
+    if (line.startsWith('### ')) {
       html.push(
         `<h3 class="text-lg font-semibold mt-6 mb-2 text-foreground/90">${escapeHtml(line.slice(4))}</h3>`,
       );
-    } else if (line.startsWith("## ")) {
+    } else if (line.startsWith('## ')) {
       html.push(
         `<h2 class="text-xl font-semibold mt-8 mb-3 text-foreground/90">${escapeHtml(line.slice(3))}</h2>`,
       );
-    } else if (line.startsWith("# ")) {
+    } else if (line.startsWith('# ')) {
       html.push(
         `<h1 class="text-2xl font-semibold mt-8 mb-4 text-foreground/90">${escapeHtml(line.slice(2))}</h1>`,
       );
-    } else if (line.startsWith("- ")) {
-      html.push(
-        `<li class="ml-4 text-foreground/80">${escapeHtml(line.slice(2))}</li>`,
-      );
-    } else if (line.startsWith("**") && line.endsWith("**")) {
+    } else if (line.startsWith('- ')) {
+      html.push(`<li class="ml-4 text-foreground/80">${escapeHtml(line.slice(2))}</li>`);
+    } else if (line.startsWith('**') && line.endsWith('**')) {
       html.push(
         `<p class="font-semibold text-foreground/80 mt-3">${escapeHtml(line.slice(2, -2))}</p>`,
       );
-    } else if (line.trim() === "") {
-      if (html.length > 0 && !html[html.length - 1].startsWith("<li")) {
-        html.push("<br/>");
+    } else if (line.trim() === '') {
+      if (html.length > 0 && !html[html.length - 1].startsWith('<li')) {
+        html.push('<br/>');
       }
     } else {
       const processed = escapeHtml(line)
@@ -86,25 +89,20 @@ export function renderMarkdown(md: string): string {
           /`([^`]+)`/g,
           '<code class="bg-white/5 px-1.5 py-0.5 rounded text-sm font-mono text-primary/80">$1</code>',
         )
-        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-      html.push(
-        `<p class="text-foreground/80 leading-relaxed">${processed}</p>`,
-      );
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      html.push(`<p class="text-foreground/80 leading-relaxed">${processed}</p>`);
     }
   }
 
   if (inCodeBlock && codeBuffer.length > 0) {
-    html.push(`<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`);
+    html.push(`<pre><code>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`);
   }
 
-  return html.join("\n");
+  return html.join('\n');
 }
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
-  const html = useMemo(
-    () => sanitizeHtml(renderMarkdown(content)),
-    [content],
-  );
+  const html = useMemo(() => sanitizeHtml(renderMarkdown(content)), [content]);
 
   return (
     <div

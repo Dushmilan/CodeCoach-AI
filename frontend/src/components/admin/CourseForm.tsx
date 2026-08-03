@@ -52,7 +52,11 @@ export default function CourseForm({
 
   // Validate on change
   useEffect(() => {
-    const syncErrors = validateCourseForm(f);
+    const syncErrors = validateCourseForm({
+      id: f.id,
+      title: f.title,
+      order: f.order,
+    });
     setErrors(syncErrors);
   }, [f.id, f.title, f.order]);
 

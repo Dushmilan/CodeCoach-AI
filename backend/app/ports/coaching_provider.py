@@ -26,7 +26,7 @@ class CoachingProvider(ABC):
         ...
 
     @abstractmethod
-    async def stream(
+    def stream(
         self,
         problem: str,
         code: str,
@@ -37,5 +37,10 @@ class CoachingProvider(ABC):
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
     ) -> AsyncIterator[str]:
-        """Yield streaming text chunks from the coaching backend."""
+        """Yield streaming text chunks from the coaching backend.
+
+        Implementations are async generators (functions using ``yield``), so
+        this is a plain ``def`` returning ``AsyncIterator[str]`` — NOT an
+        ``async def`` coroutine. Callers use ``async for`` directly.
+        """
         ...  # pragma: no cover

@@ -5,6 +5,7 @@ from sqlalchemy import update, delete, func, or_, select
 from app.models.orm import QuestionORM
 from app.models.admin_models import QuestionFilter, QuestionImportResult
 from app.ports.question_admin_repository import QuestionAdminRepository
+from app.utils.db import execute_write
 
 
 class SqlQuestionAdminRepository(QuestionAdminRepository):
@@ -44,13 +45,13 @@ class SqlQuestionAdminRepository(QuestionAdminRepository):
             .values(**update_data)
             .execution_options(synchronize_session=False)
         )
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 
     async def delete_question(self, question_id: str) -> bool:
         stmt = delete(QuestionORM).where(QuestionORM.id == question_id)
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 

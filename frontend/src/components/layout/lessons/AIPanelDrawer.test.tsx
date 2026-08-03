@@ -30,6 +30,28 @@ describe('AIPanelDrawer', () => {
     expect(screen.getByRole('dialog', { name: 'Coach' })).toBeInTheDocument();
   });
 
+  it('marks the dialog as modal', () => {
+    render(
+      <AIPanelDrawer open onClose={vi.fn()}>
+        <div>drawer content</div>
+      </AIPanelDrawer>,
+    );
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+  });
+
+  it('closes on Escape key', () => {
+    const onClose = vi.fn();
+    render(
+      <AIPanelDrawer open onClose={onClose}>
+        <div>drawer content</div>
+      </AIPanelDrawer>,
+    );
+    screen.getByRole('dialog').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('closes when the backdrop is clicked', () => {
     const onClose = vi.fn();
     const { container } = render(

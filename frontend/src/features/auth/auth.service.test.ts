@@ -143,11 +143,9 @@ describe("AuthService", () => {
         },
       });
 
-      const result = await service.refresh("refresh_token_123");
+      const result = await service.refresh();
 
-      expect(http.post).toHaveBeenCalledWith("/api/auth/refresh", {
-        refresh_token: "refresh_token_123",
-      });
+      expect(http.post).toHaveBeenCalledWith("/api/auth/refresh", {});
       expect(result.access_token).toBe("new_jwt");
       expect(result.refresh_token).toBe("rotated_refresh");
     });

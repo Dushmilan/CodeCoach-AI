@@ -28,15 +28,17 @@ function useAdjacentLessons(lesson: LessonSummary | null) {
     nextId: null,
   });
 
+  const lessonId = lesson?.id;
+
   useEffect(() => {
-    if (!lesson) return;
+    if (!lessonId) return;
     api
       .get<{ prev_id: string | null; next_id: string | null }>(
-        `/api/courses/lessons/${lesson.id}/adjacent`,
+        `/api/courses/lessons/${lessonId}/adjacent`,
       )
       .then((d) => setAdjacent({ prevId: d.prev_id, nextId: d.next_id }))
       .catch((err) => console.error('Failed to fetch adjacent lessons:', err));
-  }, [lesson?.id]);
+  }, [lessonId]);
   return adjacent;
 }
 
@@ -73,13 +75,15 @@ export default function LessonPage() {
   const { messages, isTyping, sendMessage } = useCoaching();
 
   // Load progress
+  const progressLessonId = lesson?.id;
+  const progressCourseId = lesson?.course_id;
   useEffect(() => {
-    if (!lesson || !isAuthenticated) return;
+    if (!progressLessonId || !isAuthenticated) return;
     api
-      .get<{ completed_lessons: string[] }>(`/api/progress/${lesson.course_id}`)
-      .then((p) => setIsCompleted(p.completed_lessons?.includes(lesson.id) ?? false))
+      .get<{ completed_lessons: string[] }>(`/api/progress/${progressCourseId}`)
+      .then((p) => setIsCompleted(p.completed_lessons?.includes(progressLessonId) ?? false))
       .catch(() => setIsCompleted(false));
-  }, [lesson?.id, lesson?.course_id, isAuthenticated]);
+  }, [progressLessonId, progressCourseId, isAuthenticated]);
 
   // Load linked question data
   useEffect(() => {
@@ -249,7 +253,7 @@ export default function LessonPage() {
       setCurrentCode(starter);
       codeInitialized.current = true;
     }
-  }, [lesson?.id, linkedQuestion?.id, language, linkedQuestion?.starter]);
+  }, [lesson?.id, lesson?.starter_code, linkedQuestion?.id, linkedQuestion?.starter, language]);
 
   if (isLoading) return <div>Loading...</div>;
   if (error || !lesson) return <div>Error</div>;

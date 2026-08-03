@@ -34,6 +34,16 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
+      piston:
+        image: ghcr.io/engineer-man/piston:latest
+        ports:
+          - 2000:2000
+        options: >-
+          --health-cmd="node -e \"require('http').get('http://127.0.0.1:2000/api/v2/runtimes',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+
     steps:
       - uses: actions/checkout@v4
 
@@ -49,16 +59,71 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install Piston runtimes
+        run: |
+          python - <<'EOF'
+          import json, time, urllib.request
+
+          runtimes = [
+              {"language": "python", "version": "3.10.0"},
+              {"language": "python", "version": "3.11.0"},
+              {"language": "javascript", "version": "18.15.0"},
+              {"language": "java", "version": "15.0.2"},
+          ]
+          for r in runtimes:
+              body = json.dumps(r).encode()
+              req = urllib.request.Request(
+                  "http://127.0.0.1:2000/api/v2/packages",
+                  data=body,
+                  headers={"Content-Type": "application/json"},
+                  method="POST",
+              )
+              urllib.request.urlopen(req, timeout=120)
+              time.sleep(2)
+          EOF
+
       - name: Lint with ruff
         run: |
           ruff check .
           ruff format . --check
 
-      - name: Run tests
+      - name: Type check with mypy
+        run: mypy app/
+        env:
+          ENVIRONMENT: "testing"
+          JWT_SECRET_KEY: "ci-test-secret-key-32chars-long!!!!!"
+
+      - name: Run unit tests
         run: python -m pytest tests/unit/ -v --tb=short
         env:
           JWT_SECRET_KEY: "ci-test-secret-key-32chars-long!!!!!"
           DATABASE_URL: "mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach_test"
+          PISTON_API_URL: "http://127.0.0.1:2000/api/v2"
+          NVIDIA_API_KEY: "ci-test-nvidia-key"
+
+      - name: Run integration tests
+        run: python -m pytest tests/integration/ -q --tb=short --no-cov
+        env:
+          JWT_SECRET_KEY: "ci-test-secret-key-32chars-long!!!!!"
+          DATABASE_URL: "mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach_test"
+          PISTON_API_URL: "http://127.0.0.1:2000/api/v2"
+          NVIDIA_API_KEY: "ci-test-nvidia-key"
+
+      - name: Run security tests
+        run: python -m pytest tests/security/ -q --tb=short --no-cov
+        env:
+          JWT_SECRET_KEY: "ci-test-secret-key-32chars-long!!!!!"
+          DATABASE_URL: "mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach_test"
+          PISTON_API_URL: "http://127.0.0.1:2000/api/v2"
+          NVIDIA_API_KEY: "ci-test-nvidia-key"
+
+      - name: Run performance tests
+        run: python -m pytest tests/performance/ -q --tb=short --no-cov
+        env:
+          JWT_SECRET_KEY: "ci-test-secret-key-32chars-long!!!!!"
+          DATABASE_URL: "mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach_test"
+          PISTON_API_URL: "http://127.0.0.1:2000/api/v2"
+          NVIDIA_API_KEY: "ci-test-nvidia-key"
 
   frontend:
     name: Frontend

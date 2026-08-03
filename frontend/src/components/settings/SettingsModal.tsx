@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { showToast } from "@/components/ui/Toast";
-import { Eye, EyeOff, FileText, LogOut, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Button } from '@/components/ui/button';
+import { showToast } from '@/components/ui/Toast';
+import { Eye, EyeOff, FileText, LogOut, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface SettingsModalProps {
   open: boolean;
@@ -35,31 +35,26 @@ export function SettingsModal({
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === 'Escape') onClose();
     };
-    if (open) document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
+    if (open) document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
   }, [open, onClose]);
 
   if (!open) return null;
 
   const handleSave = () => {
     onSave(inputValue.trim());
-    showToast("API key saved", "success");
+    showToast('API key saved', 'success');
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md mx-4 p-1.5 rounded-[2rem] bg-white/[0.03] ring-1 ring-white/10">
         <div className="rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] p-6">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-sm font-semibold tracking-wide text-foreground/80">
-              SETTINGS
-            </h2>
+            <h2 className="text-sm font-semibold tracking-wide text-foreground/80">SETTINGS</h2>
             <button
               aria-label="Close"
               onClick={onClose}
@@ -75,14 +70,14 @@ export function SettingsModal({
                 NVIDIA API Key
               </label>
               <p className="text-[10px] text-muted-foreground/50 mb-3 leading-relaxed">
-                Optional. Stored locally in your browser and never sent to our
-                servers. AI coaching uses the server-side API key.
+                Not persisted and never sent to our servers. AI coaching uses the server-side API
+                key.
               </p>
               <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-0.5">
                 <div className="relative rounded-[calc(1rem-0.125rem)]">
                   <input
                     ref={inputRef}
-                    type={showKey ? "text" : "password"}
+                    type={showKey ? 'text' : 'password'}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder="nvapi-..."
@@ -90,7 +85,7 @@ export function SettingsModal({
                   />
                   <button
                     onClick={() => setShowKey(!showKey)}
-                    aria-label={showKey ? "Hide password" : "Show password"}
+                    aria-label={showKey ? 'Hide password' : 'Show password'}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                   >
                     {showKey ? (
@@ -125,7 +120,7 @@ export function SettingsModal({
             <div className="border-t border-white/5 pt-4 mt-2 space-y-1">
               <button
                 onClick={() => {
-                  window.location.href = "/privacy";
+                  window.location.href = '/privacy';
                   onClose();
                 }}
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground/60 hover:text-foreground hover:bg-white/5 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"

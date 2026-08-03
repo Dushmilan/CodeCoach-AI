@@ -95,7 +95,11 @@ export default function LessonForm({
   };
 
   useEffect(() => {
-    const syncErrors = validateLessonForm(f);
+    const syncErrors = validateLessonForm({
+      id: f.id,
+      title: f.title,
+      order: f.order,
+    });
     setErrors(syncErrors);
   }, [f.id, f.title, f.order]);
 

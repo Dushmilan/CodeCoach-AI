@@ -34,7 +34,9 @@ class TokenResponse(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str = Field(..., description="Refresh token issued at login")
+    refresh_token: Optional[str] = Field(
+        None, description="Refresh token; may be omitted when sent via HttpOnly cookie"
+    )
 
 
 class TokenData(BaseModel):

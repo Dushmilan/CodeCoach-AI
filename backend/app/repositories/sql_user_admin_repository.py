@@ -5,6 +5,7 @@ from sqlalchemy import update, func, select
 from app.models.orm import UserORM
 from app.models.auth_schemas import UserInDB
 from app.ports.user_admin_repository import UserAdminRepository
+from app.utils.db import execute_write
 
 
 class SqlUserAdminRepository(UserAdminRepository):
@@ -58,7 +59,7 @@ class SqlUserAdminRepository(UserAdminRepository):
             .values(role=role)
             .execution_options(synchronize_session=False)
         )
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 
@@ -73,7 +74,7 @@ class SqlUserAdminRepository(UserAdminRepository):
             .values(is_active=1 if is_active else 0)
             .execution_options(synchronize_session=False)
         )
-        result = await self.session.execute(stmt)
+        result = await execute_write(self.session, stmt)
         await self.session.commit()
         return result.rowcount > 0
 

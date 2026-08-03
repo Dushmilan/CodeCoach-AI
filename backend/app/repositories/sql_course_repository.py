@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from app.models.course_schemas import Course, Module, Lesson
 from app.models.orm import CourseORM, ModuleORM, LessonORM
@@ -133,7 +133,7 @@ class SqlCourseRepository(CourseRepository):
             .where(LessonORM.module_id.in_(module_ids))
             .order_by(LessonORM.module_id, LessonORM.order)
         )
-        lesson_map = {}
+        lesson_map: Dict[str, list] = {}
         for lid, mid, _ in lesson_rows.all():
             lesson_map.setdefault(mid, []).append(lid)
         modules = []

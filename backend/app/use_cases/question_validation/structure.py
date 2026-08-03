@@ -29,9 +29,11 @@ class StructureValidationUseCase(BaseValidationUseCase):
         issues: List = []
         issues.extend(self._validate_id(question.id))
         issues.extend(self._validate_title(question.title))
-        issues.extend(self._validate_description(question.description))
+        issues.extend(
+            self._validate_description(self._description_to_str(question.description))
+        )
         issues.extend(self._validate_category(question.category))
-        issues.extend(self._validate_starter_code(question.starter))
+        issues.extend(self._validate_starter_code(self._get_starter(question)))
         issues.extend(self._validate_test_cases(question.test_cases))
         issues.extend(self._validate_examples(question.examples))
         issues.extend(self._validate_difficulty(question.difficulty))

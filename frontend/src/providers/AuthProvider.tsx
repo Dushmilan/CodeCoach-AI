@@ -1,63 +1,19 @@
-"use client";
+'use client';
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  type ReactNode,
-} from "react";
-import { User, AuthState } from "@/types";
-import { authService } from "@/features/auth/auth.service";
-import { showToast } from "@/components/ui/Toast";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { User, AuthState } from '@/types';
+import { authService } from '@/features/auth/auth.service';
+import { showToast } from '@/components/ui/Toast';
+import { getAccessToken, setAccessToken, clearTokens } from '@/lib/token-store';
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<void>;
-  register: (
-    username: string,
-    email: string,
-    password: string,
-  ) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   loginWithSupabase: (accessToken: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-function getStoredToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("auth_token");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function getStoredRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("auth_refresh_token");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function setStoredTokens(token: string | null, refreshToken: string | null) {
-  if (typeof window === "undefined") return;
-  if (token) {
-    localStorage.setItem("auth_token", JSON.stringify(token));
-  } else {
-    localStorage.removeItem("auth_token");
-  }
-  if (refreshToken) {
-    localStorage.setItem("auth_refresh_token", JSON.stringify(refreshToken));
-  } else {
-    localStorage.removeItem("auth_refresh_token");
-  }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -69,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const setAuth = useCallback(
-    (user: User | null, token: string | null, refreshToken?: string | null) => {
+    (user: User | null, token: string | null, _refreshToken?: string | null) => {
       setState({
         user,
         token,
@@ -77,16 +33,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user && !!token,
         isHydrated: true,
       });
-      setStoredTokens(token, refreshToken ?? null);
+      setAccessToken(token);
     },
     [],
   );
 
   useEffect(() => {
-    const storedToken = getStoredToken();
-    const storedRefreshToken = getStoredRefreshToken();
+    const storedToken = getAccessToken();
     if (!storedToken) {
-      setState((prev) => ({ ...prev, isLoading: false, isHydrated: true }));
+      // No in-memory token. Try to exchange the HttpOnly refresh cookie for a
+      // fresh access token (silent re-authentication on page load).
+      authService
+        .refresh()
+        .then((tokens) => {
+          setAccessToken(tokens.access_token);
+          return authService.getMe(tokens.access_token);
+        })
+        .then((user) => {
+          const token = getAccessToken();
+          setState({
+            user,
+            token,
+            isLoading: false,
+            isAuthenticated: true,
+            isHydrated: true,
+          });
+        })
+        .catch(() => {
+          clearTokens();
+          setState({
+            user: null,
+            token: null,
+            isLoading: false,
+            isAuthenticated: false,
+            isHydrated: true,
+          });
+        });
       return;
     }
 
@@ -102,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       })
       .catch(() => {
-        setStoredTokens(null, null);
+        clearTokens();
         setState({
           user: null,
           token: null,
@@ -116,12 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (username: string, password: string) => {
       const response = await authService.login({ username, password });
-      setAuth(
-        response.user,
-        response.access_token,
-        response.refresh_token ?? null,
-      );
-      showToast("Signed in successfully", "success");
+      setAuth(response.user, response.access_token, response.refresh_token ?? null);
+      showToast('Signed in successfully', 'success');
     },
     [setAuth],
   );
@@ -133,12 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
       });
-      setAuth(
-        response.user,
-        response.access_token,
-        response.refresh_token ?? null,
-      );
-      showToast("Account created successfully", "success");
+      setAuth(response.user, response.access_token, response.refresh_token ?? null);
+      showToast('Account created successfully', 'success');
     },
     [setAuth],
   );
@@ -148,24 +122,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authService.loginWithSupabase({
         access_token: accessToken,
       });
-      setAuth(
-        response.user,
-        response.access_token,
-        response.refresh_token ?? null,
-      );
+      setAuth(response.user, response.access_token, response.refresh_token ?? null);
     },
     [setAuth],
   );
 
   const logout = useCallback(() => {
+    clearTokens();
     setAuth(null, null, null);
-    showToast("Signed out", "info");
+    authService.logout().catch(() => {});
+    showToast('Signed out', 'info');
   }, [setAuth]);
 
   return (
-    <AuthContext.Provider
-      value={{ ...state, login, register, loginWithSupabase, logout }}
-    >
+    <AuthContext.Provider value={{ ...state, login, register, loginWithSupabase, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -174,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

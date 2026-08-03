@@ -1,42 +1,20 @@
-import { HttpClient, HttpMethod, HttpRequestOptions } from "./http-client";
+import { HttpClient, HttpMethod, HttpRequestOptions } from './http-client';
+import { getAccessToken, setAccessToken, clearTokens } from './token-store';
 
 declare const process: { env: { NEXT_PUBLIC_API_URL?: string } };
 
-const DEFAULT_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("auth_token");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("auth_refresh_token");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function setAuthTokens(accessToken: string | null, refreshToken: string | null) {
-  if (typeof window === "undefined") return;
-  if (accessToken) {
-    localStorage.setItem("auth_token", JSON.stringify(accessToken));
-  } else {
-    localStorage.removeItem("auth_token");
-  }
-  if (refreshToken) {
-    localStorage.setItem("auth_refresh_token", JSON.stringify(refreshToken));
-  } else {
-    localStorage.removeItem("auth_refresh_token");
-  }
+/**
+ * Default base URL.
+ *
+ * Empty string = relative: requests go to the same origin and are proxied to
+ * the backend by the Next.js rewrite in next.config.js. This is the single,
+ * consistent path used by both this client and the admin pages — it works in
+ * local dev, inside Docker, and on remote deployments (no absolute
+ * localhost:8000 baked in). NEXT_PUBLIC_API_URL remains an escape hatch for
+ * standalone/non-proxied deployments.
+ */
+function defaultBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL || '';
 }
 
 interface RefreshPayload {
@@ -49,59 +27,43 @@ export class FetchClient implements HttpClient {
   private getToken: () => string | null;
   private refreshInFlight: Promise<boolean> | null = null;
 
-  constructor(
-    baseUrl: string = DEFAULT_BASE_URL,
-    getToken?: () => string | null,
-  ) {
+  constructor(baseUrl: string = defaultBaseUrl(), getToken?: () => string | null) {
     this.baseUrl = baseUrl;
-    this.getToken = getToken ?? getAuthToken;
+    this.getToken = getToken ?? getAccessToken;
   }
 
   async get<T>(path: string, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>("GET", path, undefined, options);
+    return this.request<T>('GET', path, undefined, options);
   }
 
-  async post<T>(
-    path: string,
-    body?: unknown,
-    options?: HttpRequestOptions,
-  ): Promise<T> {
-    return this.request<T>("POST", path, body, options);
+  async post<T>(path: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
+    return this.request<T>('POST', path, body, options);
   }
 
-  async put<T>(
-    path: string,
-    body?: unknown,
-    options?: HttpRequestOptions,
-  ): Promise<T> {
-    return this.request<T>("PUT", path, body, options);
+  async put<T>(path: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
+    return this.request<T>('PUT', path, body, options);
   }
 
   async delete<T>(path: string, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>("DELETE", path, undefined, options);
+    return this.request<T>('DELETE', path, undefined, options);
   }
 
   private async refreshAccessToken(): Promise<boolean> {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) return false;
-
     if (!this.refreshInFlight) {
       this.refreshInFlight = (async () => {
         try {
           const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken }),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({}),
           });
           if (!response.ok) {
-            setAuthTokens(null, null);
+            clearTokens();
             return false;
           }
           const data = (await response.json()) as RefreshPayload;
-          setAuthTokens(
-            data.access_token,
-            data.refresh_token ?? refreshToken,
-          );
+          setAccessToken(data.access_token);
           return true;
         } catch {
           return false;
@@ -131,7 +93,7 @@ export class FetchClient implements HttpClient {
     try {
       const token = this.getToken();
       const headers: Record<string, string> = {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options?.headers,
       };
@@ -142,6 +104,7 @@ export class FetchClient implements HttpClient {
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal,
         cache: options?.cache,
+        credentials: 'include',
       });
 
       clearTimeout(timeoutId);
@@ -149,8 +112,9 @@ export class FetchClient implements HttpClient {
       if (
         !response.ok &&
         response.status === 401 &&
-        path !== "/api/auth/refresh" &&
-        !options?.skipAuthRefresh
+        path !== '/api/auth/refresh' &&
+        !options?.skipAuthRefresh &&
+        token
       ) {
         const refreshed = await this.refreshAccessToken();
         if (refreshed) {
@@ -165,7 +129,7 @@ export class FetchClient implements HttpClient {
       }
 
       if (!response.ok) {
-        const errorBody = await response.text().catch(() => "");
+        const errorBody = await response.text().catch(() => '');
         throw new HttpError(
           `Request failed: ${response.status} ${response.statusText}`,
           response.status,
@@ -185,10 +149,10 @@ export class FetchClient implements HttpClient {
       }
       const isAbort =
         error instanceof DOMException
-          ? error.name === "AbortError"
-          : error instanceof Error && error.name === "AbortError";
+          ? error.name === 'AbortError'
+          : error instanceof Error && error.name === 'AbortError';
       if (isAbort) {
-        throw new HttpError("Request timeout", 408);
+        throw new HttpError('Request timeout', 408);
       }
       throw error;
     }
@@ -206,7 +170,7 @@ export class HttpError extends Error {
     public readonly body?: string,
   ) {
     super(message);
-    this.name = "HttpError";
+    this.name = 'HttpError';
   }
 }
 
@@ -217,7 +181,7 @@ function anySignal(signals: AbortSignal[]): AbortSignal {
       controller.abort(signal.reason);
       return controller.signal;
     }
-    signal.addEventListener("abort", () => controller.abort(signal.reason), {
+    signal.addEventListener('abort', () => controller.abort(signal.reason), {
       once: true,
     });
   }

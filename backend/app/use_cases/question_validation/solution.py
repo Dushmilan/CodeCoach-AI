@@ -108,7 +108,7 @@ except Exception as e:
         if question.is_interactive:
             return str(question.solution) if question.solution else None
 
-        starter_code = question.starter.python
+        starter_code = self._get_starter(question).python
         func_match = re.search(r"def\s+(\w+)\s*\(", starter_code)
         if not func_match:
             return None
@@ -118,7 +118,16 @@ except Exception as e:
         return None
 
     async def _validate_solution_with_piston(self, question: Question) -> List:
-        issues = []
+        issues: List = []
+        if not self.executor:
+            issues.append(
+                self._create_issue(
+                    message="Cannot validate solution execution without Piston service",
+                    field="solution",
+                    severity=ValidationSeverity.WARNING,
+                )
+            )
+            return issues
         solution_code = self._create_executable_solution(question)
         if not solution_code:
             issues.append(

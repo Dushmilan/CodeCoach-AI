@@ -39,16 +39,22 @@ export function useWorkspaceMode<T extends HTMLElement = HTMLDivElement>(
     if (!element) return;
 
     const update = () => handleResize(element.getBoundingClientRect().width);
-    update();
 
-    if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        handleResize(entry.contentRect.width);
-      }
-    });
-    ro.observe(element);
-    return () => ro.disconnect();
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          handleResize(entry.contentRect.width);
+        }
+      });
+      ro.observe(element);
+      return () => ro.disconnect();
+    }
+
+    // Fallback for environments without ResizeObserver (very old browsers,
+    // some test/jsdom setups): measure once on mount and on window resize.
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, [element, handleResize]);
 
   return {

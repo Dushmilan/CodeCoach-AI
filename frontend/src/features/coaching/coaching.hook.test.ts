@@ -224,5 +224,70 @@ describe("useCoaching", () => {
 
       expect(result.current.error).toBe("Failed to get coaching response");
     });
+
+    it("serializes sends so assistant responses never interleave", async () => {
+      const resolvers: Array<(value: unknown) => void> = [];
+      mockGetCoachResponse.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve);
+          }),
+      );
+
+      const { result } = renderHook(() => useCoaching());
+
+      act(() => {
+        void result.current.sendMessage(
+          "First",
+          "hint",
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+        void result.current.sendMessage(
+          "Second",
+          "hint",
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+
+      // Both user messages appear immediately; responses are serialized.
+      expect(result.current.messages.map((m) => m.content)).toEqual([
+        "First",
+        "Second",
+      ]);
+
+      // Flush microtasks so the first queued send starts.
+      await act(async () => {});
+
+      // First request in flight; second is queued (only one resolver so far).
+      expect(resolvers).toHaveLength(1);
+
+      await act(async () => {
+        resolvers[0]?.({ response: "response-1", structured: null });
+      });
+
+      // After the first resolves, the second request starts.
+      expect(resolvers).toHaveLength(2);
+      expect(result.current.messages.map((m) => m.content)).toEqual([
+        "First",
+        "Second",
+        "response-1",
+      ]);
+
+      await act(async () => {
+        resolvers[1]?.({ response: "response-2", structured: null });
+      });
+
+      const contents = result.current.messages.map((m) => m.content);
+      expect(contents).toEqual([
+        "First",
+        "Second",
+        "response-1",
+        "response-2",
+      ]);
+    });
   });
 });

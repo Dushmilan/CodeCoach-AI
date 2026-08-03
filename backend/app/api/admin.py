@@ -332,7 +332,7 @@ async def import_questions(
 
         if not dry_run:
             logger.info(
-                f"Questions imported by {current_user.id}: {result['successful']} successful, {result['failed']} failed"
+                f"Questions imported by {current_user.id}: {result.successful} successful, {result.failed} failed"
             )
 
         return result

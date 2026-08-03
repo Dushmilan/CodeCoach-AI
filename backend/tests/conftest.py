@@ -31,6 +31,13 @@ def _ensure_test_database() -> str:
 
     load_dotenv(find_dotenv())
 
+    # When running on the host (not inside Docker), reach Piston via localhost.
+    # The repo .env points at the Docker-internal hostname `piston`.
+    if "piston" in os.environ.get("PISTON_API_URL", ""):
+        os.environ["PISTON_API_URL"] = os.environ["PISTON_API_URL"].replace(
+            "piston", "127.0.0.1"
+        )
+
     base_url = os.environ.get(
         "DATABASE_URL",
         "mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach",

@@ -270,8 +270,8 @@ for i in range(10):
         # Should execute successfully or timeout gracefully
         assert data["exit_code"] == 0 or "timeout" in data["stderr"].lower()
 
-        assert "warnings" in data
-        assert "errors" in data
+        assert "execution_time" in data
+        assert "memory_usage" in data
 
     def test_run_endpoints_response_format(self, test_client: TestClient):
         """Test response format consistency."""

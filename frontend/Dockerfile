@@ -11,10 +11,11 @@ RUN npm install
 # Copy source
 COPY . .
 
-# Build-time API URL for Next.js rewrites (Docker internal network)
+# Build-time API URL for Next.js rewrites (Docker internal network).
+# NEXT_PUBLIC_API_URL is intentionally NOT baked in: the client uses relative
+# /api/* paths proxied to the backend by the rewrite, so it works identically
+# on localhost and remote hosts (no absolute localhost:8000).
 ENV API_URL=http://backend:8000
-# Client-side API URL (resolves via Docker host port mapping)
-ENV NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_WS_URL=ws://localhost:8000
 
 # Build

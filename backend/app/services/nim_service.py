@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 class NIMService(CoachingProvider):
     """NVIDIA NIM adapter for AI coaching."""
 
-    def __init__(self, api_key: str = None, cache: Optional[RedisCache] = None):
+    def __init__(
+        self, api_key: Optional[str] = None, cache: Optional[RedisCache] = None
+    ):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         if not self.api_key:
             logger.error(
@@ -47,8 +49,8 @@ class NIMService(CoachingProvider):
         message: str,
         mode: str = "hint",
         difficulty: str = "medium",
-        lesson_context: str = None,
-        chat_history: list = None,
+        lesson_context: Optional[str] = None,
+        chat_history: Optional[list] = None,
     ) -> Dict[str, Any]:
         from app.models.schemas import StructuredCoachingResponse
 
@@ -136,9 +138,9 @@ class NIMService(CoachingProvider):
         message: str,
         mode: str = "hint",
         difficulty: str = "medium",
-        lesson_context: str = None,
+        lesson_context: Optional[str] = None,
         structured: bool = False,
-        chat_history: list = None,
+        chat_history: Optional[list] = None,
     ) -> AsyncIterator[str]:
         model = self.models.get(difficulty, self.models["medium"])
 

@@ -7,6 +7,7 @@ export type PanelBoundary = 'description' | 'reading' | 'ai';
 export interface ResizablePanelsOptions {
   storageKey: string;
   percentageBoundary?: PanelBoundary;
+  /** Override to share AI-open state across lessons; defaults to per-lesson. */
   aiOpenStorageKey?: string;
   defaults?: {
     descriptionWidth?: number;
@@ -28,7 +29,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 export function useResizablePanels({
   storageKey,
   percentageBoundary = 'description',
-  aiOpenStorageKey = 'codecoach:workspace:ai-open',
+  aiOpenStorageKey = '',
   defaults = {},
   bounds = {},
 }: ResizablePanelsOptions) {
@@ -52,6 +53,10 @@ export function useResizablePanels({
 
   const storagePrefix = `codecoach:lesson:${storageKey}`;
 
+  // AI-open state defaults to per-lesson persistence (consistent with the
+  // width keys). Callers can override with aiOpenStorageKey for a global panel.
+  const aiOpenKey = aiOpenStorageKey || `${storagePrefix}:ai-open`;
+
   const readStoredNumber = useCallback((key: string, fallback: number) => {
     if (typeof window === 'undefined') return fallback;
     const raw = window.localStorage.getItem(key);
@@ -74,7 +79,7 @@ export function useResizablePanels({
 
   const [isAIOpen, setIsAIOpen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return defaultIsAIOpen;
-    const raw = window.localStorage.getItem(aiOpenStorageKey);
+    const raw = window.localStorage.getItem(aiOpenKey);
     if (raw === null) return defaultIsAIOpen;
     return raw === '1';
   });
@@ -171,8 +176,8 @@ export function useResizablePanels({
     const { descriptionWidth: dW, aiWidth: aW, isAIOpen: open } = latestRef.current;
     window.localStorage.setItem(`${storagePrefix}:desc-width`, String(dW));
     window.localStorage.setItem(`${storagePrefix}:ai-width`, String(aW));
-    window.localStorage.setItem(aiOpenStorageKey, open ? '1' : '0');
-  }, [descriptionWidth, aiWidth, isAIOpen, isDragging, storagePrefix, aiOpenStorageKey]);
+    window.localStorage.setItem(aiOpenKey, open ? '1' : '0');
+  }, [descriptionWidth, aiWidth, isAIOpen, isDragging, storagePrefix, aiOpenKey]);
 
   return {
     descriptionWidth,

@@ -30,7 +30,7 @@ describe('useResizablePanels', () => {
   it('reads persisted values from localStorage', () => {
     window.localStorage.setItem(`${STORAGE_PREFIX}:desc-width`, '48');
     window.localStorage.setItem(`${STORAGE_PREFIX}:ai-width`, '500');
-    window.localStorage.setItem('codecoach:workspace:ai-open', '0');
+    window.localStorage.setItem(`${STORAGE_PREFIX}:ai-open`, '0');
 
     const { result } = renderHook(() => useResizablePanels({ storageKey: 'test' }));
     expect(result.current.descriptionWidth).toBe(48);
@@ -38,12 +38,23 @@ describe('useResizablePanels', () => {
     expect(result.current.isAIOpen).toBe(false);
   });
 
-  it('persists ai open state to a global key', () => {
+  it('persists ai open state to a per-lesson key by default', () => {
     const { result } = renderHook(() => useResizablePanels({ storageKey: 'test' }));
     act(() => result.current.closeAI());
-    expect(window.localStorage.getItem('codecoach:workspace:ai-open')).toBe('0');
+    expect(window.localStorage.getItem(`${STORAGE_PREFIX}:ai-open`)).toBe('0');
     act(() => result.current.openAI());
-    expect(window.localStorage.getItem('codecoach:workspace:ai-open')).toBe('1');
+    expect(window.localStorage.getItem(`${STORAGE_PREFIX}:ai-open`)).toBe('1');
+  });
+
+  it('persists ai open state to a custom key when provided', () => {
+    const { result } = renderHook(() =>
+      useResizablePanels({
+        storageKey: 'test',
+        aiOpenStorageKey: 'codecoach:workspace:ai-open',
+      }),
+    );
+    act(() => result.current.closeAI());
+    expect(window.localStorage.getItem('codecoach:workspace:ai-open')).toBe('0');
   });
 
   it('resizes description pane by delta clamped to bounds', () => {

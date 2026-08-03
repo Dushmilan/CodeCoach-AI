@@ -273,7 +273,8 @@ class TestAuthRefresh:
 
     def test_refresh_without_token(self, test_client: TestClient):
         response = test_client.post("/api/auth/refresh", json={})
-        assert response.status_code == 422
+        # No refresh token in body or HttpOnly cookie -> unauthorized
+        assert response.status_code == 401
 
 
 class TestAuthErrorHandling:

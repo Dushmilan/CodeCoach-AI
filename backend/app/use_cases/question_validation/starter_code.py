@@ -75,7 +75,9 @@ except SyntaxError as e:
         return code
 
     async def _validate_syntax(self, language: str, code: str) -> List:
-        issues = []
+        issues: List = []
+        if not self.executor:
+            return issues
         try:
             test_code = self._create_syntax_test_code(language, code)
             result = await self.executor.execute(

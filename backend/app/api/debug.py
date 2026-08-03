@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 import os
+import sys
 import logging
 import httpx
 from app.services.nim_service import NIMService
@@ -109,7 +110,7 @@ async def get_environment_info() -> Dict[str, Any]:
     """
     return {
         "environment": os.getenv("ENVIRONMENT", "production"),
-        "python_version": f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
+        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         "working_directory": os.getcwd(),
         "nvidia_api_key_present": bool(os.getenv("NVIDIA_API_KEY")),
     }
@@ -127,6 +128,7 @@ async def test_nvidia_connection() -> Dict[str, Any]:
     try:
         service = NIMService(api_key=api_key)
         # Test with a simple prompt
+        first_chunk = None
         async for chunk in service.get_coaching_response(
             problem="Test problem",
             code="print('hello')",
@@ -135,10 +137,19 @@ async def test_nvidia_connection() -> Dict[str, Any]:
             mode="hint",
             difficulty="easy",
         ):
+            first_chunk = chunk
+            break
+        if first_chunk is None:
             return {
-                "success": True,
-                "message": "Connection successful",
-                "sample_response": chunk[:100] + "..." if len(chunk) > 100 else chunk,
+                "success": False,
+                "error": "NVIDIA NIM API returned no response",
             }
+        return {
+            "success": True,
+            "message": "Connection successful",
+            "sample_response": first_chunk[:100] + "..."
+            if len(first_chunk) > 100
+            else first_chunk,
+        }
     except Exception as e:
         return {"success": False, "error": str(e), "error_type": type(e).__name__}
