@@ -28,7 +28,7 @@ export default function LessonLoading() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 flex px-6 pb-6 max-w-7xl mx-auto w-full min-h-0">
+      <div data-testid="lesson-content-container" className="flex-1 flex px-6 pb-6 w-full min-h-0">
         {/* Left panel - theory/exercise content */}
         <div className="w-[35%] pr-6 border-r border-white/[0.04] overflow-y-auto">
           <div className="space-y-3">
