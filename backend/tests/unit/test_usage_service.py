@@ -115,6 +115,28 @@ class TestCheckCaps:
         assert rem_in == 100
         assert rem_out == 50
 
+    def test_zero_caps_block_everything(self):
+        allowed, rem_in, rem_out = check_caps(self._daily(0, 0), 0, 0)
+        assert allowed is False
+        assert rem_in == 0
+        assert rem_out == 0
+
+    def test_one_cap_zero_blocks(self):
+        allowed, rem_in, rem_out = check_caps(self._daily(0, 0), 0, 50)
+        assert allowed is False
+        assert rem_in == 0
+        assert rem_out == 50
+
+    def test_exactly_at_input_cap_blocks(self):
+        allowed, rem_in, _ = check_caps(self._daily(100, 0), 100, 50)
+        assert allowed is False
+        assert rem_in == 0
+
+    def test_exactly_below_cap_allows(self):
+        allowed, rem_in, _ = check_caps(self._daily(99, 0), 100, 50)
+        assert allowed is True
+        assert rem_in == 1
+
 
 class TestUsageHeaders:
     def test_headers_include_used_remaining_and_reset(self):

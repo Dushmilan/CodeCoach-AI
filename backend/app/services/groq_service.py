@@ -5,6 +5,7 @@ from typing import AsyncIterator, Dict, Any, Optional
 
 import httpx
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.adapters.coaching_prompts import PromptBuilder
 from app.adapters.coaching_response_parser import CoachingResponseParser
@@ -122,10 +123,21 @@ class GroqService(CoachingProvider):
                 result = response.json()
                 content = result["choices"][0]["message"]["content"]
                 structured_data = self.parser.parse_structured(content)
-                StructuredCoachingResponse(**structured_data)
+                try:
+                    StructuredCoachingResponse(**structured_data)
+                except ValidationError as e:
+                    logger.warning(
+                        "Groq structured response failed schema validation: %s",
+                        e,
+                    )
+                    structured_data = self._repair_structured(structured_data)
+                    StructuredCoachingResponse(**structured_data)
 
                 if self.cache and cache_key:
-                    await self.cache.set(cache_key, structured_data, ttl=86400)
+                    try:
+                        await self.cache.set(cache_key, structured_data, ttl=86400)
+                    except Exception as e:  # pragma: no cover - defensive
+                        logger.debug("Failed to write Groq cache: %s", e)
 
                 await self._record_usage(model, result, endpoint)
 
@@ -267,6 +279,54 @@ class GroqService(CoachingProvider):
             yield chunk
 
     # ── helpers ───────────────────────────────────────────────────────
+
+    @staticmethod
+    def _repair_structured(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Repair a schema-mismatched structured dict into a valid shape.
+
+        Called when the model returns valid JSON that fails
+        StructuredCoachingResponse validation (e.g. missing summary, wrong
+        types). Preserves any usable fields and defaults the rest.
+        """
+        summary = data.get("summary") or data.get("explanation")
+        if not isinstance(summary, str):
+            summary = json.dumps(summary) if summary is not None else ""
+            summary = summary[:500]
+        summary = summary or "Coaching response generated"
+        return {
+            "summary": summary[:2000],
+            "hints": data.get("hints") if isinstance(data.get("hints"), list) else [],
+            "code_review": (
+                data.get("code_review")
+                if isinstance(data.get("code_review"), str)
+                else None
+            ),
+            "complexity_analysis": (
+                data.get("complexity_analysis")
+                if isinstance(data.get("complexity_analysis"), str)
+                else None
+            ),
+            "suggestions": (
+                data.get("suggestions")
+                if isinstance(data.get("suggestions"), list)
+                else []
+            ),
+            "edge_cases": (
+                data.get("edge_cases")
+                if isinstance(data.get("edge_cases"), list)
+                else []
+            ),
+            "explanation": (
+                data.get("explanation")
+                if isinstance(data.get("explanation"), str)
+                else None
+            ),
+            "debug_help": (
+                data.get("debug_help")
+                if isinstance(data.get("debug_help"), str)
+                else None
+            ),
+        }
 
     def _raise_for_groq_status(
         self, status_code: int, headers: Any, body: str = ""

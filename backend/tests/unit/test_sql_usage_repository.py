@@ -166,3 +166,41 @@ class TestSqlUsageRepository:
         by_user = {r.user_id: r for r in rows}
         assert by_user[user_id].input_tokens == 10
         assert by_user[other_user].input_tokens == 50
+
+    @pytest.mark.asyncio
+    async def test_concurrent_increments_accumulate(self, test_db, user_id):
+        import asyncio
+        import os
+
+        from app.repositories.sql_usage_repository import SqlUsageRepository
+        from sqlalchemy.ext.asyncio import (
+            AsyncSession,
+            async_sessionmaker,
+            create_async_engine,
+        )
+        from sqlalchemy.pool import NullPool
+
+        today = date.today()
+        engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
+        async_session = async_sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
+
+        async def bump(n):
+            async with async_session() as session:
+                repo = SqlUsageRepository(session)
+                for _ in range(n):
+                    await repo.increment_daily(
+                        user_id=user_id,
+                        usage_date=today,
+                        input_tokens=2,
+                        output_tokens=1,
+                    )
+
+        await asyncio.gather(bump(5), bump(5))
+        await engine.dispose()
+
+        repo = SqlUsageRepository(test_db)
+        daily = await repo.get_daily(user_id, today)
+        assert daily.input_tokens == 20
+        assert daily.output_tokens == 10

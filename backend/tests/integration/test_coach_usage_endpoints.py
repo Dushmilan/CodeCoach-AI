@@ -156,3 +156,106 @@ class TestPerUserRateLimit:
                 "/api/coach/", json=_coaching_payload(), headers=headers
             )
             assert response.status_code == 200
+
+
+@pytest.mark.usefixtures("test_env_vars")
+class TestAuthAndValidation:
+    @pytest.mark.asyncio
+    async def test_coach_requires_auth(self, async_client):
+        response = await async_client.post("/api/coach/", json=_coaching_payload())
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_coaching_oversized_payload_422(self, async_client):
+        _, headers = await _register_user(async_client, "oversized")
+
+        cases = [
+            {"problem": "x" * 20001},
+            {"code": "x" * 50001},
+            {"message": "x" * 5001},
+            {"lesson_context": "x" * 2001},
+            {"chat_history": [{"role": "user", "content": "x"} for _ in range(21)]},
+        ]
+        for extra in cases:
+            payload = {**_coaching_payload(), **extra}
+            response = await async_client.post(
+                "/api/coach/", json=payload, headers=headers
+            )
+            assert response.status_code == 422, extra
+
+    @pytest.mark.asyncio
+    async def test_admin_usage_requires_admin(self, async_client):
+        _, headers = await _register_user(async_client, "normaluser")
+        response = await async_client.get("/api/admin/usage", headers=headers)
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_admin_usage_anonymous_401(self, async_client):
+        response = await async_client.get("/api/admin/usage")
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_admin_usage_detail_unknown_user_returns_zeros(
+        self, async_client, test_db
+    ):
+        import uuid
+
+        _, headers = await _register_user(async_client, "adminusage")
+        await _promote_user(test_db, "adminusage")
+        response = await async_client.get(
+            f"/api/admin/usage/{uuid.uuid4().hex}", headers=headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_input_tokens"] == 0
+        assert data["total_output_tokens"] == 0
+        assert data["daily"] == []
+        assert data["events"] == []
+
+
+@pytest.mark.usefixtures("test_env_vars")
+class TestUsageHeadersReflectUsage:
+    @pytest.mark.asyncio
+    async def test_headers_reflect_existing_daily_usage(self, async_client, test_db):
+        uid, headers = await _register_user(async_client, "useduser")
+        from app.repositories.sql_usage_repository import SqlUsageRepository
+
+        repo = SqlUsageRepository(test_db)
+        await repo.increment_daily(
+            user_id=uid, usage_date=date.today(), input_tokens=100, output_tokens=50
+        )
+        await test_db.commit()
+
+        response = await async_client.post(
+            "/api/coach/", json=_coaching_payload(), headers=headers
+        )
+        assert response.status_code == 200
+        assert response.headers["X-Usage-Input"] == "100"
+        assert response.headers["X-Usage-Output"] == "50"
+        assert response.headers["X-Usage-Remaining-Input"] == "249900"
+        assert response.headers["X-Usage-Remaining-Output"] == "124950"
+
+
+async def _promote_user(test_db, username: str) -> None:
+    """Promote a registered user to admin directly in the DB."""
+    import os
+    from urllib.parse import unquote, urlparse
+
+    import pymysql
+
+    parsed = urlparse(
+        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
+    )
+    conn = pymysql.connect(
+        host=parsed.hostname,
+        port=parsed.port or 3306,
+        user=unquote(parsed.username or ""),
+        password=unquote(parsed.password or ""),
+        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET role='admin' WHERE username=%s", (username,))
+        conn.commit()
+    finally:
+        conn.close()
