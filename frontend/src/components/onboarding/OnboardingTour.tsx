@@ -1,47 +1,33 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { useLocalStorage } from "@/hooks";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Code,
-  Lightbulb,
-  MessageSquare,
-  Settings,
-  X,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+import { Button } from '@/components/ui/button';
+import { useLocalStorage } from '@/hooks';
+import { ChevronLeft, ChevronRight, Code, Lightbulb, MessageSquare, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const STEPS = [
   {
-    title: "Welcome to CodeCoach AI",
+    title: 'Welcome to CodeCoach AI',
     description:
-      "Practice coding interview questions with instant feedback, AI coaching, and progress tracking.",
+      'Practice coding interview questions with instant feedback, AI coaching, and progress tracking.',
     icon: Lightbulb,
   },
   {
-    title: "Question Browser",
+    title: 'Question Browser',
     description:
-      "Browse coding questions by difficulty or category. Click any question to view its description, examples, and hints in the sidebar.",
+      'Browse coding questions by difficulty or category. Click any question to view its description, examples, and hints in the sidebar.',
     icon: Code,
   },
   {
-    title: "AI Coach",
+    title: 'AI Coach',
     description:
-      "Get 24/7 AI-powered help. Ask for hints, code reviews, explanations, or debugging assistance. The AI understands your code context.",
+      'Get 24/7 AI-powered help. Ask for hints, code reviews, explanations, or debugging assistance. The AI understands your code context.',
     icon: MessageSquare,
-  },
-  {
-    title: "NVIDIA API Key",
-    description:
-      "AI coaching runs on the server-side API key. You can optionally add your own NVIDIA key in Settings — it stays in your browser and is never sent to our server.",
-    icon: Settings,
   },
 ];
 
 export function OnboardingTour() {
-  const [showTour, setShowTour] = useLocalStorage("onboarding-done", false);
+  const [showTour, setShowTour] = useLocalStorage('onboarding-done', false);
   const [step, setStep] = useState(0);
   const [mounted, setMounted] = useState(false);
 
@@ -84,9 +70,7 @@ export function OnboardingTour() {
 
         <div className="space-y-2">
           <h2 className="text-xl font-semibold">{current.title}</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {current.description}
-          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{current.description}</p>
         </div>
 
         <div className="flex items-center justify-between">
@@ -95,7 +79,7 @@ export function OnboardingTour() {
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  i === step ? "bg-primary" : "bg-muted-foreground/30"
+                  i === step ? 'bg-primary' : 'bg-muted-foreground/30'
                 }`}
               />
             ))}
@@ -103,17 +87,13 @@ export function OnboardingTour() {
 
           <div className="flex gap-2">
             {step > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStep((s) => s - 1)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setStep((s) => s - 1)}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
             )}
             <Button size="sm" onClick={handleNext}>
-              {isLast ? "Get started" : "Next"}
+              {isLast ? 'Get started' : 'Next'}
               {!isLast && <ChevronRight className="h-4 w-4 ml-1" />}
             </Button>
           </div>

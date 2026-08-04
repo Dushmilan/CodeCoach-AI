@@ -1,4 +1,4 @@
-import { Question } from "@/types";
+import { Question } from '@/types';
 
 export interface ClientJsTestResult {
   index: number;
@@ -19,8 +19,8 @@ export interface ClientJsOutput {
  * Source of the sandbox worker. Exported for tests.
  *
  * Runs inside a dedicated Web Worker so user code:
- *  - never touches the page's `window`, `document`, `localStorage` (JWT /
- *    NVIDIA API key live there) or cookies,
+ *  - never touches the page's `window`, `document`, `localStorage` (JWT
+ *    lives there) or cookies,
  *  - cannot reach the network (fetch/XMLHttpRequest/WebSocket/importScripts
  *    are stripped), and
  *  - is killed by `worker.terminate()` when the hard timeout fires, so an
@@ -140,9 +140,7 @@ export function executeClientJS(
   const functionName = detectFunctionName(question, fnName);
 
   if (!functionName) {
-    return Promise.reject(
-      new Error("Could not identify the target function name for testing."),
-    );
+    return Promise.reject(new Error('Could not identify the target function name for testing.'));
   }
 
   return new Promise<ClientJsOutput>((resolve, reject) => {
@@ -177,13 +175,13 @@ export function executeClientJS(
     };
 
     const timeoutId = setTimeout(
-      () => fail(new Error("JavaScript execution timed out.")),
+      () => fail(new Error('JavaScript execution timed out.')),
       timeoutMs,
     );
 
     try {
       const blob = new Blob([buildWorkerSource()], {
-        type: "application/javascript",
+        type: 'application/javascript',
       });
       blobUrl = URL.createObjectURL(blob);
       worker = new Worker(blobUrl);
@@ -201,13 +199,13 @@ export function executeClientJS(
             allPassed: message.allPassed,
           });
         } else {
-          reject(new Error(message?.error || "JavaScript execution failed."));
+          reject(new Error(message?.error || 'JavaScript execution failed.'));
         }
       };
 
       worker.onerror = (event) => {
         clearTimeout(timeoutId);
-        fail(new Error(event.message || "JavaScript execution error."));
+        fail(new Error(event.message || 'JavaScript execution error.'));
       };
 
       worker.postMessage({
@@ -220,28 +218,25 @@ export function executeClientJS(
       fail(
         error instanceof Error
           ? error
-          : new Error("JavaScript execution is unavailable in this environment."),
+          : new Error('JavaScript execution is unavailable in this environment.'),
       );
     }
   });
 }
 
-export function formatClientJsOutput(
-  output: ClientJsOutput,
-  question: Question,
-): string {
+export function formatClientJsOutput(output: ClientJsOutput, question: Question): string {
   const lines: string[] = [];
 
   if (output.logs.length > 0) {
-    lines.push(`Console Output:\n${output.logs.join("\n")}\n`);
+    lines.push(`Console Output:\n${output.logs.join('\n')}\n`);
   }
 
-  lines.push("Test Results:\n");
+  lines.push('Test Results:\n');
 
   for (const r of output.results) {
     const testCase = question.test_cases[r.index - 1];
-    const status = r.passed ? "Pass" : "Fail";
-    lines.push(`${r.passed ? "✅" : "❌"} Test Case ${r.index}:`);
+    const status = r.passed ? 'Pass' : 'Fail';
+    lines.push(`${r.passed ? '✅' : '❌'} Test Case ${r.index}:`);
     lines.push(`   Status: ${status}`);
     lines.push(`   Input: ${r.input}`);
     lines.push(`   Expected Output: ${r.expected}`);
@@ -250,8 +245,8 @@ export function formatClientJsOutput(
     } else {
       lines.push(`   Actual Output: ${JSON.stringify(r.actual)}`);
     }
-    lines.push("");
+    lines.push('');
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }

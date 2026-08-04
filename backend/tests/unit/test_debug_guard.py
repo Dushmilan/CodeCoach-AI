@@ -9,9 +9,8 @@ class TestDebugGuard:
         from app.main import app
 
         client = TestClient(app)
-        assert client.get("/debug/api-key-status").status_code == 404
+        assert client.get("/debug/groq-status").status_code == 404
         assert client.get("/debug/environment").status_code == 404
-        assert client.get("/debug/test-connection").status_code == 404
 
     def test_debug_disabled_when_env_unset(self, monkeypatch):
         monkeypatch.delenv("ENVIRONMENT", raising=False)

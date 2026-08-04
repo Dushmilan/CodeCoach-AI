@@ -2,7 +2,7 @@
 
 ## Project
 
-Open-source LeetCode alternative for university students. Practice coding interview questions with instant feedback, AI coaching, and progress tracking — powered by NVIDIA's free-tier API.
+Open-source LeetCode alternative for university students. Practice coding interview questions with instant feedback, AI coaching, and progress tracking — powered by Groq.
 
 ## Tech Stack
 
@@ -13,7 +13,7 @@ Open-source LeetCode alternative for university students. Practice coding interv
 | Editor | Monaco Editor (`@monaco-editor/react`) |
 | Styling | Tailwind CSS 3, `tailwind-merge`, `clsx` |
 | Code Exec | Piston (self-hosted Docker container) |
-| AI Coach | NVIDIA NIM (LLaMA 3.1 8B) |
+| AI Coach | Groq (LLaMA 3.3 70B versatile / LLaMA 3.1 8B instant) |
 | Testing | pytest (backend), Vitest (frontend) |
 | Infra | Docker Compose, SQLite |
 

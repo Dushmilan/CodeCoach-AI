@@ -88,15 +88,13 @@ docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston
 Copy `.env.example` to `.env` in the backend directory and fill in:
 
 ```
-NVIDIA_API_KEY=your_nvidia_nim_api_key
-GOOGLE_API_KEY=your_google_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
 JWT_SECRET_KEY=your_jwt_secret_key
 ```
 
-Get free API keys from:
+Get a free API key from:
 
-- [NVIDIA NIM](https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct)
-- [Google Gemini](https://aistudio.google.com/apikey)
+- [Groq Console](https://console.groq.com/keys)
 
 ## Making Changes
 

@@ -30,7 +30,7 @@ const features = [
     icon: BookOpen,
     title: 'AI Coaching',
     description:
-      'Context-aware hints and explanations powered by NVIDIA NIM — like a teaching assistant, 24/7.',
+      'Context-aware hints and explanations powered by Groq — like a teaching assistant, 24/7.',
     accent: 'border-l-blue-500/40',
   },
   {

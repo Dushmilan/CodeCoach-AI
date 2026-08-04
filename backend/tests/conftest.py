@@ -253,61 +253,6 @@ async def test_db():
 
 
 @pytest.fixture
-def mock_nim_service():
-    """Mock NIM service for testing."""
-
-    class MockNIMService:
-        responses = {
-            "hint": "Consider using a hash map to solve this problem.",
-            "review": "Your code looks good, but consider edge cases like empty arrays.",
-            "explain": "This is a classic problem that requires understanding of data structures.",
-            "debug": "The issue appears to be in your loop condition. Check line 5.",
-        }
-
-        def __init__(self, api_key: str = "test_key"):
-            self.api_key = api_key
-
-        async def get_coaching_response(
-            self,
-            problem: str,
-            code: str,
-            language: str,
-            message: str,
-            mode: str,
-            difficulty: str,
-            **kwargs,
-        ):
-            """Mock coaching response generation."""
-            yield self.responses.get(mode, "Here's some guidance for your problem.")
-
-        async def get_structured_coaching_response(
-            self,
-            problem: str,
-            code: str,
-            language: str,
-            message: str,
-            mode: str,
-            difficulty: str,
-            **kwargs,
-        ):
-            """Mock structured coaching response generation."""
-            return {
-                "summary": self.responses.get(
-                    mode, "Here's some guidance for your problem."
-                ),
-                "hints": [],
-                "code_review": None,
-                "complexity_analysis": None,
-                "suggestions": [],
-                "edge_cases": [],
-                "explanation": None,
-                "debug_help": None,
-            }
-
-    return MockNIMService
-
-
-@pytest.fixture
 def mock_piston_service():
     """Mock Piston service for testing."""
 
@@ -362,7 +307,7 @@ def mock_question_bank():
 def test_env_vars():
     """Set up test environment variables."""
     env_vars = {
-        "NVIDIA_API_KEY": "test_nvidia_key",
+        "GROQ_API_KEY": "test_groq_key",
         "PISTON_API_URL": "https://emkc.org/api/v2/piston",
         "QUESTIONS_FILE_PATH": "tests/fixtures/test_questions.json",
         "RATE_LIMIT_PER_MINUTE": "100",

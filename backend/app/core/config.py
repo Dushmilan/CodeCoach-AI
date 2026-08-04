@@ -16,7 +16,6 @@ class Settings(BaseSettings):
 
     # Auth
     JWT_SECRET_KEY: str = ""
-    NVIDIA_API_KEY: Optional[str] = None
 
     # Groq (primary AI provider for coaching)
     GROQ_API_KEY: Optional[str] = None
