@@ -1,17 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from typing import AsyncIterator, Optional
 import asyncio
 import json
 import logging
 import os
+import time
 
 from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language
 from app.ports.coaching_provider import CoachingProvider
-from app.services.nim_service import NIMService
+from app.services.groq_service import GroqService
 from app.services.redis_service import RedisCache
+from app.services.usage_service import UsageService, check_caps, usage_headers
 from app.api.auth_deps import get_current_user
-from app.api.dependencies import get_redis_cache
+from app.api.dependencies import get_redis_cache, get_usage_service
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
 
@@ -21,28 +23,73 @@ router = APIRouter()
 
 def get_coaching_provider(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
+    user: UserResponse = Depends(get_current_user),
+    usage_service: UsageService = Depends(get_usage_service),
 ) -> CoachingProvider:
-    # Server-side only: the API key is configured on the backend, never
-    # supplied by clients. Accepting it from a request header would let any
-    # user substitute their own key (billing) and leak it to the server.
-    api_key = os.getenv("NVIDIA_API_KEY")
+    # Platform-owned key: clients never supply their own. The key is used
+    # server-side to call Groq; per-user token usage is metered via the
+    # injected UsageService.
+    api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=500, detail="NVIDIA API key not configured")
-    return NIMService(api_key=api_key, cache=cache)
+        raise HTTPException(status_code=500, detail="Groq API key not configured")
+    return GroqService(
+        api_key=api_key,
+        cache=cache,
+        usage_recorder=usage_service,
+        user_id=user.id,
+    )
+
+
+async def check_daily_token_cap(
+    request: Request,
+    user: UserResponse = Depends(get_current_user),
+    usage_service: UsageService = Depends(get_usage_service),
+) -> None:
+    """Enforce daily per-user input/output token caps; set X-Usage-* headers."""
+    daily = await usage_service.get_daily_usage(user.id)
+    input_cap = int(os.getenv("DAILY_TOKEN_INPUT_CAP", "250000"))
+    output_cap = int(os.getenv("DAILY_TOKEN_OUTPUT_CAP", "125000"))
+    allowed, _, _ = check_caps(daily, input_cap, output_cap)
+    headers = usage_headers(daily, input_cap, output_cap)
+    request.state.usage_headers = headers
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Daily token limit reached",
+            headers=headers,
+        )
+
+
+async def enforce_user_rate_limit(
+    user: UserResponse = Depends(get_current_user),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+) -> None:
+    """Per-user requests-per-minute gate backed by Redis (degrades open)."""
+    limit = int(os.getenv("USER_RATE_LIMIT_PER_MINUTE", "60"))
+    if cache is None:
+        return
+    minute = int(time.time() // 60)
+    key = RedisCache.key("rl", "user", user.id, str(minute))
+    count = await cache.incr(key, ttl=60)
+    if count is not None and count > limit:
+        raise HTTPException(status_code=429, detail="User request rate limit exceeded")
 
 
 @router.post("/", response_model=CoachingResponse)
 @limiter.limit(COACH_RATE_LIMIT)
 async def get_coaching(
     request: Request,
+    response: Response,
     coaching_request: CoachingRequest,
     provider: CoachingProvider = Depends(get_coaching_provider),
     user: UserResponse = Depends(get_current_user),
+    _usage_guard: None = Depends(check_daily_token_cap),
+    _rate_guard: None = Depends(enforce_user_rate_limit),
 ):
     """
     Get AI coaching response for coding problems.
 
-    This endpoint provides structured AI coaching using NVIDIA NIM API.
+    This endpoint provides structured AI coaching using Groq.
     Returns both raw text response and structured JSON response.
     """
     logger.debug("=== COACH API REQUEST (structured) ===")
@@ -82,6 +129,8 @@ async def get_coaching(
         logger.debug(f"Structured response keys: {list(structured_data.keys())}")
         logger.debug(f"Summary: {structured_data.get('summary', 'N/A')[:100]}...")
         logger.debug("==========================")
+
+        response.headers.update(getattr(request.state, "usage_headers", {}))
 
         return CoachingResponse(
             response=raw_response,
@@ -164,6 +213,8 @@ async def get_coaching_stream(
     coaching_request: CoachingRequest,
     provider: CoachingProvider = Depends(get_coaching_provider),
     user: UserResponse = Depends(get_current_user),
+    _usage_guard: None = Depends(check_daily_token_cap),
+    _rate_guard: None = Depends(enforce_user_rate_limit),
 ):
     """
     Get streaming AI coaching response using Server-Sent Events.
@@ -228,13 +279,16 @@ async def get_coaching_stream(
             error_data = json.dumps({"error": str(e)})
             yield f"data: {error_data}\n\n"
 
+    stream_headers = {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+    }
+    stream_headers.update(getattr(request.state, "usage_headers", {}))
+
     return StreamingResponse(
         generate_stream(),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        },
+        headers=stream_headers,
     )
 
 

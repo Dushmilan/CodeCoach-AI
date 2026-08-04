@@ -48,7 +48,7 @@
 - **Frontend:** Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Monaco Editor
 - **Database:** Supabase PostgreSQL (via SQLAlchemy async) + file-based fallback
 - **Code Execution:** Piston (self-hosted Docker)
-- **AI:** NVIDIA NIM (llama-3.1-8b-instruct, mixtral-8x7b) + Google Gemini fallback
+- **AI:** Groq (llama-3.3-70b-versatile, llama-3.1-8b-instant) with per-user token metering
 - **Auth:** Email/password (bcrypt + JWT) + Supabase OAuth (Google)
 - **Rate Limiting:** slowapi (10/min coach, 30/min run/submit)
 - **Graphify:** 4162 nodes, 6746 edges, 460 communities

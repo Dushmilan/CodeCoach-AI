@@ -11,10 +11,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL:-mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach}
       - PISTON_API_URL=http://piston:2000/api/v2/piston
+      - DAILY_TOKEN_INPUT_CAP=${DAILY_TOKEN_INPUT_CAP:-250000}
+      - DAILY_TOKEN_OUTPUT_CAP=${DAILY_TOKEN_OUTPUT_CAP:-125000}
+      - USER_RATE_LIMIT_PER_MINUTE=${USER_RATE_LIMIT_PER_MINUTE:-60}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
     # Use bind mount instead of named volume so JSON data updates

@@ -43,23 +43,27 @@ class Difficulty(str, Enum):
 
 class ChatMessageContext(BaseModel):
     role: str = Field(..., description="Message role (user or assistant)")
-    content: str = Field(..., description="Message content")
+    content: str = Field(..., max_length=5000, description="Message content")
 
 
 class CoachingRequest(BaseModel):
-    problem: str = Field(..., description="The coding problem description")
-    code: str = Field(..., description="User's current code attempt")
+    problem: str = Field(
+        ..., max_length=20000, description="The coding problem description"
+    )
+    code: str = Field(..., max_length=50000, description="User's current code attempt")
     language: Language = Field(..., description="Programming language")
-    message: str = Field(..., description="User's message or question")
+    message: str = Field(..., max_length=5000, description="User's message or question")
     mode: CoachingMode = Field(default=CoachingMode.HINT, description="Coaching mode")
     difficulty: Difficulty = Field(
         default=Difficulty.MEDIUM, description="Problem difficulty"
     )
     lesson_context: Optional[str] = Field(
-        None, description="Lesson context for scoped coaching"
+        None, max_length=2000, description="Lesson context for scoped coaching"
     )
     chat_history: Optional[List[ChatMessageContext]] = Field(
-        default=[], description="Previous conversation messages for context"
+        default=[],
+        max_length=20,
+        description="Previous conversation messages for context",
     )
 
 

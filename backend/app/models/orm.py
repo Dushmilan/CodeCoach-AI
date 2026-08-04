@@ -1,4 +1,14 @@
-from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, Index, JSON
+from sqlalchemy import (
+    Column,
+    String,
+    Text,
+    Integer,
+    DateTime,
+    Date,
+    ForeignKey,
+    Index,
+    JSON,
+)
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime, timezone
@@ -130,4 +140,49 @@ class CourseProgressORM(Base):
 
     __table_args__ = (
         Index("ix_progress_user_course", "user_id", "course_id", unique=True),
+    )
+
+
+class UserUsageEventORM(Base):
+    __tablename__ = "user_usage_events"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    provider = Column(String(20), nullable=False, default="groq")
+    model = Column(String(100), nullable=False)
+    endpoint = Column(String(50), nullable=False)
+    input_tokens = Column(Integer, nullable=False, default=0)
+    output_tokens = Column(Integer, nullable=False, default=0)
+    created_at = Column(
+        DateTime, default=datetime.now(timezone.utc), nullable=False, index=True
+    )
+
+    __table_args__ = (Index("ix_usage_events_user_created", "user_id", "created_at"),)
+
+
+class UserDailyUsageORM(Base):
+    __tablename__ = "user_daily_usage"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usage_date = Column(Date, nullable=False)
+    input_tokens = Column(Integer, nullable=False, default=0)
+    output_tokens = Column(Integer, nullable=False, default=0)
+    updated_at = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index("ix_daily_user_date", "user_id", "usage_date", unique=True),
     )

@@ -37,12 +37,14 @@ tests/
 ## Test Categories
 
 ### 1. Functional Accuracy Tests
+
 - **Health Endpoints**: `/health`, `/health/detailed`
 - **Coach Endpoints**: `/api/coach/`, `/api/coach/stream`, `/api/coach/modes`, `/api/coach/languages`
 - **Questions Endpoints**: `/api/questions/`, `/api/questions/{id}`, `/api/questions/search`, `/api/questions/stats`
 - **Run Endpoints**: `/api/run/`, `/api/run/validate`, `/api/run/languages`, `/api/run/runtimes`
 
 ### 2. Boundary Condition Tests
+
 - Maximum string lengths (up to 10KB)
 - Empty string handling
 - Unicode character support
@@ -52,6 +54,7 @@ tests/
 - Special character handling
 
 ### 3. Load Testing
+
 - Concurrent request handling (100+ concurrent users)
 - Memory usage monitoring (< 50MB increase)
 - Response time percentiles (p50 < 100ms, p95 < 200ms)
@@ -60,6 +63,7 @@ tests/
 - Database query performance
 
 ### 4. Security Testing
+
 - SQL injection prevention
 - XSS (Cross-Site Scripting) prevention
 - Path traversal protection
@@ -71,6 +75,7 @@ tests/
 - Input validation length limits
 
 ### 5. OpenAPI Contract Validation
+
 - Schema compliance testing
 - Response format validation
 - Required field enforcement
@@ -80,6 +85,7 @@ tests/
 ## Running Tests
 
 ### Prerequisites
+
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -87,6 +93,7 @@ pip install -r tests/test_requirements.txt
 ```
 
 ### Basic Test Execution
+
 ```bash
 # Run all tests
 pytest
@@ -106,6 +113,7 @@ pytest -m integration -v
 ```
 
 ### Performance Testing
+
 ```bash
 # Run performance tests
 pytest tests/performance -v
@@ -118,6 +126,7 @@ locust -f tests/performance/test_load_limits.py --headless -u 100 -r 10 -t 60s -
 ```
 
 ### Security Testing
+
 ```bash
 # Run security tests
 pytest tests/security -v
@@ -130,17 +139,20 @@ safety check --json --output safety-report.json
 ## Test Data and Factories
 
 ### Test Data Generators
+
 - **CoachingRequestFactory**: Generates realistic coaching requests
 - **CodeExecutionFactory**: Generates code execution requests
 - **QuestionFactory**: Generates complete question objects
 - **TestDataGenerator**: Provides utility methods for test data
 
 ### Mock Objects
-- **MockNIMService**: Mock NVIDIA NIM API responses
+
+- **MockCoachingProvider**: Mock AI coach responses
 - **MockPistonService**: Mock Piston API responses
 - **MockQuestionsService**: Mock questions database
 
 ### Test Scenarios
+
 - Valid request scenarios
 - Invalid input scenarios
 - Boundary condition scenarios
@@ -150,6 +162,7 @@ safety check --json --output safety-report.json
 ## Performance Benchmarks
 
 ### Response Time Targets
+
 - **Health endpoints**: < 50ms
 - **Questions endpoints**: < 200ms
 - **Code execution**: < 2s
@@ -157,6 +170,7 @@ safety check --json --output safety-report.json
 - **Streaming responses**: < 100ms initial response
 
 ### Load Targets
+
 - **100 concurrent users** without degradation
 - **1000 requests/minute** sustained load
 - **99.9% uptime** during load testing
@@ -165,6 +179,7 @@ safety check --json --output safety-report.json
 ## Security Test Coverage
 
 ### Vulnerability Categories
+
 - **Input validation** testing
 - **Authentication bypass** attempts
 - **Authorization escalation** testing
@@ -172,6 +187,7 @@ safety check --json --output safety-report.json
 - **Injection attack** prevention
 
 ### Security Test Cases
+
 - **Malicious payload** testing
 - **Boundary overflow** testing
 - **Authentication token** manipulation
@@ -181,6 +197,7 @@ safety check --json --output safety-report.json
 ## CI/CD Integration
 
 ### GitHub Actions Workflow
+
 - **Automated testing** on PR/push
 - **Test coverage reporting** (minimum 85%)
 - **Performance regression detection**
@@ -188,6 +205,7 @@ safety check --json --output safety-report.json
 - **OpenAPI contract validation**
 
 ### Quality Gates
+
 - **Test coverage** >= 85%
 - **Performance regression** < 10%
 - **Security vulnerabilities** = 0
@@ -197,12 +215,14 @@ safety check --json --output safety-report.json
 ## Configuration Files
 
 ### pytest.ini
+
 - Test discovery configuration
 - Coverage settings
 - Markers for test categorization
 - Logging configuration
 
 ### test_requirements.txt
+
 - All test dependencies
 - Security scanning tools
 - Performance testing libraries
@@ -211,9 +231,10 @@ safety check --json --output safety-report.json
 ## Environment Variables
 
 ### Test Environment
+
 ```bash
 # Required for testing
-export NVIDIA_API_KEY=test_nvidia_key
+export GROQ_API_KEY=test_groq_key
 export PISTON_API_URL=https://emkc.org/api/v2/piston
 export QUESTIONS_FILE_PATH=tests/fixtures/test_questions.json
 export RATE_LIMIT_PER_MINUTE=100
@@ -224,12 +245,14 @@ export ENVIRONMENT=testing
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Test failures**: Check environment variables and mock services
 2. **Performance issues**: Monitor memory usage and response times
 3. **Security warnings**: Review security scan reports
 4. **Coverage gaps**: Check coverage reports for untested code
 
 ### Debug Commands
+
 ```bash
 # Run tests with verbose output
 pytest -v -s
@@ -247,6 +270,7 @@ bandit -r app -f json
 ## Future Enhancements
 
 ### Planned Test Additions
+
 - **End-to-end workflow tests**
 - **Database migration tests**
 - **Integration with external services**
@@ -255,6 +279,7 @@ bandit -r app -f json
 - **Chaos engineering tests**
 
 ### Monitoring Integration
+
 - **Test result dashboards**
 - **Performance trend analysis**
 - **Security vulnerability tracking**
@@ -263,12 +288,14 @@ bandit -r app -f json
 ## Support and Maintenance
 
 ### Test Maintenance
+
 - Regular test data updates
 - Performance benchmark recalibration
 - Security test case updates
 - Mock service updates
 
 ### Documentation Updates
+
 - Test case documentation
 - Performance benchmark updates
 - Security vulnerability tracking

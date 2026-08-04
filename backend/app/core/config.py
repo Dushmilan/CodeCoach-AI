@@ -16,7 +16,20 @@ class Settings(BaseSettings):
 
     # Auth
     JWT_SECRET_KEY: str = ""
-    NVIDIA_API_KEY: Optional[str] = None
+
+    # Groq (primary AI provider for coaching)
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL_EASY: str = "llama-3.1-8b-instant"
+    GROQ_MODEL_MEDIUM: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL_HARD: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL_STREAM: str = "llama-3.1-8b-instant"
+
+    # Per-user token metering (daily caps)
+    DAILY_TOKEN_INPUT_CAP: int = 250_000
+    DAILY_TOKEN_OUTPUT_CAP: int = 125_000
+
+    # Per-user request rate limit (requests per minute)
+    USER_RATE_LIMIT_PER_MINUTE: int = 60
 
     @model_validator(mode="after")
     def _require_jwt_key_in_production(self):

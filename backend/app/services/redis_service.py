@@ -80,6 +80,30 @@ class RedisCache:
             except Exception:
                 pass
 
+    async def incr(self, key: str, ttl: int = 60) -> Optional[int]:
+        """Atomically increment a counter, setting TTL on first increment.
+
+        Returns the new value, or None on any error (caller must degrade
+        gracefully). Used for per-user rate limiting.
+        """
+        client = await self._client()
+        if not client:
+            return None
+        try:
+            value = await client.incr(key)
+            if value == 1:
+                await client.expire(key, ttl)
+            return int(value)
+        except Exception as e:
+            logger.debug("Redis incr failed for key %s: %s", key, e)
+            self.disable()
+            return None
+        finally:
+            try:
+                await client.aclose()
+            except Exception:
+                pass
+
     async def delete(self, pattern: str) -> int:
         """Delete all keys matching glob pattern. Returns number deleted."""
         client = await self._client()

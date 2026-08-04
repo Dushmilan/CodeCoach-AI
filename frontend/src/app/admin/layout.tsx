@@ -1,26 +1,20 @@
-"use client";
+'use client';
 
-import { SettingsModal } from "@/components/settings/SettingsModal";
-import { useSettings } from "@/hooks/use-settings";
-import { useAuth } from "@/providers";
-import { Menu, Moon, Settings, Sun, X } from "lucide-react";
-import { useTheme } from "next-themes";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { SettingsModal } from '@/components/settings/SettingsModal';
+import { useAuth } from '@/providers';
+import { Menu, Moon, Settings, Sun, X } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 
-import AdminSidebar from "@/components/admin/AdminSidebar";
+import AdminSidebar from '@/components/admin/AdminSidebar';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/admin/login";
+  const isLoginPage = pathname === '/admin/login';
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const { apiKey, setApiKey } = useSettings();
   const { user, isAuthenticated, logout, isHydrated } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -37,17 +31,12 @@ export default function AdminLayout({
     );
   }
 
-  if (
-    !isLoginPage &&
-    (!isAuthenticated || !["admin", "super_admin"].includes(user?.role ?? ""))
-  ) {
+  if (!isLoginPage && (!isAuthenticated || !['admin', 'super_admin'].includes(user?.role ?? ''))) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground">
-            You need admin privileges to access this area.
-          </p>
+          <p className="text-muted-foreground">You need admin privileges to access this area.</p>
         </div>
       </div>
     );
@@ -65,11 +54,7 @@ export default function AdminLayout({
         className="md:hidden fixed top-4 right-4 z-50 p-3 rounded-lg bg-card border border-border shadow-lg"
         aria-label="Toggle mobile admin menu"
       >
-        {showMobileMenu ? (
-          <X className="h-5 w-5" />
-        ) : (
-          <Menu className="h-5 w-5" />
-        )}
+        {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {/* Mobile Overlay */}
@@ -81,10 +66,7 @@ export default function AdminLayout({
       )}
 
       {/* Sidebar */}
-      <AdminSidebar
-        open={showMobileMenu}
-        onClose={() => setShowMobileMenu(false)}
-      />
+      <AdminSidebar open={showMobileMenu} onClose={() => setShowMobileMenu(false)} />
 
       {/* Main Content */}
       <div className="md:ml-64 min-h-screen">
@@ -107,9 +89,7 @@ export default function AdminLayout({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{user?.username}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {user?.role}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{user?.role}</span>
                 </div>
               </div>
 
@@ -124,14 +104,12 @@ export default function AdminLayout({
 
               {/* Theme Toggle */}
               <button
-                onClick={() =>
-                  setTheme(resolvedTheme === "dark" ? "light" : "dark")
-                }
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
                 className="p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                 aria-label="Toggle theme"
               >
                 {mounted ? (
-                  resolvedTheme === "dark" ? (
+                  resolvedTheme === 'dark' ? (
                     <Sun className="h-4 w-4" />
                   ) : (
                     <Moon className="h-4 w-4" />
@@ -145,8 +123,6 @@ export default function AdminLayout({
               <SettingsModal
                 open={settingsOpen}
                 onClose={() => setSettingsOpen(false)}
-                apiKey={apiKey}
-                onSave={setApiKey}
                 isAuthenticated={isAuthenticated}
                 onLogout={logout}
               />

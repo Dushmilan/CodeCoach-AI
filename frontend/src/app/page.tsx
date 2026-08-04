@@ -23,14 +23,14 @@ const features = [
   {
     icon: Zap,
     title: '100% Free',
-    description: 'No paywalls, no premium tiers. Just bring your own API key and code.',
+    description: 'No paywalls, no premium tiers. AI coaching powered by Groq, built in.',
     accent: 'border-l-emerald-500/40',
   },
   {
     icon: BookOpen,
     title: 'AI Coaching',
     description:
-      'Context-aware hints and explanations powered by NVIDIA NIM — like a teaching assistant, 24/7.',
+      'Context-aware hints and explanations powered by Groq — like a teaching assistant, 24/7.',
     accent: 'border-l-blue-500/40',
   },
   {
@@ -290,7 +290,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-sm text-muted-foreground/50 max-w-[40ch] mx-auto leading-relaxed mb-8">
               No credit card. No premium tier. Just you, the code, and an AI coach that&apos;s
-              always awake.
+              powered by Groq and always awake.
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <Link

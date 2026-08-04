@@ -45,7 +45,7 @@ class TestHealthEndpoints:
 
         # Check dependencies
         dependencies = data["dependencies"]
-        assert "nvidia_nim" in dependencies
+        assert "groq" in dependencies
         assert "piston_api" in dependencies
         assert "questions_db" in dependencies
 
