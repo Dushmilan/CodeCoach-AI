@@ -20,15 +20,18 @@
 
 ## Curriculum (Phase 2)
 
-| Course              | Modules | Lessons                          |
-| ------------------- | ------- | -------------------------------- |
-| Python Fundamentals | 3       | 9                                |
-| C Programming       | 3       | 9                                |
-| Java Fundamentals   | 3       | 9                                |
-| **Total**           | **9**   | **27** (18 theory + 9 exercises) |
+| Course                       | Domain | Modules | Lessons                          |
+| ---------------------------- | ------ | ------- | -------------------------------- |
+| Python Fundamentals          | se     | 5       | 36 (21 theory + 15 exercises)    |
+| C Programming                | se     | 5       | 35 (20 theory + 15 exercises)    |
+| Java Programming             | se     | 5       | 35 (20 theory + 15 exercises)    |
+| Introduction to ML           | ml     | 5       | 35 (20 theory + 15 exercises)    |
+| Prompt Engineering           | ai     | 5       | 35 (20 theory + 15 exercises)    |
+| **Total**                    | —      | **25**  | **176**                          |
 
-- AI coaching: lesson context injected into NIM system prompts
-- Content pipeline: `generate_curriculum.py` (NIM) + `verify_curriculum.py` (3-round quality gate)
+- Exercises for non-question-bank courses (C, Java, ML, Prompt) embed `starter_code` + `test_cases` and run through the stdin `/api/run/` fallback in the lesson viewer.
+- Course `domain` values drive the SE / ML / AI tabs on `/learn`.
+- AI coaching: lesson context injected into coaching system prompts.
 
 ## Test Counts
 

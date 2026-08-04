@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "java-intro",
+      "course_id": "java-programming",
+      "title": "Getting Started with Java",
+      "description": "Your first Java program, the JVM, variables, and core data types.",
+      "order": 1
+    },
+    {
+      "id": "java-control-flow",
+      "course_id": "java-programming",
+      "title": "Control Flow",
+      "description": "Make decisions with conditionals and repeat work with loops.",
+      "order": 2
+    },
+    {
+      "id": "java-oop",
+      "course_id": "java-programming",
+      "title": "Classes, Objects & OOP",
+      "description": "Classes, objects, methods, encapsulation, inheritance, and polymorphism.",
+      "order": 3
+    },
+    {
+      "id": "java-collections",
+      "course_id": "java-programming",
+      "title": "Collections, Strings & Exceptions",
+      "description": "Strings, ArrayList, HashMap, exception handling, and generics.",
+      "order": 4
+    },
+    {
+      "id": "java-files-lambda",
+      "course_id": "java-programming",
+      "title": "File I/O, Generics & Lambdas",
+      "description": "Reading/writing files, generic classes and methods, streams and lambdas.",
+      "order": 5
+    }
+  ]
+}
