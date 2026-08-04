@@ -5,6 +5,7 @@ Revises: 4476164f80b7
 Create Date: 2026-08-04 10:11:19.208381
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '7fc9e8c06939'
-down_revision: Union[str, Sequence[str], None] = '4476164f80b7'
+revision: str = "7fc9e8c06939"
+down_revision: Union[str, Sequence[str], None] = "4476164f80b7"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -79,16 +80,10 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     op.drop_index("ix_daily_user_date", table_name="user_daily_usage")
-    op.drop_index(
-        op.f("ix_user_daily_usage_user_id"), table_name="user_daily_usage"
-    )
+    op.drop_index(op.f("ix_user_daily_usage_user_id"), table_name="user_daily_usage")
     op.drop_table("user_daily_usage")
-    op.drop_index(
-        "ix_usage_events_user_created", table_name="user_usage_events"
-    )
-    op.drop_index(
-        op.f("ix_user_usage_events_user_id"), table_name="user_usage_events"
-    )
+    op.drop_index("ix_usage_events_user_created", table_name="user_usage_events")
+    op.drop_index(op.f("ix_user_usage_events_user_id"), table_name="user_usage_events")
     op.drop_index(
         op.f("ix_user_usage_events_created_at"), table_name="user_usage_events"
     )
