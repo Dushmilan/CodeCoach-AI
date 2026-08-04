@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CoachingService } from "./coaching.service";
-import { HttpClient } from "@/lib/http-client";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { CoachingService } from './coaching.service';
+import { HttpClient } from '@/lib/http-client';
 
 function createMockHttp(): HttpClient {
   return {
@@ -11,7 +11,7 @@ function createMockHttp(): HttpClient {
   };
 }
 
-describe("CoachingService", () => {
+describe('CoachingService', () => {
   let http: ReturnType<typeof createMockHttp>;
   let service: CoachingService;
 
@@ -19,7 +19,7 @@ describe("CoachingService", () => {
     http = createMockHttp();
     service = new CoachingService(http);
     const store: Record<string, string> = {};
-    vi.stubGlobal("localStorage", {
+    vi.stubGlobal('localStorage', {
       getItem: vi.fn((key: string) => store[key] ?? null),
       setItem: vi.fn((key: string, value: string) => {
         store[key] = value;
@@ -37,19 +37,19 @@ describe("CoachingService", () => {
     });
   });
 
-  describe("getCoachResponse", () => {
+  describe('getCoachResponse', () => {
     const defaultArgs = {
-      problem: "Two Sum",
-      language: "python",
-      code: "def two_sum(nums, target): pass",
-      message: "Help me optimize",
-      mode: "hint",
-      difficulty: "medium",
+      problem: 'Two Sum',
+      language: 'python',
+      code: 'def two_sum(nums, target): pass',
+      message: 'Help me optimize',
+      mode: 'hint',
+      difficulty: 'medium',
     };
 
-    it("posts to /api/coach/ with request body", async () => {
+    it('posts to /api/coach/ with request body', async () => {
       vi.mocked(http.post).mockResolvedValue({
-        response: "Try using a hash map",
+        response: 'Try using a hash map',
         structured: null,
       });
 
@@ -62,24 +62,21 @@ describe("CoachingService", () => {
         defaultArgs.difficulty,
       );
 
-      expect(http.post).toHaveBeenCalledWith(
-        "/api/coach/",
-        {
-          problem: "Two Sum",
-          code: "def two_sum(nums, target): pass",
-          message: "Help me optimize",
-          mode: "hint",
-          language: "python",
-          difficulty: "medium",
-        },
-      );
-      expect(result.response).toBe("Try using a hash map");
+      expect(http.post).toHaveBeenCalledWith('/api/coach/', {
+        problem: 'Two Sum',
+        code: 'def two_sum(nums, target): pass',
+        message: 'Help me optimize',
+        mode: 'hint',
+        language: 'python',
+        difficulty: 'medium',
+      });
+      expect(result.response).toBe('Try using a hash map');
       expect(result.structured).toBeNull();
     });
 
-    it("defaults difficulty to medium", async () => {
+    it('defaults difficulty to medium', async () => {
       vi.mocked(http.post).mockResolvedValue({
-        response: "Okay",
+        response: 'Okay',
         structured: null,
       });
 
@@ -92,35 +89,14 @@ describe("CoachingService", () => {
       );
 
       expect(http.post).toHaveBeenCalledWith(
-        "/api/coach/",
-        expect.objectContaining({ difficulty: "medium" }),
+        '/api/coach/',
+        expect.objectContaining({ difficulty: 'medium' }),
       );
     });
 
-    it("never sends the API key from localStorage to the server", async () => {
-      localStorage.setItem("nvidia_api_key", "nvapi-test-key");
+    it('does not pass request options to http.post', async () => {
       vi.mocked(http.post).mockResolvedValue({
-        response: "Here is a hint",
-        structured: null,
-      });
-
-      await service.getCoachResponse(
-        defaultArgs.problem,
-        defaultArgs.language,
-        defaultArgs.code,
-        defaultArgs.message,
-        defaultArgs.mode,
-      );
-
-      const call = vi.mocked(http.post).mock.calls[0];
-      expect(call[2]).toBeUndefined();
-      expect(JSON.stringify(call)).not.toContain("nvapi-test-key");
-      expect(JSON.stringify(call)).not.toContain("X-NVIDIA-API-Key");
-    });
-
-    it("does not pass request options to http.post", async () => {
-      vi.mocked(http.post).mockResolvedValue({
-        response: "Sure",
+        response: 'Sure',
         structured: null,
       });
 
@@ -135,10 +111,10 @@ describe("CoachingService", () => {
       expect(vi.mocked(http.post).mock.calls[0][2]).toBeUndefined();
     });
 
-    it("returns structured response when present", async () => {
+    it('returns structured response when present', async () => {
       const structuredData = {
-        summary: "Great work",
-        hints: ["Try a hash map"],
+        summary: 'Great work',
+        hints: ['Try a hash map'],
         code_review: null,
         complexity_analysis: null,
         suggestions: [],
@@ -148,7 +124,7 @@ describe("CoachingService", () => {
       };
 
       vi.mocked(http.post).mockResolvedValue({
-        response: "Here is your hint",
+        response: 'Here is your hint',
         structured: structuredData,
       });
 
@@ -161,28 +137,28 @@ describe("CoachingService", () => {
       );
 
       expect(result.structured).toEqual(structuredData);
-      expect(result.structured?.hints).toContain("Try a hash map");
+      expect(result.structured?.hints).toContain('Try a hash map');
     });
 
-    it("converts mode and language to lowercase", async () => {
+    it('converts mode and language to lowercase', async () => {
       vi.mocked(http.post).mockResolvedValue({
-        response: "Ok",
+        response: 'Ok',
         structured: null,
       });
 
-      await service.getCoachResponse("Test", "Python", "code", "help", "HINT");
+      await service.getCoachResponse('Test', 'Python', 'code', 'help', 'HINT');
 
       expect(http.post).toHaveBeenCalledWith(
-        "/api/coach/",
+        '/api/coach/',
         expect.objectContaining({
-          mode: "hint",
-          language: "python",
+          mode: 'hint',
+          language: 'python',
         }),
       );
     });
 
-    it("throws when http.post fails", async () => {
-      vi.mocked(http.post).mockRejectedValue(new Error("Network error"));
+    it('throws when http.post fails', async () => {
+      vi.mocked(http.post).mockRejectedValue(new Error('Network error'));
 
       await expect(
         service.getCoachResponse(
@@ -192,11 +168,11 @@ describe("CoachingService", () => {
           defaultArgs.message,
           defaultArgs.mode,
         ),
-      ).rejects.toThrow("Network error");
+      ).rejects.toThrow('Network error');
     });
 
-    it("throws HttpError when server returns error", async () => {
-      const httpError = new Error("Request failed: 429 Too Many Requests");
+    it('throws HttpError when server returns error', async () => {
+      const httpError = new Error('Request failed: 429 Too Many Requests');
       vi.mocked(http.post).mockRejectedValue(httpError);
 
       await expect(
@@ -207,7 +183,7 @@ describe("CoachingService", () => {
           defaultArgs.message,
           defaultArgs.mode,
         ),
-      ).rejects.toThrow("Request failed: 429 Too Many Requests");
+      ).rejects.toThrow('Request failed: 429 Too Many Requests');
     });
   });
 });

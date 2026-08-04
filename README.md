@@ -28,19 +28,19 @@ CodeCoach AI is an open-source LeetCode alternative with integrated AI coaching.
 
 - **Practice coding interview questions** — 36 DSA problems (target: 90) across 14 standard topics with Python, JavaScript, and Java starter code
 - **Learn programming languages** — structured C, Python, and Java curriculum with interleaved theory and coding exercises (coming soon)
-- **Get instant AI coaching** — hints, code reviews, explanations, and debugging help powered by NVIDIA NIM or Google Gemini (BYO API key)
+- **Get instant AI coaching** — hints, code reviews, explanations, and debugging help powered by Groq (LLaMA 3.3 70B / 8B)
 - **Submit and grade** — code runs against test cases in an isolated Piston container with pass/fail results
 
-No ads, no data selling, no subscriptions. Students bring their own free NVIDIA API key for AI coaching.
+No ads, no data selling, no subscriptions. AI coaching runs on the platform's Groq key, with per-user daily token limits.
 
 ## Who is it for?
 
-| Audience | Need |
-|---|---|
-| **Struggling CS students** | Hand-holding through basics, structured learning |
-| **Interview grinders** | 100+ coding problems with AI coaching |
-| **Non-CS majors** | Learn programming from scratch |
-| **Professors** | Free, curriculum-aligned tool to recommend to classes |
+| Audience                   | Need                                                  |
+| -------------------------- | ----------------------------------------------------- |
+| **Struggling CS students** | Hand-holding through basics, structured learning      |
+| **Interview grinders**     | 100+ coding problems with AI coaching                 |
+| **Non-CS majors**          | Learn programming from scratch                        |
+| **Professors**             | Free, curriculum-aligned tool to recommend to classes |
 
 Multi-institution, drop-in, voluntary — students sign up on their own time, zero course credit required.
 
@@ -48,25 +48,25 @@ Multi-institution, drop-in, voluntary — students sign up on their own time, ze
 
 ## Built
 
-| Feature | Description |
-|---------|-------------|
-| **AI Coaching** | 5 modes (Hint, Review, Explain, Debug, Freeform) via NVIDIA NIM or Google Gemini — structured JSON responses + SSE streaming |
-| **Code Execution** | Piston container — Python, JavaScript, Java with smart code wrapping for test harness generation |
-| **Question Bank** | 36 DSA questions across 14/14 topics with full CRUD, search, filter by difficulty/category |
-| **Submit & Grade** | Run code against visible + hidden test cases, pass/fail reporting |
+| Feature                 | Description                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **AI Coaching**         | 5 modes (Hint, Review, Explain, Debug, Freeform) via Groq — structured JSON responses + SSE streaming                  |
+| **Code Execution**      | Piston container — Python, JavaScript, Java with smart code wrapping for test harness generation                       |
+| **Question Bank**       | 36 DSA questions across 14/14 topics with full CRUD, search, filter by difficulty/category                             |
+| **Submit & Grade**      | Run code against visible + hidden test cases, pass/fail reporting                                                      |
 | **Question Validation** | 7 validation use cases — structure, test cases, starter code, solution, time limits, function signature, output format |
-| **Authentication** | JWT-based email/password registration + login, bcrypt hashing |
-| **Frontend Workspace** | Monaco Editor, collapsible sidebar, dark/light theme, resizable panels, AI chat with quick actions |
-| **Testing** | 12 pytest backend test files, 20+ Vitest frontend tests, Playwright E2E tests |
-| **Docker Deployment** | 3-service Docker Compose (backend, frontend, piston) |
+| **Authentication**      | JWT-based email/password registration + login, bcrypt hashing                                                          |
+| **Frontend Workspace**  | Monaco Editor, collapsible sidebar, dark/light theme, resizable panels, AI chat with quick actions                     |
+| **Testing**             | 12 pytest backend test files, 20+ Vitest frontend tests, Playwright E2E tests                                          |
+| **Docker Deployment**   | 3-service Docker Compose (backend, frontend, piston)                                                                   |
 
 ### Planned
 
-| Phase | Scope |
-|---|---|
-| **Phase 1 — DSA Ship** | 54 more questions → 90 total (24 Easy / 10 Medium / 2 Hard existing) across 14 standard topics. Google OAuth. Privacy policy page. Polish pass. |
-| **Phase 2 — Curriculum** | C, Python, Java language curriculum with interleaved theory + coding exercises. `/learn` navigation. Context-aware AI coaching. |
-| **Phase 3 — Expand** | DBMS/SQL module, OOP/Design Patterns, Web Dev (React, Node), theory/MCQ question type. Classroom dashboard. |
+| Phase                    | Scope                                                                                                                                           |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1 — DSA Ship**   | 54 more questions → 90 total (24 Easy / 10 Medium / 2 Hard existing) across 14 standard topics. Google OAuth. Privacy policy page. Polish pass. |
+| **Phase 2 — Curriculum** | C, Python, Java language curriculum with interleaved theory + coding exercises. `/learn` navigation. Context-aware AI coaching.                 |
+| **Phase 3 — Expand**     | DBMS/SQL module, OOP/Design Patterns, Web Dev (React, Node), theory/MCQ question type. Classroom dashboard.                                     |
 
 ## Roadmap
 
@@ -93,17 +93,17 @@ Phase 3 ─── Future Modules
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Backend** | Python 3.11+, FastAPI, Pydantic v2, Uvicorn |
-| **Frontend** | Next.js 14 (App Router), React 18, TypeScript |
-| **Editor** | Monaco Editor (`@monaco-editor/react`) |
-| **Styling** | Tailwind CSS 3, `tailwind-merge`, `clsx` |
-| **Code Execution** | Piston (self-hosted Docker container) |
-| **AI Coach** | NVIDIA NIM (LLaMA 3.1 8B) via `integrate.api.nvidia.com/v1` or Google Gemini via `generativelanguage.googleapis.com` |
-| **Auth** | JWT (python-jose), bcrypt |
-| **Testing** | pytest (backend), Vitest + Playwright (frontend) |
-| **Infra** | Docker Compose, MySQL 8 |
+| Layer              | Technology                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| **Backend**        | Python 3.11+, FastAPI, Pydantic v2, Uvicorn                                        |
+| **Frontend**       | Next.js 14 (App Router), React 18, TypeScript                                      |
+| **Editor**         | Monaco Editor (`@monaco-editor/react`)                                             |
+| **Styling**        | Tailwind CSS 3, `tailwind-merge`, `clsx`                                           |
+| **Code Execution** | Piston (self-hosted Docker container)                                              |
+| **AI Coach**       | Groq (LLaMA 3.3 70B versatile / LLaMA 3.1 8B instant) via `api.groq.com/openai/v1` |
+| **Auth**           | JWT (python-jose), bcrypt                                                          |
+| **Testing**        | pytest (backend), Vitest + Playwright (frontend)                                   |
+| **Infra**          | Docker Compose, MySQL 8                                                            |
 
 ## Architecture
 
@@ -135,7 +135,7 @@ frontend/src/
 
 ### Key architectural decisions
 
-- **BYO API key** — NVIDIA API key is stored in browser localStorage, never sent to the backend. The backend proxies requests to NVIDIA NIM using the key from the request header.
+- **Platform-owned Groq key** — AI coaching runs on a server-side Groq API key; clients never supply their own. Per-user input/output tokens are metered to MySQL with daily caps enforced on the coach endpoints (`X-Usage-*` response headers).
 - **Code wrapping** — Every language supported by Piston has a `_wrap_<language>_code` method that adds a test harness converting stdin → function call → stdout. Without this, bare function definitions produce no output.
 - **MySQL storage** — Users, questions, and course progress are stored in MySQL via SQLAlchemy (async). Seed data is imported with `backend/scripts/migrate_to_sql.py`.
 - **Dependency injection** — FastAPI `Depends()` for services, constructor injection for use cases. Makes the backend testable with mocks.
@@ -163,7 +163,7 @@ python -m venv venv
 # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your NVIDIA API key and MySQL DATABASE_URL
+# Edit .env with your Groq API key and MySQL DATABASE_URL
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -192,13 +192,15 @@ docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston
 #### Backend (`.env`)
 
 ```
-NVIDIA_API_KEY=your_nvidia_nim_api_key
-GOOGLE_API_KEY=your_google_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
 JWT_SECRET_KEY=your_jwt_secret_key
 PISTON_API_URL=http://localhost:2000/api/v2/piston
+DAILY_TOKEN_INPUT_CAP=250000
+DAILY_TOKEN_OUTPUT_CAP=125000
+USER_RATE_LIMIT_PER_MINUTE=60
 ```
 
-Get a free API key from [NVIDIA NIM](https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct) or [Google Gemini](https://aistudio.google.com/apikey).
+Get a free API key from [Groq Console](https://console.groq.com/keys).
 
 #### Frontend (`.env.local`)
 

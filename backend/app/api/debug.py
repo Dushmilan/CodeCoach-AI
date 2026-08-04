@@ -102,6 +102,14 @@ async def check_api_key_status() -> Dict[str, Any]:
     return result
 
 
+@router.get("/groq-status")
+async def check_groq_status_debug() -> Dict[str, Any]:
+    """Debug endpoint to check Groq API key configuration and validity."""
+    from app.services.groq_verification import check_groq_status
+
+    return await check_groq_status()
+
+
 @router.get("/environment")
 async def get_environment_info() -> Dict[str, Any]:
     """

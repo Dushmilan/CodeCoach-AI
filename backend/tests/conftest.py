@@ -63,6 +63,8 @@ def _ensure_test_database() -> str:
                 "modules",
                 "courses",
                 "questions",
+                "user_daily_usage",
+                "user_usage_events",
                 "users",
                 "feature_flags",
                 "audit_logs",

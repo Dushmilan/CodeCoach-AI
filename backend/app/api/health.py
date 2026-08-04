@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 from datetime import datetime, timezone
+import os
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ async def health_check(request: Request):
             "rate_limiting": "enabled" if rate_limiting_enabled else "disabled",
         },
         "dependencies": {
-            "nvidia_nim": "configured",
+            "groq": "configured" if os.getenv("GROQ_API_KEY") else "not_configured",
             "piston_api": "configured",
             "questions_db": "loaded",
         },

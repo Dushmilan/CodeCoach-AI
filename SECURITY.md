@@ -60,9 +60,9 @@ When contributing to CodeCoach AI:
 
 ## Known Security Considerations
 
-- **BYO API Key Model**: Users provide their own NVIDIA/Google API keys. These are stored in browser localStorage and proxied through the backend. Keys are never persisted server-side.
+- **Platform-owned Groq API Key**: AI coaching uses a single server-side Groq key (`GROQ_API_KEY`). Clients never supply or store keys. The key is never logged; only masked status is surfaced in admin/debug endpoints. Per-user token usage is metered with daily caps to bound abuse.
 - **Piston Code Execution**: User code runs in an isolated Docker container. Network access is disabled (`PISTON_DISABLE_NETWORK_ACCESS=true`).
-- **JWT Authentication**: Tokens use RS256 signing. Secret keys must be set via environment variables.
+- **JWT Authentication**: Tokens use HS256 signing with a `JWT_SECRET_KEY` env var (fail-closed in production).
 
 ## Contact
 

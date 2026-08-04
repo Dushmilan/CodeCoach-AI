@@ -1,7 +1,6 @@
 'use client';
 
 import { SettingsModal } from '@/components/settings/SettingsModal';
-import { useSettings } from '@/hooks/use-settings';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers';
 import { Code, GraduationCap, Moon, Settings, Sun, User, X } from 'lucide-react';
@@ -18,7 +17,6 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  const { apiKey, setApiKey } = useSettings();
   const { user, isAuthenticated, logout, isHydrated } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -199,11 +197,7 @@ export function Header() {
             }}
             className="px-5 py-2 text-sm text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
           >
-            {mounted
-              ? resolvedTheme === 'dark'
-                ? 'Light Mode'
-                : 'Dark Mode'
-              : 'Theme'}
+            {mounted ? (resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode') : 'Theme'}
           </button>
         </div>
       </div>
@@ -211,8 +205,6 @@ export function Header() {
       <SettingsModal
         open={showSettings}
         onClose={() => setShowSettings(false)}
-        apiKey={apiKey}
-        onSave={setApiKey}
         isAuthenticated={isHydrated && isAuthenticated}
         onLogout={logout}
       />

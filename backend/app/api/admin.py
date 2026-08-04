@@ -6,6 +6,7 @@ from app.ports.admin_repository import AdminRepository
 from app.ports.user_admin_repository import UserAdminRepository
 from app.ports.question_admin_repository import QuestionAdminRepository
 from app.ports.course_admin_repository import CourseAdminRepository
+from app.ports.usage_repository import UsageRepository
 from app.ports.code_executor import CodeExecutor
 from app.api.auth_deps import require_admin, require_super_admin
 from app.api.dependencies import (
@@ -14,10 +15,15 @@ from app.api.dependencies import (
     get_question_admin_repo,
     get_course_admin_repo,
     get_executor,
+    get_usage_repo,
 )
 from app.services.question_validator import QuestionValidatorService
 from app.models.schemas import Question
 from app.models.auth_schemas import UserResponse
+from app.models.usage_schemas import (
+    UsageSummary,
+    UserUsageDetail,
+)
 from app.models.admin_models import (
     UserAdminUpdate,
     UserDetailResponse,
@@ -703,4 +709,82 @@ async def update_question(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating question: {str(e)}",
+        )
+
+
+# Usage Analytics Endpoints
+@router.get("/usage", response_model=UsageSummary)
+async def get_usage_summary(
+    since_days: int = 30,
+    usage_repo: UsageRepository = Depends(get_usage_repo),
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Aggregate LLM token usage per user over the last N days (admins only)."""
+    from datetime import datetime, timedelta, timezone
+
+    try:
+        since = datetime.now(timezone.utc) - timedelta(days=since_days)
+        rows = await usage_repo.all_user_totals(since=since, limit=1000)
+        total_input = sum(r.input_tokens for r in rows)
+        total_output = sum(r.output_tokens for r in rows)
+        total_calls = sum(r.call_count for r in rows)
+        return UsageSummary(
+            users=list(rows),
+            total_input_tokens=total_input,
+            total_output_tokens=total_output,
+            total_calls=total_calls,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching usage summary: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching usage summary: {str(e)}",
+        )
+
+
+@router.get("/usage/{user_id}", response_model=UserUsageDetail)
+async def get_user_usage_detail(
+    user_id: str,
+    days: int = 30,
+    usage_repo: UsageRepository = Depends(get_usage_repo),
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Detailed per-user usage: daily counters + recent events (admins only)."""
+    from datetime import datetime, timedelta, timezone
+
+    try:
+        since_dt = datetime.now(timezone.utc) - timedelta(days=days)
+        since_date = since_dt.date()
+        daily = await usage_repo.all_daily(user_id, since=since_date, limit=60)
+        events = await usage_repo.recent_events(user_id, limit=50)
+        totals = await usage_repo.user_totals(user_id, since=since_dt)
+        return UserUsageDetail(
+            user_id=user_id,
+            daily=list(daily),
+            events=list(events),
+            total_input_tokens=totals.input_tokens,
+            total_output_tokens=totals.output_tokens,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching usage detail for {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching usage detail: {str(e)}",
+        )
+
+
+@router.get("/groq/status")
+async def get_groq_status(
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Verify the configured Groq API key and list available models."""
+    from app.services.groq_verification import check_groq_status
+
+    try:
+        return await check_groq_status()
+    except Exception as e:
+        logger.error(f"Error checking Groq status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error checking Groq status: {str(e)}",
         )
