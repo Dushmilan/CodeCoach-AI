@@ -7,6 +7,13 @@ import {
   validateIdUnique,
   FieldErrors,
 } from "@/lib/validation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CourseFormProps {
   initial?: {
@@ -14,6 +21,7 @@ interface CourseFormProps {
     title: string;
     description?: string;
     language?: string;
+    domain?: string;
     icon?: string;
     order?: number;
   };
@@ -34,6 +42,7 @@ export default function CourseForm({
     title: initial?.title || "",
     description: initial?.description || "",
     language: initial?.language || "",
+    domain: initial?.domain || "se",
     icon: initial?.icon || "code",
     order: initial?.order ?? 1,
   });
@@ -54,7 +63,7 @@ export default function CourseForm({
   useEffect(() => {
     const syncErrors = validateCourseForm(f);
     setErrors(syncErrors);
-  }, [f.id, f.title, f.order]);
+  }, [f.id, f.title, f.order, f.domain]);
 
   const handleSave = async () => {
     // Sync validation
@@ -127,6 +136,24 @@ export default function CourseForm({
             onChange={(e) => set("language", e.target.value)}
             placeholder="python"
           />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground block mb-1">
+            Domain
+          </label>
+          <Select value={f.domain} onValueChange={(v) => set("domain", v)}>
+            <SelectTrigger className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border">
+              <SelectValue placeholder="Select a domain" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="se">Software Engineering</SelectItem>
+              <SelectItem value="ml">Machine Learning</SelectItem>
+              <SelectItem value="ai">AI</SelectItem>
+            </SelectContent>
+          </Select>
+          {errors.domain && (
+            <p className="text-xs text-destructive mt-1">{errors.domain}</p>
+          )}
         </div>
         <div>
           <label className="text-xs text-muted-foreground block mb-1">

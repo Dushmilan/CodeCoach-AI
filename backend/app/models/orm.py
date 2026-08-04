@@ -62,6 +62,7 @@ class CourseORM(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     language = Column(String(50), nullable=False)
+    domain = Column(String(20), nullable=False, server_default="se")
     icon = Column(String(50), default="code")
     order = Column(Integer, nullable=False)
 

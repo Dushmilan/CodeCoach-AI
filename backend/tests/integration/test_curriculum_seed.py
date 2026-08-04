@@ -129,6 +129,17 @@ class TestCurriculumSeed:
             assert lesson_count == expected["lessons"]
 
     @pytest.mark.asyncio
+    async def test_seeded_courses_carry_domain(self, seeded_curriculum):
+        async with seeded_curriculum() as session:
+            result = await session.execute(select(CourseORM))
+            courses = result.scalars().all()
+            assert courses, "no courses seeded"
+            for course in courses:
+                assert course.domain in {"se", "ml", "ai"}, (
+                    f"course '{course.id}' has invalid domain '{course.domain}'"
+                )
+
+    @pytest.mark.asyncio
     async def test_seed_is_idempotent(self, seeded_curriculum):
         await seed_curriculum.seed()
 

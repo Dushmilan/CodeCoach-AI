@@ -122,6 +122,7 @@ async def _seed_course(
             title=course.title,
             description=course.description,
             language=course.language,
+            domain=course.domain,
             icon=course.icon,
             order=course.order,
         )

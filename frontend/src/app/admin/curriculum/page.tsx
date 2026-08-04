@@ -28,6 +28,7 @@ interface Course {
   title: string;
   description?: string;
   language?: string;
+  domain?: string;
   icon?: string;
   order?: number;
 }
@@ -234,7 +235,7 @@ export default function CurriculumPage() {
                         {course.title}
                       </CardTitle>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {course.language} &middot; order {course.order}
+                        {course.language} &middot; {course.domain} &middot; order {course.order}
                         {course.description && (
                           <span> &middot; {course.description}</span>
                         )}

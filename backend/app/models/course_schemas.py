@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Literal, Optional
 from enum import Enum
 from datetime import datetime, timezone
 
@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 class LessonType(str, Enum):
     THEORY = "theory"
     EXERCISE = "exercise"
+
+
+CourseDomain = Literal["se", "ml", "ai"]
 
 
 class TestCase(BaseModel):
@@ -50,6 +53,7 @@ class Course(BaseModel):
     title: str = Field(..., description="Course title")
     description: str = Field(..., description="Course overview")
     language: str = Field(..., description="Programming language tag (python, c, java)")
+    domain: CourseDomain = Field(..., description="Course domain (se, ml, ai)")
     icon: str = Field(default="code", description="Icon identifier for the UI")
     order: int = Field(..., description="Display order")
     modules: List[str] = Field(..., description="Ordered list of module IDs")
@@ -60,6 +64,7 @@ class CourseSummary(BaseModel):
     title: str = Field(..., description="Course title")
     description: str = Field(..., description="Short description")
     language: str = Field(..., description="Programming language")
+    domain: CourseDomain = Field(..., description="Course domain (se, ml, ai)")
     icon: str = Field(default="code")
     order: int = Field(..., description="Display order")
     progress: float = Field(default=0.0, description="User progress percentage 0-100")

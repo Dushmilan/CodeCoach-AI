@@ -88,6 +88,14 @@ class TestCurriculumSeedSchema:
             assert course.id
             assert course.language in {"python", "c", "java"}
 
+    def test_course_domain_valid(self, seed_content):
+        for entry in seed_content:
+            cid = entry["course"]["id"]
+            assert "domain" in entry["course"], f"course '{cid}' missing domain"
+            assert entry["course"]["domain"] in {"se", "ml", "ai"}, (
+                f"course '{cid}' has invalid domain '{entry['course']['domain']}'"
+            )
+
     def test_modules_valid(self, seed_content):
         for entry in seed_content:
             cid = entry["course"]["id"]

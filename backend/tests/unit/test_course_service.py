@@ -36,6 +36,7 @@ def sample_course():
         description="Learn Python from scratch",
         language="python",
         icon="python",
+        domain="se",
         order=1,
         modules=["python-intro"],
     )
@@ -116,6 +117,55 @@ class TestCourseService:
 
         assert len(result) == 1
         assert result[0].progress == 0.0
+
+    @pytest.mark.asyncio
+    async def test_list_courses_includes_domain(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
+        mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
+
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
+        result = await service.list_courses()
+
+        assert len(result) == 1
+        assert result[0].domain == "se"
+
+    @pytest.mark.asyncio
+    async def test_list_courses_filters_by_domain(
+        self, mock_course_repo, mock_progress_repo
+    ):
+        ml_course = Course(
+            id="intro-to-machine-learning",
+            title="Intro to ML",
+            description="Machine learning basics",
+            language="python",
+            icon="ml",
+            domain="ml",
+            order=2,
+            modules=[],
+        )
+        se_course = Course(
+            id="c-programming",
+            title="C Programming",
+            description="C from scratch",
+            language="c",
+            icon="c",
+            domain="se",
+            order=3,
+            modules=[],
+        )
+        mock_course_repo.get_all_courses = AsyncMock(
+            return_value=[ml_course, se_course]
+        )
+
+        service = CourseService(
+            course_repo=mock_course_repo, progress_repo=mock_progress_repo
+        )
+        result = await service.list_courses(domain="ml")
+
+        assert [c.id for c in result] == ["intro-to-machine-learning"]
 
     @pytest.mark.asyncio
     async def test_get_course_by_id(

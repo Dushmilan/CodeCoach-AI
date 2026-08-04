@@ -91,6 +91,7 @@ class TestAdminCurriculumCRUD:
                 "title": "Test Python Course",
                 "description": "A test course",
                 "language": "python",
+                "domain": "se",
                 "order": 1,
             },
             headers=headers,
@@ -99,6 +100,50 @@ class TestAdminCurriculumCRUD:
         data = res.json()
         assert data["id"] == "test-python"
         assert data["title"] == "Test Python Course"
+        assert data["domain"] == "se"
+
+    def test_create_course_without_domain_defaults_to_se(self, test_client: TestClient):
+        headers = _admin_headers(test_client)
+        res = test_client.post(
+            "/api/admin/courses",
+            json={
+                "id": "domain-default",
+                "title": "Domain Default",
+                "description": "",
+                "language": "python",
+                "order": 1,
+            },
+            headers=headers,
+        )
+        assert res.status_code == 200
+        assert res.json()["domain"] == "se"
+
+    def test_update_course_domain(self, test_client: TestClient):
+        headers = _admin_headers(test_client)
+        test_client.post(
+            "/api/admin/courses",
+            json={
+                "id": "domain-update",
+                "title": "Domain Update",
+                "description": "",
+                "language": "python",
+                "domain": "se",
+                "order": 1,
+            },
+            headers=headers,
+        )
+        res = test_client.put(
+            "/api/admin/courses/domain-update",
+            json={"domain": "ml"},
+            headers=headers,
+        )
+        assert res.status_code == 200
+
+        tree_res = test_client.get("/api/admin/courses/tree", headers=headers)
+        courses = tree_res.json().get("courses", [])
+        match = [c for c in courses if c["id"] == "domain-update"]
+        assert len(match) == 1
+        assert match[0]["domain"] == "ml"
 
     def test_create_course_duplicate(self, test_client: TestClient):
         headers = _admin_headers(test_client)

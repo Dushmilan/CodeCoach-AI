@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 
 from app.models.course_schemas import Lesson
@@ -27,10 +27,12 @@ def get_course_service(
 async def list_courses(
     current_user: Optional[UserResponse] = Depends(get_optional_current_user),
     course_service: CourseService = Depends(get_course_service),
+    domain: Optional[str] = Query(None, description="Filter by domain (se, ml, ai)"),
 ):
     try:
         courses = await course_service.list_courses(
-            user_id=current_user.id if current_user else None
+            user_id=current_user.id if current_user else None,
+            domain=domain,
         )
         return {"courses": courses}
     except Exception as e:

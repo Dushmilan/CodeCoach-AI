@@ -97,3 +97,67 @@ class TestCoursesEndpointsAuthenticated:
             headers=headers,
         )
         assert response.status_code == 404
+
+    def test_list_courses_domain_filter(self, test_client: TestClient):
+        import os
+        import urllib.parse
+        from urllib.parse import urlparse
+
+        import pymysql
+
+        headers = self._get_auth_headers(test_client)
+
+        parsed = urlparse(
+            os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
+        )
+        conn = pymysql.connect(
+            host=parsed.hostname,
+            port=parsed.port or 3306,
+            user=urllib.parse.unquote(parsed.username or ""),
+            password=urllib.parse.unquote(parsed.password or ""),
+            database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
+        )
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET role='admin' WHERE username=%s",
+                    ("coursetestuser",),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+        test_client.post(
+            "/api/admin/courses",
+            json={
+                "id": "filter-ml",
+                "title": "Intro to ML",
+                "description": "ML course",
+                "language": "python",
+                "domain": "ml",
+                "order": 1,
+            },
+            headers=headers,
+        )
+        test_client.post(
+            "/api/admin/courses",
+            json={
+                "id": "filter-se",
+                "title": "C Programming",
+                "description": "SE course",
+                "language": "c",
+                "domain": "se",
+                "order": 2,
+            },
+            headers=headers,
+        )
+
+        response = test_client.get("/api/courses/?domain=ml", headers=headers)
+        assert response.status_code == 200
+        courses = response.json()["courses"]
+        assert len(courses) == 1
+        assert courses[0]["id"] == "filter-ml"
+        assert courses[0]["domain"] == "ml"
+
+        test_client.delete("/api/admin/courses/filter-ml", headers=headers)
+        test_client.delete("/api/admin/courses/filter-se", headers=headers)

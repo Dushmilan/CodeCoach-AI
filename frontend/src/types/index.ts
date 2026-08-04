@@ -80,6 +80,7 @@ export interface CourseSummary {
   title: string;
   description: string;
   language: string;
+  domain: "se" | "ml" | "ai";
   icon: string;
   order: number;
   progress: number;
@@ -90,6 +91,7 @@ export interface CourseDetail {
   title: string;
   description: string;
   language: string;
+  domain: "se" | "ml" | "ai";
   icon: string;
   order: number;
   modules: ModuleDetail[];

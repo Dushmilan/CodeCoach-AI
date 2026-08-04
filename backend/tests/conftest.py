@@ -248,6 +248,12 @@ async def test_db():
     async with async_session() as session:
         yield session
 
+    async with test_engine.begin() as conn:
+        await conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(text(f"TRUNCATE TABLE {table.name}"))
+        await conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+
     await test_engine.dispose()
     await _seed_questions()
 

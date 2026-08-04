@@ -62,6 +62,11 @@ class CourseCreate(BaseModel):
     title: str = Field(..., description="Course title")
     description: str = Field(..., description="Course overview")
     language: str = Field(..., description="Programming language tag (python, c, java)")
+    domain: str = Field(
+        default="se",
+        description="Course domain (se, ml, ai)",
+        pattern="^(se|ml|ai)$",
+    )
     icon: str = Field(default="code", description="Icon identifier for UI")
     order: int = Field(..., description="Display order")
 
@@ -75,6 +80,11 @@ class CourseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     language: Optional[str] = None
+    domain: Optional[str] = Field(
+        default=None,
+        description="Course domain (se, ml, ai)",
+        pattern="^(se|ml|ai)$",
+    )
     icon: Optional[str] = None
     order: Optional[int] = None
 

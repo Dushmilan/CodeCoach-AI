@@ -32,6 +32,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
                     "title": c.title,
                     "description": c.description,
                     "language": c.language,
+                    "domain": c.domain or "se",
                     "icon": c.icon,
                     "order": c.order,
                 }
@@ -98,6 +99,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             title=data["title"],
             description=data.get("description", ""),
             language=data.get("language", ""),
+            domain=data.get("domain", "se"),
             icon=data.get("icon", "code"),
             order=data.get("order", 1),
         )
@@ -108,6 +110,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             "title": orm.title,
             "description": orm.description,
             "language": orm.language,
+            "domain": orm.domain or "se",
             "icon": orm.icon,
             "order": orm.order,
         }

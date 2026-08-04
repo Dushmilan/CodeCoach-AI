@@ -1,13 +1,14 @@
 'use client';
 
 import { Header } from '@/components/header/Header';
+import { CourseDomainFilter } from '@/components/learn/CourseDomainFilter';
 import { useCurriculum } from '@/features/curriculum/use-curriculum.hook';
 import { FetchClient } from '@/lib/fetch-client';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers';
 import type { CourseSummary } from '@/types';
 import { motion } from 'framer-motion';
-import { BookOpen, Star, Zap } from 'lucide-react';
+import { BookOpen, Brain, Code2, Star, Terminal, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { memo, ReactNode, useEffect, useState } from 'react';
 
@@ -24,6 +25,12 @@ const languageConfig: Record<string, { icon: ReactNode; label: string }> = {
   python: { icon: <BookOpen width={20} height={20} />, label: 'Python' },
   c: { icon: <Zap width={20} height={20} />, label: 'C' },
   java: { icon: <Star width={20} height={20} />, label: 'Java' },
+};
+
+const domainConfig: Record<string, { icon: ReactNode; label: string }> = {
+  se: { icon: <Terminal width={14} height={14} />, label: 'Software Engineering' },
+  ml: { icon: <Brain width={14} height={14} />, label: 'Machine Learning' },
+  ai: { icon: <Code2 width={14} height={14} />, label: 'AI' },
 };
 
 const staggerVariants = {
@@ -108,6 +115,13 @@ const CourseCard = memo(function CourseCard({
         <p className="text-sm text-muted-foreground/60 leading-relaxed mb-6 line-clamp-2">
           {course.description}
         </p>
+
+        <div className="flex items-center gap-2 mb-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/60 ring-1 ring-white/[0.08]">
+            {domainConfig[course.domain]?.icon}
+            {domainConfig[course.domain]?.label || course.domain}
+          </span>
+        </div>
 
         <ProgressBar value={course.progress} />
 
@@ -213,36 +227,31 @@ export default function LearnPage() {
         )}
 
         {!isLoading && !error && mounted && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {courses.map((course, i) => {
+          <CourseDomainFilter
+            courses={courses}
+            renderCourse={(course) => {
               const prog = progressMap[course.id];
               const completedCount = prog?.completed_lessons?.length || 0;
               const lastLessonId = prog?.last_accessed_lesson_id;
 
-              const isHero = i === 0;
-
               return (
                 <motion.div
-                  key={course.id}
-                  custom={i}
                   initial="hidden"
                   animate="visible"
                   variants={staggerVariants}
-                  className={isHero ? 'md:col-span-2' : ''}
+                  custom={course.order}
                 >
                   <CourseCard
                     course={course}
                     completedCount={completedCount}
                     lastLessonId={lastLessonId}
                     isAuthenticated={isHydrated && isAuthenticated}
-                    accentBorder={
-                      isHero ? 'md:hover:border-primary/20' : 'md:hover:border-white/[0.12]'
-                    }
+                    accentBorder="md:hover:border-white/[0.12]"
                   />
                 </motion.div>
               );
-            })}
-          </div>
+            }}
+          />
         )}
         {!mounted && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

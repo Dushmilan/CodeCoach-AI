@@ -52,6 +52,7 @@ export function validateCourseForm(data: {
   id: string;
   title: string;
   order: number;
+  domain?: string;
 }): FieldErrors {
   const errors: FieldErrors = {};
   const idErr = validateRequired(data.id, "ID") || validateIdFormat(data.id);
@@ -60,6 +61,9 @@ export function validateCourseForm(data: {
   if (titleErr) errors.title = titleErr;
   const orderErr = validateOrder(data.order);
   if (orderErr) errors.order = orderErr;
+  if (data.domain && !["se", "ml", "ai"].includes(data.domain)) {
+    errors.domain = "Domain must be se, ml, or ai";
+  }
   return errors;
 }
 

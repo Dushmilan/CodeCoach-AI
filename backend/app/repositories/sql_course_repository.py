@@ -17,6 +17,7 @@ class SqlCourseRepository(CourseRepository):
             title=orm.title,
             description=orm.description,
             language=orm.language,
+            domain=orm.domain or "se",
             icon=orm.icon,
             order=orm.order,
             modules=[],

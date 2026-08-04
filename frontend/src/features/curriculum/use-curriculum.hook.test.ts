@@ -19,7 +19,7 @@ describe("useCurriculum", () => {
     // Get the instance created inside useCurriculum
     const mockInstance = (FetchClient as any).mock.results[0].value;
     mockInstance.get.mockResolvedValue({
-      courses: [{ id: "1", title: "Test" }],
+      courses: [{ id: "1", title: "Test", domain: "se" }],
     });
 
     const { result } = renderHook(() => useCurriculum());
@@ -29,6 +29,6 @@ describe("useCurriculum", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.courses).toEqual([{ id: "1", title: "Test" }]);
+    expect(result.current.courses).toEqual([{ id: "1", title: "Test", domain: "se" }]);
   });
 });

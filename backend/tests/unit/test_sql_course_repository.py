@@ -22,6 +22,7 @@ async def seeded_db(repo):
             description="Learn Python",
             language="python",
             icon="python",
+            domain="se",
             order=1,
         )
     )
@@ -117,6 +118,12 @@ class TestSqlCourseRepository:
         assert course is not None
         assert course.title == "Python"
         assert course.language == "python"
+        assert course.domain == "se"
+
+    @pytest.mark.asyncio
+    async def test_get_all_courses_maps_domain(self, seeded_db):
+        courses = await seeded_db.get_all_courses()
+        assert courses[0].domain == "se"
 
     @pytest.mark.asyncio
     async def test_get_course_by_id_not_found(self, seeded_db):

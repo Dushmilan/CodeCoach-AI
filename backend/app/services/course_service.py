@@ -18,9 +18,13 @@ class CourseService:
         self.progress_repo = progress_repo
         self.cache = cache
 
-    async def list_courses(self, user_id: Optional[str] = None) -> List[CourseSummary]:
+    async def list_courses(
+        self, user_id: Optional[str] = None, domain: Optional[str] = None
+    ) -> List[CourseSummary]:
         courses = await self.course_repo.get_all_courses()
         courses.sort(key=lambda c: c.order)
+        if domain:
+            courses = [c for c in courses if c.domain == domain]
 
         all_modules_by_id = {}
         if user_id and courses:
@@ -55,6 +59,7 @@ class CourseService:
                     title=course.title,
                     description=course.description,
                     language=course.language,
+                    domain=course.domain,
                     icon=course.icon,
                     order=course.order,
                     progress=progress,
