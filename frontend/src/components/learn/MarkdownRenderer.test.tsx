@@ -1,73 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import {
-  MarkdownRenderer,
-  escapeHtml,
-  sanitizeHtml,
-  renderMarkdown,
-} from "./MarkdownRenderer";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
-describe("escapeHtml", () => {
-  it("escapes HTML metacharacters including single quotes", () => {
-    const input = `<script>alert("xss")</script> & ' "`;
-    expect(escapeHtml(input)).toBe(
-      "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt; &amp; &#39; &quot;",
-    );
-  });
-});
-
-describe("sanitizeHtml", () => {
-  it("strips script, iframe, object and form tags", () => {
-    const html =
-      "<p>hello</p><script>alert(1)</script><iframe src=\"x\"></iframe><object></object><form></form>";
-    const out = sanitizeHtml(html);
-    expect(out).not.toContain("<script");
-    expect(out).not.toContain("<iframe");
-    expect(out).not.toContain("<object");
-    expect(out).not.toContain("<form");
-    expect(out).toContain("<p>hello</p>");
-  });
-
-  it("removes inline event handler attributes", () => {
-    const out = sanitizeHtml(
-      '<p onclick="alert(1)" onmouseover=\'steal()\'>safe</p>',
-    );
-    expect(out).not.toContain("onclick");
-    expect(out).not.toContain("onmouseover");
-    expect(out).toContain("<p>safe</p>");
-  });
-
-  it("strips javascript: URLs from href/src", () => {
-    const out = sanitizeHtml(
-      '<a href="javascript:alert(1)">x</a><img src="javascript:evil()"/>',
-    );
-    expect(out).not.toContain("javascript:");
-  });
-});
-
-describe("renderMarkdown", () => {
-  it("escapes raw HTML inside markdown text", () => {
-    const out = renderMarkdown("<script>alert(1)</script>");
-    expect(out).not.toContain("<script>");
-    expect(out).toContain("&lt;script&gt;");
-  });
-
+describe("MarkdownRenderer", () => {
   it("renders headings and paragraphs", () => {
-    const out = renderMarkdown("# Title\n\nHello");
-    expect(out).toContain("<h1");
-    expect(out).toContain("Title");
-    expect(out).toContain("<p");
-    expect(out).toContain("Hello");
+    render(<MarkdownRenderer content={"# Title\n\nHello"} />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Title" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Hello")).toBeInTheDocument();
   });
 
-  it("escapes code block contents", () => {
-    const out = renderMarkdown("```js\nconst a = '<b>';\n```");
-    expect(out).toContain("&lt;b&gt;");
-  });
-});
-
-describe("MarkdownRenderer component", () => {
-  it("renders content without executing injected script", () => {
+  it("escapes raw HTML so injected scripts never execute", () => {
     render(
       <MarkdownRenderer
         content={"# Safe\n\n<script>window.__xss = 1</script>"}
@@ -75,5 +19,68 @@ describe("MarkdownRenderer component", () => {
     );
     expect(screen.getByText("Safe")).toBeInTheDocument();
     expect(document.querySelector("script")).toBeNull();
+  });
+
+  it("escapes code block contents", () => {
+    render(<MarkdownRenderer content={"```js\nconst a = '<b>';\n```"} />);
+    expect(document.querySelector("pre code")).toBeInTheDocument();
+    expect(document.querySelector("b")).toBeNull();
+    expect(document.querySelector("pre")?.textContent).toContain(
+      "const a = '<b>'",
+    );
+  });
+
+  it("renders language-less fenced blocks as block code, not inline", () => {
+    render(<MarkdownRenderer content={"```\nconst a = 1;\n```"} />);
+    const pre = document.querySelector("pre");
+    expect(pre).not.toBeNull();
+    const code = pre!.querySelector("code");
+    expect(code?.className).not.toContain("bg-white/5");
+  });
+
+  it("does not render javascript: URLs as clickable links", () => {
+    render(<MarkdownRenderer content={"[click](javascript:alert(1))"} />);
+    expect(document.querySelector("a[href^='javascript:']")).toBeNull();
+    expect(screen.getByText("click")).toBeInTheDocument();
+  });
+
+  it("renders safe external links with noreferrer", () => {
+    render(<MarkdownRenderer content={"[docs](https://example.com)"} />);
+    const link = document.querySelector("a");
+    expect(link?.getAttribute("href")).toBe("https://example.com");
+    expect(link?.getAttribute("rel")).toContain("noreferrer");
+  });
+
+  it("renders GFM tables as real table elements", () => {
+    render(
+      <MarkdownRenderer
+        content={"| Type | Example |\n|---|---|\n| `int` | 42 |\n| `str` | \"hi\" |"}
+      />,
+    );
+    const table = document.querySelector("table");
+    expect(table).not.toBeNull();
+    const headers = table!.querySelectorAll("th");
+    expect(headers).toHaveLength(2);
+    expect(headers[0].textContent).toContain("Type");
+    expect(headers[1].textContent).toContain("Example");
+    const rows = table!.querySelectorAll("tbody tr");
+    expect(rows).toHaveLength(2);
+    expect(rows[0].querySelectorAll("td")).toHaveLength(2);
+    expect(rows[0].querySelector("code")?.textContent).toBe("int");
+  });
+
+  it("wraps list items in a ul", () => {
+    render(<MarkdownRenderer content={"- item one\n- item two"} />);
+    const ul = document.querySelector("ul");
+    expect(ul).not.toBeNull();
+    expect(ul!.querySelectorAll("li")).toHaveLength(2);
+  });
+
+  it("renders inline code and bold text", () => {
+    render(<MarkdownRenderer content={"Use `strand1` and **strand2**"} />);
+    expect(document.querySelector("code")?.textContent).toBe("strand1");
+    expect(document.querySelector("strong")?.textContent).toBe("strand2");
+    expect(screen.queryByText(/`strand1`/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\*\*strand2\*\*/)).not.toBeInTheDocument();
   });
 });

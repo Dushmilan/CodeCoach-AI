@@ -1,115 +1,115 @@
 "use client";
 
-import { useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface MarkdownRendererProps {
   content: string;
 }
 
-export function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-const DANGEROUS_TAGS_RE = /<\s*\/?\s*(script|iframe|object|embed|link|meta|base|form)\b[^>]*>/gi;
-const EVENT_HANDLER_ATTR_RE = /\son[a-z]+\s*=\s*(["'])[^"']*\1/gi;
-const JAVASCRIPT_URL_RE = /(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi;
-
-export function sanitizeHtml(html: string): string {
-  return html
-    .replace(DANGEROUS_TAGS_RE, "")
-    .replace(EVENT_HANDLER_ATTR_RE, "")
-    .replace(JAVASCRIPT_URL_RE, "");
-}
-
-export function renderMarkdown(md: string): string {
-  const lines = md.split("\n");
-  const html: string[] = [];
-  let inCodeBlock = false;
-  let codeBuffer: string[] = [];
-  let codeLang = "";
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.startsWith("```")) {
-      if (inCodeBlock) {
-        html.push(
-          `<pre><code class="language-${escapeHtml(codeLang)}">${escapeHtml(codeBuffer.join("\n"))}</code></pre>`,
-        );
-        codeBuffer = [];
-        codeLang = "";
-        inCodeBlock = false;
-      } else {
-        inCodeBlock = true;
-        codeLang = line.slice(3).trim();
-      }
-      continue;
+const COMPONENTS: Components = {
+  h1: ({ children }) => (
+    <h1 className="text-2xl font-semibold mt-8 mb-4 text-foreground/90">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="text-xl font-semibold mt-8 mb-3 text-foreground/90">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="text-lg font-semibold mt-6 mb-2 text-foreground/90">
+      {children}
+    </h3>
+  ),
+  h4: ({ children }) => (
+    <h4 className="text-base font-semibold mt-5 mb-2 text-foreground/90">
+      {children}
+    </h4>
+  ),
+  p: ({ children }) => (
+    <p className="text-foreground/80 leading-relaxed my-3">{children}</p>
+  ),
+  ul: ({ children }) => (
+    <ul className="list-disc pl-6 my-3 space-y-1.5 text-foreground/80">
+      {children}
+    </ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal pl-6 my-3 space-y-1.5 text-foreground/80">
+      {children}
+    </ol>
+  ),
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  code: ({ className, children }) =>
+    className || String(children).includes("\n") ? (
+      <code className={className}>{children}</code>
+    ) : (
+      <code className="bg-white/5 px-1.5 py-0.5 rounded text-sm font-mono text-primary/80">
+        {children}
+      </code>
+    ),
+  pre: ({ children }) => (
+    <pre className="bg-black/40 border border-white/10 rounded-lg p-4 overflow-x-auto text-sm font-mono my-4">
+      {children}
+    </pre>
+  ),
+  table: ({ children }) => (
+    <div className="overflow-x-auto my-4">
+      <table className="w-full text-sm border-collapse">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead className="bg-white/[0.04]">{children}</thead>
+  ),
+  th: ({ children }) => (
+    <th className="border border-white/10 px-3 py-2 text-left font-semibold text-foreground/90">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="border border-white/10 px-3 py-2 text-foreground/80 align-top">
+      {children}
+    </td>
+  ),
+  a: ({ href, children }) => {
+    if (!href || !/^(https?:|mailto:|\/|#)/i.test(href)) {
+      return <span className="text-foreground/80">{children}</span>;
     }
-
-    if (inCodeBlock) {
-      codeBuffer.push(line);
-      continue;
-    }
-
-    if (line.startsWith("### ")) {
-      html.push(
-        `<h3 class="text-lg font-semibold mt-6 mb-2 text-foreground/90">${escapeHtml(line.slice(4))}</h3>`,
-      );
-    } else if (line.startsWith("## ")) {
-      html.push(
-        `<h2 class="text-xl font-semibold mt-8 mb-3 text-foreground/90">${escapeHtml(line.slice(3))}</h2>`,
-      );
-    } else if (line.startsWith("# ")) {
-      html.push(
-        `<h1 class="text-2xl font-semibold mt-8 mb-4 text-foreground/90">${escapeHtml(line.slice(2))}</h1>`,
-      );
-    } else if (line.startsWith("- ")) {
-      html.push(
-        `<li class="ml-4 text-foreground/80">${escapeHtml(line.slice(2))}</li>`,
-      );
-    } else if (line.startsWith("**") && line.endsWith("**")) {
-      html.push(
-        `<p class="font-semibold text-foreground/80 mt-3">${escapeHtml(line.slice(2, -2))}</p>`,
-      );
-    } else if (line.trim() === "") {
-      if (html.length > 0 && !html[html.length - 1].startsWith("<li")) {
-        html.push("<br/>");
-      }
-    } else {
-      const processed = escapeHtml(line)
-        .replace(
-          /`([^`]+)`/g,
-          '<code class="bg-white/5 px-1.5 py-0.5 rounded text-sm font-mono text-primary/80">$1</code>',
-        )
-        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-      html.push(
-        `<p class="text-foreground/80 leading-relaxed">${processed}</p>`,
-      );
-    }
-  }
-
-  if (inCodeBlock && codeBuffer.length > 0) {
-    html.push(`<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`);
-  }
-
-  return html.join("\n");
-}
+    const external = href.startsWith("http");
+    return (
+      <a
+        href={href}
+        className="text-primary/80 underline underline-offset-2 hover:text-primary"
+        target={external ? "_blank" : undefined}
+        rel={external ? "noreferrer" : undefined}
+      >
+        {children}
+      </a>
+    );
+  },
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-2 border-primary/40 pl-4 my-3 text-foreground/70 italic">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="my-6 border-white/10" />,
+  strong: ({ children }) => (
+    <strong className="font-semibold text-foreground/90">{children}</strong>
+  ),
+  em: ({ children }) => (
+    <em className="italic text-foreground/80">{children}</em>
+  ),
+};
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
-  const html = useMemo(
-    () => sanitizeHtml(renderMarkdown(content)),
-    [content],
-  );
-
   return (
-    <div
-      className="prose prose-sm max-w-none text-foreground/80"
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <div className="max-w-none">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={COMPONENTS}>
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 }
