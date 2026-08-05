@@ -9,6 +9,7 @@ interface SettingsModalProps {
   onClose: () => void;
   isAuthenticated?: boolean;
   onLogout?: () => void;
+  plan?: string;
 }
 
 export function SettingsModal({
@@ -16,6 +17,7 @@ export function SettingsModal({
   onClose,
   isAuthenticated = false,
   onLogout,
+  plan = 'free',
 }: SettingsModalProps) {
   const inputRef = useRef<HTMLDivElement>(null);
 
@@ -64,6 +66,22 @@ export function SettingsModal({
                     usage is metered per account with daily limits.
                   </p>
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium text-foreground/80">Your plan</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1 leading-relaxed">
+                    {plan === 'premium'
+                      ? 'Premium — AI Coach and all features unlocked.'
+                      : 'Free — questions and curriculum included. AI Coach requires Premium.'}
+                  </p>
+                </div>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-primary">
+                  {plan === 'premium' ? 'Premium' : 'Free'}
+                </span>
               </div>
             </div>
 

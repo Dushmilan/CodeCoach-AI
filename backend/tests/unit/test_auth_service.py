@@ -219,6 +219,57 @@ class TestAuthServiceRegister:
             await service.register(request)
 
 
+class TestAuthServicePlanPropagation:
+    @pytest.mark.asyncio
+    async def test_register_returns_free_plan(self, mock_repo):
+        service = AuthService(repository=mock_repo)
+        request = UserRegisterRequest(
+            username="newuser", email="new@test.com", password="secure123"
+        )
+
+        result = await service.register(request)
+
+        assert result.user.plan == "free"
+
+    @pytest.mark.asyncio
+    async def test_login_returns_user_plan(self, mock_repo):
+        user = UserInDB(
+            id="user-1",
+            username="testuser",
+            email="test@test.com",
+            hashed_password=hash_password("correctpass"),
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
+            plan="premium",
+        )
+        mock_repo.get_by_username = AsyncMock(return_value=user)
+        service = AuthService(repository=mock_repo)
+        request = UserLoginRequest(username="testuser", password="correctpass")
+
+        result = await service.login(request)
+
+        assert result.user.plan == "premium"
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_returns_plan(self, mock_repo):
+        user = UserInDB(
+            id="user-1",
+            username="testuser",
+            email="test@test.com",
+            hashed_password="hash",
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
+            plan="premium",
+        )
+        mock_repo.get_by_id = AsyncMock(return_value=user)
+        service = AuthService(repository=mock_repo)
+
+        token, _ = create_access_token(TokenData(user_id="user-1", username="testuser"))
+        result = await service.get_current_user(token)
+
+        assert result.plan == "premium"
+
+
 class TestAuthServiceLogin:
     @pytest.mark.asyncio
     async def test_login_success(self, mock_repo):

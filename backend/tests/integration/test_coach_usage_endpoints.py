@@ -31,6 +31,39 @@ async def _register_user(async_client, username: str):
     return data["user"]["id"], {"Authorization": f"Bearer {data['access_token']}"}
 
 
+async def _register_premium_user(async_client, username: str):
+    uid, headers = await _register_user(async_client, username)
+    await _promote_premium(username)
+    return uid, headers
+
+
+async def _promote_premium(username: str) -> None:
+    """Set a registered user's plan to premium directly in the DB."""
+    import os
+    from urllib.parse import unquote, urlparse
+
+    import pymysql
+
+    parsed = urlparse(
+        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
+    )
+    conn = pymysql.connect(
+        host=parsed.hostname,
+        port=parsed.port or 3306,
+        user=unquote(parsed.username or ""),
+        password=unquote(parsed.password or ""),
+        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET plan='premium' WHERE username=%s", (username,)
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def _coaching_payload():
     return {
         "problem": "Find the maximum element in an array",
@@ -46,7 +79,7 @@ def _coaching_payload():
 class TestUsageHeaders:
     @pytest.mark.asyncio
     async def test_coach_response_includes_usage_headers(self, async_client):
-        _, headers = await _register_user(async_client, "usagehdr")
+        _, headers = await _register_premium_user(async_client, "usagehdr")
         response = await async_client.post(
             "/api/coach/", json=_coaching_payload(), headers=headers
         )
@@ -59,7 +92,7 @@ class TestUsageHeaders:
 
     @pytest.mark.asyncio
     async def test_coach_stream_includes_usage_headers(self, async_client):
-        _, headers = await _register_user(async_client, "usagehdrs")
+        _, headers = await _register_premium_user(async_client, "usagehdrs")
         response = await async_client.post(
             "/api/coach/stream", json=_coaching_payload(), headers=headers
         )
@@ -71,7 +104,7 @@ class TestUsageHeaders:
 class TestDailyCaps:
     @pytest.mark.asyncio
     async def test_cap_exceeded_returns_429(self, async_client, test_db):
-        uid, headers = await _register_user(async_client, "cappeduser")
+        uid, headers = await _register_premium_user(async_client, "cappeduser")
         from app.repositories.sql_usage_repository import SqlUsageRepository
 
         repo = SqlUsageRepository(test_db)
@@ -93,7 +126,7 @@ class TestDailyCaps:
 
     @pytest.mark.asyncio
     async def test_cap_exceeded_stream_returns_429(self, async_client, test_db):
-        uid, headers = await _register_user(async_client, "cappedstream")
+        uid, headers = await _register_premium_user(async_client, "cappedstream")
         from app.repositories.sql_usage_repository import SqlUsageRepository
 
         repo = SqlUsageRepository(test_db)
@@ -134,7 +167,7 @@ class TestPerUserRateLimit:
         app.dependency_overrides[get_redis_cache] = override_get_redis_cache
         monkeypatch.setenv("USER_RATE_LIMIT_PER_MINUTE", "1")
         try:
-            _, headers = await _register_user(async_client, "ratelimited")
+            _, headers = await _register_premium_user(async_client, "ratelimited")
             first = await async_client.post(
                 "/api/coach/", json=_coaching_payload(), headers=headers
             )
@@ -150,7 +183,7 @@ class TestPerUserRateLimit:
     @pytest.mark.asyncio
     async def test_per_user_rate_limit_degrades_open_without_redis(self, async_client):
         # get_redis_cache returns None when Redis is disabled -> no 429
-        _, headers = await _register_user(async_client, "noeredis")
+        _, headers = await _register_premium_user(async_client, "noeredis")
         for _ in range(3):
             response = await async_client.post(
                 "/api/coach/", json=_coaching_payload(), headers=headers
@@ -167,7 +200,7 @@ class TestAuthAndValidation:
 
     @pytest.mark.asyncio
     async def test_coaching_oversized_payload_422(self, async_client):
-        _, headers = await _register_user(async_client, "oversized")
+        _, headers = await _register_premium_user(async_client, "oversized")
 
         cases = [
             {"problem": "x" * 20001},
@@ -217,7 +250,7 @@ class TestAuthAndValidation:
 class TestUsageHeadersReflectUsage:
     @pytest.mark.asyncio
     async def test_headers_reflect_existing_daily_usage(self, async_client, test_db):
-        uid, headers = await _register_user(async_client, "useduser")
+        uid, headers = await _register_premium_user(async_client, "useduser")
         from app.repositories.sql_usage_repository import SqlUsageRepository
 
         repo = SqlUsageRepository(test_db)

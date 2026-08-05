@@ -125,6 +125,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 onClose={() => setSettingsOpen(false)}
                 isAuthenticated={isAuthenticated}
                 onLogout={logout}
+                plan={user?.plan}
               />
             </div>
           </div>

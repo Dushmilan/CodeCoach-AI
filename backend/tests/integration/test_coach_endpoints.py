@@ -12,7 +12,11 @@ from tests.fixtures.mock_coaching_provider import MockCoachingProvider
 
 
 @contextmanager
-def mock_auth(user_id: str = "test-id", username: str = "testuser"):
+def mock_auth(
+    user_id: str = "test-id",
+    username: str = "testuser",
+    plan: str = "premium",
+):
     """Override auth dependency for testing."""
     from app.api.auth_deps import get_current_user
 
@@ -25,6 +29,7 @@ def mock_auth(user_id: str = "test-id", username: str = "testuser"):
             email="test@example.com",
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
+            plan=plan,
         )
 
     app.dependency_overrides[get_current_user] = override_get_current_user
@@ -139,7 +144,8 @@ class TestCoachEndpoints:
 
     def test_get_coaching_modes(self, test_client: TestClient):
         """Test getting available coaching modes."""
-        response = test_client.get("/api/coach/modes")
+        with mock_auth():
+            response = test_client.get("/api/coach/modes")
 
         assert response.status_code == 200
         data = response.json()
@@ -159,7 +165,8 @@ class TestCoachEndpoints:
 
     def test_get_supported_languages(self, test_client: TestClient):
         """Test getting supported programming languages."""
-        response = test_client.get("/api/coach/languages")
+        with mock_auth():
+            response = test_client.get("/api/coach/languages")
 
         assert response.status_code == 200
         data = response.json()
@@ -332,23 +339,24 @@ class TestCoachEndpoints:
             "difficulty": "easy",
         }
 
-        from app.api.auth_deps import get_current_user
+        from app.api.auth_deps import require_premium
         from app.models.auth_schemas import UserResponse
 
-        async def override_get_current_user():
+        async def override_require_premium():
             return UserResponse(
                 id="test-id",
                 username="testuser",
                 email="test@example.com",
                 is_active=True,
                 created_at="2025-01-01T00:00:00Z",
+                plan="premium",
             )
 
-        app.dependency_overrides[get_current_user] = override_get_current_user
+        app.dependency_overrides[require_premium] = override_require_premium
         try:
             response = await async_client.post("/api/coach/", json=coaching_request)
         finally:
-            app.dependency_overrides.pop(get_current_user, None)
+            app.dependency_overrides.pop(require_premium, None)
 
         assert response.status_code == 200
         data = response.json()
@@ -393,3 +401,56 @@ class TestCoachEndpoints:
 
         response = test_client.delete("/api/coach/")
         assert response.status_code == 405
+
+
+@pytest.mark.usefixtures("test_env_vars")
+class TestCoachPremiumGating:
+    """Premium gate on coach endpoints: free users are rejected, premium pass."""
+
+    def _coaching_request(self) -> dict:
+        return {
+            "problem": "Find the maximum element in an array",
+            "code": "def max_element(arr):\n    return max(arr)",
+            "language": "python",
+            "message": "Is this efficient?",
+            "mode": "review",
+            "difficulty": "easy",
+        }
+
+    def test_free_user_gets_403_on_coach(self, test_client: TestClient, test_env_vars):
+        with mock_auth(plan="free"):
+            response = test_client.post("/api/coach/", json=self._coaching_request())
+
+        assert response.status_code == 403
+        assert "premium" in response.json()["detail"].lower()
+
+    def test_premium_user_gets_200_on_coach(
+        self, test_client: TestClient, test_env_vars
+    ):
+        with mock_auth(plan="premium"):
+            response = test_client.post("/api/coach/", json=self._coaching_request())
+
+        assert response.status_code == 200
+        assert "response" in response.json()
+
+    def test_free_user_gets_403_on_stream(self, test_client: TestClient, test_env_vars):
+        with mock_auth(plan="free"):
+            response = test_client.post(
+                "/api/coach/stream", json=self._coaching_request()
+            )
+
+        assert response.status_code == 403
+
+    def test_free_user_gets_403_on_modes(self, test_client: TestClient, test_env_vars):
+        with mock_auth(plan="free"):
+            response = test_client.get("/api/coach/modes")
+
+        assert response.status_code == 403
+
+    def test_free_user_gets_403_on_languages(
+        self, test_client: TestClient, test_env_vars
+    ):
+        with mock_auth(plan="free"):
+            response = test_client.get("/api/coach/languages")
+
+        assert response.status_code == 403

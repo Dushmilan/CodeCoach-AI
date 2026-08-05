@@ -107,4 +107,15 @@ describe('SettingsModal', () => {
     render(<SettingsModal {...defaultProps} />);
     expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull();
   });
+
+  it('shows Free plan by default', () => {
+    render(<SettingsModal {...defaultProps} />);
+    expect(screen.getByText('Your plan')).toBeInTheDocument();
+    expect(screen.getByText('Free')).toBeInTheDocument();
+  });
+
+  it('shows Premium plan when plan is premium', () => {
+    render(<SettingsModal {...defaultProps} plan="premium" />);
+    expect(screen.getByText('Premium')).toBeInTheDocument();
+  });
 });

@@ -130,6 +130,33 @@ class TestSqlUserRepository:
         await repo.session.rollback()
 
     @pytest.mark.asyncio
+    async def test_add_and_get_plan_defaults_to_free(self, repo, sample_user):
+        await repo.add(sample_user)
+        await repo.session.commit()
+
+        fetched = await repo.get_by_id(sample_user.id)
+        assert fetched is not None
+        assert fetched.plan == "free"
+
+    @pytest.mark.asyncio
+    async def test_add_and_get_premium_plan_roundtrip(self, repo):
+        premium_user = UserInDB(
+            id=str(uuid.uuid4()),
+            username="premiumuser",
+            email="premium@example.com",
+            hashed_password="hash",
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
+            plan="premium",
+        )
+        await repo.add(premium_user)
+        await repo.session.commit()
+
+        fetched = await repo.get_by_id(premium_user.id)
+        assert fetched is not None
+        assert fetched.plan == "premium"
+
+    @pytest.mark.asyncio
     async def test_inactive_user(self, repo):
         user = UserInDB(
             id=str(uuid.uuid4()),

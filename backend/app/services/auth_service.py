@@ -116,6 +116,7 @@ def _user_to_response(user: UserInDB) -> UserResponse:
         created_at=user.created_at,
         is_active=user.is_active,
         role=user.role,
+        plan=user.plan,
     )
 
 
