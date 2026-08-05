@@ -12,7 +12,7 @@ from app.ports.coaching_provider import CoachingProvider
 from app.services.groq_service import GroqService
 from app.services.redis_service import RedisCache
 from app.services.usage_service import UsageService, check_caps, usage_headers
-from app.api.auth_deps import get_current_user
+from app.api.auth_deps import require_premium
 from app.api.dependencies import get_redis_cache, get_usage_service
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
@@ -23,7 +23,7 @@ router = APIRouter()
 
 def get_coaching_provider(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
-    user: UserResponse = Depends(get_current_user),
+    user: UserResponse = Depends(require_premium),
     usage_service: UsageService = Depends(get_usage_service),
 ) -> CoachingProvider:
     # Platform-owned key: clients never supply their own. The key is used
@@ -42,7 +42,7 @@ def get_coaching_provider(
 
 async def check_daily_token_cap(
     request: Request,
-    user: UserResponse = Depends(get_current_user),
+    user: UserResponse = Depends(require_premium),
     usage_service: UsageService = Depends(get_usage_service),
 ) -> None:
     """Enforce daily per-user input/output token caps; set X-Usage-* headers."""
@@ -61,7 +61,7 @@ async def check_daily_token_cap(
 
 
 async def enforce_user_rate_limit(
-    user: UserResponse = Depends(get_current_user),
+    user: UserResponse = Depends(require_premium),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ) -> None:
     """Per-user requests-per-minute gate backed by Redis (degrades open)."""
@@ -82,7 +82,7 @@ async def get_coaching(
     response: Response,
     coaching_request: CoachingRequest,
     provider: CoachingProvider = Depends(get_coaching_provider),
-    user: UserResponse = Depends(get_current_user),
+    user: UserResponse = Depends(require_premium),
     _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
 ):
@@ -212,7 +212,7 @@ async def get_coaching_stream(
     request: Request,
     coaching_request: CoachingRequest,
     provider: CoachingProvider = Depends(get_coaching_provider),
-    user: UserResponse = Depends(get_current_user),
+    user: UserResponse = Depends(require_premium),
     _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
 ):
@@ -293,7 +293,9 @@ async def get_coaching_stream(
 
 
 @router.get("/modes")
-async def get_coaching_modes():
+async def get_coaching_modes(
+    user: UserResponse = Depends(require_premium),
+):
     """Get available coaching modes."""
     return {
         "modes": [mode.value for mode in CoachingMode],
@@ -308,7 +310,9 @@ async def get_coaching_modes():
 
 
 @router.get("/languages")
-async def get_supported_languages():
+async def get_supported_languages(
+    user: UserResponse = Depends(require_premium),
+):
     """Get supported programming languages."""
     return {
         "languages": [lang.value for lang in Language],

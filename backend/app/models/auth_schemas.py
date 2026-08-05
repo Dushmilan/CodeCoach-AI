@@ -21,6 +21,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     is_active: bool = True
     role: str = "user"
+    plan: str = "free"
 
 
 class TokenResponse(BaseModel):
@@ -56,3 +57,4 @@ class UserInDB(BaseModel):
     oauth_provider: Optional[str] = None
     oauth_id: Optional[str] = None
     role: str = "user"
+    plan: str = "free"

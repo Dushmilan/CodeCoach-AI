@@ -22,6 +22,7 @@ class SqlUserRepository(UserRepository):
             oauth_provider=orm.oauth_provider,
             oauth_id=orm.oauth_id,
             role=orm.role or "user",
+            plan=orm.plan or "free",
         )
 
     async def get_by_username(self, username: str) -> Optional[UserInDB]:
@@ -66,6 +67,7 @@ class SqlUserRepository(UserRepository):
             oauth_provider=user.oauth_provider,
             oauth_id=user.oauth_id,
             role=user.role or "user",
+            plan=user.plan or "free",
         )
         self.session.add(orm)
         await self.session.commit()

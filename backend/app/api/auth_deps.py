@@ -67,3 +67,14 @@ async def require_super_admin(
             detail="Insufficient permissions: super_admin role required",
         )
     return current_user
+
+
+async def require_premium(
+    current_user: UserResponse = Depends(get_current_user),
+):
+    if current_user.plan != "premium":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium feature — upgrade required",
+        )
+    return current_user

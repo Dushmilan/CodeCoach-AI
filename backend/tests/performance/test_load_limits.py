@@ -18,8 +18,8 @@ from app.main import app
 
 @contextmanager
 def mock_auth(user_id: str = "test-id", username: str = "testuser"):
-    """Override auth dependency for testing."""
-    from app.api.auth_deps import get_current_user
+    """Override auth dependencies for testing (run + coach endpoints)."""
+    from app.api.auth_deps import get_current_user, require_premium
 
     async def override_get_current_user():
         from app.models.auth_schemas import UserResponse
@@ -30,13 +30,16 @@ def mock_auth(user_id: str = "test-id", username: str = "testuser"):
             email="test@example.com",
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
+            plan="premium",
         )
 
     app.dependency_overrides[get_current_user] = override_get_current_user
+    app.dependency_overrides[require_premium] = override_get_current_user
     try:
         yield
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(require_premium, None)
 
 
 class TestLoadLimits:
@@ -279,12 +282,13 @@ while True:
 
         import random
 
-        tasks = []
-        for _ in range(200):
-            endpoint = random.choice(endpoints)
-            tasks.append(async_client.get(endpoint))
+        with mock_auth():
+            tasks = []
+            for _ in range(200):
+                endpoint = random.choice(endpoints)
+                tasks.append(async_client.get(endpoint))
 
-        results = await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks)
         assert all(r.status_code == 200 for r in results)
         assert len(results) == 200
 

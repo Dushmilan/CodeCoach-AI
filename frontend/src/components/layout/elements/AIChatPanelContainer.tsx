@@ -1,5 +1,6 @@
 import React from "react";
 import { AIChatPanel } from "@/components/chat/AIChatPanel";
+import { PremiumGate } from "@/components/premium/PremiumGate";
 import { ChatMessage, Language } from "@/types";
 
 interface AIChatPanelContainerProps {
@@ -26,15 +27,17 @@ export function AIChatPanelContainer({
       className="h-full flex flex-col flex-none overflow-hidden border-l border-white/[0.04]"
       aria-label="AI Assistant Panel"
     >
-      <AIChatPanel
-        messages={messages}
-        onSendMessage={onSendMessage}
-        onClose={onClose}
-        isTyping={isTyping}
-        selectedQuestion={selectedQuestion}
-        currentCode={currentCode}
-        language={language}
-      />
+      <PremiumGate>
+        <AIChatPanel
+          messages={messages}
+          onSendMessage={onSendMessage}
+          onClose={onClose}
+          isTyping={isTyping}
+          selectedQuestion={selectedQuestion}
+          currentCode={currentCode}
+          language={language}
+        />
+      </PremiumGate>
     </aside>
   );
 }
