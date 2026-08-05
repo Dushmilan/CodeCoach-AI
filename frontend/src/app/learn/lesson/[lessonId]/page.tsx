@@ -269,7 +269,7 @@ export default function LessonPage() {
       >
         <Header />
 
-        <main className="flex-1 flex flex-col px-6 pt-6 pb-4 max-w-7xl mx-auto w-full min-h-0 overflow-hidden">
+        <main className="flex-1 flex flex-col px-6 pt-6 pb-4 w-full min-h-0 overflow-hidden">
           <LessonChrome lesson={lesson} prevId={prevId} nextId={nextId} />
 
           {isExercise ? (
