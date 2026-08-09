@@ -1,35 +1,15 @@
-import os
-import urllib.parse
-from urllib.parse import urlparse
-
-import pymysql
 from fastapi.testclient import TestClient
+
+from tests.db_helpers import (
+    promote_to_admin,
+    truncate_course_tables_sync,
+)
 
 
 def _truncate_course_tables():
     """Remove courses/modules/lessons created by these tests so other tests
     see a clean course tree (mirrors the old file-based teardown_module)."""
-    parsed = urlparse(
-        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
-    )
-    conn = pymysql.connect(
-        host=parsed.hostname,
-        port=parsed.port or 3306,
-        user=urllib.parse.unquote(parsed.username or ""),
-        password=urllib.parse.unquote(parsed.password or ""),
-        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
-    )
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SET FOREIGN_KEY_CHECKS=0")
-            cur.execute("TRUNCATE TABLE course_progress")
-            cur.execute("TRUNCATE TABLE lessons")
-            cur.execute("TRUNCATE TABLE modules")
-            cur.execute("TRUNCATE TABLE courses")
-            cur.execute("SET FOREIGN_KEY_CHECKS=1")
-        conn.commit()
-    finally:
-        conn.close()
+    truncate_course_tables_sync()
 
 
 def teardown_module():
@@ -56,25 +36,9 @@ def _admin_headers(test_client: TestClient) -> dict:
         )
     token = res.json()["access_token"]
 
-    parsed = urlparse(
-        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
-    )
-    conn = pymysql.connect(
-        host=parsed.hostname,
-        port=parsed.port or 3306,
-        user=urllib.parse.unquote(parsed.username or ""),
-        password=urllib.parse.unquote(parsed.password or ""),
-        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
-    )
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE users SET role='admin' WHERE username=%s",
-                ("admincurriculum",),
-            )
-        conn.commit()
-    finally:
-        conn.close()
+    import asyncio
+
+    asyncio.run(promote_to_admin("admincurriculum"))
 
     return {"Authorization": f"Bearer {token}"}
 

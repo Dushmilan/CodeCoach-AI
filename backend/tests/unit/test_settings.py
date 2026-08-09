@@ -16,8 +16,10 @@ class TestSettings:
 
         monkeypatch.setenv("ENVIRONMENT", "testing")
         monkeypatch.delenv("REDIS_ENABLED", raising=False)
-        assert get_settings().REDIS_ENABLED is True
-        assert "mysql" in get_settings().DATABASE_URL
+        monkeypatch.delenv("DATABASE_URL", raising=False)
+        settings = get_settings()
+        assert settings.REDIS_ENABLED is True
+        assert "postgresql+asyncpg" in settings.DATABASE_URL
 
     def test_get_settings_returns_new_instance(self, monkeypatch):
         from app.core.config import get_settings

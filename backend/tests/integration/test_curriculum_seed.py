@@ -6,7 +6,6 @@ keep their question links.
 """
 
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -21,6 +20,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import NullPool
 
 from app.models.orm import CourseORM, LessonORM, ModuleORM, QuestionORM
+from tests.db_helpers import engine_kwargs, is_postgres, test_db_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CURRICULUM_DIR = BASE_DIR / "data" / "courses"
@@ -74,7 +74,7 @@ def _expected_counts() -> dict:
 async def seeded_curriculum(test_db):
     """Insert question stubs, run seed_curriculum, then clean up the tables
     so the test_db teardown can re-seed the full question bank."""
-    engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
+    engine = create_async_engine(test_db_url(), poolclass=NullPool, **engine_kwargs())
     async_session = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
@@ -97,14 +97,16 @@ async def seeded_curriculum(test_db):
     yield async_session
 
     async with async_session() as session:
-        await session.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+        if not is_postgres():
+            await session.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         await session.execute(LessonORM.__table__.delete())
         await session.execute(ModuleORM.__table__.delete())
         await session.execute(CourseORM.__table__.delete())
         await session.execute(
             QuestionORM.__table__.delete().where(QuestionORM.title == "seed-ref")
         )
-        await session.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+        if not is_postgres():
+            await session.execute(text("SET FOREIGN_KEY_CHECKS=1"))
         await session.commit()
 
     await engine.dispose()

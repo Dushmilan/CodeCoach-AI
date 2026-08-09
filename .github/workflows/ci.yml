@@ -12,7 +12,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: '3.11'
-  DATABASE_URL: mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach_test
+  DATABASE_URL: postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_test
   REDIS_ENABLED: 'false'
   ENVIRONMENT: testing
   JWT_SECRET_KEY: ci-test-secret-key-for-testing-only-32chars!!
@@ -36,17 +36,16 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      mysql:
-        image: mysql:8.0
+      postgres:
+        image: postgres:16-alpine
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: codecoach_test
-          MYSQL_USER: codecoach
-          MYSQL_PASSWORD: codecoach
+          POSTGRES_DB: codecoach_test
+          POSTGRES_USER: codecoach
+          POSTGRES_PASSWORD: codecoach
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd "mysqladmin ping -h localhost"
+          --health-cmd "pg_isready -U codecoach -d codecoach_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -74,14 +73,15 @@ jobs:
 
       - name: Run unit tests
         run: |
-          COVERAGE_FILE=.coverage.unit pytest tests/unit -v --cov=app --cov-report=xml:unit-coverage.xml
+          COVERAGE_FILE=.coverage.unit pytest tests/unit -v --cov=app --cov-report=xml:unit-coverage.xml -n auto --dist loadscope
 
       - name: Run integration tests
         run: |
           COVERAGE_FILE=.coverage.integration pytest tests/integration -v --cov=app --cov-report=xml:integration-coverage.xml \
             --ignore=tests/integration/test_run_endpoints.py \
             --ignore=tests/integration/test_auth_supabase.py \
-            --ignore=tests/integration/test_database_sync.py
+            --ignore=tests/integration/test_database_sync.py \
+            -n auto --dist loadscope
 
       - name: Run contract + failure-simulation tests
         run: |
@@ -120,6 +120,8 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      DATABASE_URL: mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach_test
 
     services:
       mysql:

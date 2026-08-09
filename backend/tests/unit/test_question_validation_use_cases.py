@@ -8,8 +8,6 @@ are made available to users. Tests focus on Python coverage using Piston.
 import pytest
 from typing import Dict, Any
 from unittest.mock import AsyncMock
-import os
-import urllib.parse
 
 from app.models.schemas import Question, Difficulty
 from app.models.question_validation_schemas import (
@@ -823,7 +821,7 @@ class TestQuestionBankValidationIntegration:
 class TestQuestionValidationAPI:
     """Tests for question validation API endpoints."""
 
-    def _admin_headers(self, client) -> dict:
+    async def _admin_headers(self, client) -> dict:
         """Register an admin and promote it via the users table."""
         res = client.post(
             "/api/auth/register",
@@ -840,27 +838,9 @@ class TestQuestionValidationAPI:
             )
         token = res.json()["access_token"]
 
-        import pymysql
+        from tests.db_helpers import promote_to_admin
 
-        parsed = urllib.parse.urlparse(
-            os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
-        )
-        conn = pymysql.connect(
-            host=parsed.hostname,
-            port=parsed.port or 3306,
-            user=urllib.parse.unquote(parsed.username or ""),
-            password=urllib.parse.unquote(parsed.password or ""),
-            database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
-        )
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE users SET role='admin' WHERE username=%s",
-                    ("unitvaladmin",),
-                )
-            conn.commit()
-        finally:
-            conn.close()
+        await promote_to_admin("unitvaladmin")
 
         return {"Authorization": f"Bearer {token}"}
 
@@ -870,7 +850,7 @@ class TestQuestionValidationAPI:
     ):
         """Test that the validate endpoint returns proper validation result."""
         client = test_client
-        headers = self._admin_headers(client)
+        headers = await self._admin_headers(client)
 
         response = client.post(
             "/api/question-validation/validate",
@@ -902,7 +882,7 @@ class TestQuestionValidationAPI:
     ):
         """Test that batch validate endpoint can validate multiple questions."""
         client = test_client
-        headers = self._admin_headers(client)
+        headers = await self._admin_headers(client)
 
         questions = [valid_question_data, valid_question_data.copy()]
         questions[1]["id"] = "test-question-2"

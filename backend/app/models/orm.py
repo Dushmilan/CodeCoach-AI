@@ -25,7 +25,9 @@ class UserORM(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False
+    )
     is_active = Column(Integer, default=1, nullable=False)
     oauth_provider = Column(String(50), nullable=True)
     oauth_id = Column(String(255), nullable=True)
@@ -131,9 +133,11 @@ class CourseProgressORM(Base):
     )
     completed_lessons = Column(JSONType, default=list, nullable=False)
     last_accessed_lesson_id = Column(String(36), nullable=True)
-    started_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
+    started_at = Column(
+        DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False
+    )
     last_accessed_at = Column(
-        DateTime,
+        DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         onupdate=datetime.now(timezone.utc),
         nullable=False,
@@ -159,7 +163,10 @@ class UserUsageEventORM(Base):
     input_tokens = Column(Integer, nullable=False, default=0)
     output_tokens = Column(Integer, nullable=False, default=0)
     created_at = Column(
-        DateTime, default=datetime.now(timezone.utc), nullable=False, index=True
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
     )
 
     __table_args__ = (Index("ix_usage_events_user_created", "user_id", "created_at"),)
@@ -178,7 +185,7 @@ class UserDailyUsageORM(Base):
     input_tokens = Column(Integer, nullable=False, default=0)
     output_tokens = Column(Integer, nullable=False, default=0)
     updated_at = Column(
-        DateTime,
+        DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         onupdate=datetime.now(timezone.utc),
         nullable=False,

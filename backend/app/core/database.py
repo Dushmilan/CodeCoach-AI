@@ -14,10 +14,18 @@ settings = get_settings()
 # NullPool in testing avoids cross-event-loop connection reuse (FastAPI sync
 # TestClient + async tests run on different loops, which poisons pooled
 # connections). Production uses the default pooled engine.
+_connect_args: dict = {}
+if settings.DATABASE_SEARCH_PATH:
+    # Tests route queries to a dedicated schema via Postgres search_path.
+    _connect_args["connect_args"] = {
+        "server_settings": {"search_path": settings.DATABASE_SEARCH_PATH}
+    }
+
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     poolclass=NullPool if not is_production() else None,
     pool_pre_ping=True,
+    **_connect_args,
 )
 async_session_maker: async_sessionmaker = async_sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False

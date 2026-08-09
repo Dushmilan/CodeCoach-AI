@@ -39,7 +39,11 @@ from app.models.orm import CourseORM, LessonORM, ModuleORM, QuestionORM
 def _get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
-        url = "mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach"
+        url = "postgresql://codecoach:codecoach@host.docker.internal:5432/codecoach"
+    # SQLAlchemy maps bare `postgresql://` to the sync psycopg2 driver; the
+    # script is async, so force asyncpg for Postgres URLs.
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url
 
 
@@ -208,7 +212,13 @@ async def seed(force: bool = False):
         print("No curriculum JSON found to seed.")
         return
 
-    engine = create_async_engine(database_url, echo=False)
+    engine_kwargs = {}
+    search_path = os.getenv("DATABASE_SEARCH_PATH")
+    if search_path:
+        engine_kwargs["connect_args"] = {
+            "server_settings": {"search_path": search_path}
+        }
+    engine = create_async_engine(database_url, echo=False, **engine_kwargs)
     async_session = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )

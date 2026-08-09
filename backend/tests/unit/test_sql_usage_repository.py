@@ -170,7 +170,6 @@ class TestSqlUsageRepository:
     @pytest.mark.asyncio
     async def test_concurrent_increments_accumulate(self, test_db, user_id):
         import asyncio
-        import os
 
         from app.repositories.sql_usage_repository import SqlUsageRepository
         from sqlalchemy.ext.asyncio import (
@@ -179,9 +178,12 @@ class TestSqlUsageRepository:
             create_async_engine,
         )
         from sqlalchemy.pool import NullPool
+        from tests.db_helpers import engine_kwargs, test_db_url
 
         today = date.today()
-        engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
+        engine = create_async_engine(
+            test_db_url(), poolclass=NullPool, **engine_kwargs()
+        )
         async_session = async_sessionmaker(
             engine, class_=AsyncSession, expire_on_commit=False
         )

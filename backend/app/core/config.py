@@ -9,10 +9,12 @@ class Settings(BaseSettings):
     # Environment (fail-closed: unset = production for security gates)
     ENVIRONMENT: str = "production"
 
-    # Database
+    # Database (Supabase/PostgreSQL is the primary database)
     DATABASE_URL: str = (
-        "mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach"
+        "postgresql://codecoach:codecoach@host.docker.internal:5432/codecoach"
     )
+    # Optional Postgres schema used for tests (Supabase has one database).
+    DATABASE_SEARCH_PATH: Optional[str] = None
 
     # Auth
     JWT_SECRET_KEY: str = ""
@@ -35,6 +37,17 @@ class Settings(BaseSettings):
     def _require_jwt_key_in_production(self):
         if self.ENVIRONMENT == "production" and not self.JWT_SECRET_KEY:
             raise ValueError("JWT_SECRET_KEY must be set in production")
+        return self
+
+    @model_validator(mode="after")
+    def _normalize_postgres_driver(self):
+        # Supabase/pooler URLs use the bare `postgresql://` scheme, which
+        # SQLAlchemy maps to psycopg2 by default. The app is async, so force
+        # the asyncpg driver.
+        if self.DATABASE_URL.startswith("postgresql://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace(
+                "postgresql://", "postgresql+asyncpg://", 1
+            )
         return self
 
     # Piston

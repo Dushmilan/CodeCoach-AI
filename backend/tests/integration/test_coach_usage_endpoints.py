@@ -39,29 +39,9 @@ async def _register_premium_user(async_client, username: str):
 
 async def _promote_premium(username: str) -> None:
     """Set a registered user's plan to premium directly in the DB."""
-    import os
-    from urllib.parse import unquote, urlparse
+    from tests.db_helpers import set_plan
 
-    import pymysql
-
-    parsed = urlparse(
-        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
-    )
-    conn = pymysql.connect(
-        host=parsed.hostname,
-        port=parsed.port or 3306,
-        user=unquote(parsed.username or ""),
-        password=unquote(parsed.password or ""),
-        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
-    )
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE users SET plan='premium' WHERE username=%s", (username,)
-            )
-        conn.commit()
-    finally:
-        conn.close()
+    await set_plan(username, "premium")
 
 
 def _coaching_payload():
@@ -271,24 +251,6 @@ class TestUsageHeadersReflectUsage:
 
 async def _promote_user(test_db, username: str) -> None:
     """Promote a registered user to admin directly in the DB."""
-    import os
-    from urllib.parse import unquote, urlparse
+    from tests.db_helpers import promote_to_admin
 
-    import pymysql
-
-    parsed = urlparse(
-        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
-    )
-    conn = pymysql.connect(
-        host=parsed.hostname,
-        port=parsed.port or 3306,
-        user=unquote(parsed.username or ""),
-        password=unquote(parsed.password or ""),
-        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
-    )
-    try:
-        with conn.cursor() as cur:
-            cur.execute("UPDATE users SET role='admin' WHERE username=%s", (username,))
-        conn.commit()
-    finally:
-        conn.close()
+    await promote_to_admin(username)

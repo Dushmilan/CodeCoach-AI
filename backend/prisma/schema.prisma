@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-py"
+  recursive_type_depth = -1
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users (application users; Supabase Auth migration is a separate TODO) ──
+model User {
+  id              String    @id @db.VarChar(36)
+  username        String    @unique @db.VarChar(50)
+  email           String    @unique @db.VarChar(255)
+  hashed_password String    @db.VarChar(255)
+  created_at      DateTime
+  is_active       Int       @default(1)
+  oauth_provider  String?   @db.VarChar(50)
+  oauth_id        String?   @db.VarChar(255)
+  role            String    @default("user") @db.VarChar(20)
+  plan            String    @default("free") @db.VarChar(20)
+
+  course_progress CourseProgress[]
+  usage_events    UserUsageEvent[]
+  daily_usage     UserDailyUsage[]
+  audit_logs      AuditLog[]
+  generation_jobs GenerationJob[]
+
+  @@map("users")
+}
+
+// ── Question bank ──
+model Question {
+  id               String   @id @db.VarChar(64)
+  title            String   @db.VarChar(255)
+  difficulty       String   @db.VarChar(10)
+  category         String   @db.VarChar(100)
+  company_tags     Json
+  description      String
+  starter_code     Json
+  examples         Json
+  test_cases       Json
+  hints            Json
+  solution         String?
+  time_complexity  String?  @db.VarChar(200)
+  space_complexity String?  @db.VarChar(200)
+  constraints      Json
+  is_interactive   Int      @default(0)
+  validation_status Json?
+
+  lessons Lesson[]
+
+  @@map("questions")
+}
+
+// ── Curriculum ──
+model Course {
+  id          String   @id @db.VarChar(36)
+  title       String   @db.VarChar(255)
+  description String
+  language    String   @db.VarChar(50)
+  icon        String?  @default("code") @db.VarChar(50)
+  order       Int
+
+  modules         Module[]
+  lessons         Lesson[]
+  course_progress CourseProgress[]
+
+  @@map("courses")
+}
+
+model Module {
+  id          String @id @db.VarChar(36)
+  course_id   String @db.VarChar(36)
+  title       String @db.VarChar(255)
+  description String
+  order       Int
+
+  course  Course  @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id           String  @id @db.VarChar(36)
+  course_id    String  @db.VarChar(36)
+  module_id    String  @db.VarChar(36)
+  title        String  @db.VarChar(255)
+  type         String  @db.VarChar(20)
+  content      String
+  order        Int
+  starter_code String?
+  test_cases   Json?
+  question_id  String? @db.VarChar(64)
+  language     String  @db.VarChar(50)
+
+  course   Course    @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  module   Module    @relation(fields: [module_id], references: [id], onDelete: Cascade)
+  question Question? @relation(fields: [question_id], references: [id], onDelete: SetNull)
+
+  @@index([course_id])
+  @@index([module_id])
+  @@index([question_id])
+  @@map("lessons")
+}
+
+// ── Progress ──
+model CourseProgress {
+  id                      String   @id @db.VarChar(64)
+  user_id                 String   @db.VarChar(36)
+  course_id               String   @db.VarChar(36)
+  completed_lessons       Json
+  last_accessed_lesson_id String?  @db.VarChar(36)
+  started_at              DateTime
+  last_accessed_at        DateTime
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, course_id])
+  @@index([course_id])
+  @@map("course_progress")
+}
+
+// ── LLM usage metering ──
+model UserUsageEvent {
+  id            String   @id @db.VarChar(36)
+  user_id       String   @db.VarChar(36)
+  provider      String   @db.VarChar(20)
+  model         String   @db.VarChar(100)
+  endpoint      String   @db.VarChar(50)
+  input_tokens  Int
+  output_tokens Int
+  created_at    DateTime
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("user_usage_events")
+}
+
+model UserDailyUsage {
+  id            String   @id @db.VarChar(36)
+  user_id       String   @db.VarChar(36)
+  usage_date    DateTime @db.Date
+  input_tokens  Int
+  output_tokens Int
+  updated_at    DateTime
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, usage_date])
+  @@index([user_id])
+  @@map("user_daily_usage")
+}
+
+// ── Admin / operations ──
+model FeatureFlag {
+  key          String   @id @db.VarChar(100)
+  enabled      Boolean
+  rollout_pct  Int
+  target_roles Json
+  description  String?
+  created_at   DateTime
+  updated_at   DateTime
+
+  @@map("feature_flags")
+}
+
+model AuditLog {
+  id            String   @id @db.VarChar(64)
+  user_id       String?  @db.VarChar(36)
+  action        String   @db.VarChar(100)
+  resource_type String?  @db.VarChar(50)
+  resource_id   String?  @db.VarChar(100)
+  metadata      Json?
+  ip_address    String?  @db.VarChar(45)
+  user_agent    String?
+  level         String   @default("info") @db.VarChar(20)
+  created_at    DateTime
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([created_at])
+  @@map("audit_logs")
+}
+
+model GenerationJob {
+  id           String   @id @db.VarChar(64)
+  topic        String?  @db.VarChar(100)
+  difficulty   String?  @db.VarChar(20)
+  count        Int?
+  model        String?  @db.VarChar(100)
+  status       String   @default("pending") @db.VarChar(20)
+  result       Json?
+  error        String?
+  started_at   DateTime?
+  completed_at DateTime?
+  created_by   String?  @db.VarChar(36)
+  created_at   DateTime
+
+  creator User? @relation(fields: [created_by], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([created_at])
+  @@map("generation_jobs")
+}

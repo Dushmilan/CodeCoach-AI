@@ -13,7 +13,7 @@ services:
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL:-mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://codecoach:codecoach@host.docker.internal:5432/codecoach}
       - PISTON_API_URL=http://piston:2000/api/v2/piston
       - DAILY_TOKEN_INPUT_CAP=${DAILY_TOKEN_INPUT_CAP:-250000}
       - DAILY_TOKEN_OUTPUT_CAP=${DAILY_TOKEN_OUTPUT_CAP:-125000}

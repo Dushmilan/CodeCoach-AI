@@ -10,19 +10,50 @@ import os
 os.environ.setdefault("ENVIRONMENT", "testing")
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only-32chars!!")
 
-import re
-import urllib.parse
+import re  # noqa: E402
+import urllib.parse  # noqa: E402
+import asyncio  # noqa: E402
 
 _TEST_DB = "codecoach_test"
 
+# Under pytest-xdist each worker process imports this module and resets the
+# schema; give every worker its own schema so parallel runs never race on the
+# same `codecoach_test` object (e.g. gw0 -> codecoach_test_gw0).
+_xdist_worker = os.environ.get("PYTEST_XDIST_WORKER")
+if _xdist_worker:
+    _TEST_DB = f"{_TEST_DB}_{_xdist_worker}"
+
+
+def _is_mysql_url(url: str) -> bool:
+    return url.startswith("mysql+aiomysql://") or url.startswith("mysql://")
+
+
+def _strip_pgbouncer(url: str) -> str:
+    """Drop the Supabase transaction-pooler `?pgbouncer=true` param.
+
+    asyncpg / SQLAlchemy would otherwise forward `pgbouncer` as an unknown
+    connection kwarg. Schema tooling talks to the session pooler directly, so
+    the param is meaningless here.
+    """
+    if "pgbouncer" not in url:
+        return url
+    scheme, netloc, path, query, fragment = urllib.parse.urlsplit(url)
+    params = [
+        kv
+        for kv in (query.split("&") if query else [])
+        if not kv.startswith("pgbouncer")
+    ]
+    return urllib.parse.urlunsplit((scheme, netloc, path, "&".join(params), fragment))
+
 
 def _ensure_test_database() -> str:
-    """Route tests to a dedicated MySQL `codecoach_test` database.
+    """Route tests to a dedicated `codecoach_test` schema.
 
-    Loads credentials from the repository root `.env` (if present) so the
-    suite runs against the same MySQL instance as the app. Creates the
-    database if it does not exist and returns the test URL. Runs at import
-    time so Settings() picks it up before app.main is loaded.
+    MySQL: creates the `codecoach_test` database next to the app database.
+    PostgreSQL/Supabase: uses a dedicated `codecoach_test` schema on the same
+    server (Supabase exposes a single database, so schema isolation is used).
+
+    Runs at import time so Settings() picks it up before app.main is loaded.
     """
     from urllib.parse import urlparse
 
@@ -37,6 +68,9 @@ def _ensure_test_database() -> str:
     )
     # When running on the host (not inside Docker), reach MySQL via localhost.
     base_url = base_url.replace("host.docker.internal", "127.0.0.1")
+    if not _is_mysql_url(base_url):
+        return _ensure_postgres_test_schema(base_url)
+
     match = re.match(r"^(mysql\+aiomysql://[^/]+)/(?:[^?]*)(\?.*)?$", base_url)
     if not match:
         raise RuntimeError(f"Unsupported DATABASE_URL for tests: {base_url}")
@@ -79,8 +113,70 @@ def _ensure_test_database() -> str:
         conn.close()
 
     # Create schema so API tests (ASGITransport does not run lifespan) see tables.
+    _create_schema_sync(test_url)
+    return test_url
+
+
+def _ensure_postgres_test_schema(base_url: str) -> str:
+    """Point DATABASE_URL at a dedicated `codecoach_test` schema.
+
+    The Prisma schema and app metadata are recreated on that schema, and
+    `search_path` is set via the connection so every app query targets it.
+    """
+    import asyncpg
+
+    base_url = _strip_pgbouncer(base_url)
+
+    async def _setup() -> None:
+        conn = await asyncpg.connect(base_url)
+        try:
+            await conn.execute(f'DROP SCHEMA IF EXISTS "{_TEST_DB}" CASCADE')
+            await conn.execute(f'CREATE SCHEMA "{_TEST_DB}"')
+        finally:
+            await conn.close()
+
+    asyncio.run(_setup())
+
+    os.environ["DATABASE_URL"] = base_url
+    os.environ["DATABASE_SEARCH_PATH"] = _TEST_DB
+
     # Rebuild from a clean slate so leftover migration-only tables never
-    # conflict, retrying the transient MySQL 1684/1824 DDL race.
+    # conflict, retrying transient network/DDL errors.
+    import time as _time
+
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from sqlalchemy.pool import NullPool
+    from app.models.orm import Base
+
+    async def _create_schema_async() -> None:
+        engine = create_async_engine(
+            base_url.replace("postgresql://", "postgresql+asyncpg://", 1),
+            poolclass=NullPool,
+            connect_args={
+                "server_settings": {"search_path": _TEST_DB},
+                # Supabase poolers reuse prepared-statement names across
+                # connections; disable asyncpg's statement cache so
+                # `create_all` does not hit DuplicatePreparedStatementError.
+                "statement_cache_size": 0,
+            },
+        )
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        await engine.dispose()
+
+    for _attempt in range(1, 6):
+        try:
+            asyncio.run(_create_schema_async())
+            break
+        except Exception:  # noqa: BLE001 - transient DDL/network race is broad
+            if _attempt == 5:
+                raise
+            _time.sleep(0.5 * _attempt)
+    return base_url
+
+
+def _create_schema_sync(test_url: str) -> None:
+    """Create the app schema from metadata (used by the MySQL path)."""
     import time as _time
 
     from sqlalchemy import create_engine, text
@@ -102,14 +198,12 @@ def _ensure_test_database() -> str:
             if _attempt == 5:
                 raise
             _time.sleep(0.5 * _attempt)
-    return test_url
 
 
 _ensure_test_database()
 
 import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402
-import asyncio  # noqa: E402
 from typing import Generator, AsyncGenerator  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from httpx import AsyncClient, ASGITransport  # noqa: E402
@@ -123,27 +217,42 @@ from app.services.question_bank import QuestionBank  # noqa: E402
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session")
 def test_client() -> Generator:
     """Create a test client for synchronous testing."""
     with TestClient(app) as client:
         yield client
 
 
+def _test_engine_kwargs() -> dict:
+    """Shared engine kwargs: force asyncpg driver + test search_path."""
+    kwargs = {}
+    db_url = os.environ["DATABASE_URL"]
+    if db_url.startswith("postgresql://"):
+        kwargs["connect_args"] = {
+            "server_settings": {"search_path": os.environ["DATABASE_SEARCH_PATH"]},
+            # Supabase poolers reuse prepared-statement names across
+            # connections; disable asyncpg's statement cache so DDL / DML does
+            # not hit DuplicatePreparedStatementError.
+            "statement_cache_size": 0,
+        }
+    return kwargs
+
+
+def _test_db_url() -> str:
+    """Return the test DATABASE_URL with the asyncpg driver forced."""
+    db_url = _strip_pgbouncer(os.environ["DATABASE_URL"])
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return db_url
+
+
 async def _seed_questions() -> int:
-    """Seed the sample question bank into the MySQL test database if empty.
+    """Seed the sample question bank into the test database if empty.
 
     The file-based question repository used to load sample_questions.json
-    automatically; with MySQL the test database starts empty, so the same
-    questions are seeded for API/integration tests. Unit SQL repository tests
-    truncate tables (test_db) for isolation.
+    automatically; with a DB-backed bank the test database starts empty, so
+    the same questions are seeded for API/integration tests. Unit SQL
+    repository tests clean tables (test_db) for isolation.
     """
     from sqlalchemy.ext.asyncio import (
         create_async_engine,
@@ -153,7 +262,9 @@ async def _seed_questions() -> int:
     from sqlalchemy.pool import NullPool
     from app.models.orm import Base, QuestionORM
 
-    engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
+    engine = create_async_engine(
+        _test_db_url(), poolclass=NullPool, **_test_engine_kwargs()
+    )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     async_session = async_sessionmaker(
@@ -219,10 +330,15 @@ def _seed_questions_sync() -> int:
     return asyncio.run(_seed_questions())
 
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def seed_test_questions():
-    """Seed the sample question bank once per session."""
-    await _seed_questions()
+@pytest.fixture(scope="session", autouse=True)
+def seed_test_questions():
+    """Seed the sample question bank once per session.
+
+    Sync fixture using ``asyncio.run`` so it never depends on the (function-
+    scoped) pytest-asyncio event loop, avoiding ScopeMismatch when the app
+    itself spins up its own loop.
+    """
+    _seed_questions_sync()
     yield
 
 
@@ -237,11 +353,11 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 
 @pytest_asyncio.fixture
 async def test_db():
-    """Provide an isolated MySQL-backed session for SQL repository tests.
+    """Provide an isolated DB-backed session for SQL repository tests.
 
-    Truncates all tables before each test so tests do not interfere with
-    each other or with the running application's database. Schema is created
-    by the app at startup (init_db) and must not be dropped mid-session.
+    Cleans all tables before each test so tests do not interfere with each
+    other or with the running application's database. Works on both MySQL and
+    PostgreSQL/Supabase (search_path points at the `codecoach_test` schema).
     """
     from sqlalchemy import text
     from sqlalchemy.ext.asyncio import (
@@ -252,13 +368,18 @@ async def test_db():
     from sqlalchemy.pool import NullPool
     from app.models.orm import Base
 
-    test_engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
+    db_url = _test_db_url()
+    test_engine = create_async_engine(
+        db_url, poolclass=NullPool, **_test_engine_kwargs()
+    )
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        await conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(text(f"TRUNCATE TABLE {table.name}"))
-        await conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+            await conn.execute(text(f"DELETE FROM {table.name}"))
+            if hasattr(table.c, "id") and db_url.startswith("postgresql+asyncpg"):
+                await conn.execute(
+                    text(f"ALTER SEQUENCE IF EXISTS {table.name}_id_seq RESTART WITH 1")
+                )
 
     async_session = async_sessionmaker(
         test_engine, class_=AsyncSession, expire_on_commit=False
@@ -375,28 +496,24 @@ def admin_headers(test_client: TestClient) -> dict:
         )
     token = res.json()["access_token"]
 
-    from urllib.parse import urlparse
+    async def _promote_admin() -> None:
+        from sqlalchemy import text as sa_text
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+        from sqlalchemy.pool import NullPool
 
-    import pymysql
-
-    parsed = urlparse(
-        os.environ["DATABASE_URL"].replace("mysql+aiomysql://", "mysql://")
-    )
-    conn = pymysql.connect(
-        host=parsed.hostname,
-        port=parsed.port or 3306,
-        user=urllib.parse.unquote(parsed.username or ""),
-        password=urllib.parse.unquote(parsed.password or ""),
-        database=os.environ["DATABASE_URL"].rsplit("/", 1)[-1],
-    )
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE users SET role='admin' WHERE username=%s", ("auditadmin",)
+        engine = create_async_engine(
+            _test_db_url(), poolclass=NullPool, **_test_engine_kwargs()
+        )
+        async_session = async_sessionmaker(engine, expire_on_commit=False)
+        async with async_session() as session:
+            await session.execute(
+                sa_text("UPDATE users SET role='admin' WHERE username=:u"),
+                {"u": "auditadmin"},
             )
-        conn.commit()
-    finally:
-        conn.close()
+            await session.commit()
+        await engine.dispose()
+
+    asyncio.run(_promote_admin())
 
     return {"Authorization": f"Bearer {token}"}
 
