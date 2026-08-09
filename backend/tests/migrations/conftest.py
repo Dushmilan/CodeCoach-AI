@@ -7,7 +7,7 @@ Alembic graph, so it never depends on `Base.metadata.create_all` to build the
 schema — verifying the migrations produce it end-to-end.
 
 In CI this suite runs as its own job against a dedicated, empty
-`MYSQL_DATABASE=codecoach_test`, so there is no cross-suite interference.
+`POSTGRES_DB=codecoach_test`, so there is no cross-suite interference.
 """
 
 import os
@@ -16,7 +16,6 @@ import urllib.parse
 from pathlib import Path
 from typing import Iterator
 
-import pymysql
 import pytest
 from alembic.config import Config
 
@@ -24,11 +23,21 @@ from alembic.config import Config
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 
 
+def _is_postgres(url: str) -> bool:
+    return url.startswith("postgresql://") or url.startswith("postgresql+")
+
+
 def _migration_url() -> str:
     base = os.environ.get(
         "DATABASE_URL",
-        "mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach",
+        "postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_test",
     ).replace("host.docker.internal", "127.0.0.1")
+    if _is_postgres(base):
+        # alembic/env.py drives migrations through an async engine, so force
+        # the asyncpg driver (same as the app) for the migration runs.
+        if not base.startswith("postgresql+asyncpg://"):
+            base = base.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return base
     match = re.match(r"^(mysql\+aiomysql://[^/]+)/([^?]*)(\?.*)?$", base)
     if not match:
         raise RuntimeError(f"Unsupported DATABASE_URL for migrations: {base}")
@@ -36,10 +45,13 @@ def _migration_url() -> str:
 
 
 def _connection_params(url: str):
-    parsed = urllib.parse.urlparse(url.replace("mysql+aiomysql://", "mysql://"))
+    normalized = url.replace("postgresql+asyncpg://", "postgresql://").replace(
+        "mysql+aiomysql://", "mysql://"
+    )
+    parsed = urllib.parse.urlparse(normalized)
     return {
         "host": parsed.hostname,
-        "port": parsed.port or 3306,
+        "port": parsed.port or (5432 if _is_postgres(url) else 3306),
         "user": urllib.parse.unquote(parsed.username or ""),
         "password": urllib.parse.unquote(parsed.password or ""),
         "database": (parsed.path or "").lstrip("/").split("?")[0] or None,
@@ -47,6 +59,28 @@ def _connection_params(url: str):
 
 
 def _drop_all_tables(url: str) -> None:
+    if _is_postgres(url):
+        import psycopg
+
+        params = _connection_params(url)
+        conn = psycopg.connect(
+            host=params["host"],
+            port=params["port"],
+            user=params["user"],
+            password=params["password"],
+            dbname=params["database"],
+            autocommit=True,
+        )
+        try:
+            with conn.cursor() as cur:
+                cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
+                cur.execute("CREATE SCHEMA public")
+        finally:
+            conn.close()
+        return
+
+    import pymysql
+
     conn = pymysql.connect(**_connection_params(url))
     try:
         with conn.cursor() as cur:

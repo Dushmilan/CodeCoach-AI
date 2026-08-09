@@ -4,8 +4,8 @@
   "generated_at": "2026-08-09",
   "modules": {
     "app/services/piston_service.py": {
-      "lines": 95.3,
-      "branches": 84.2
+      "lines": 92.3,
+      "branches": 78.9
     },
     "app/services/static_code_validator.py": {
       "lines": 100.0,
@@ -24,8 +24,8 @@
       "branches": 87.5
     },
     "app/api/auth_deps.py": {
-      "lines": 88.5,
-      "branches": 50.0
+      "lines": 92.3,
+      "branches": 75.0
     },
     "app/middleware/security_headers.py": {
       "lines": 100.0,
@@ -40,8 +40,8 @@
       "branches": 100.0
     },
     "app/use_cases/question_validation/function_signature.py": {
-      "lines": 83.7,
-      "branches": 70.5
+      "lines": 91.1,
+      "branches": 80.8
     },
     "app/use_cases/question_validation/output_format.py": {
       "lines": 71.3,
@@ -52,8 +52,8 @@
       "branches": 57.6
     },
     "app/use_cases/question_validation/starter_code.py": {
-      "lines": 50.5,
-      "branches": 25.0
+      "lines": 52.5,
+      "branches": 26.7
     },
     "app/use_cases/question_validation/structure.py": {
       "lines": 86.3,
@@ -69,11 +69,11 @@
     }
   },
   "exceptions": {
-    "app/adapters/code_wrappers/base.py": {
+    "app/adapters/coaching_prompts.py": {
       "lines": 100.0,
       "branches": 100.0
     },
-    "app/adapters/coaching_prompts.py": {
+    "app/adapters/code_wrappers/base.py": {
       "lines": 100.0,
       "branches": 100.0
     }

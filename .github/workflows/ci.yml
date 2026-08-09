@@ -73,15 +73,14 @@ jobs:
 
       - name: Run unit tests
         run: |
-          COVERAGE_FILE=.coverage.unit pytest tests/unit -v --cov=app --cov-report=xml:unit-coverage.xml -n auto --dist loadscope
+          pytest tests/unit -v --cov=app --cov-report=xml:unit-coverage.xml --cov-append
 
       - name: Run integration tests
         run: |
-          COVERAGE_FILE=.coverage.integration pytest tests/integration -v --cov=app --cov-report=xml:integration-coverage.xml \
+          pytest tests/integration -v --cov=app --cov-report=xml:integration-coverage.xml --cov-append \
             --ignore=tests/integration/test_run_endpoints.py \
             --ignore=tests/integration/test_auth_supabase.py \
-            --ignore=tests/integration/test_database_sync.py \
-            -n auto --dist loadscope
+            --ignore=tests/integration/test_database_sync.py
 
       - name: Run contract + failure-simulation tests
         run: |
@@ -90,19 +89,18 @@ jobs:
 
       - name: Run boundary condition tests
         run: |
-          pytest tests/unit/test_boundary_conditions.py -v
+          pytest tests/unit/test_boundary_conditions.py -v --cov-append
 
       - name: Run security tests
         run: |
-          pytest tests/security -v
+          pytest tests/security -v --cov-append
 
       - name: Run smoke tests
         run: |
-          pytest tests/integration -k "test_health_check_basic" -v
+          pytest tests/integration -k "test_health_check_basic" -v --cov-append
 
       - name: Combine coverage and enforce per-module budget
         run: |
-          coverage combine .coverage.unit .coverage.integration
           coverage xml -o coverage.xml
           python ../qa/enforce_coverage_budget.py \
             --xml coverage.xml \
@@ -121,20 +119,19 @@ jobs:
       run:
         working-directory: backend
     env:
-      DATABASE_URL: mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach_test
+      DATABASE_URL: postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_test
 
     services:
-      mysql:
-        image: mysql:8.0
+      postgres:
+        image: postgres:16-alpine
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: codecoach_test
-          MYSQL_USER: codecoach
-          MYSQL_PASSWORD: codecoach
+          POSTGRES_USER: codecoach
+          POSTGRES_PASSWORD: codecoach
+          POSTGRES_DB: codecoach_test
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd "mysqladmin ping -h localhost"
+          --health-cmd "pg_isready -U codecoach"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10

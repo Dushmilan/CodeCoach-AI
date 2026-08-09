@@ -57,7 +57,10 @@ class SqlUsageRepository(UsageRepository):
         if dialect == "postgresql":
             stmt = pg_insert(UserDailyUsageORM).values(**values)
             stmt = stmt.on_conflict_do_update(
-                index_elements=[UserDailyUsageORM.user_id, UserDailyUsageORM.usage_date],
+                index_elements=[
+                    UserDailyUsageORM.user_id,
+                    UserDailyUsageORM.usage_date,
+                ],
                 set_={
                     "input_tokens": UserDailyUsageORM.input_tokens + input_tokens,
                     "output_tokens": UserDailyUsageORM.output_tokens + output_tokens,
