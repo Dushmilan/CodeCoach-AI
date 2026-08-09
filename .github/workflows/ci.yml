@@ -119,7 +119,7 @@ jobs:
       run:
         working-directory: backend
     env:
-      DATABASE_URL: postgresql+asyncpg://codecoach:codecoach@127.0.0.1:5432/codecoach_test
+      DATABASE_URL: postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_test
 
     services:
       postgres:
