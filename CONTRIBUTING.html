@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="CodeCoach AI docs (tools/markdown_to_html.py)">
+<title>Contributing to CodeCoach AI</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --content: #1e293b;
+  --muted: #64748b;
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+  --border: #e2e8f0;
+  --code-bg: #0f172a;
+  --code-fg: #e2e8f0;
+  --sidebar-bg: #0f172a;
+  --sidebar-fg: #cbd5e1;
+  --sidebar-hover: #1e293b;
+  --sidebar-link: #94a3b8;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  color: var(--content);
+  background: var(--bg);
+  line-height: 1.65;
+  font-size: 16px;
+}
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  background: var(--sidebar-bg); color: var(--sidebar-fg);
+  padding: 24px 16px 40px;
+}
+.sidebar .brand { display: block; color: #fff; font-weight: 700; font-size: 17px; text-decoration: none; padding: 0 8px 6px; }
+.sidebar .brand small { display: block; color: #64748b; font-weight: 400; font-size: 12px; }
+.sidebar h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin: 22px 8px 8px; }
+.sidebar a.doc-link {
+  display: block; padding: 4px 8px; border-radius: 6px;
+  color: var(--sidebar-link); text-decoration: none; font-size: 13px;
+}
+.sidebar a.doc-link:hover, .sidebar a.doc-link.current { background: var(--sidebar-hover); color: #fff; }
+.sidebar nav.toc a {
+  display: block; padding: 3px 8px; border-radius: 6px; font-size: 12.5px;
+  color: var(--sidebar-link); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar nav.toc a:hover { background: var(--sidebar-hover); color: #fff; }
+.sidebar nav.toc a.l2 { padding-left: 18px; }
+.sidebar nav.toc a.l3 { padding-left: 28px; }
+.content { padding: 40px 56px 96px; max-width: 880px; }
+.content h1 { font-size: 30px; line-height: 1.2; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin: 0 0 24px; }
+.content h2 { font-size: 23px; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h3 { font-size: 19px; margin: 28px 0 10px; }
+.content h4, .content h5, .content h6 { font-size: 16px; margin: 22px 0 8px; }
+.content h2:target, .content h3:target, .content h4:target { background: var(--accent-soft); }
+.content p { margin: 12px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content ul, .content ol { margin: 12px 0 12px 24px; padding: 0; }
+.content li { margin: 4px 0; }
+.content li > ul, .content li > ol { margin-top: 4px; margin-bottom: 4px; }
+.content li input[type="checkbox"] { margin-right: 6px; vertical-align: middle; }
+.content blockquote {
+  margin: 16px 0; padding: 4px 18px;
+  border-left: 4px solid var(--accent); background: var(--accent-soft);
+  border-radius: 0 8px 8px 0;
+}
+.content blockquote p { margin: 8px 0; }
+.content hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+.content pre {
+  background: var(--code-bg); color: var(--code-fg);
+  padding: 16px 18px; border-radius: 8px; overflow-x: auto;
+  font-size: 13.5px; line-height: 1.55;
+}
+.content pre code { background: none; color: inherit; padding: 0; }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: #eef2f7; color: #be185d; padding: 2px 5px; border-radius: 4px; font-size: .88em;
+}
+.content table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14.5px; }
+.content th, .content td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+.content th { background: #f1f5f9; font-weight: 600; }
+.content tr:nth-child(even) td { background: #fbfcfe; }
+.content img { max-width: 100%; }
+.content del { color: var(--muted); }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .content { padding: 28px 20px 72px; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="README.html">CodeCoach AI<small>Documentation</small></a>
+    <h2>Docs</h2>
+    <a href="README.html" class="doc-link">README</a>
+<a href="Progress.html" class="doc-link">Progress</a>
+<a href="Ideas.html" class="doc-link">Ideas</a>
+<a href="CLAUDE.html" class="doc-link">Engineering Guidelines</a>
+<a href="AGENTS.html" class="doc-link">Agent Guide</a>
+<a href="SECURITY.html" class="doc-link">Security Policy</a>
+<a href="CONTRIBUTING.html" class="doc-link current">Contributing</a>
+<a href="CODE_OF_CONDUCT.html" class="doc-link">Code of Conduct</a>
+<a href="Docs/AUDIT_REPORT.html" class="doc-link">Audit Report</a>
+<a href="backend/tests/README.html" class="doc-link">Test Suite</a>
+    <h2>On this page</h2>
+    <nav class="toc">
+    <a class="l2" href="#table-of-contents">Table of Contents</a>
+<a class="l2" href="#code-of-conduct">Code of Conduct</a>
+<a class="l2" href="#getting-started">Getting Started</a>
+<a class="l2" href="#development-setup">Development Setup</a>
+<a class="l3" href="#prerequisites">Prerequisites</a>
+<a class="l3" href="#quick-start-with-docker">Quick Start with Docker</a>
+<a class="l3" href="#manual-setup">Manual Setup</a>
+<a class="l3" href="#backend">Backend</a>
+<a class="l3" href="#frontend">Frontend</a>
+<a class="l3" href="#piston-code-execution">Piston (Code Execution)</a>
+<a class="l3" href="#environment-variables">Environment Variables</a>
+<a class="l2" href="#making-changes">Making Changes</a>
+<a class="l3" href="#branch-naming">Branch Naming</a>
+<a class="l3" href="#commit-messages">Commit Messages</a>
+<a class="l2" href="#testing">Testing</a>
+<a class="l3" href="#backend-pytest">Backend (pytest)</a>
+<a class="l3" href="#frontend-vitest">Frontend (Vitest)</a>
+<a class="l3" href="#before-submitting">Before Submitting</a>
+<a class="l2" href="#submitting-a-pull-request">Submitting a Pull Request</a>
+<a class="l2" href="#coding-conventions">Coding Conventions</a>
+<a class="l3" href="#general">General</a>
+<a class="l3" href="#backend-python">Backend (Python)</a>
+<a class="l3" href="#frontend-typescript">Frontend (TypeScript)</a>
+<a class="l3" href="#file-structure">File Structure</a>
+<a class="l2" href="#issue-labels">Issue Labels</a>
+<a class="l2" href="#questions">Questions?</a>
+    </nav>
+  </aside>
+  <main class="content">
+<h1 id="contributing-to-codecoach-ai">Contributing to CodeCoach AI</h1>
+<p>Thanks for your interest in contributing! This guide will help you get started.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul><li><p><a href="#code-of-conduct">Code of Conduct</a></p></li><li><p><a href="#getting-started">Getting Started</a></p></li><li><p><a href="#development-setup">Development Setup</a></p></li><li><p><a href="#making-changes">Making Changes</a></p></li><li><p><a href="#testing">Testing</a></p></li><li><p><a href="#submitting-a-pull-request">Submitting a Pull Request</a></p></li><li><p><a href="#coding-conventions">Coding Conventions</a></p></li><li><p><a href="#issue-labels">Issue Labels</a></p></li></ul>
+<h2 id="code-of-conduct">Code of Conduct</h2>
+<p>This project follows the <a href="CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a>. By participating, you agree to uphold its standards.</p>
+<h2 id="getting-started">Getting Started</h2>
+<ol start="1"><li><p><strong>Fork</strong> the repository on GitHub</p></li><li><p><strong>Clone</strong> your fork locally:</p></li></ol>
+<pre><code class="language-bash">   git clone https://github.com/&lt;your-username&gt;/CodeCoach-AI.git
+   cd CodeCoach-AI</code></pre>
+<ol start="3"><li><p><strong>Add upstream remote</strong>:</p></li></ol>
+<pre><code class="language-bash">   git remote add upstream https://github.com/dushmilan/CodeCoach-AI.git</code></pre>
+<ol start="4"><li><p><strong>Create a branch</strong> for your changes:</p></li></ol>
+<pre><code class="language-bash">   git checkout -b feature/your-feature-name</code></pre>
+<h2 id="development-setup">Development Setup</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul><li><p>Python 3.11+</p></li><li><p>Node.js 18+</p></li><li><p>Docker &amp; Docker Compose</p></li><li><p>A running MySQL 8 instance (see <code>DATABASE_URL</code> in <code>.env.example</code>)</p></li><li><p>Git</p></li></ul>
+<h3 id="quick-start-with-docker">Quick Start with Docker</h3>
+<pre><code class="language-bash">docker compose up --build</code></pre>
+<ul><li><p>Frontend: http://localhost:3000</p></li><li><p>Backend API: http://localhost:8000</p></li><li><p>API Docs: http://localhost:8000/docs</p></li></ul>
+<h3 id="manual-setup">Manual Setup</h3>
+<h4 id="backend">Backend</h4>
+<pre><code class="language-bash">cd backend
+python -m venv venv
+# Windows: venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with your API keys
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000</code></pre>
+<h4 id="frontend">Frontend</h4>
+<pre><code class="language-bash">cd frontend
+npm install
+cp .env.example .env.local
+npm run dev</code></pre>
+<h4 id="piston-code-execution">Piston (Code Execution)</h4>
+<pre><code class="language-bash">docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston</code></pre>
+<h3 id="environment-variables">Environment Variables</h3>
+<p>Copy <code>.env.example</code> to <code>.env</code> in the backend directory and fill in:</p>
+<pre><code>GROQ_API_KEY=your_groq_api_key
+JWT_SECRET_KEY=your_jwt_secret_key
+DATABASE_URL=mysql://codecoach:codecoach@localhost:3306/codecoach
+SUPABASE_URL=https://your-project-id.supabase.co   # optional — OAuth (Google)
+SUPABASE_ANON_KEY=your_supabase_anon_key_here        # optional — OAuth (Google)</code></pre>
+<p>Get a free API key from:</p>
+<ul><li><p><a href="https://console.groq.com/keys">Groq Console</a></p></li></ul>
+<h2 id="making-changes">Making Changes</h2>
+<h3 id="branch-naming">Branch Naming</h3>
+<p>Use descriptive branch names:</p>
+<ul><li><p><code>feature/add-new-language</code> — new features</p></li><li><p><code>fix/resolve-login-bug</code> — bug fixes</p></li><li><p><code>docs/update-readme</code> — documentation</p></li><li><p><code>refactor/clean-coach-service</code> — refactoring</p></li><li><p><code>test/add-question-tests</code> — adding tests</p></li></ul>
+<h3 id="commit-messages">Commit Messages</h3>
+<p>Write clear, concise commit messages:</p>
+<pre><code>Add dark mode toggle to settings
+
+- Add ThemeToggle component
+- Persist preference in localStorage
+- Update ThemeProvider context</code></pre>
+<h2 id="testing">Testing</h2>
+<h3 id="backend-pytest">Backend (pytest)</h3>
+<pre><code class="language-bash">cd backend
+python -m pytest                      # All tests
+python -m pytest tests/unit/          # Unit tests
+python -m pytest tests/integration/   # Integration tests
+python -m pytest --cov=app            # With coverage</code></pre>
+<h3 id="frontend-vitest">Frontend (Vitest)</h3>
+<pre><code class="language-bash">cd frontend
+npm test                              # Watch mode
+npm run test:run                      # Single run
+npm run lint                          # ESLint
+npm run typecheck                     # TypeScript check</code></pre>
+<h3 id="before-submitting">Before Submitting</h3>
+<p>Run all checks before submitting your PR:</p>
+<pre><code class="language-bash"># Backend
+cd backend
+ruff check .
+ruff format . --check
+python -m pytest
+
+# Frontend
+cd frontend
+npm run typecheck
+npm run lint
+npm run test:run</code></pre>
+<h2 id="submitting-a-pull-request">Submitting a Pull Request</h2>
+<ol start="1"><li><p><strong>Update your fork</strong>:</p></li></ol>
+<pre><code class="language-bash">   git fetch upstream
+   git rebase upstream/main</code></pre>
+<ol start="2"><li><p><strong>Push to your fork</strong>:</p></li></ol>
+<pre><code class="language-bash">   git push origin feature/your-feature-name</code></pre>
+<ol start="3"><li><p><strong>Open a PR</strong> on GitHub with:</p></li></ol>
+<ul><li><p>Clear title describing the change</p></li><li><p>Description of what changed and why</p></li><li><p>Link to related issue (e.g., &quot;Fixes #42&quot;)</p></li><li><p>Screenshots for UI changes</p></li></ul>
+<ol start="4"><li><p><strong>Respond to review feedback</strong> — maintainers may request changes</p></li></ol>
+<ol start="5"><li><p><strong>Squash commits</strong> if asked before merging</p></li></ol>
+<h2 id="coding-conventions">Coding Conventions</h2>
+<h3 id="general">General</h3>
+<ul><li><p><strong>No comments</strong> unless logic is genuinely non-obvious</p></li><li><p><strong>Named exports</strong> over default exports</p></li><li><p><strong>Async everywhere</strong> — handlers, services, use cases</p></li><li><p><strong>No secrets in code</strong> — API keys from headers/env vars only</p></li></ul>
+<h3 id="backend-python">Backend (Python)</h3>
+<ul><li><p>Full type annotations</p></li><li><p>Pydantic v2 schemas</p></li><li><p>Module-level loggers</p></li><li><p><code>snake_case</code> for functions/variables</p></li><li><p>FastAPI <code>Depends()</code> for DI</p></li><li><p>Every language needs a code wrapper in <code>adapters/code_wrappers/</code></p></li></ul>
+<h3 id="frontend-typescript">Frontend (TypeScript)</h3>
+<ul><li><p>Strict mode, no <code>any</code></p></li><li><p><code>import type</code> for type-only imports</p></li><li><p><code>PascalCase</code> components, <code>camelCase</code> functions</p></li><li><p>Tailwind CSS only (no CSS modules, no styled-components)</p></li><li><p>Feature-based organization (<code>features/{name}/{hook,service,types}</code>)</p></li></ul>
+<h3 id="file-structure">File Structure</h3>
+<p>Follow existing patterns:</p>
+<pre><code>backend/app/
+  api/            # Thin route handlers
+  services/       # Business logic
+  use_cases/      # Validation logic
+  models/         # Pydantic schemas
+  ports/          # Abstract interfaces
+  adapters/       # Concrete implementations
+
+frontend/src/
+  features/       # Feature modules
+  components/     # Reusable UI
+  hooks/          # Shared hooks
+  lib/            # Utilities</code></pre>
+<h2 id="issue-labels">Issue Labels</h2>
+<table><thead><tr><th>Label</th><th>Description</th></tr></thead><tbody><tr><td><code>good first issue</code></td><td>Great for newcomers</td></tr><tr><td><code>help wanted</code></td><td>Extra attention needed</td></tr><tr><td><code>bug</code></td><td>Something isn&#x27;t working</td></tr><tr><td><code>enhancement</code></td><td>New feature or request</td></tr><tr><td><code>documentation</code></td><td>Improvements to docs</td></tr><tr><td><code>question</code></td><td>Further information needed</td></tr></tbody></table>
+<h2 id="questions">Questions?</h2>
+<p>Open a <a href="https://github.com/dushmilan/CodeCoach-AI/discussions">GitHub Discussion</a> or check the <a href="README.html">README.html</a>.</p>
+
+  </main>
+</div>
+</body>
+</html>

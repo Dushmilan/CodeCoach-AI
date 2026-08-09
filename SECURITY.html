@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="CodeCoach AI docs (tools/markdown_to_html.py)">
+<title>Security Policy — CodeCoach AI</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --content: #1e293b;
+  --muted: #64748b;
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+  --border: #e2e8f0;
+  --code-bg: #0f172a;
+  --code-fg: #e2e8f0;
+  --sidebar-bg: #0f172a;
+  --sidebar-fg: #cbd5e1;
+  --sidebar-hover: #1e293b;
+  --sidebar-link: #94a3b8;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  color: var(--content);
+  background: var(--bg);
+  line-height: 1.65;
+  font-size: 16px;
+}
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  background: var(--sidebar-bg); color: var(--sidebar-fg);
+  padding: 24px 16px 40px;
+}
+.sidebar .brand { display: block; color: #fff; font-weight: 700; font-size: 17px; text-decoration: none; padding: 0 8px 6px; }
+.sidebar .brand small { display: block; color: #64748b; font-weight: 400; font-size: 12px; }
+.sidebar h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin: 22px 8px 8px; }
+.sidebar a.doc-link {
+  display: block; padding: 4px 8px; border-radius: 6px;
+  color: var(--sidebar-link); text-decoration: none; font-size: 13px;
+}
+.sidebar a.doc-link:hover, .sidebar a.doc-link.current { background: var(--sidebar-hover); color: #fff; }
+.sidebar nav.toc a {
+  display: block; padding: 3px 8px; border-radius: 6px; font-size: 12.5px;
+  color: var(--sidebar-link); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar nav.toc a:hover { background: var(--sidebar-hover); color: #fff; }
+.sidebar nav.toc a.l2 { padding-left: 18px; }
+.sidebar nav.toc a.l3 { padding-left: 28px; }
+.content { padding: 40px 56px 96px; max-width: 880px; }
+.content h1 { font-size: 30px; line-height: 1.2; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin: 0 0 24px; }
+.content h2 { font-size: 23px; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h3 { font-size: 19px; margin: 28px 0 10px; }
+.content h4, .content h5, .content h6 { font-size: 16px; margin: 22px 0 8px; }
+.content h2:target, .content h3:target, .content h4:target { background: var(--accent-soft); }
+.content p { margin: 12px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content ul, .content ol { margin: 12px 0 12px 24px; padding: 0; }
+.content li { margin: 4px 0; }
+.content li > ul, .content li > ol { margin-top: 4px; margin-bottom: 4px; }
+.content li input[type="checkbox"] { margin-right: 6px; vertical-align: middle; }
+.content blockquote {
+  margin: 16px 0; padding: 4px 18px;
+  border-left: 4px solid var(--accent); background: var(--accent-soft);
+  border-radius: 0 8px 8px 0;
+}
+.content blockquote p { margin: 8px 0; }
+.content hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+.content pre {
+  background: var(--code-bg); color: var(--code-fg);
+  padding: 16px 18px; border-radius: 8px; overflow-x: auto;
+  font-size: 13.5px; line-height: 1.55;
+}
+.content pre code { background: none; color: inherit; padding: 0; }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: #eef2f7; color: #be185d; padding: 2px 5px; border-radius: 4px; font-size: .88em;
+}
+.content table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14.5px; }
+.content th, .content td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+.content th { background: #f1f5f9; font-weight: 600; }
+.content tr:nth-child(even) td { background: #fbfcfe; }
+.content img { max-width: 100%; }
+.content del { color: var(--muted); }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .content { padding: 28px 20px 72px; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="README.html">CodeCoach AI<small>Documentation</small></a>
+    <h2>Docs</h2>
+    <a href="README.html" class="doc-link">README</a>
+<a href="Progress.html" class="doc-link">Progress</a>
+<a href="Ideas.html" class="doc-link">Ideas</a>
+<a href="CLAUDE.html" class="doc-link">Engineering Guidelines</a>
+<a href="AGENTS.html" class="doc-link">Agent Guide</a>
+<a href="SECURITY.html" class="doc-link current">Security Policy</a>
+<a href="CONTRIBUTING.html" class="doc-link">Contributing</a>
+<a href="CODE_OF_CONDUCT.html" class="doc-link">Code of Conduct</a>
+<a href="Docs/AUDIT_REPORT.html" class="doc-link">Audit Report</a>
+<a href="backend/tests/README.html" class="doc-link">Test Suite</a>
+    <h2>On this page</h2>
+    <nav class="toc">
+    <a class="l2" href="#reporting-a-vulnerability">Reporting a Vulnerability</a>
+<a class="l2" href="#what-to-include">What to Include</a>
+<a class="l2" href="#response-timeline">Response Timeline</a>
+<a class="l2" href="#scope">Scope</a>
+<a class="l3" href="#in-scope">In Scope</a>
+<a class="l3" href="#out-of-scope">Out of Scope</a>
+<a class="l2" href="#supported-versions">Supported Versions</a>
+<a class="l2" href="#security-best-practices-for-contributors">Security Best Practices for Contributors</a>
+<a class="l2" href="#known-security-considerations">Known Security Considerations</a>
+<a class="l2" href="#contact">Contact</a>
+    </nav>
+  </aside>
+  <main class="content">
+<h1 id="security-policy">Security Policy</h1>
+<h2 id="reporting-a-vulnerability">Reporting a Vulnerability</h2>
+<p>If you discover a security vulnerability within CodeCoach AI, please send an email to <strong>dushmilan05@gmail.com</strong>. All security vulnerabilities will be promptly addressed.</p>
+<p><strong>Please do NOT report security vulnerabilities through public GitHub issues.</strong></p>
+<h2 id="what-to-include">What to Include</h2>
+<p>When reporting a vulnerability, please include:</p>
+<ul><li><p>Description of the vulnerability</p></li><li><p>Steps to reproduce the issue</p></li><li><p>Potential impact</p></li><li><p>Suggested fix (if any)</p></li></ul>
+<h2 id="response-timeline">Response Timeline</h2>
+<ul><li><p><strong>Acknowledgment</strong>: Within 48 hours</p></li><li><p><strong>Initial assessment</strong>: Within 1 week</p></li><li><p><strong>Fix or mitigation</strong>: Depends on severity, typically within 2 weeks</p></li></ul>
+<h2 id="scope">Scope</h2>
+<h3 id="in-scope">In Scope</h3>
+<ul><li><p>Authentication and authorization bypass</p></li><li><p>SQL injection or data exposure</p></li><li><p>Cross-site scripting (XSS) in the frontend</p></li><li><p>Server-side request forgery (SSRF)</p></li><li><p>Code execution vulnerabilities in the Piston integration</p></li><li><p>API key exposure or leakage</p></li><li><p>Any vulnerability that could compromise user data</p></li></ul>
+<h3 id="out-of-scope">Out of Scope</h3>
+<ul><li><p>Denial of service attacks</p></li><li><p>Social engineering</p></li><li><p>Issues in third-party dependencies (report these upstream)</p></li><li><p>Issues requiring physical access to a user&#x27;s device</p></li></ul>
+<h2 id="supported-versions">Supported Versions</h2>
+<table><thead><tr><th>Version</th><th>Supported</th></tr></thead><tbody><tr><td>Latest</td><td>:white_check_mark:</td></tr><tr><td>&lt; Latest</td><td>:x:</td></tr></tbody></table>
+<h2 id="security-best-practices-for-contributors">Security Best Practices for Contributors</h2>
+<p>When contributing to CodeCoach AI:</p>
+<ol start="1"><li><p><strong>Never commit secrets</strong> - API keys, passwords, tokens must never be in code</p></li><li><p><strong>Validate input</strong> - All user input must be validated on the backend</p></li><li><p><strong>Use parameterized queries</strong> - Never interpolate user input into SQL</p></li><li><p><strong>Escape output</strong> - Prevent XSS by escaping rendered content</p></li><li><p><strong>Follow dependency updates</strong> - Keep dependencies current</p></li><li><p><strong>Use HTTPS</strong> - All production deployments should use TLS</p></li></ol>
+<h2 id="known-security-considerations">Known Security Considerations</h2>
+<ul><li><p><strong>Platform-owned Groq API Key</strong>: AI coaching uses a single server-side Groq key (<code>GROQ_API_KEY</code>). Clients never supply or store keys. The key is never logged; only masked status is surfaced in admin/debug endpoints. Per-user token usage is metered with daily caps to bound abuse.</p></li><li><p><strong>Piston Code Execution</strong>: User code runs in an isolated Docker container. Network access is disabled (<code>PISTON_DISABLE_NETWORK_ACCESS=true</code>).</p></li><li><p><strong>JWT Authentication</strong>: Tokens use HS256 signing with a <code>JWT_SECRET_KEY</code> env var (fail-closed in production).</p></li></ul>
+<h2 id="contact">Contact</h2>
+<ul><li><p><strong>Security email</strong>: dushmilan05@gmail.com</p></li><li><p><strong>GitHub Issues</strong>: For non-security bugs only</p></li></ul>
+
+  </main>
+</div>
+</body>
+</html>
