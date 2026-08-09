@@ -45,9 +45,7 @@ def cap_for_plan(plan: str) -> int:
 
 
 def _reset_at(now: datetime) -> datetime:
-    return (now + timedelta(days=1)).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    return (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def daily_limit_headers(
@@ -80,8 +78,12 @@ async def enforce_daily_request_cap(
         await _record_denial(usage_repo, request, user, "daily_cap")
         headers = dict(request.state.daily_limit_headers)
         now = datetime.now(timezone.utc)
-        headers["Retry-After"] = str(max(1, int((_reset_at(now) - now).total_seconds())))
-        raise HTTPException(status_code=429, detail="Daily request limit reached", headers=headers)
+        headers["Retry-After"] = str(
+            max(1, int((_reset_at(now) - now).total_seconds()))
+        )
+        raise HTTPException(
+            status_code=429, detail="Daily request limit reached", headers=headers
+        )
 
 
 async def _record_denial(

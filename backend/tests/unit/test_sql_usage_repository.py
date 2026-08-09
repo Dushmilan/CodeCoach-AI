@@ -247,9 +247,7 @@ class TestSqlUsageRepository:
             output_tokens=5,
             request_count=today_requests_b,
         )
-        rows = await repo.all_daily(
-            user_id, since=date(2000, 1, 1), limit=10
-        )
+        rows = await repo.all_daily(user_id, since=date(2000, 1, 1), limit=10)
         assert len(rows) == 1
         assert rows[0].request_count == today_requests_a
 
@@ -303,7 +301,10 @@ class TestSqlUsageRepository:
             user_id=user_id, ip="2.2.2.2", reason="ip_limit", endpoint="/api/coach"
         )
         since = datetime(2000, 1, 1, tzinfo=timezone.utc)
-        by_ip = {row.key: row.count for row in await repo.rate_limit_event_breakdown(since, "ip")}
+        by_ip = {
+            row.key: row.count
+            for row in await repo.rate_limit_event_breakdown(since, "ip")
+        }
         assert by_ip["1.1.1.1"] == 2
         assert by_ip["2.2.2.2"] == 1
         by_endpoint = {

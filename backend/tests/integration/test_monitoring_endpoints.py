@@ -62,9 +62,7 @@ class TestMonitoringEndpoint:
             res = await async_client.get("/health/monitoring")
             assert res.status_code == 200
             data = res.json()
-            redis = next(
-                d for d in data["dependencies"] if d["name"] == "redis"
-            )
+            redis = next(d for d in data["dependencies"] if d["name"] == "redis")
             assert redis["ok"] is False
             assert data["healthy"] is False
         finally:

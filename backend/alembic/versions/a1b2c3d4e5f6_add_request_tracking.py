@@ -39,7 +39,7 @@ def upgrade() -> None:
         sa.Column("ip", sa.String(length=45), nullable=False),
         sa.Column("reason", sa.String(length=50), nullable=False),
         sa.Column("endpoint", sa.String(length=100), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -77,15 +77,16 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Revert request tracking schema."""
+    is_postgres = op.get_bind().dialect.name == "postgresql"
     op.drop_constraint(
-        "rate_limit_events_ibfk_1", "rate_limit_events", type_="foreignkey"
+        "rate_limit_events_user_id_fkey" if is_postgres else "rate_limit_events_ibfk_1",
+        "rate_limit_events",
+        type_="foreignkey",
     )
     op.drop_index("ix_rate_limit_events_ip_created", table_name="rate_limit_events")
     op.drop_index("ix_rate_limit_events_user_created", table_name="rate_limit_events")
     op.drop_index(op.f("ix_rate_limit_events_ip"), table_name="rate_limit_events")
-    op.drop_index(
-        op.f("ix_rate_limit_events_user_id"), table_name="rate_limit_events"
-    )
+    op.drop_index(op.f("ix_rate_limit_events_user_id"), table_name="rate_limit_events")
     op.drop_index(
         op.f("ix_rate_limit_events_created_at"), table_name="rate_limit_events"
     )

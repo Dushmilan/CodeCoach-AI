@@ -51,9 +51,7 @@ async def monitoring_check(
     service = AbuseDetectionService(
         total_events_getter=usage_repo.count_rate_limit_events,
         breakdown_by_ip=lambda s: usage_repo.rate_limit_event_breakdown(s, "ip"),
-        breakdown_by_user=lambda s: usage_repo.rate_limit_event_breakdown(
-            s, "user_id"
-        ),
+        breakdown_by_user=lambda s: usage_repo.rate_limit_event_breakdown(s, "user_id"),
         recent_events=usage_repo.recent_rate_limit_events,
     )
     report = await service.analyze(since)

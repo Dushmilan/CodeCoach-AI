@@ -91,11 +91,7 @@ class AbuseDetectionService:
 
         events = await self._recent(500)
 
-        windowed = [
-            e
-            for e in events
-            if _aware(e.created_at) >= since
-        ]
+        windowed = [e for e in events if _aware(e.created_at) >= since]
 
         # Multi-account farming: a single external IP backing several accounts.
         ip_to_users: dict[str, set] = defaultdict(set)

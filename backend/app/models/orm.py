@@ -221,7 +221,10 @@ class RateLimitEventORM(Base):
     reason = Column(String(50), nullable=False)
     endpoint = Column(String(100), nullable=False)
     created_at = Column(
-        DateTime, default=datetime.now(timezone.utc), nullable=False, index=True
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
     )
 
     __table_args__ = (

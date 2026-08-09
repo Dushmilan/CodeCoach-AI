@@ -68,7 +68,9 @@ class MonitoringService:
         if db_session is not None:
             deps.append(await self.probe_db(db_session))
         else:
-            deps.append(DependencyStatus(name="database", ok=False, detail="no session"))
+            deps.append(
+                DependencyStatus(name="database", ok=False, detail="no session")
+            )
 
         flags = list(abuse_report.flags) if abuse_report else []
         severity_order = {"none": 0, "warning": 1, "high": 2}
@@ -123,7 +125,9 @@ class AlertService:
             async with httpx.AsyncClient(timeout=5) as client:
                 resp = await client.post(self.webhook_url, json=payload)
                 resp.raise_for_status()
-            logger.info("Abuse alert sent to %s (%d flags)", self.webhook_url, len(flags))
+            logger.info(
+                "Abuse alert sent to %s (%d flags)", self.webhook_url, len(flags)
+            )
             return True
         except Exception as e:
             logger.warning("Failed to send abuse alert: %s", e)

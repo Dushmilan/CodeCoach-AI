@@ -135,7 +135,9 @@ class TestDailyRequestCap:
         assert res.headers["X-Usage-Remaining-Requests"] == "19"
 
     @pytest.mark.asyncio
-    async def test_premium_user_not_blocked_by_free_cap(self, async_client, test_db, monkeypatch):
+    async def test_premium_user_not_blocked_by_free_cap(
+        self, async_client, test_db, monkeypatch
+    ):
         monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "1")
         uid, headers = await _register_user(async_client, "capro")
         await _set_plan(test_db, uid, "premium")
@@ -147,7 +149,9 @@ class TestDailyRequestCap:
             assert res.status_code == 200, res.text
 
     @pytest.mark.asyncio
-    async def test_stream_endpoint_also_guarded(self, async_client, test_db, monkeypatch):
+    async def test_stream_endpoint_also_guarded(
+        self, async_client, test_db, monkeypatch
+    ):
         monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
         uid, headers = await _register_user(async_client, "capstream")
         await _set_plan(test_db, uid, "premium")
@@ -161,7 +165,9 @@ class TestDailyRequestCap:
         assert second.status_code == 429
 
     @pytest.mark.asyncio
-    async def test_denied_attempt_does_not_burn_quota(self, async_client, test_db, monkeypatch):
+    async def test_denied_attempt_does_not_burn_quota(
+        self, async_client, test_db, monkeypatch
+    ):
         monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
         uid, headers = await _register_user(async_client, "capquota")
         await _set_plan(test_db, uid, "premium")
@@ -194,12 +200,16 @@ class TestUsageEndpoint:
         assert "reset_at" in data
 
     @pytest.mark.asyncio
-    async def test_get_usage_reflects_consumed_quota(self, async_client, test_db, monkeypatch):
+    async def test_get_usage_reflects_consumed_quota(
+        self, async_client, test_db, monkeypatch
+    ):
         monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "5")
         uid, headers = await _register_user(async_client, "usageused")
         await _set_plan(test_db, uid, "premium")
         for _ in range(2):
-            await async_client.post("/api/coach/", json=_coaching_payload(), headers=headers)
+            await async_client.post(
+                "/api/coach/", json=_coaching_payload(), headers=headers
+            )
         res = await async_client.get("/api/usage", headers=headers)
         assert res.status_code == 200
         data = res.json()
@@ -212,11 +222,15 @@ class TestUsageEndpoint:
         assert res.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_get_usage_returns_zero_remaining_when_capped(self, async_client, test_db, monkeypatch):
+    async def test_get_usage_returns_zero_remaining_when_capped(
+        self, async_client, test_db, monkeypatch
+    ):
         monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
         uid, headers = await _register_user(async_client, "usagecap")
         await _set_plan(test_db, uid, "premium")
-        await async_client.post("/api/coach/", json=_coaching_payload(), headers=headers)
+        await async_client.post(
+            "/api/coach/", json=_coaching_payload(), headers=headers
+        )
         res = await async_client.get("/api/usage", headers=headers)
         data = res.json()
         assert data["daily_remaining"] == 0
