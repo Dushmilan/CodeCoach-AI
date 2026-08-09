@@ -4,7 +4,13 @@ from abc import ABC, abstractmethod
 from datetime import date, datetime
 from typing import Optional, Sequence
 
-from app.models.usage_schemas import DailyUsage, UsageEventOut, UserUsageTotals
+from app.models.usage_schemas import (
+    DailyUsage,
+    RateLimitBreakdownRow,
+    RateLimitEventOut,
+    UsageEventOut,
+    UserUsageTotals,
+)
 
 
 class UsageRepository(ABC):
@@ -32,6 +38,7 @@ class UsageRepository(ABC):
         usage_date: date,
         input_tokens: int,
         output_tokens: int,
+        request_count: int = 1,
     ) -> None:
         """Accumulate tokens into the per-user daily counter (upsert)."""
         ...
@@ -65,4 +72,35 @@ class UsageRepository(ABC):
         self, user_id: str, since: date, limit: int = 30
     ) -> Sequence[DailyUsage]:
         """Return daily counters for a user since `since` (newest first)."""
+        ...
+
+    @abstractmethod
+    async def add_rate_limit_event(
+        self,
+        *,
+        user_id: Optional[str],
+        ip: str,
+        reason: str,
+        endpoint: str,
+    ) -> None:
+        """Record one rate-limit denial or abuse flag (user_id may be None)."""
+        ...
+
+    @abstractmethod
+    async def recent_rate_limit_events(
+        self, limit: int = 100
+    ) -> Sequence[RateLimitEventOut]:
+        """Return the most recent rate-limit events (newest first)."""
+        ...
+
+    @abstractmethod
+    async def count_rate_limit_events(self, since: datetime) -> int:
+        """Count rate-limit events recorded since `since`."""
+        ...
+
+    @abstractmethod
+    async def rate_limit_event_breakdown(
+        self, since: datetime, field: str = "reason"
+    ) -> Sequence[RateLimitBreakdownRow]:
+        """Count rate-limit events grouped by a column (reason|ip|endpoint)."""
         ...

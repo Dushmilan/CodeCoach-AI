@@ -41,6 +41,7 @@ from app.api import (  # noqa: E402
     courses,
     progress,
     admin,
+    daily_limits,
 )
 from app.core.config import get_settings, is_production  # noqa: E402
 from app.core.database import init_db  # noqa: E402
@@ -150,6 +151,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
 app.include_router(progress.router, prefix="/api/progress", tags=["progress"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(daily_limits.router, prefix="/api/usage", tags=["usage"])
 
 
 @app.get("/")

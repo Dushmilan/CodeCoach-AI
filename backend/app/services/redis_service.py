@@ -125,6 +125,28 @@ class RedisCache:
             except Exception:
                 pass
 
+    async def decr(self, key: str) -> Optional[int]:
+        """Atomically decrement a counter, returning the new value.
+
+        Returns None on any error (caller must degrade gracefully). Used to
+        refund a slot when a rate-limit INCR pushes a counter past its cap.
+        """
+        client = await self._client()
+        if not client:
+            return None
+        try:
+            value = await client.decr(key)
+            return int(value)
+        except Exception as e:
+            logger.debug("Redis decr failed for key %s: %s", key, e)
+            self.disable()
+            return None
+        finally:
+            try:
+                await client.aclose()
+            except Exception:
+                pass
+
     async def exists(self, key: str) -> bool:
         """Check if key exists in cache."""
         client = await self._client()

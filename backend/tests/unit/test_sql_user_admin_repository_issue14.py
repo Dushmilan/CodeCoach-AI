@@ -21,6 +21,7 @@ def _fake_orm_user(hashed_password="stored-hash"):
     u.oauth_id = None
     u.created_at = "2024-01-01T00:00:00Z"
     u.hashed_password = hashed_password
+    u.plan = "free"
     return u
 
 

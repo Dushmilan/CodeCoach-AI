@@ -26,6 +26,7 @@ class SqlUserAdminRepository(UserAdminRepository):
             oauth_provider=user.oauth_provider,
             oauth_id=user.oauth_id,
             created_at=str(user.created_at) if user.created_at else None,
+            plan=user.plan or "free",
             hashed_password=user.hashed_password,
         )
 
@@ -44,6 +45,7 @@ class SqlUserAdminRepository(UserAdminRepository):
             oauth_provider=user.oauth_provider,
             oauth_id=user.oauth_id,
             created_at=str(user.created_at) if user.created_at else None,
+            plan=user.plan or "free",
             hashed_password=user.hashed_password,
         )
 
@@ -101,6 +103,7 @@ class SqlUserAdminRepository(UserAdminRepository):
                     oauth_id=u.oauth_id,
                     created_at=str(u.created_at) if u.created_at else None,
                     hashed_password=u.hashed_password,
+                    plan=u.plan or "free",
                 )
             )
         return parsed, total

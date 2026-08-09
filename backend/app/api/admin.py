@@ -21,6 +21,9 @@ from app.services.question_validator import QuestionValidatorService
 from app.models.schemas import Question
 from app.models.auth_schemas import UserResponse
 from app.models.usage_schemas import (
+    AbuseFlagOut,
+    AbuseReportOut,
+    RateLimitAnalytics,
     UsageSummary,
     UserUsageDetail,
 )
@@ -770,6 +773,82 @@ async def get_user_usage_detail(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching usage detail: {str(e)}",
+        )
+
+
+@router.get("/rate-limits", response_model=RateLimitAnalytics)
+async def get_rate_limit_analytics(
+    since_hours: int = 24,
+    usage_repo: UsageRepository = Depends(get_usage_repo),
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Admin analytics for rate-limit / abuse events over the last N hours."""
+    from datetime import datetime, timedelta, timezone
+
+    try:
+        since = datetime.now(timezone.utc) - timedelta(hours=since_hours)
+        total = await usage_repo.count_rate_limit_events(since)
+        recent = await usage_repo.recent_rate_limit_events(limit=50)
+        by_reason = await usage_repo.rate_limit_event_breakdown(since, "reason")
+        by_ip = await usage_repo.rate_limit_event_breakdown(since, "ip")
+        by_endpoint = await usage_repo.rate_limit_event_breakdown(since, "endpoint")
+        return RateLimitAnalytics(
+            since_hours=since_hours,
+            total_events=total,
+            recent_events=list(recent),
+            by_reason=list(by_reason),
+            by_ip=list(by_ip),
+            by_endpoint=list(by_endpoint),
+        )
+    except Exception as e:
+        logger.error(f"Error fetching rate-limit analytics: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching rate-limit analytics: {str(e)}",
+        )
+
+
+@router.get("/abuse", response_model=AbuseReportOut)
+async def get_abuse_report(
+    since_hours: int = 24,
+    usage_repo: UsageRepository = Depends(get_usage_repo),
+    current_user: UserResponse = Depends(require_admin),
+):
+    """Admin report of suspicious / abusive rate-limit patterns."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.services.abuse_detection import AbuseDetectionService
+
+    try:
+        since = datetime.now(timezone.utc) - timedelta(hours=since_hours)
+        service = AbuseDetectionService(
+            total_events_getter=usage_repo.count_rate_limit_events,
+            breakdown_by_ip=lambda s: usage_repo.rate_limit_event_breakdown(s, "ip"),
+            breakdown_by_user=lambda s: usage_repo.rate_limit_event_breakdown(
+                s, "user_id"
+            ),
+            recent_events=usage_repo.recent_rate_limit_events,
+        )
+        report = await service.analyze(since)
+        return AbuseReportOut(
+            since_hours=since_hours,
+            total_events=report.total_events,
+            flags=[
+                AbuseFlagOut(
+                    rule=f.rule,
+                    key=f.key,
+                    count=f.count,
+                    severity=f.severity,
+                    detail=f.detail,
+                )
+                for f in report.flags
+            ],
+        )
+    except Exception as e:
+        logger.error(f"Error running abuse detection: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error running abuse detection: {str(e)}",
         )
 
 

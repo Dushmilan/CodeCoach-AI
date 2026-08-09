@@ -34,7 +34,10 @@ class UserORM(Base):
     role = Column(String(20), server_default="user", nullable=False)
     plan = Column(String(20), server_default="free", nullable=False)
 
-    __table_args__ = (Index("ix_users_role", "role"),)
+    __table_args__ = (
+        Index("ix_users_role", "role"),
+        Index("ix_users_plan", "plan"),
+    )
 
 
 class QuestionORM(Base):
@@ -192,6 +195,7 @@ class UserDailyUsageORM(Base):
     usage_date = Column(Date, nullable=False)
     input_tokens = Column(Integer, nullable=False, default=0)
     output_tokens = Column(Integer, nullable=False, default=0)
+    request_count = Column(Integer, nullable=False, default=0)
     updated_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
@@ -201,4 +205,26 @@ class UserDailyUsageORM(Base):
 
     __table_args__ = (
         Index("ix_daily_user_date", "user_id", "usage_date", unique=True),
+    )
+
+
+class RateLimitEventORM(Base):
+    __tablename__ = "rate_limit_events"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    ip = Column(String(45), nullable=False, index=True)
+    reason = Column(String(50), nullable=False)
+    endpoint = Column(String(100), nullable=False)
+    created_at = Column(
+        DateTime, default=datetime.now(timezone.utc), nullable=False, index=True
+    )
+
+    __table_args__ = (
+        Index("ix_rate_limit_events_user_created", "user_id", "created_at"),
+        Index("ix_rate_limit_events_ip_created", "ip", "created_at"),
     )

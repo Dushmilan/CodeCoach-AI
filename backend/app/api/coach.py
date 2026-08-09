@@ -13,6 +13,7 @@ from app.services.groq_service import GroqService
 from app.services.redis_service import RedisCache
 from app.services.usage_service import UsageService, check_caps, usage_headers
 from app.api.auth_deps import require_premium
+from app.api.daily_limits import enforce_daily_request_cap
 from app.api.dependencies import get_redis_cache, get_usage_service
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
@@ -85,6 +86,7 @@ async def get_coaching(
     user: UserResponse = Depends(require_premium),
     _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
+    _daily_guard: None = Depends(enforce_daily_request_cap),
 ):
     """
     Get AI coaching response for coding problems.
@@ -131,6 +133,7 @@ async def get_coaching(
         logger.debug("==========================")
 
         response.headers.update(getattr(request.state, "usage_headers", {}))
+        response.headers.update(getattr(request.state, "daily_limit_headers", {}))
 
         return CoachingResponse(
             response=raw_response,
@@ -217,6 +220,7 @@ async def get_coaching_stream(
     user: UserResponse = Depends(require_premium),
     _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
+    _daily_guard: None = Depends(enforce_daily_request_cap),
 ):
     """
     Get streaming AI coaching response using Server-Sent Events.
@@ -286,6 +290,7 @@ async def get_coaching_stream(
         "Connection": "keep-alive",
     }
     stream_headers.update(getattr(request.state, "usage_headers", {}))
+    stream_headers.update(getattr(request.state, "daily_limit_headers", {}))
 
     return StreamingResponse(
         generate_stream(),

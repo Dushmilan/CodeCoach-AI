@@ -20,6 +20,7 @@ export interface CoachingState {
   messages: ChatMessage[];
   isTyping: boolean;
   error: string | null;
+  limitReached: boolean;
 }
 
 export interface CoachingActions {
@@ -34,6 +35,7 @@ export interface CoachingActions {
   ) => Promise<void>;
   clearMessages: () => void;
   clearError: () => void;
+  clearLimitReached: () => void;
 }
 
 export type CoachingFeature = CoachingState & CoachingActions;

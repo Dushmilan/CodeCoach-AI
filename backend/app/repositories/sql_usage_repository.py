@@ -7,8 +7,18 @@ from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.orm import UserUsageEventORM, UserDailyUsageORM
-from app.models.usage_schemas import DailyUsage, UsageEventOut, UserUsageTotals
+from app.models.orm import (
+    RateLimitEventORM,
+    UserUsageEventORM,
+    UserDailyUsageORM,
+)
+from app.models.usage_schemas import (
+    DailyUsage,
+    RateLimitBreakdownRow,
+    RateLimitEventOut,
+    UsageEventOut,
+    UserUsageTotals,
+)
 from app.ports.usage_repository import UsageRepository
 
 
@@ -45,6 +55,7 @@ class SqlUsageRepository(UsageRepository):
         usage_date: date,
         input_tokens: int,
         output_tokens: int,
+        request_count: int = 1,
     ) -> None:
         values = {
             "id": uuid.uuid4().hex,
@@ -52,6 +63,7 @@ class SqlUsageRepository(UsageRepository):
             "usage_date": usage_date,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
+            "request_count": request_count,
         }
         dialect = self.session.bind.dialect.name if self.session.bind else "mysql"
         if dialect == "postgresql":
@@ -64,6 +76,7 @@ class SqlUsageRepository(UsageRepository):
                 set_={
                     "input_tokens": UserDailyUsageORM.input_tokens + input_tokens,
                     "output_tokens": UserDailyUsageORM.output_tokens + output_tokens,
+                    "request_count": UserDailyUsageORM.request_count + request_count,
                     "updated_at": datetime.now(timezone.utc),
                 },
             )
@@ -72,6 +85,7 @@ class SqlUsageRepository(UsageRepository):
             stmt = stmt.on_duplicate_key_update(
                 input_tokens=UserDailyUsageORM.input_tokens + input_tokens,
                 output_tokens=UserDailyUsageORM.output_tokens + output_tokens,
+                request_count=UserDailyUsageORM.request_count + request_count,
                 updated_at=datetime.now(timezone.utc),
             )
         await self.session.execute(stmt)
@@ -92,6 +106,7 @@ class SqlUsageRepository(UsageRepository):
             usage_date=orm.usage_date,
             input_tokens=orm.input_tokens,
             output_tokens=orm.output_tokens,
+            request_count=orm.request_count,
         )
 
     async def recent_events(
@@ -167,6 +182,7 @@ class SqlUsageRepository(UsageRepository):
                 usage_date=orm.usage_date,
                 input_tokens=orm.input_tokens,
                 output_tokens=orm.output_tokens,
+                request_count=orm.request_count,
             )
             for orm in result.scalars().all()
         ]
@@ -181,5 +197,73 @@ class SqlUsageRepository(UsageRepository):
             endpoint=orm.endpoint,
             input_tokens=orm.input_tokens,
             output_tokens=orm.output_tokens,
+            created_at=orm.created_at,
+        )
+
+    async def add_rate_limit_event(
+        self,
+        *,
+        user_id: Optional[str],
+        ip: str,
+        reason: str,
+        endpoint: str,
+    ) -> None:
+        orm = RateLimitEventORM(
+            id=uuid.uuid4().hex,
+            user_id=user_id,
+            ip=ip,
+            reason=reason,
+            endpoint=endpoint,
+            created_at=datetime.now(timezone.utc),
+        )
+        self.session.add(orm)
+        await self.session.commit()
+
+    async def recent_rate_limit_events(
+        self, limit: int = 100
+    ) -> Sequence[RateLimitEventOut]:
+        result = await self.session.execute(
+            select(RateLimitEventORM)
+            .order_by(RateLimitEventORM.created_at.desc())
+            .limit(limit)
+        )
+        return [self._rl_event_to_out(orm) for orm in result.scalars().all()]
+
+    async def count_rate_limit_events(self, since: datetime) -> int:
+        result = await self.session.execute(
+            select(func.count(RateLimitEventORM.id)).where(
+                RateLimitEventORM.created_at >= since
+            )
+        )
+        return int(result.scalar_one())
+
+    async def rate_limit_event_breakdown(
+        self, since: datetime, field: str = "reason"
+    ) -> Sequence[RateLimitBreakdownRow]:
+        column = getattr(RateLimitEventORM, field, None)
+        if column is None:
+            column = RateLimitEventORM.reason
+        result = await self.session.execute(
+            select(
+                column,
+                func.count(RateLimitEventORM.id),
+            )
+            .where(RateLimitEventORM.created_at >= since)
+            .group_by(column)
+            .order_by(func.count(RateLimitEventORM.id).desc())
+        )
+        return [
+            RateLimitBreakdownRow(key=value, count=int(count))
+            for value, count in result.all()
+        ]
+
+    @staticmethod
+    def _rl_event_to_out(orm: RateLimitEventORM) -> RateLimitEventOut:
+        return RateLimitEventOut(
+            id=orm.id,
+            user_id=orm.user_id,
+            ip=orm.ip,
+            reason=orm.reason,
+            endpoint=orm.endpoint,
             created_at=orm.created_at,
         )

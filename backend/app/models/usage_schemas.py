@@ -1,17 +1,30 @@
 """Pydantic schemas for LLM usage metering."""
 
 from datetime import date, datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
 
 class DailyUsage(BaseModel):
-    """Per-user, per-day token totals (input + output)."""
+    """Per-user, per-day token totals (input + output + request count)."""
 
     user_id: str
     usage_date: date
     input_tokens: int = 0
     output_tokens: int = 0
+    request_count: int = 0
+
+
+class RateLimitEventOut(BaseModel):
+    """A recorded denial or abuse flag."""
+
+    id: str
+    user_id: Optional[str] = None
+    ip: str
+    reason: str
+    endpoint: str
+    created_at: datetime
 
 
 class UsageEventOut(BaseModel):
@@ -53,3 +66,39 @@ class UserUsageDetail(BaseModel):
     events: list[UsageEventOut]
     total_input_tokens: int = 0
     total_output_tokens: int = 0
+
+
+class RateLimitBreakdownRow(BaseModel):
+    """One group of rate-limit events by reason (or IP/user)."""
+
+    key: str
+    count: int
+
+
+class RateLimitAnalytics(BaseModel):
+    """Admin analytics payload for denial / abuse events."""
+
+    since_hours: int
+    total_events: int
+    recent_events: list[RateLimitEventOut]
+    by_reason: list[RateLimitBreakdownRow]
+    by_ip: list[RateLimitBreakdownRow]
+    by_endpoint: list[RateLimitBreakdownRow]
+
+
+class AbuseFlagOut(BaseModel):
+    """One detected abuse signal."""
+
+    rule: str
+    key: str
+    count: int
+    severity: str
+    detail: str
+
+
+class AbuseReportOut(BaseModel):
+    """Admin payload for the abuse-detection report."""
+
+    since_hours: int
+    total_events: int
+    flags: list[AbuseFlagOut]
