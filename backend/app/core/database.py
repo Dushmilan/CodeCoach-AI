@@ -30,7 +30,36 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db():
+    """Create tables if missing.
+
+    MySQL can transiently return errors 1684/1824 ("table skipped, DDL in
+    flight") when `create_all` reflects table metadata right after schema
+    churn (e.g. CI test runs dropping/recreating tables). Retry with a bounded
+    backoff so a DDL race never takes the service down at startup.
+    """
+    import asyncio
+    import logging
+
     from app.models.orm import Base
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    logger = logging.getLogger(__name__)
+
+    async def _create() -> None:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+    for attempt in range(1, 5):
+        try:
+            await _create()
+            return
+        except Exception as exc:  # noqa: BLE001 - transient DDL race is broad
+            if "1684" in str(exc) or "1824" in str(exc):
+                logger.warning(
+                    "init_db hit transient DDL race (%s), retrying (%d/4)",
+                    exc.__class__.__name__,
+                    attempt,
+                )
+                await asyncio.sleep(0.4 * attempt)
+                continue
+            raise
+    raise RuntimeError("init_db failed after 4 attempts due to persistent DDL race")

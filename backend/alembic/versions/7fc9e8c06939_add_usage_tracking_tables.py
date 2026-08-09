@@ -79,6 +79,12 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
+    op.drop_constraint(
+        "user_daily_usage_ibfk_1", "user_daily_usage", type_="foreignkey"
+    )
+    op.drop_constraint(
+        "user_usage_events_ibfk_1", "user_usage_events", type_="foreignkey"
+    )
     op.drop_index("ix_daily_user_date", table_name="user_daily_usage")
     op.drop_index(op.f("ix_user_daily_usage_user_id"), table_name="user_daily_usage")
     op.drop_table("user_daily_usage")

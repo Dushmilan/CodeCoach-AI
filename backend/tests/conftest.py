@@ -57,7 +57,9 @@ def _ensure_test_database() -> str:
                 "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
             )
             cur.execute(f"USE {_TEST_DB}")
+            cur.execute("SET FOREIGN_KEY_CHECKS=0")
             for table in (
+                "rate_limit_events",
                 "course_progress",
                 "lessons",
                 "modules",
@@ -71,18 +73,35 @@ def _ensure_test_database() -> str:
                 "generation_jobs",
             ):
                 cur.execute(f"DROP TABLE IF EXISTS {table}")
+            cur.execute("SET FOREIGN_KEY_CHECKS=1")
         conn.commit()
     finally:
         conn.close()
 
     # Create schema so API tests (ASGITransport does not run lifespan) see tables.
-    from sqlalchemy import create_engine
+    # Rebuild from a clean slate so leftover migration-only tables never
+    # conflict, retrying the transient MySQL 1684/1824 DDL race.
+    import time as _time
+
+    from sqlalchemy import create_engine, text
     from app.models.orm import Base
 
     sync_url = test_url.replace("mysql+aiomysql://", "mysql+pymysql://")
-    engine = create_engine(sync_url)
-    Base.metadata.create_all(engine)
-    engine.dispose()
+    for _attempt in range(1, 6):
+        engine = create_engine(sync_url)
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+                Base.metadata.drop_all(conn)
+                conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+            Base.metadata.create_all(engine)
+            engine.dispose()
+            break
+        except Exception:  # noqa: BLE001 - transient 1684/1824 DDL race
+            engine.dispose()
+            if _attempt == 5:
+                raise
+            _time.sleep(0.5 * _attempt)
     return test_url
 
 

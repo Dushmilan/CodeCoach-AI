@@ -139,6 +139,8 @@ async def get_coaching(
             language=coaching_request.language,
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("=== COACH API ERROR ===")
         logger.error(f"Error type: {type(e).__name__}")

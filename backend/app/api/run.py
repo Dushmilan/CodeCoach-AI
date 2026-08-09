@@ -67,6 +67,8 @@ async def validate_code(
             "language": execution_request.language.value,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error validating code: {str(e)}")
 
@@ -95,6 +97,8 @@ async def get_supported_languages(
 
         return {"languages": supported_languages, "total": len(supported_languages)}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error fetching languages: {str(e)}"
@@ -109,6 +113,8 @@ async def get_runtimes(executor: CodeExecutor = Depends(get_executor)):
         runtimes = await executor.get_runtimes()
         return {"runtimes": runtimes}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error fetching runtimes: {str(e)}"
