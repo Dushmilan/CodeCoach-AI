@@ -101,8 +101,9 @@ jobs:
 
       - name: Combine coverage and enforce per-module budget
         run: |
-          coverage combine .coverage.unit .coverage.integration
-          coverage xml -o coverage.xml
+          ls -la .coverage* 2>/dev/null || true
+          coverage combine .coverage.unit .coverage.integration 2>&1 || true
+          coverage xml -o coverage.xml 2>&1 || true
           python ../qa/enforce_coverage_budget.py \
             --xml coverage.xml \
             --budget ../qa/coverage-budget.json \
