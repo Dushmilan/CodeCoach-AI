@@ -84,14 +84,27 @@ def _coaching_payload():
     }
 
 
+async def _set_plan(test_db, user_id: str, plan: str) -> None:
+    """Promote a user's plan directly (main gates the coach behind premium)."""
+    from sqlalchemy import update
+
+    from app.models.orm import UserORM
+
+    await test_db.execute(
+        update(UserORM).where(UserORM.id == user_id).values(plan=plan)
+    )
+    await test_db.commit()
+
+
 @pytest.mark.usefixtures("test_env_vars")
 class TestDailyRequestCap:
     @pytest.mark.asyncio
-    async def test_free_user_blocked_after_20_requests(
-        self, async_client, monkeypatch
+    async def test_premium_user_blocked_after_cap_exceeded(
+        self, async_client, test_db, monkeypatch
     ):
-        monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "3")
-        _, headers = await _register_user(async_client, "capfree")
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "3")
+        uid, headers = await _register_user(async_client, "capfree")
+        await _set_plan(test_db, uid, "premium")
         for _ in range(3):
             res = await async_client.post(
                 "/api/coach/", json=_coaching_payload(), headers=headers
@@ -108,10 +121,11 @@ class TestDailyRequestCap:
 
     @pytest.mark.asyncio
     async def test_success_response_includes_rate_limit_headers(
-        self, async_client, monkeypatch
+        self, async_client, test_db, monkeypatch
     ):
-        monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "20")
-        _, headers = await _register_user(async_client, "capheaders")
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "20")
+        uid, headers = await _register_user(async_client, "capheaders")
+        await _set_plan(test_db, uid, "premium")
         res = await async_client.post(
             "/api/coach/", json=_coaching_payload(), headers=headers
         )
@@ -121,20 +135,10 @@ class TestDailyRequestCap:
         assert res.headers["X-Usage-Remaining-Requests"] == "19"
 
     @pytest.mark.asyncio
-    async def test_pro_user_not_blocked_by_free_cap(self, async_client, test_db, monkeypatch):
+    async def test_premium_user_not_blocked_by_free_cap(self, async_client, test_db, monkeypatch):
         monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "1")
         uid, headers = await _register_user(async_client, "capro")
-        from app.repositories.sql_user_admin_repository import SqlUserAdminRepository
-
-        repo = SqlUserAdminRepository(test_db)
-        await repo.update_user_role(uid, "admin", "someoneelse")
-        from sqlalchemy import update
-        from app.models.orm import UserORM
-
-        await test_db.execute(
-            update(UserORM).where(UserORM.id == uid).values(plan="pro")
-        )
-        await test_db.commit()
+        await _set_plan(test_db, uid, "premium")
 
         for _ in range(2):
             res = await async_client.post(
@@ -143,9 +147,10 @@ class TestDailyRequestCap:
             assert res.status_code == 200, res.text
 
     @pytest.mark.asyncio
-    async def test_stream_endpoint_also_guarded(self, async_client, monkeypatch):
-        monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "1")
-        _, headers = await _register_user(async_client, "capstream")
+    async def test_stream_endpoint_also_guarded(self, async_client, test_db, monkeypatch):
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
+        uid, headers = await _register_user(async_client, "capstream")
+        await _set_plan(test_db, uid, "premium")
         first = await async_client.post(
             "/api/coach/stream", json=_coaching_payload(), headers=headers
         )
@@ -156,9 +161,10 @@ class TestDailyRequestCap:
         assert second.status_code == 429
 
     @pytest.mark.asyncio
-    async def test_denied_attempt_does_not_burn_quota(self, async_client, monkeypatch):
-        monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "1")
-        _, headers = await _register_user(async_client, "capquota")
+    async def test_denied_attempt_does_not_burn_quota(self, async_client, test_db, monkeypatch):
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
+        uid, headers = await _register_user(async_client, "capquota")
+        await _set_plan(test_db, uid, "premium")
         first = await async_client.post(
             "/api/coach/", json=_coaching_payload(), headers=headers
         )
@@ -188,9 +194,10 @@ class TestUsageEndpoint:
         assert "reset_at" in data
 
     @pytest.mark.asyncio
-    async def test_get_usage_reflects_consumed_quota(self, async_client, monkeypatch):
-        monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "5")
-        _, headers = await _register_user(async_client, "usageused")
+    async def test_get_usage_reflects_consumed_quota(self, async_client, test_db, monkeypatch):
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "5")
+        uid, headers = await _register_user(async_client, "usageused")
+        await _set_plan(test_db, uid, "premium")
         for _ in range(2):
             await async_client.post("/api/coach/", json=_coaching_payload(), headers=headers)
         res = await async_client.get("/api/usage", headers=headers)
@@ -205,9 +212,10 @@ class TestUsageEndpoint:
         assert res.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_get_usage_returns_zero_remaining_when_capped(self, async_client, monkeypatch):
-        monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "1")
-        _, headers = await _register_user(async_client, "usagecap")
+    async def test_get_usage_returns_zero_remaining_when_capped(self, async_client, test_db, monkeypatch):
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
+        uid, headers = await _register_user(async_client, "usagecap")
+        await _set_plan(test_db, uid, "premium")
         await async_client.post("/api/coach/", json=_coaching_payload(), headers=headers)
         res = await async_client.get("/api/usage", headers=headers)
         data = res.json()
@@ -237,7 +245,7 @@ class TestUsageEndpointRedisDown:
 
     @pytest.mark.asyncio
     async def test_daily_cap_falls_back_to_db(self, async_client, monkeypatch, test_db):
-        monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "2")
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "2")
         from app.api.dependencies import get_redis_cache
 
         async def override():
@@ -246,6 +254,7 @@ class TestUsageEndpointRedisDown:
         app.dependency_overrides[get_redis_cache] = override
         try:
             uid, headers = await _register_user(async_client, "capfallback")
+            await _set_plan(test_db, uid, "premium")
             from app.repositories.sql_usage_repository import SqlUsageRepository
 
             repo = SqlUsageRepository(test_db)
