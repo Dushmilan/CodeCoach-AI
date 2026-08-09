@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "comment": "Regression floors captured at snapshot time. CI fails when a budgeted module's measured coverage drops below these floors. Regenerate only after a deliberate, verified coverage improvement.",
+  "generated_at": "2026-08-09",
+  "modules": {
+    "app/services/piston_service.py": {
+      "lines": 95.3,
+      "branches": 84.2
+    },
+    "app/services/static_code_validator.py": {
+      "lines": 100.0,
+      "branches": 100.0
+    },
+    "app/services/groq_service.py": {
+      "lines": 92.5,
+      "branches": 83.3
+    },
+    "app/services/usage_service.py": {
+      "lines": 100.0,
+      "branches": 100.0
+    },
+    "app/services/auth_service.py": {
+      "lines": 95.4,
+      "branches": 87.5
+    },
+    "app/api/auth_deps.py": {
+      "lines": 88.5,
+      "branches": 50.0
+    },
+    "app/middleware/security_headers.py": {
+      "lines": 100.0,
+      "branches": 100.0
+    },
+    "app/services/question_validator.py": {
+      "lines": 88.4,
+      "branches": 75.0
+    },
+    "app/use_cases/question_validation/base.py": {
+      "lines": 84.0,
+      "branches": 100.0
+    },
+    "app/use_cases/question_validation/function_signature.py": {
+      "lines": 83.7,
+      "branches": 70.5
+    },
+    "app/use_cases/question_validation/output_format.py": {
+      "lines": 71.3,
+      "branches": 54.0
+    },
+    "app/use_cases/question_validation/solution.py": {
+      "lines": 71.0,
+      "branches": 57.6
+    },
+    "app/use_cases/question_validation/starter_code.py": {
+      "lines": 50.5,
+      "branches": 25.0
+    },
+    "app/use_cases/question_validation/structure.py": {
+      "lines": 86.3,
+      "branches": 68.4
+    },
+    "app/use_cases/question_validation/test_cases.py": {
+      "lines": 88.6,
+      "branches": 73.6
+    },
+    "app/use_cases/question_validation/time_limits.py": {
+      "lines": 62.8,
+      "branches": 38.7
+    }
+  },
+  "exceptions": {
+    "app/adapters/code_wrappers/base.py": {
+      "lines": 100.0,
+      "branches": 100.0
+    },
+    "app/adapters/coaching_prompts.py": {
+      "lines": 100.0,
+      "branches": 100.0
+    }
+  }
+}

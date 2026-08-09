@@ -1,0 +1,9 @@
+[
+  "remove_index:ix_audit_logs_created_at",
+  "remove_index:ix_audit_logs_user_id",
+  "remove_index:ix_generation_jobs_created_at",
+  "remove_index:ix_generation_jobs_status",
+  "remove_table:audit_logs",
+  "remove_table:feature_flags",
+  "remove_table:generation_jobs"
+]

@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Coverage Budget",
+  "description": "Per-module coverage minimums enforced by qa/enforce_coverage_budget.py in CI.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "defaults", "critical", "modules"],
+  "properties": {
+    "version": { "type": "integer" },
+    "comment": { "type": "string" },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["core", "critical"],
+      "properties": {
+        "core": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lines", "branches"],
+          "properties": {
+            "lines": { "type": "number", "minimum": 0, "maximum": 100 },
+            "branches": { "type": "number", "minimum": 0, "maximum": 100 }
+          }
+        },
+        "critical": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lines", "branches"],
+          "properties": {
+            "lines": { "type": "number", "minimum": 0, "maximum": 100 },
+            "branches": { "type": "number", "minimum": 0, "maximum": 100 }
+          }
+        }
+      }
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tier", "reason"],
+        "properties": {
+          "tier": { "enum": ["core", "critical"] },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pattern", "lines", "branches", "reason"],
+        "properties": {
+          "pattern": { "type": "string" },
+          "lines": { "type": "number", "minimum": 0, "maximum": 100 },
+          "branches": { "type": "number", "minimum": 0, "maximum": 100 },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "modules_not_yet_budgeted": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Modules explicitly tracked for coverage but without a committed threshold yet."
+    }
+  }
+}

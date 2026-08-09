@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "description": "Known-flaky tests quarantined from CI. A test belongs here ONLY if it is genuinely flaky (passes/fails nondeterministically) AND a fix is being tracked. New entries require a fix_by date; stale entries fail the gate.",
+  "quarantined": []
+}

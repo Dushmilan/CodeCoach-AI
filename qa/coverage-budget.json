@@ -1,0 +1,89 @@
+{
+  "$schema": "./coverage-budget.schema.json",
+  "version": 1,
+  "comment": "TARGETS are the staged goals. Enforcement in CI uses the regression floor from qa/coverage-baseline.json, so a PR that DROPS coverage below the snapshot fails, while already-covered modules are pushed toward the target over sprints.",
+  "targets": {
+    "core": { "lines": 90, "branches": 85 },
+    "critical": { "lines": 95, "branches": 92 }
+  },
+  "modules": {
+    "app/services/piston_service.py": {
+      "tier": "critical",
+      "reason": "Code-execution sandbox contract (wrapping, formatting, Piston API)"
+    },
+    "app/services/static_code_validator.py": {
+      "tier": "critical",
+      "reason": "Execution security: blocks unsafe code before it reaches the sandbox"
+    },
+    "app/services/groq_service.py": {
+      "tier": "critical",
+      "reason": "External AI provider contract, fallback chain, token metering"
+    },
+    "app/services/usage_service.py": {
+      "tier": "critical",
+      "reason": "Per-user token caps / metering are the platform's cost control"
+    },
+    "app/services/auth_service.py": {
+      "tier": "critical",
+      "reason": "Credentials, hashing, JWT issuance and verification"
+    },
+    "app/api/auth_deps.py": {
+      "tier": "critical",
+      "reason": "Authentication dependency used by every protected route"
+    },
+    "app/middleware/security_headers.py": {
+      "tier": "critical",
+      "reason": "HTTP security headers surface area"
+    },
+    "app/services/question_validator.py": {
+      "tier": "critical",
+      "reason": "Question-quality gate consuming AI-generated content"
+    },
+    "app/use_cases/question_validation/base.py": {
+      "tier": "critical",
+      "reason": "Validation use-case base logic"
+    },
+    "app/use_cases/question_validation/function_signature.py": {
+      "tier": "critical",
+      "reason": "Function-signature validation for formal verification"
+    },
+    "app/use_cases/question_validation/output_format.py": {
+      "tier": "critical",
+      "reason": "Output-format validation for generated questions"
+    },
+    "app/use_cases/question_validation/solution.py": {
+      "tier": "critical",
+      "reason": "Solution correctness validation"
+    },
+    "app/use_cases/question_validation/starter_code.py": {
+      "tier": "critical",
+      "reason": "Starter-code validation for multi-language runs"
+    },
+    "app/use_cases/question_validation/structure.py": {
+      "tier": "critical",
+      "reason": "Structural validation of AI-generated questions"
+    },
+    "app/use_cases/question_validation/test_cases.py": {
+      "tier": "critical",
+      "reason": "Test-case validation for grading pipelines"
+    },
+    "app/use_cases/question_validation/time_limits.py": {
+      "tier": "critical",
+      "reason": "Time-limit validation for performance gates"
+    }
+  },
+  "exceptions": [
+    {
+      "pattern": "app/adapters/coaching_prompts.py",
+      "lines": 70,
+      "branches": 60,
+      "reason": "Prompt-template assembly; exercised through integration paths"
+    },
+    {
+      "pattern": "app/adapters/code_wrappers/base.py",
+      "lines": 70,
+      "branches": 60,
+      "reason": "Base wrapper plumbing; per-language wrappers carry the assertions"
+    }
+  ]
+}
