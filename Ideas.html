@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="CodeCoach AI docs (tools/markdown_to_html.py)">
+<title>CodeCoach AI — Ideas &amp; Progress Tracker</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --content: #1e293b;
+  --muted: #64748b;
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+  --border: #e2e8f0;
+  --code-bg: #0f172a;
+  --code-fg: #e2e8f0;
+  --sidebar-bg: #0f172a;
+  --sidebar-fg: #cbd5e1;
+  --sidebar-hover: #1e293b;
+  --sidebar-link: #94a3b8;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  color: var(--content);
+  background: var(--bg);
+  line-height: 1.65;
+  font-size: 16px;
+}
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  background: var(--sidebar-bg); color: var(--sidebar-fg);
+  padding: 24px 16px 40px;
+}
+.sidebar .brand { display: block; color: #fff; font-weight: 700; font-size: 17px; text-decoration: none; padding: 0 8px 6px; }
+.sidebar .brand small { display: block; color: #64748b; font-weight: 400; font-size: 12px; }
+.sidebar h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin: 22px 8px 8px; }
+.sidebar a.doc-link {
+  display: block; padding: 4px 8px; border-radius: 6px;
+  color: var(--sidebar-link); text-decoration: none; font-size: 13px;
+}
+.sidebar a.doc-link:hover, .sidebar a.doc-link.current { background: var(--sidebar-hover); color: #fff; }
+.sidebar nav.toc a {
+  display: block; padding: 3px 8px; border-radius: 6px; font-size: 12.5px;
+  color: var(--sidebar-link); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar nav.toc a:hover { background: var(--sidebar-hover); color: #fff; }
+.sidebar nav.toc a.l2 { padding-left: 18px; }
+.sidebar nav.toc a.l3 { padding-left: 28px; }
+.content { padding: 40px 56px 96px; max-width: 880px; }
+.content h1 { font-size: 30px; line-height: 1.2; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin: 0 0 24px; }
+.content h2 { font-size: 23px; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h3 { font-size: 19px; margin: 28px 0 10px; }
+.content h4, .content h5, .content h6 { font-size: 16px; margin: 22px 0 8px; }
+.content h2:target, .content h3:target, .content h4:target { background: var(--accent-soft); }
+.content p { margin: 12px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content ul, .content ol { margin: 12px 0 12px 24px; padding: 0; }
+.content li { margin: 4px 0; }
+.content li > ul, .content li > ol { margin-top: 4px; margin-bottom: 4px; }
+.content li input[type="checkbox"] { margin-right: 6px; vertical-align: middle; }
+.content blockquote {
+  margin: 16px 0; padding: 4px 18px;
+  border-left: 4px solid var(--accent); background: var(--accent-soft);
+  border-radius: 0 8px 8px 0;
+}
+.content blockquote p { margin: 8px 0; }
+.content hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+.content pre {
+  background: var(--code-bg); color: var(--code-fg);
+  padding: 16px 18px; border-radius: 8px; overflow-x: auto;
+  font-size: 13.5px; line-height: 1.55;
+}
+.content pre code { background: none; color: inherit; padding: 0; }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: #eef2f7; color: #be185d; padding: 2px 5px; border-radius: 4px; font-size: .88em;
+}
+.content table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14.5px; }
+.content th, .content td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+.content th { background: #f1f5f9; font-weight: 600; }
+.content tr:nth-child(even) td { background: #fbfcfe; }
+.content img { max-width: 100%; }
+.content del { color: var(--muted); }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .content { padding: 28px 20px 72px; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="README.html">CodeCoach AI<small>Documentation</small></a>
+    <h2>Docs</h2>
+    <a href="README.html" class="doc-link">README</a>
+<a href="Progress.html" class="doc-link">Progress</a>
+<a href="Ideas.html" class="doc-link current">Ideas</a>
+<a href="CLAUDE.html" class="doc-link">Engineering Guidelines</a>
+<a href="AGENTS.html" class="doc-link">Agent Guide</a>
+<a href="SECURITY.html" class="doc-link">Security Policy</a>
+<a href="CONTRIBUTING.html" class="doc-link">Contributing</a>
+<a href="CODE_OF_CONDUCT.html" class="doc-link">Code of Conduct</a>
+<a href="Docs/AUDIT_REPORT.html" class="doc-link">Audit Report</a>
+<a href="backend/tests/README.html" class="doc-link">Test Suite</a>
+    <h2>On this page</h2>
+    <nav class="toc">
+    <a class="l2" href="#idea-overview">Idea overview</a>
+<a class="l2" href="#1-the-mistake-memory-moat-double-down">1. The mistake-memory moat (double-down)</a>
+<a class="l3" href="#status-not-started">Status: 🔴 Not started</a>
+<a class="l3" href="#progress">Progress</a>
+<a class="l3" href="#next-steps">Next steps</a>
+<a class="l2" href="#2-own-the-whitespace-giants-ignore-a-segment-moat">2. Own the whitespace giants ignore → a segment moat</a>
+<a class="l3" href="#status-partial-curriculum-exists-no-professor-ecosystem">Status: 🟡 Partial — curriculum exists, no professor ecosystem</a>
+<a class="l3" href="#progress-2">Progress</a>
+<a class="l3" href="#next-steps-2">Next steps</a>
+<a class="l2" href="#3-make-the-entire-ui-the-forgetting-curve-not-just-a-quiz-feature">3. Make the entire UI the forgetting curve (not just a quiz feature)</a>
+<a class="l3" href="#status-not-started-2">Status: 🔴 Not started</a>
+<a class="l3" href="#progress-3">Progress</a>
+<a class="l3" href="#next-steps-3">Next steps</a>
+<a class="l2" href="#4-the-never-alone-rescue-contract-abandonment-intervention">4. The &quot;never-alone&quot; rescue contract (abandonment intervention)</a>
+<a class="l3" href="#status-mostly-built-re-surface-loop-missing">Status: 🟢 Mostly built — re-surface loop missing</a>
+<a class="l3" href="#progress-4">Progress</a>
+<a class="l3" href="#next-steps-4">Next steps</a>
+<a class="l2" href="#5-see-how-you-think-replay-of-your-own-attempt-journey">5. &quot;See how you think&quot; — replay of your own attempt-journey</a>
+<a class="l3" href="#status-partial-per-solve-flow-map-only-not-journey-replay">Status: 🟡 Partial — per-solve flow map only, not journey replay</a>
+<a class="l3" href="#progress-5">Progress</a>
+<a class="l3" href="#next-steps-5">Next steps</a>
+<a class="l2" href="#6-live-interviewer-theater-the-product-is-a-person-not-a-problem-list">6. Live interviewer theater — the product is a person, not a problem list</a>
+<a class="l3" href="#status-not-started-streaming-foundation-exists">Status: 🔴 Not started — streaming foundation exists</a>
+<a class="l3" href="#progress-6">Progress</a>
+<a class="l3" href="#next-steps-6">Next steps</a>
+<a class="l2" href="#7-time-travel-debugging-as-the-teaching-layer">7. Time-travel debugging as the teaching layer</a>
+<a class="l3" href="#status-not-started-3">Status: 🔴 Not started</a>
+<a class="l3" href="#progress-7">Progress</a>
+<a class="l3" href="#next-steps-7">Next steps</a>
+<a class="l2" href="#8-reverse-interview-you-are-the-senior---next-up">8. Reverse interview — you are the senior - Next up</a>
+<a class="l3" href="#status-not-started-cheapest-genuinely-new-win">Status: 🔴 Not started — cheapest genuinely-new win</a>
+<a class="l3" href="#progress-8">Progress</a>
+<a class="l3" href="#next-steps-8">Next steps</a>
+<a class="l2" href="#9-honourable-mentions-kept-from-the-brainstorm">9. Honourable mentions (kept from the brainstorm)</a>
+<a class="l3" href="#status-backlog-none-started">Status: 🔴 Backlog — none started</a>
+<a class="l3" href="#progress-9">Progress</a>
+<a class="l3" href="#next-steps-9">Next steps</a>
+<a class="l2" href="#suggested-execution-order">Suggested execution order</a>
+    </nav>
+  </aside>
+  <main class="content">
+<h1 id="codecoach-ai-ideas-progress-tracker">CodeCoach AI — Ideas &amp; Progress Tracker</h1>
+<blockquote><p>Status legend: 🔴 Not started · 🟡 Partial / foundation only · 🟢 Mostly built · ✅ Done
+Trackable with checkboxes — tick <code>[x]</code> as work lands. Audit date: Aug 5, 2026.
+Status reflects work merged to <code>main</code> (latest committed state). Some items exist on feature branches (e.g. <code>feat/ai-flow-map</code>) that have not merged yet.</p></blockquote>
+<h2 id="idea-overview">Idea overview</h2>
+<table><thead><tr><th>#</th><th>Idea</th><th>Status</th><th>Key blocker</th></tr></thead><tbody><tr><td>1</td><td>Mistake-memory moat</td><td>🔴</td><td>No attempt-history persistence</td></tr><tr><td>2</td><td>Segment moat</td><td>🟡</td><td>No professor/class dashboard</td></tr><tr><td>3</td><td>Forgetting-curve UI</td><td>🔴</td><td>Depends on #1</td></tr><tr><td>4</td><td>Never-alone rescue contract</td><td>🟢</td><td>Missing re-surface loop</td></tr><tr><td>5</td><td>See-how-you-think replay</td><td>🟡</td><td>Flow-map is per-solve, not journey replay</td></tr><tr><td>6</td><td>Live interviewer theater</td><td>🔴</td><td>Needs session/event engine</td></tr><tr><td>7</td><td>Time-travel debugging</td><td>🔴</td><td>Needs tracing executor</td></tr><tr><td>8</td><td>Reverse interview</td><td>🔴</td><td>Cheap — reuses coaching modes</td></tr><tr><td>9</td><td>Honourable mentions</td><td>🔴</td><td>Backlog</td></tr></tbody></table>
+<hr>
+<h2 id="1-the-mistake-memory-moat-double-down">1. The mistake-memory moat (double-down)</h2>
+<p>Without OSS, defensibility now rides on proprietary data, and this is the best candidate:</p>
+<ul><li><p>Persistent, per-user error graph + spaced-repetition quizzes on your own past bugs.</p></li><li><p>Learning analytics (&quot;recursion plateau detected&quot;) that giants won&#x27;t repackage for individual students.</p></li></ul>
+<p>Why it&#x27;s leverage: every session compounds switching cost. Five years of a user&#x27;s mistake-history is a moat nobody can walk into. This is the thing you gather user data for.</p>
+<h3 id="status-not-started">Status: 🔴 Not started</h3>
+<p><strong>Detailed explanation:</strong> The core product promise is that every run/submit/diagnosis a user makes is persisted per-user. From that history we derive (a) an error graph linking questions → failing concepts → recurring error signatures, (b) a spaced-repetition scheduler (SM-2/FSRS) that quizzes you on your <em>own</em> past bugs, and (c) learning-analytics signals like &quot;recursion plateau detected.&quot;</p>
+<p><strong>The critical gap:</strong> the codebase stores completed lessons (<code>CourseProgressORM</code>) and usage events, but <strong>never persists a user&#x27;s actual code attempts</strong>. There is no <code>SubmissionORM</code>, no attempt-history table, no error log. <code>backend/data/</code> holds only <code>courses/</code> + <code>users.json</code>. Without this data layer, #3 and #5 are also blocked.</p>
+<h3 id="progress">Progress</h3>
+<ul><li><p><input type="checkbox" disabled> <span>Add <code>SubmissionORM</code> (user_id, question_id, code, language, passed, error signature, attempt index, created_at)</span></p></li><li><p><input type="checkbox" disabled> <span>Wire submission capture into <code>submit.py</code> / <code>run.py</code> (and diagnosis)</span></p></li><li><p><input type="checkbox" disabled> <span>File + SQL repository implementations behind a <code>ports/</code> interface</span></p></li><li><p><input type="checkbox" disabled> <span>Derive per-user error graph from attempt history</span></p></li><li><p><input type="checkbox" disabled> <span>Spaced-repetition scheduler producing review sessions from own past bugs</span></p></li><li><p><input type="checkbox" disabled> <span>Learning-analytics signals (&quot;recursion plateau detected&quot;)</span></p></li><li><p><input type="checkbox" disabled> <span>Backfill/adopt for existing questions where feasible</span></p></li></ul>
+<h3 id="next-steps">Next steps</h3>
+<ol start="1"><li><p>Design the attempt-history schema (SQL + file fallback, matching existing repo pattern)</p></li><li><p>Capture on every Piston run and AI diagnosis</p></li><li><p>Build the error-graph derivation</p></li><li><p>Build the spaced-repetition review endpoint</p></li></ol>
+<hr>
+<h2 id="2-own-the-whitespace-giants-ignore-a-segment-moat">2. Own the whitespace giants ignore → a segment moat</h2>
+<p>Closed-source lets you be ruthlessly niche without community backlash:</p>
+<ul><li><p>The first-30-days student (tutorial→first interview brain, not interview grinders).</p></li><li><p>Non-CS majors and underrepresented beginners — no one serves them well.</p></li><li><p>A specific university ecosystem via curriculum-aligned courses + a professor dashboard (one professor = a whole class).</p></li></ul>
+<p>Why it&#x27;s leverage: giants fight for the crowded middle (interview grinders). Owning one underserved segment makes you the default, not a choice.</p>
+<h3 id="status-partial-curriculum-exists-no-professor-ecosystem">Status: 🟡 Partial — curriculum exists, no professor ecosystem</h3>
+<p><strong>Detailed explanation:</strong> The curriculum half is built: Python Fundamentals course — modules, lessons, progress tracking, exercises, <code>/learn</code> (C/Java are planned). The segment-moat half is not: there is no professor/class dashboard, no roster/classroom model, no first-30-days onboarding funnel. The &quot;one professor = a whole class&quot; flywheel needs a teaching view.</p>
+<h3 id="progress-2">Progress</h3>
+<ul><li><p><input type="checkbox" disabled checked> <span>Curriculum: Python Fundamentals — 5 modules / 36 lessons (21 theory + 15 exercises)</span></p></li><li><p><input type="checkbox" disabled checked> <span><code>/learn</code> dashboard, <code>/[courseId]</code> module tree, <code>/lesson/[lessonId]</code> viewer</span></p></li><li><p><input type="checkbox" disabled checked> <span>Progress tracking (completed lessons, continue-where-you-left-off)</span></p></li><li><p><input type="checkbox" disabled checked> <span>Curriculum content pipeline (JSON seed in <code>backend/data/courses/</code> → <code>seed_curriculum.py</code> → MySQL)</span></p></li><li><p><input type="checkbox" disabled> <span>First-30-days onboarding funnel (tutorial → first-interview brain)</span></p></li><li><p><input type="checkbox" disabled> <span>Non-CS / underrepresented-beginner content persona</span></p></li><li><p><input type="checkbox" disabled> <span>Professor dashboard (class roster, per-class progress, assignment view)</span></p></li><li><p><input type="checkbox" disabled> <span>Class/roster data model (course-level, not per-user)</span></p></li></ul>
+<h3 id="next-steps-2">Next steps</h3>
+<ol start="1"><li><p>Define the class/roster data model</p></li><li><p>Professor dashboard (reads existing course + progress data, class-level views)</p></li><li><p>Onboarding funnel for the first-30-days segment</p></li></ol>
+<hr>
+<h2 id="3-make-the-entire-ui-the-forgetting-curve-not-just-a-quiz-feature">3. Make the entire UI the forgetting curve (not just a quiz feature)</h2>
+<p>Your mistake-memory moat is currently a feature. Weaponize it: rebuild the dashboard so every screen is organized around what you&#x27;re about to forget, not problem lists.</p>
+<ul><li><p>&quot;⚠️ You&#x27;re at 6 days since touching recursion — 5-min refresher now, or you relearn it in 30 min later.&quot;</p></li><li><p>The home page is your memory graph. Physics: spaced repetition + energy-cost (&quot;intervene in 5 min to save 30&quot;).</p></li></ul>
+<p>Why it&#x27;s moat: nobody does this. Giants are content repositories; you&#x27;d be the first memory-first coding platform. It makes your mistake-data the literal skeleton of the product — impossible to copy without rebuilding their whole UX.</p>
+<h3 id="status-not-started-2">Status: 🔴 Not started</h3>
+<p><strong>Detailed explanation:</strong> The home page (and every screen) should be organized around <em>what you&#x27;re about to forget</em>, not problem lists. There is currently no student <code>/dashboard</code> or <code>/profile</code> route at all — frontend is <code>problems</code>, <code>learn</code>, and <code>admin</code>. Every card is a &quot;days since you touched X&quot; decision powered by the #1 scheduler. Fully blocked on #1&#x27;s data + scheduler.</p>
+<h3 id="progress-3">Progress</h3>
+<ul><li><p><input type="checkbox" disabled> <span>Student home page as memory graph (&quot;6 days since recursion — 5-min refresher now&quot;)</span></p></li><li><p><input type="checkbox" disabled> <span>Per-topic last-touched + energy-cost copy (&quot;intervene in 5 min to save 30&quot;)</span></p></li><li><p><input type="checkbox" disabled> <span>Review queue surfaced on every screen (not a separate quiz feature)</span></p></li><li><p><input type="checkbox" disabled> <span><code>/dashboard</code> route for students</span></p></li></ul>
+<h3 id="next-steps-3">Next steps</h3>
+<ol start="1"><li><p>Land #1&#x27;s scheduler first (this is a pure UI on top)</p></li><li><p>Design the memory-graph dashboard</p></li><li><p>Ship one &quot;due now&quot; review card on the existing home page as a first slice</p></li></ol>
+<hr>
+<h2 id="4-the-never-alone-rescue-contract-abandonment-intervention">4. The &quot;never-alone&quot; rescue contract (abandonment intervention)</h2>
+<p>Churn&#x27;s #1 killer isn&#x27;t difficulty — it&#x27;s silent giving-up. Promise (and honor) a contract:</p>
+<ul><li><p>If a user is &quot;stuck&quot; past X min, AI auto-intervenes with escalating scaffolds and never leaves you alone with failure for more than Y minutes — until you either pass or the AI personally re-plans your path.</p></li><li><p>Every abandoned problem is captured and resurfaces tomorrow as a tiny step (no-loss economy).</p></li></ul>
+<p>Why it&#x27;s out-of-the-box + sticky: it&#x27;s a UX personality giant can&#x27;t copy (their economics don&#x27;t reward holding your hand). Great story to tell, great for the beginner segment, low churn = compounding retention.</p>
+<h3 id="status-mostly-built-re-surface-loop-missing">Status: 🟢 Mostly built — re-surface loop missing</h3>
+<p><strong>Detailed explanation:</strong> The intervention half is implemented: <code>RescueIntervention</code> / <code>ProblemFlowMap</code> / <code>SolutionFlowMap</code> components, <code>use-rescue-contract</code> hook, backend flow-map API (<code>GET /questions/{id}/flow-map</code>, regenerate), <code>diagnosis_service.py</code> + <code>SubmissionDiagnosisService</code> with AI fallback to a deterministic outline. The &quot;every abandoned problem resurfaces tomorrow as a tiny step&quot; half is <strong>not</strong> — it requires persisting abandoned sessions (#1&#x27;s data layer) and a re-surface queue.</p>
+<h3 id="progress-4">Progress</h3>
+<ul><li><p><input type="checkbox" disabled checked> <span>Rescue contract hook (<code>use-rescue-contract.hook.ts</code>)</span></p></li><li><p><input type="checkbox" disabled checked> <span><code>RescueIntervention</code> + <code>ProblemFlowMap</code> / <code>SolutionFlowMap</code> components</span></p></li><li><p><input type="checkbox" disabled checked> <span>Flow-map API: lazy fetch-or-generate + regenerate, 503 fallback to deterministic outline</span></p></li><li><p><input type="checkbox" disabled checked> <span><code>SubmissionDiagnosisService</code> (AI diagnosis, cache, blueprint labels)</span></p></li><li><p><input type="checkbox" disabled> <span>Capture abandoned problems (persistence needed)</span></p></li><li><p><input type="checkbox" disabled> <span>Re-surface queue: tomorrow&#x27;s tiny step for every abandoned problem</span></p></li><li><p><input type="checkbox" disabled> <span>Time-based stuck escalation (X min → scaffold, Y min → re-plan)</span></p></li></ul>
+<h3 id="next-steps-4">Next steps</h3>
+<ol start="1"><li><p>Persist abandoned sessions (rides #1&#x27;s attempt layer)</p></li><li><p>Add the daily re-surface queue endpoint + UI</p></li></ol>
+<hr>
+<h2 id="5-see-how-you-think-replay-of-your-own-attempt-journey">5. &quot;See how you think&quot; — replay of your own attempt-journey</h2>
+<p>After you solve a problem, AI renders an animated map of your process: every attempt, where you errored, what you almost got, how your code evolved.</p>
+<ul><li><p>It&#x27;s metacognition as product — &quot;watch how you debugged.&quot; Deeply personal, emotionally resonant, zero competition.</p></li></ul>
+<p>Why it&#x27;s a moat: it needs your full attempt-history (the data you&#x27;re already gathering for idea #1), and it makes users look back at themselves — rare and addictive. Nobody else can show you your brain.</p>
+<h3 id="status-partial-per-solve-flow-map-only-not-journey-replay">Status: 🟡 Partial — per-solve flow map only, not journey replay</h3>
+<p><strong>Detailed explanation:</strong> The flow-map feature (<code>frontend/src/features/flow-map/</code>, ReactFlow rendering, layout, status, export) shows an AI-rendered solution map for a single solve. It is <strong>not</strong> a replay of the user&#x27;s <em>attempt journey</em> (every attempt, where they errored, how their code evolved). That replay is entirely dependent on #1&#x27;s attempt-history persistence — the flow-map infra is the rendering layer we&#x27;d reuse.</p>
+<h3 id="progress-5">Progress</h3>
+<ul><li><p><input type="checkbox" disabled checked> <span>Flow-map generation (lazy fetch-or-generate, regenerate)</span></p></li><li><p><input type="checkbox" disabled checked> <span>ReactFlow renderer + layout + status + export</span></p></li><li><p><input type="checkbox" disabled checked> <span>AI diagnosis of a submission</span></p></li><li><p><input type="checkbox" disabled> <span>Persist full attempt journey per problem (needs #1)</span></p></li><li><p><input type="checkbox" disabled> <span>Animated replay timeline over the stored journey</span></p></li><li><p><input type="checkbox" disabled> <span>&quot;Where you errored / what you almost got&quot; highlights</span></p></li></ul>
+<h3 id="next-steps-5">Next steps</h3>
+<ol start="1"><li><p>Blocked on #1&#x27;s attempt-history layer</p></li><li><p>Reuse flow-map renderer to animate the journey replay</p></li></ol>
+<hr>
+<h2 id="6-live-interviewer-theater-the-product-is-a-person-not-a-problem-list">6. Live interviewer theater — the product is a person, not a problem list</h2>
+<p>Don&#x27;t present a problem page — present an AI interviewer who reacts to your code while you type: interrupts (&quot;why did you choose a hashmap?&quot;), changes requirements mid-solve (&quot;now it must handle a stream of 10M rows&quot;), throws a curveball on your answer. Fail = the interviewer &quot;loses interest.&quot;</p>
+<ul><li><p>A private, on-demand mock interview with a personality. The whole industry is problem repositories; this is a performance medium.</p></li><li><p>Cold-start: zero user history needed — runs on day one. Rides the existing SSE streaming coach (<code>POST /coach/stream</code>) + debounced Monaco snapshots.</p></li></ul>
+<p>Why it&#x27;s a moat: a UX personality and a live-reaction paradigm can&#x27;t be copied by adding database tables. Immersive, shareable, high retention.</p>
+<h3 id="status-not-started-streaming-foundation-exists">Status: 🔴 Not started — streaming foundation exists</h3>
+<p><strong>Detailed explanation:</strong> The key foundation already exists: the backend streams AI coaching via SSE (<code>POST /coach/stream</code> at <code>backend/app/api/coach.py:209</code>), the frontend consumes it via <code>coaching.service.ts</code> / <code>coaching.hook.ts</code>, and the editor (<code>CodeEditor.tsx</code>, Monaco) can emit change events. What&#x27;s missing is the <em>session engine</em>: a per-session interviewer state machine (attempts, last code snapshot, curveball cursor, persona mood) that reacts to editor debounce + run/pass events and pushes structured <code>CoachEvent</code>s (probe / interrupt / requirement_change / reveal / escalate) over the stream. This is cold-start-first — no history required.</p>
+<h3 id="progress-6">Progress</h3>
+<ul><li><p><input type="checkbox" disabled checked> <span>SSE streaming coach endpoint (<code>POST /coach/stream</code>)</span></p></li><li><p><input type="checkbox" disabled checked> <span>Frontend streaming consumption (<code>coaching.service.ts</code> / <code>coaching.hook.ts</code>)</span></p></li><li><p><input type="checkbox" disabled checked> <span>Monaco editor change events (debounce hookup needed)</span></p></li><li><p><input type="checkbox" disabled> <span>Interview session schema + event union (<code>probe</code>/<code>interrupt</code>/<code>requirement_change</code>/<code>reveal</code>/<code>escalate</code>)</span></p></li><li><p><input type="checkbox" disabled> <span><code>InterviewSessionService</code> (per-session state machine, deterministic for tests)</span></p></li><li><p><input type="checkbox" disabled> <span><code>POST /interview/{question_id}/session</code> + <code>POST /interview/{question_id}/events</code></span></p></li><li><p><input type="checkbox" disabled> <span>Trigger rules: silence + failed runs → interrupt/escalate; requirement mutation mid-solve</span></p></li><li><p><input type="checkbox" disabled> <span><code>InterviewTheater</code> UI wrapping <code>MainWorkspace.tsx</code> (interviewer dock, requirement banner)</span></p></li></ul>
+<h3 id="next-steps-6">Next steps</h3>
+<ol start="1"><li><p>Build the shared persona/event layer (also powers #8)</p></li><li><p>Add session + events endpoints</p></li><li><p>Ship the theater UI on the streaming coach</p></li></ol>
+<hr>
+<h2 id="7-time-travel-debugging-as-the-teaching-layer">7. Time-travel debugging as the teaching layer</h2>
+<p>Let students scrub backward and forward through their own execution — pointer position, variables mutating, the exact frame where a value went wrong.</p>
+<ul><li><p>Time-travel debugging (rr, Chrome DevTools) is the hottest debugging paradigm of the decade; nobody has packaged it for learners.</p></li><li><p>Cold-start: request-scoped. Piston has no step/trace support, so build an AST-instrumented tracing executor (Python via <code>ast</code>, JS via transform) that injects <code>trace(scope)</code> calls, runs in the existing sandbox, and returns a scrubbable trace timeline.</p></li><li><p>Tie into the existing flow-map/diagnosis visualization.</p></li></ul>
+<p>Why it&#x27;s a moat: genuinely modern technology, not a gamification skin — it makes &quot;watch the bug happen&quot; possible. Self-contained and demo-able with zero user data.</p>
+<h3 id="status-not-started-3">Status: 🔴 Not started</h3>
+<p><strong>Detailed explanation:</strong> Piston (<code>piston_service.py</code>) is stdout/exit-code only — it has <strong>no step/trace support</strong>. So this needs a new <code>tracing_executor</code> that AST-rewrites user code to inject <code>trace(scope)</code> calls (Python via <code>ast</code>, JS via a small transform), runs the instrumented program in the existing sandbox, and returns a <code>TraceTimeline</code> (line, vars, call stack, memory delta per step). Frontend gets a <code>TimelineScrubber</code> (play/pause, forward/back, var inspector) rendered over the editor, reusing flow-map ReactFlow renderers. Largest engineering cost of the whole doc; request-scoped, zero data needed.</p>
+<h3 id="progress-7">Progress</h3>
+<ul><li><p><input type="checkbox" disabled> <span>AST instrumentation for Python (<code>ast</code> rewrite → <code>trace(scope)</code>)</span></p></li><li><p><input type="checkbox" disabled> <span>AST/transform instrumentation for JavaScript</span></p></li><li><p><input type="checkbox" disabled> <span><code>TracingExecutor</code> port + service running instrumented code in sandbox</span></p></li><li><p><input type="checkbox" disabled> <span><code>TraceStep</code> / <code>TraceFrame</code> / <code>TraceTimeline</code> schemas + <code>POST /trace</code></span></p></li><li><p><input type="checkbox" disabled> <span><code>TimelineScrubber</code> component (play/pause, scrub, var inspector)</span></p></li><li><p><input type="checkbox" disabled> <span>Line-highlight overlay on <code>CodeEditor.tsx</code></span></p></li><li><p><input type="checkbox" disabled> <span>Integrate with flow-map / diagnosis visualization</span></p></li></ul>
+<h3 id="next-steps-7">Next steps</h3>
+<ol start="1"><li><p>Prove AST instrumentation on the 3 seed languages with round-trip fidelity</p></li><li><p>Return a trace timeline from a <code>/trace</code> endpoint</p></li><li><p>Build the scrubber UI</p></li></ol>
+<hr>
+<h2 id="8-reverse-interview-you-are-the-senior---next-up">8. Reverse interview — you are the senior - Next up</h2>
+<p>After solving, the AI becomes your confused junior dev, and you must explain and defend your code line-by-line as if onboarding them. When you hand-wave, it asks follow-ups until you&#x27;ve taught it.</p>
+<ul><li><p>Feynman technique as roleplay: answering is the fastest way to learn; the junior forces completeness.</p></li><li><p>Cold-start: zero data, reuses existing <code>explain</code>/<code>review</code> coaching modes with a new <code>senior</code> persona + prompt template.</p></li></ul>
+<p>Why it&#x27;s leverage: cheap to ship first (no realtime needed) and it validates the shared persona engine that powers ideas #6 and #7.</p>
+<h3 id="status-not-started-cheapest-genuinely-new-win">Status: 🔴 Not started — cheapest genuinely-new win</h3>
+<p><strong>Detailed explanation:</strong> <code>CoachingMode</code> (<code>backend/app/models/schemas.py:21</code>) already has hint/review/explain/debug/freeform. This adds a <code>senior</code> mode where the AI role-plays a confused junior dev: you explain your code line-by-line, it asks follow-ups when you hand-wave, and it tracks &quot;do I understand now?&quot; It&#x27;s mostly a prompt template + a mode toggle in <code>AICoachPane.tsx</code> — no realtime, no new infra. Cheap, and it validates the persona engine that #6 and #7 reuse.</p>
+<h3 id="progress-8">Progress</h3>
+<ul><li><p><input type="checkbox" disabled> <span>New <code>CoachingMode.SENIOR</code> in <code>schemas.py</code></span></p></li><li><p><input type="checkbox" disabled> <span>Junior-dev persona prompt in <code>coaching_prompts.py</code> (asks follow-ups on hand-waving)</span></p></li><li><p><input type="checkbox" disabled> <span>Mode picker in <code>AICoachPane.tsx</code></span></p></li><li><p><input type="checkbox" disabled> <span>Prompt-persona + endpoint tests</span></p></li></ul>
+<h3 id="next-steps-8">Next steps</h3>
+<ol start="1"><li><p>Add the <code>senior</code> persona prompt + mode</p></li><li><p>Wire the mode picker in the AI Coach pane</p></li><li><p>Test; then reuse the persona layer for #6</p></li></ol>
+<hr>
+<h2 id="9-honourable-mentions-kept-from-the-brainstorm">9. Honourable mentions (kept from the brainstorm)</h2>
+<ul><li><p>The takeover: the AI writes the worst-possible, technically-valid solution and you refactor it to pass — learn to read bad code like a senior.</p></li><li><p>Adversarial twin: a second AI instance attacks your solution with a visible &quot;attack log&quot; (<code>[twin] tried input [5,1,5,1] → wrong answer</code>); you defend by patching.</p></li><li><p>Talk-it-out contract: you speak your plan (&quot;I&#x27;ll use a sliding window, O(n)&quot;), the AI pins it on screen and holds you to it when your code contradicts your mouth.</p></li><li><p>Failure-velocity score: a metric rewarding HOW you try (quick failed attempts → correctly diagnosed), reframing slow beginners as great learners.</p></li><li><p>One-line takeaway + prove-it: the AI freezes the one-sentence takeaway you learned; a retrieval quiz later proves you actually learned it.</p></li><li><p>Error-signature whitelist: anonymous aggregate &quot;3800 people hit this exact IndexError; 71% fixed it with one line&quot; — GDPR-safe, works on aggregate data.</p></li><li><p>Privacy-first session diffs: record your session as a diff (struggle → insight → solve) that&#x27;s ephemeral by default, opt-in to keep — turns data collection into a psychological unlock.</p></li><li><p>Serialized episodes: each DSA topic is an ongoing story where your code choices change the narrative.</p></li><li><p>Voice-driven mentor persona: a session-aware coaching pane that argues against your overconfidence.</p></li></ul>
+<h3 id="status-backlog-none-started">Status: 🔴 Backlog — none started</h3>
+<p><strong>Detailed explanation:</strong> These were captured from the brainstorm to avoid losing them. Several are cheap re-skins of existing infrastructure (adversarial twin and the takeover reuse Piston + coaching modes; failure-velocity reuses the attempt data from #1; one-line takeaway reuses coaching modes). They get promoted to numbered ideas when chosen.</p>
+<h3 id="progress-9">Progress</h3>
+<ul><li><p><input type="checkbox" disabled> <span>Adversarial twin (attack log over existing diagnosis) — cheap, builds on #6&#x27;s persona engine</span></p></li><li><p><input type="checkbox" disabled> <span>The takeover (review-first pedagogy, reuses <code>review</code> mode)</span></p></li><li><p><input type="checkbox" disabled> <span>Failure-velocity score (needs #1&#x27;s attempt data)</span></p></li><li><p><input type="checkbox" disabled> <span>One-line takeaway + prove-it (retrieval quiz, partial dependence on #1)</span></p></li><li><p><input type="checkbox" disabled> <span>Talk-it-out contract (needs speech-to-text)</span></p></li><li><p><input type="checkbox" disabled> <span>Error-signature whitelist (needs aggregate data + privacy design)</span></p></li><li><p><input type="checkbox" disabled> <span>Privacy-first session diffs (opt-in collection model)</span></p></li><li><p><input type="checkbox" disabled> <span>Serialized episodes (content pipeline work)</span></p></li><li><p><input type="checkbox" disabled> <span>Voice-driven mentor persona (needs speech infra)</span></p></li></ul>
+<h3 id="next-steps-9">Next steps</h3>
+<ol start="1"><li><p>Promote chosen items to numbered ideas</p></li><li><p>Cheapest first: adversarial twin and the takeover (no new data needed)</p></li></ol>
+<hr>
+<h2 id="suggested-execution-order">Suggested execution order</h2>
+<ol start="1"><li><p><strong>#8 Reverse interview</strong> — smallest effort, validates the persona engine</p></li><li><p><strong>#6 Live interviewer theater</strong> — flagship, rides existing SSE + persona engine</p></li><li><p><strong>#1 Attempt-history + mistake memory</strong> — unblocks #3 and #5; the compounding moat</p></li><li><p><strong>#7 Time-travel debugging</strong> — largest cost, self-contained</p></li><li><p><strong>#3 / #5</strong> — consume #1&#x27;s data once it lands</p></li><li><p><strong>#2 professor dashboard / #4 re-surface loop</strong> — segment + retention completions</p></li></ol>
+
+  </main>
+</div>
+</body>
+</html>

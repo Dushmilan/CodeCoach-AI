@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="CodeCoach AI docs (tools/markdown_to_html.py)">
+<title>Contributor Covenant Code of Conduct — CodeCoach AI</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --content: #1e293b;
+  --muted: #64748b;
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+  --border: #e2e8f0;
+  --code-bg: #0f172a;
+  --code-fg: #e2e8f0;
+  --sidebar-bg: #0f172a;
+  --sidebar-fg: #cbd5e1;
+  --sidebar-hover: #1e293b;
+  --sidebar-link: #94a3b8;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  color: var(--content);
+  background: var(--bg);
+  line-height: 1.65;
+  font-size: 16px;
+}
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  background: var(--sidebar-bg); color: var(--sidebar-fg);
+  padding: 24px 16px 40px;
+}
+.sidebar .brand { display: block; color: #fff; font-weight: 700; font-size: 17px; text-decoration: none; padding: 0 8px 6px; }
+.sidebar .brand small { display: block; color: #64748b; font-weight: 400; font-size: 12px; }
+.sidebar h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin: 22px 8px 8px; }
+.sidebar a.doc-link {
+  display: block; padding: 4px 8px; border-radius: 6px;
+  color: var(--sidebar-link); text-decoration: none; font-size: 13px;
+}
+.sidebar a.doc-link:hover, .sidebar a.doc-link.current { background: var(--sidebar-hover); color: #fff; }
+.sidebar nav.toc a {
+  display: block; padding: 3px 8px; border-radius: 6px; font-size: 12.5px;
+  color: var(--sidebar-link); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar nav.toc a:hover { background: var(--sidebar-hover); color: #fff; }
+.sidebar nav.toc a.l2 { padding-left: 18px; }
+.sidebar nav.toc a.l3 { padding-left: 28px; }
+.content { padding: 40px 56px 96px; max-width: 880px; }
+.content h1 { font-size: 30px; line-height: 1.2; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin: 0 0 24px; }
+.content h2 { font-size: 23px; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h3 { font-size: 19px; margin: 28px 0 10px; }
+.content h4, .content h5, .content h6 { font-size: 16px; margin: 22px 0 8px; }
+.content h2:target, .content h3:target, .content h4:target { background: var(--accent-soft); }
+.content p { margin: 12px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content ul, .content ol { margin: 12px 0 12px 24px; padding: 0; }
+.content li { margin: 4px 0; }
+.content li > ul, .content li > ol { margin-top: 4px; margin-bottom: 4px; }
+.content li input[type="checkbox"] { margin-right: 6px; vertical-align: middle; }
+.content blockquote {
+  margin: 16px 0; padding: 4px 18px;
+  border-left: 4px solid var(--accent); background: var(--accent-soft);
+  border-radius: 0 8px 8px 0;
+}
+.content blockquote p { margin: 8px 0; }
+.content hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+.content pre {
+  background: var(--code-bg); color: var(--code-fg);
+  padding: 16px 18px; border-radius: 8px; overflow-x: auto;
+  font-size: 13.5px; line-height: 1.55;
+}
+.content pre code { background: none; color: inherit; padding: 0; }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: #eef2f7; color: #be185d; padding: 2px 5px; border-radius: 4px; font-size: .88em;
+}
+.content table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14.5px; }
+.content th, .content td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+.content th { background: #f1f5f9; font-weight: 600; }
+.content tr:nth-child(even) td { background: #fbfcfe; }
+.content img { max-width: 100%; }
+.content del { color: var(--muted); }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .content { padding: 28px 20px 72px; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="README.html">CodeCoach AI<small>Documentation</small></a>
+    <h2>Docs</h2>
+    <a href="README.html" class="doc-link">README</a>
+<a href="Progress.html" class="doc-link">Progress</a>
+<a href="Ideas.html" class="doc-link">Ideas</a>
+<a href="CLAUDE.html" class="doc-link">Engineering Guidelines</a>
+<a href="AGENTS.html" class="doc-link">Agent Guide</a>
+<a href="SECURITY.html" class="doc-link">Security Policy</a>
+<a href="CONTRIBUTING.html" class="doc-link">Contributing</a>
+<a href="CODE_OF_CONDUCT.html" class="doc-link current">Code of Conduct</a>
+<a href="Docs/AUDIT_REPORT.html" class="doc-link">Audit Report</a>
+<a href="backend/tests/README.html" class="doc-link">Test Suite</a>
+    <h2>On this page</h2>
+    <nav class="toc">
+    <a class="l2" href="#our-pledge">Our Pledge</a>
+<a class="l2" href="#our-standards">Our Standards</a>
+<a class="l2" href="#enforcement-responsibilities">Enforcement Responsibilities</a>
+<a class="l2" href="#scope">Scope</a>
+<a class="l2" href="#enforcement">Enforcement</a>
+<a class="l2" href="#enforcement-guidelines">Enforcement Guidelines</a>
+<a class="l3" href="#1-correction">1. Correction</a>
+<a class="l3" href="#2-warning">2. Warning</a>
+<a class="l3" href="#3-temporary-ban">3. Temporary Ban</a>
+<a class="l3" href="#4-permanent-ban">4. Permanent Ban</a>
+<a class="l2" href="#attribution">Attribution</a>
+    </nav>
+  </aside>
+  <main class="content">
+<h1 id="contributor-covenant-code-of-conduct">Contributor Covenant Code of Conduct</h1>
+<h2 id="our-pledge">Our Pledge</h2>
+<p>We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.</p>
+<p>We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.</p>
+<h2 id="our-standards">Our Standards</h2>
+<p>Examples of behavior that contributes to a positive environment for our community include:</p>
+<ul><li><p>Demonstrating empathy and kindness toward other people</p></li><li><p>Being respectful of differing opinions, viewpoints, and experiences</p></li><li><p>Giving and gracefully accepting constructive feedback</p></li><li><p>Accepting responsibility and apologizing to those affected by our mistakes,</p><p>and learning from the experience</p></li><li><p>Focusing on what is best not just for us as individuals, but for the overall</p><p>community</p></li></ul>
+<p>Examples of unacceptable behavior include:</p>
+<ul><li><p>The use of sexualized language or imagery, and sexual attention or advances of</p><p>any kind</p></li><li><p>Trolling, insulting or derogatory comments, and personal or political attacks</p></li><li><p>Public or private harassment</p></li><li><p>Publishing others&#x27; private information, such as a physical or email address,</p><p>without their explicit permission</p></li><li><p>Other conduct which could reasonably be considered inappropriate in a</p><p>professional setting</p></li></ul>
+<h2 id="enforcement-responsibilities">Enforcement Responsibilities</h2>
+<p>Community leaders are responsible for clarifying and enforcing our standards of acceptable behavior and will take appropriate and fair corrective action in response to any behavior that they deem inappropriate, threatening, offensive, or harmful.</p>
+<p>Community leaders have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct, and will communicate reasons for moderation decisions when appropriate.</p>
+<h2 id="scope">Scope</h2>
+<p>This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public spaces. Examples of representing our community include using an official email address, posting via an official social media account, or acting as an appointed representative at an online or offline event.</p>
+<h2 id="enforcement">Enforcement</h2>
+<p>Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainer at <strong>dushmilan05@gmail.com</strong>.</p>
+<p>All complaints will be reviewed and investigated promptly and fairly.</p>
+<p>All community leaders are obligated to respect the privacy and security of the reporter of any incident.</p>
+<h2 id="enforcement-guidelines">Enforcement Guidelines</h2>
+<p>Community leaders will follow these Community Impact Guidelines in determining the consequences for any action they deem in violation of this Code of Conduct:</p>
+<h3 id="1-correction">1. Correction</h3>
+<p><strong>Community Impact</strong>: Use of inappropriate language or other behavior deemed unprofessional or unwelcome in the community.</p>
+<p><strong>Consequence</strong>: A private, written warning from community leaders, providing clarity around the nature of the violation and an explanation of why the behavior was inappropriate. A public apology may be requested.</p>
+<h3 id="2-warning">2. Warning</h3>
+<p><strong>Community Impact</strong>: A violation through a single incident or series of actions.</p>
+<p><strong>Consequence</strong>: A warning with consequences for continued behavior. No interaction with the people involved, including unsolicited interaction with those enforcing the Code of Conduct, for a specified period of time. This includes avoiding interactions in community spaces as well as external channels like social media. Violating these terms may lead to a temporary or permanent ban.</p>
+<h3 id="3-temporary-ban">3. Temporary Ban</h3>
+<p><strong>Community Impact</strong>: A serious violation of community standards, including sustained inappropriate behavior.</p>
+<p><strong>Consequence</strong>: A temporary ban from any sort of interaction or public communication with the community for a specified period of time. No public or private interaction with the people involved, including unsolicited interaction with those enforcing the Code of Conduct, is allowed during this period. Violating these terms may lead to a permanent ban.</p>
+<h3 id="4-permanent-ban">4. Permanent Ban</h3>
+<p><strong>Community Impact</strong>: Demonstrating a pattern of violation of community standards, including sustained inappropriate behavior, harassment of an individual, or aggression toward or disparagement of classes of individuals.</p>
+<p><strong>Consequence</strong>: A permanent ban from any sort of public interaction within the community.</p>
+<h2 id="attribution">Attribution</h2>
+<p>This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 2.1, available at [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1].</p>
+<p>Community Impact Guidelines were inspired by [Mozilla&#x27;s code of conduct enforcement ladder][Mozilla CoC].</p>
+<p>For answers to common questions about this code of conduct, see the FAQ at [https://www.contributor-covenant.org/faq][FAQ]. Translations are available at [https://www.contributor-covenant.org/translations][translations].</p>
+<p>[homepage]: https://www.contributor-covenant.org [v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html [Mozilla CoC]: https://github.com/mozilla/diversity [FAQ]: https://www.contributor-covenant.org/faq [translations]: https://www.contributor-covenant.org/translations</p>
+
+  </main>
+</div>
+</body>
+</html>
