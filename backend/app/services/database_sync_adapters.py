@@ -11,7 +11,12 @@ from typing import Any, Dict, List
 
 from prisma import Prisma, fields
 
-from app.services.database_sync import JSON_COLUMNS, SyncSource, SyncTarget, column_names
+from app.services.database_sync import (
+    JSON_COLUMNS,
+    SyncSource,
+    SyncTarget,
+    column_names,
+)
 
 logger = logging.getLogger(__name__)
 

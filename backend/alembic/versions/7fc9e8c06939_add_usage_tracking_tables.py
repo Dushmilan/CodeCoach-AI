@@ -79,11 +79,16 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
+    is_postgres = op.get_bind().dialect.name == "postgresql"
     op.drop_constraint(
-        "user_daily_usage_ibfk_1", "user_daily_usage", type_="foreignkey"
+        "user_daily_usage_user_id_fkey" if is_postgres else "user_daily_usage_ibfk_1",
+        "user_daily_usage",
+        type_="foreignkey",
     )
     op.drop_constraint(
-        "user_usage_events_ibfk_1", "user_usage_events", type_="foreignkey"
+        "user_usage_events_user_id_fkey" if is_postgres else "user_usage_events_ibfk_1",
+        "user_usage_events",
+        type_="foreignkey",
     )
     op.drop_index("ix_daily_user_date", table_name="user_daily_usage")
     op.drop_index(op.f("ix_user_daily_usage_user_id"), table_name="user_daily_usage")

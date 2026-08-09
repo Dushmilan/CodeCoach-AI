@@ -19,7 +19,7 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, text
 
-from tests.migrations.conftest import BACKEND_DIR
+from tests.migrations.conftest import BACKEND_DIR, _is_postgres
 
 _RETRIES = 4
 _BACKOFF_S = 0.5
@@ -46,6 +46,10 @@ def _is_transient_db_race(exc: Exception) -> bool:
 
 
 def _sync_engine(url: str):
+    if _is_postgres(url):
+        return create_engine(
+            url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
+        )
     return create_engine(url.replace("mysql+aiomysql://", "mysql+pymysql://"))
 
 
@@ -219,16 +223,26 @@ def test_alembic_version_table_required(
     alembic_config: Config, migration_url: str
 ) -> None:
     _retry(lambda: command.upgrade(alembic_config, "head"), "upgrade head")
-    with _sync_engine(migration_url).connect() as conn:
-        row = conn.execute(
-            text(
-                "SELECT COUNT(*) FROM information_schema.tables "
-                "WHERE table_schema = :schema AND table_name = 'alembic_version'"
-            ),
-            {
-                "schema": urllib.parse.urlparse(
-                    migration_url.replace("mysql+aiomysql://", "mysql://")
-                ).path.lstrip("/")
-            },
-        ).scalar_one()
+    if _is_postgres(migration_url):
+        with _sync_engine(migration_url).connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT COUNT(*) FROM information_schema.tables "
+                    "WHERE table_schema = current_schema() "
+                    "AND table_name = 'alembic_version'"
+                )
+            ).scalar_one()
+    else:
+        with _sync_engine(migration_url).connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT COUNT(*) FROM information_schema.tables "
+                    "WHERE table_schema = :schema AND table_name = 'alembic_version'"
+                ),
+                {
+                    "schema": urllib.parse.urlparse(
+                        migration_url.replace("mysql+aiomysql://", "mysql://")
+                    ).path.lstrip("/")
+                },
+            ).scalar_one()
     assert row == 1

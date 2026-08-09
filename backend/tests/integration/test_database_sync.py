@@ -27,8 +27,6 @@ def _target():
 
 @pytest.mark.asyncio
 async def test_sync_from_mysql_to_supabase_matches_counts():
-    from prisma import Prisma
-
     from app.services.database_sync import TABLE_ORDER, run_sync
     from app.services.database_sync_adapters import MySQLSyncSource, PrismaSyncTarget
 
@@ -95,9 +93,7 @@ async def test_sync_roundtrip_preserves_sample_rows():
         first_user = (await source.read_all("users"))[0]
         first_question = (await source.read_all("questions"))[0]
 
-        target_user = await prisma.user.find_unique(
-            where={"id": first_user["id"]}
-        )
+        target_user = await prisma.user.find_unique(where={"id": first_user["id"]})
         assert target_user is not None
         assert target_user.username == first_user["username"]
         assert target_user.email == first_user["email"]

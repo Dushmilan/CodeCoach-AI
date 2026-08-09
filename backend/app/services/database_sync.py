@@ -197,8 +197,10 @@ def parse_row(table: str, row: Dict[str, Any]) -> Dict[str, Any]:
                     value = json.loads(value)
                 except (json.JSONDecodeError, TypeError):
                     logger.warning("Invalid JSON in %s.%s: %r", table, key, value)
-        elif key in date_cols and isinstance(value, date) and not isinstance(
-            value, datetime
+        elif (
+            key in date_cols
+            and isinstance(value, date)
+            and not isinstance(value, datetime)
         ):
             value = datetime.combine(value, datetime.min.time())
         elif key in bool_cols:
@@ -207,7 +209,9 @@ def parse_row(table: str, row: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def validate_counts(source_counts: Dict[str, int], target_counts: Dict[str, int]) -> None:
+def validate_counts(
+    source_counts: Dict[str, int], target_counts: Dict[str, int]
+) -> None:
     """Raise if any table count differs between source and target."""
     for table, expected in source_counts.items():
         actual = target_counts.get(table)

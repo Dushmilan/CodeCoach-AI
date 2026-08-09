@@ -58,6 +58,14 @@ class QuestionORM(Base):
     is_interactive = Column(Integer, default=0, nullable=False)
     validation_status = Column(JSONType, default=None, nullable=True)
 
+    __table_args__ = (
+        Index(
+            "ix_questions_company_tags",
+            "company_tags",
+            postgresql_using="gin",
+        ),
+    )
+
 
 class CourseORM(Base):
     __tablename__ = "courses"
