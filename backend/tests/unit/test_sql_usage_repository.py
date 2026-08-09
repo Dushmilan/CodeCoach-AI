@@ -98,6 +98,26 @@ class TestSqlUsageRepository:
         assert daily is None
 
     @pytest.mark.asyncio
+    async def test_increment_daily_bumps_request_count(self, repo, user_id):
+        today = date.today()
+        await repo.increment_daily(
+            user_id=user_id,
+            usage_date=today,
+            input_tokens=10,
+            output_tokens=20,
+            request_count=1,
+        )
+        await repo.increment_daily(
+            user_id=user_id,
+            usage_date=today,
+            input_tokens=5,
+            output_tokens=7,
+            request_count=2,
+        )
+        daily = await repo.get_daily(user_id, today)
+        assert daily.request_count == 3
+
+    @pytest.mark.asyncio
     async def test_add_event_inserts_row(self, repo, user_id):
         await repo.add_event(
             user_id=user_id,
@@ -206,3 +226,90 @@ class TestSqlUsageRepository:
         daily = await repo.get_daily(user_id, today)
         assert daily.input_tokens == 20
         assert daily.output_tokens == 10
+
+    @pytest.mark.asyncio
+    async def test_all_daily_preserves_request_count(self, repo, test_db, user_id):
+        today = date.today()
+        other_user = await _make_user(test_db)
+        today_requests_a = 1
+        today_requests_b = 1
+        await repo.increment_daily(
+            user_id=user_id,
+            usage_date=today,
+            input_tokens=10,
+            output_tokens=10,
+            request_count=today_requests_a,
+        )
+        await repo.increment_daily(
+            user_id=other_user,
+            usage_date=today,
+            input_tokens=5,
+            output_tokens=5,
+            request_count=today_requests_b,
+        )
+        rows = await repo.all_daily(user_id, since=date(2000, 1, 1), limit=10)
+        assert len(rows) == 1
+        assert rows[0].request_count == today_requests_a
+
+    @pytest.mark.asyncio
+    async def test_all_daily_newest_first(self, repo, user_id):
+        old = date(2000, 1, 1)
+        today = date.today()
+        await repo.increment_daily(
+            user_id=user_id, usage_date=old, input_tokens=1, output_tokens=1
+        )
+        await repo.increment_daily(
+            user_id=user_id, usage_date=today, input_tokens=2, output_tokens=2
+        )
+        rows = await repo.all_daily(user_id, since=date(2000, 1, 1), limit=10)
+        assert [r.usage_date for r in rows] == [today, old]
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_event_breakdown(self, repo, test_db, user_id):
+        other_user = await _make_user(test_db)
+        for reason, endpoint in [
+            ("daily_cap", "/api/coach"),
+            ("daily_cap", "/api/coach"),
+            ("ip_limit", "/api/coach/stream"),
+            ("daily_cap", "/api/coach"),
+        ]:
+            uid = user_id if reason == "daily_cap" else other_user
+            await repo.add_rate_limit_event(
+                user_id=uid,
+                ip="1.2.3.4",
+                reason=reason,
+                endpoint=endpoint,
+            )
+        since = datetime(2000, 1, 1, tzinfo=timezone.utc)
+        rows = await repo.rate_limit_event_breakdown(since)
+        by_reason = {row.key: row.count for row in rows}
+        assert by_reason["daily_cap"] == 3
+        assert by_reason["ip_limit"] == 1
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_event_breakdown_by_ip_and_endpoint(self, repo, user_id):
+        await repo.add_rate_limit_event(
+            user_id=user_id, ip="1.1.1.1", reason="daily_cap", endpoint="/api/coach"
+        )
+        await repo.add_rate_limit_event(
+            user_id=user_id,
+            ip="1.1.1.1",
+            reason="daily_cap",
+            endpoint="/api/coach/stream",
+        )
+        await repo.add_rate_limit_event(
+            user_id=user_id, ip="2.2.2.2", reason="ip_limit", endpoint="/api/coach"
+        )
+        since = datetime(2000, 1, 1, tzinfo=timezone.utc)
+        by_ip = {
+            row.key: row.count
+            for row in await repo.rate_limit_event_breakdown(since, "ip")
+        }
+        assert by_ip["1.1.1.1"] == 2
+        assert by_ip["2.2.2.2"] == 1
+        by_endpoint = {
+            row.key: row.count
+            for row in await repo.rate_limit_event_breakdown(since, "endpoint")
+        }
+        assert by_endpoint["/api/coach"] == 2
+        assert by_endpoint["/api/coach/stream"] == 1

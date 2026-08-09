@@ -25,6 +25,11 @@ test-backend-integration:
 test-frontend:
 	cd frontend && pnpm test:run
 
+# Vitest requires Node >= 20.12 (styleText); run via a glibc node:20 image
+# when the host node is older (host node_modules are reused via mount).
+test-frontend-docker:
+	docker run --rm -w /app -v "$(PWD)/frontend:/app" node:20 node node_modules/vitest/vitest.mjs run
+
 # Linting & Formatting
 lint: lint-backend
 	cd frontend && pnpm lint

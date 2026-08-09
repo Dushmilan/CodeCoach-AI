@@ -30,8 +30,17 @@ class Settings(BaseSettings):
     DAILY_TOKEN_INPUT_CAP: int = 250_000
     DAILY_TOKEN_OUTPUT_CAP: int = 125_000
 
+    # Per-plan daily request caps (number of AI calls per user per day)
+    FREE_DAILY_REQUEST_CAP: int = 20
+    PRO_DAILY_REQUEST_CAP: int = 500
+
     # Per-user request rate limit (requests per minute)
     USER_RATE_LIMIT_PER_MINUTE: int = 60
+
+    # Abuse detection thresholds
+    ABUSE_MULTI_ACCOUNT_MIN_ACCOUNTS: int = 3
+    ABUSE_BURST_MIN_EVENTS: int = 20
+    ABUSE_REPEAT_MIN_EVENTS: int = 10
 
     @model_validator(mode="after")
     def _require_jwt_key_in_production(self):

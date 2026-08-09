@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { ThemeProvider, AuthProvider, ToastProvider } from "@/providers";
+import { UsageProvider } from "@/features/usage/usage.context";
 
 export const metadata: Metadata = {
   title: "CodeCoach AI - Interview Practice Platform",
@@ -28,7 +29,9 @@ export default function RootLayout({
           attribute="class"
         >
           <AuthProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider>
+              <UsageProvider>{children}</UsageProvider>
+            </ToastProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

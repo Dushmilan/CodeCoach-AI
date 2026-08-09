@@ -339,10 +339,10 @@ class TestCoachEndpoints:
             "difficulty": "easy",
         }
 
-        from app.api.auth_deps import require_premium
+        from app.api.auth_deps import require_premium, get_current_user
         from app.models.auth_schemas import UserResponse
 
-        async def override_require_premium():
+        async def override_auth_user():
             return UserResponse(
                 id="test-id",
                 username="testuser",
@@ -352,10 +352,12 @@ class TestCoachEndpoints:
                 plan="premium",
             )
 
-        app.dependency_overrides[require_premium] = override_require_premium
+        app.dependency_overrides[get_current_user] = override_auth_user
+        app.dependency_overrides[require_premium] = override_auth_user
         try:
             response = await async_client.post("/api/coach/", json=coaching_request)
         finally:
+            app.dependency_overrides.pop(get_current_user, None)
             app.dependency_overrides.pop(require_premium, None)
 
         assert response.status_code == 200

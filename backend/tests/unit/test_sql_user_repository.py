@@ -172,3 +172,30 @@ class TestSqlUserRepository:
         fetched = await repo.get_by_id(user.id)
         assert fetched is not None
         assert fetched.is_active is False
+
+    @pytest.mark.asyncio
+    async def test_new_user_defaults_to_free_plan(self, repo, sample_user):
+        await repo.add(sample_user)
+        await repo.session.commit()
+
+        fetched = await repo.get_by_id(sample_user.id)
+        assert fetched is not None
+        assert fetched.plan == "free"
+
+    @pytest.mark.asyncio
+    async def test_plan_round_trips(self, repo):
+        user = UserInDB(
+            id=str(uuid.uuid4()),
+            username="prouser",
+            email="pro@example.com",
+            hashed_password="hash",
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
+            plan="pro",
+        )
+        await repo.add(user)
+        await repo.session.commit()
+
+        fetched = await repo.get_by_id(user.id)
+        assert fetched is not None
+        assert fetched.plan == "pro"

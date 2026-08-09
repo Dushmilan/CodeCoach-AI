@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { ReactNode } from "react";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useCoaching } from "./coaching.hook";
+import { UsageProvider } from "@/features/usage/usage.context";
 
-const mockGetCoachResponse = vi.fn();
+const { mockGetCoachResponse, mockGetUsage } = vi.hoisted(() => ({
+  mockGetCoachResponse: vi.fn(),
+  mockGetUsage: vi.fn(),
+}));
 
 vi.mock("./coaching.service", () => ({
   coachingService: {
@@ -10,8 +15,29 @@ vi.mock("./coaching.service", () => ({
   },
 }));
 
+vi.mock("@/features/usage/usage.service", () => ({
+  usageService: { getUsage: mockGetUsage },
+}));
+
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <UsageProvider>{children}</UsageProvider>
+);
+
+function makeRateLimitedError() {
+  const err = new Error("Request failed: 429 Too Many Requests");
+  (err as Error & { status?: number }).status = 429;
+  return err;
+}
+
 beforeEach(() => {
   mockGetCoachResponse.mockReset();
+  mockGetUsage.mockReset();
+  mockGetUsage.mockResolvedValue({
+    plan: "free",
+    daily_remaining: 20,
+    daily_limit: 20,
+    period: "day",
+  });
 });
 
 describe("useCoaching", () => {
@@ -223,6 +249,95 @@ describe("useCoaching", () => {
       });
 
       expect(result.current.error).toBe("Failed to get coaching response");
+    });
+  });
+
+  describe("rate limiting", () => {
+    const defaultArgs = {
+      message: "Help me",
+      mode: "hint" as const,
+      problem: "Two Sum",
+      code: "def two_sum(): pass",
+      language: "python",
+    };
+
+    it("marks limitReached and shows a friendly error on 429", async () => {
+      mockGetCoachResponse.mockRejectedValue(makeRateLimitedError());
+
+      const { result } = renderHook(() => useCoaching(), { wrapper });
+
+      await act(async () => {
+        await result.current.sendMessage(
+          defaultArgs.message,
+          defaultArgs.mode,
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+
+      expect(result.current.limitReached).toBe(true);
+      expect(result.current.error).toBe(
+        "You've reached your daily AI message limit.",
+      );
+      expect(result.current.messages[1].content).toContain("Upgrade to Pro");
+    });
+
+    it("starts with limitReached false", () => {
+      const { result } = renderHook(() => useCoaching(), { wrapper });
+      expect(result.current.limitReached).toBe(false);
+    });
+
+    it("clears limitReached after a successful request", async () => {
+      mockGetCoachResponse
+        .mockRejectedValueOnce(makeRateLimitedError())
+        .mockResolvedValueOnce({ response: "OK", structured: null });
+
+      const { result } = renderHook(() => useCoaching(), { wrapper });
+
+      await act(async () => {
+        await result.current.sendMessage(
+          defaultArgs.message,
+          defaultArgs.mode,
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+      expect(result.current.limitReached).toBe(true);
+
+      await act(async () => {
+        await result.current.sendMessage(
+          defaultArgs.message,
+          defaultArgs.mode,
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+      expect(result.current.limitReached).toBe(false);
+    });
+
+    it("clearLimitReached resets the flag", async () => {
+      mockGetCoachResponse.mockRejectedValue(makeRateLimitedError());
+
+      const { result } = renderHook(() => useCoaching(), { wrapper });
+
+      await act(async () => {
+        await result.current.sendMessage(
+          defaultArgs.message,
+          defaultArgs.mode,
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+      expect(result.current.limitReached).toBe(true);
+
+      act(() => {
+        result.current.clearLimitReached();
+      });
+      expect(result.current.limitReached).toBe(false);
     });
   });
 });
