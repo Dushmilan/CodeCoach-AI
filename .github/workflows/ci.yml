@@ -73,15 +73,14 @@ jobs:
 
       - name: Run unit tests
         run: |
-          COVERAGE_FILE=.coverage.unit pytest tests/unit -v --cov=app --cov-report=xml:unit-coverage.xml -n auto --dist loadscope
+          COVERAGE_FILE=.coverage.unit pytest tests/unit -v --cov=app --cov-report=xml:unit-coverage.xml
 
       - name: Run integration tests
         run: |
           COVERAGE_FILE=.coverage.integration pytest tests/integration -v --cov=app --cov-report=xml:integration-coverage.xml \
             --ignore=tests/integration/test_run_endpoints.py \
             --ignore=tests/integration/test_auth_supabase.py \
-            --ignore=tests/integration/test_database_sync.py \
-            -n auto --dist loadscope
+            --ignore=tests/integration/test_database_sync.py
 
       - name: Run contract + failure-simulation tests
         run: |
@@ -102,8 +101,7 @@ jobs:
 
       - name: Combine coverage and enforce per-module budget
         run: |
-          ls -la .coverage* || true
-          coverage combine
+          coverage combine .coverage.unit .coverage.integration
           coverage xml -o coverage.xml
           python ../qa/enforce_coverage_budget.py \
             --xml coverage.xml \
