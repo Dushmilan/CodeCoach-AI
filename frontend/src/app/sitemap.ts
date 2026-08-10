@@ -44,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       cache: "no-store",
     });
     if (questionsRes.ok) {
-      const questions = await questionsRes.json();
+      const questions = (await questionsRes.json()) as { id: string }[];
       questionPages = questions.map((q: { id: string }) => ({
         url: `${baseUrl}/problems/${q.id}`,
         lastModified: new Date(),
@@ -63,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       cache: "no-store",
     });
     if (coursesRes.ok) {
-      const courses = await coursesRes.json();
+      const courses = (await coursesRes.json()) as { id: string }[];
       coursePages = courses.map((c: { id: string }) => ({
         url: `${baseUrl}/learn/${c.id}`,
         lastModified: new Date(),

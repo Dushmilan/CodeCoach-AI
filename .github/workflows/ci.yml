@@ -201,6 +201,13 @@ jobs:
       - name: Run tests
         run: pnpm run test:run
 
+      - name: OpenNext Cloudflare build
+        env:
+          API_URL: ${{ vars.API_URL }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+        run: pnpm run cf:build
+
   docker:
     name: Docker Build
     runs-on: ubuntu-latest

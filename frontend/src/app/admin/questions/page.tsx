@@ -54,7 +54,7 @@ export default function QuestionsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
+      const data = (await res.json()) as { questions?: QBrief[]; total?: number };
       setQuestions(data.questions || []);
       setTotal(data.total || 0);
     } catch {
@@ -90,7 +90,12 @@ export default function QuestionsPage() {
           questions: Array.isArray(data) ? data : [data],
         }),
       });
-      const result = await res.json();
+      const result = (await res.json()) as {
+        total?: number;
+        successful?: number;
+        failed?: number;
+        errors?: { message: string }[];
+      };
       setImportResult(result);
       if (res.ok) fetchQuestions();
     } catch {

@@ -26,7 +26,7 @@ export default function AdminDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to fetch stats");
-        const data = await res.json();
+        const data = (await res.json()) as AdminStats;
         setStats(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error loading stats");
