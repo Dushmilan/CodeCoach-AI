@@ -87,6 +87,11 @@ jspm_packages/
 .next/
 out/
 
+# Cloudflare/OpenNext
+.open-next/
+.wrangler/
+cloudflare-env.d.ts
+
 # Nuxt.js
 .nuxt
 dist
