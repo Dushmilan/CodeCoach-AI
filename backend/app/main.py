@@ -10,8 +10,44 @@ from dotenv import load_dotenv, find_dotenv
 import logging
 import os
 import sys
+import time
 
 logger = logging.getLogger(__name__)
+
+
+class RequestLogMiddleware:
+    """Log method, path, status code and duration for every HTTP request."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        start = time.monotonic()
+        status_holder = {"status": 0}
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                status_holder["status"] = message["status"]
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_wrapper)
+        except Exception:
+            status_holder["status"] = 500
+            raise
+        finally:
+            duration_ms = (time.monotonic() - start) * 1000
+            logger.info(
+                "%s %s -> %d (%dms)",
+                scope.get("method", ""),
+                scope.get("path", ""),
+                status_holder["status"] or 500,
+                int(duration_ms),
+            )
 
 
 def setup_logging():
@@ -134,6 +170,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLogMiddleware)
 
 # Include routers
 app.include_router(coach.router, prefix="/api/coach", tags=["coach"])

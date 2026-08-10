@@ -7,7 +7,14 @@ import logging
 import os
 import time
 
-from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language
+from app.models.schemas import (
+    CoachingRequest,
+    CoachingResponse,
+    CoachingMode,
+    DebriefReportRequest,
+    DebriefReportResponse,
+    Language,
+)
 from app.ports.coaching_provider import CoachingProvider
 from app.services.groq_service import GroqService
 from app.services.redis_service import RedisCache
@@ -16,7 +23,11 @@ from app.api.auth_deps import require_premium
 from app.api.daily_limits import enforce_daily_request_cap
 from app.api.dependencies import get_redis_cache, get_usage_service
 from app.models.auth_schemas import UserResponse
-from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
+from app.middleware.rate_limit import (
+    limiter,
+    COACH_RATE_LIMIT,
+    DEBRIEF_RATE_LIMIT,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -152,6 +163,65 @@ async def get_coaching(
         logger.error("=======================")
         raise HTTPException(
             status_code=500, detail=f"Error generating coaching response: {str(e)}"
+        )
+
+
+@router.post("/debrief-report", response_model=DebriefReportResponse)
+@limiter.limit(DEBRIEF_RATE_LIMIT)
+async def get_debrief_report(
+    request: Request,
+    response: Response,
+    report_request: DebriefReportRequest,
+    provider: CoachingProvider = Depends(get_coaching_provider),
+    user: UserResponse = Depends(require_premium),
+    _usage_guard: None = Depends(check_daily_token_cap),
+    _rate_guard: None = Depends(enforce_user_rate_limit),
+):
+    """Generate a structured debrief report from captured reverse-interview Q&A exchanges.
+
+    Deliberately NOT gated by ``enforce_daily_request_cap``: reports are
+    generated from already-consumed chat exchanges, so they must not count
+    against the user's daily AI-message quota. Token metering still applies
+    and is recorded under the ``debrief-report`` endpoint.
+    """
+    try:
+        exchanges_payload = [
+            {"question": ex.question, "answer": ex.answer}
+            for ex in report_request.exchanges
+        ]
+        message = json.dumps(
+            {
+                "problem": report_request.problem,
+                "code": report_request.code,
+                "exchanges": exchanges_payload,
+            }
+        )
+
+        structured_data = await provider.get_structured(
+            problem=report_request.problem,
+            code=report_request.code,
+            language=report_request.language.value,
+            message=message,
+            mode="debrief_report",
+            difficulty="medium",
+            endpoint="debrief-report",
+        )
+
+        response.headers.update(getattr(request.state, "usage_headers", {}))
+        response.headers.update(getattr(request.state, "daily_limit_headers", {}))
+
+        return DebriefReportResponse(
+            summary=structured_data.get("summary", ""),
+            exchanges=structured_data.get("exchanges", []),
+            takeaway=structured_data.get("takeaway", ""),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Debrief report generation failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating debrief report: {str(e)}",
         )
 
 
@@ -304,14 +374,18 @@ async def get_coaching_modes(
     user: UserResponse = Depends(require_premium),
 ):
     """Get available coaching modes."""
+    public_modes = [
+        m for m in CoachingMode if m is not CoachingMode.DEBRIEF_REPORT
+    ]
     return {
-        "modes": [mode.value for mode in CoachingMode],
+        "modes": [mode.value for mode in public_modes],
         "descriptions": {
             CoachingMode.HINT.value: "Get gentle hints to guide your thinking",
             CoachingMode.REVIEW.value: "Get code review and feedback",
             CoachingMode.EXPLAIN.value: "Get explanations of concepts or approaches",
             CoachingMode.DEBUG.value: "Get help debugging your code",
             CoachingMode.FREEFORM.value: "Ask any question and get a natural response",
+            CoachingMode.SENIOR.value: "Explain your code to a confused junior dev",
         },
     }
 

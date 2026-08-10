@@ -5,6 +5,7 @@ streaming usage extraction + recording, caching (cache hits do not meter),
 and Groq error mapping (401/429/timeout).
 """
 
+import json
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi import HTTPException
@@ -151,6 +152,7 @@ class TestGroqServiceStructured:
                 "endpoint": "coach",
                 "input_tokens": 12,
                 "output_tokens": 34,
+                "request_count": 1,
             }
         ]
 
@@ -570,6 +572,344 @@ class TestGroqServiceStructured:
         assert result["summary"] == "Great work"
 
 
+class TestGroqServiceDebriefReport:
+    """debrief_report mode must preserve captured Q&A exchanges end-to-end."""
+
+    @pytest.fixture
+    def mock_async_client(self):
+        with patch("httpx.AsyncClient") as mock_cls:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_cls.return_value = mock_instance
+            yield mock_instance
+
+    def _make_response(self, content):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = "ok"
+        mock_response.headers = {}
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": content}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+        }
+        return mock_response
+
+    def _message(self, exchanges):
+        return json.dumps(
+            {"problem": "Two Sum", "code": "code()", "exchanges": exchanges}
+        )
+
+    @pytest.mark.asyncio
+    async def test_preserves_captured_exchanges_when_model_returns_prose(
+        self, mock_async_client
+    ):
+        """Model prose (no JSON) must not blank the report — captured Q&A survives."""
+        captured = [
+            {"question": "Why a hashmap?", "answer": "For O(1) lookups."},
+            {"question": "What about space?", "answer": "Still O(n)."},
+        ]
+        mock_async_client.post.return_value = self._make_response(
+            "Great session! The user explained a hashmap well and mentioned O(1)."
+        )
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test")
+        result = await service.get_structured_coaching_response(
+            problem="Two Sum",
+            code="code()",
+            language="python",
+            message=self._message(captured),
+            mode="debrief_report",
+            difficulty="medium",
+        )
+
+        assert len(result["exchanges"]) == 2
+        assert result["exchanges"][0]["question"] == "Why a hashmap?"
+        assert result["exchanges"][0]["answer"] == "For O(1) lookups."
+        assert result["exchanges"][0]["strengths"] == []
+        assert result["exchanges"][0]["improvements"] == []
+        assert result["exchanges"][0]["stronger_answer_should_include"] == []
+        assert result["takeaway"]
+
+    @pytest.mark.asyncio
+    async def test_overlays_partial_model_feedback(self, mock_async_client):
+        """Model JSON feedback is overlaid on captured exchanges by index."""
+        captured = [
+            {"question": "Why a hashmap?", "answer": "For O(1) lookups."},
+            {"question": "What about space?", "answer": "Still O(n)."},
+        ]
+        model_json = json.dumps(
+            {
+                "summary": "Solid session",
+                "exchanges": [
+                    {
+                        "strengths": ["Right structure"],
+                        "improvements": [],
+                        "stronger_answer_should_include": ["Mention space"],
+                    }
+                ],
+                "takeaway": "Justify space too.",
+            }
+        )
+        mock_async_client.post.return_value = self._make_response(model_json)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test")
+        result = await service.get_structured_coaching_response(
+            problem="Two Sum",
+            code="code()",
+            language="python",
+            message=self._message(captured),
+            mode="debrief_report",
+            difficulty="medium",
+        )
+
+        assert result["summary"] == "Solid session"
+        assert result["takeaway"] == "Justify space too."
+        assert len(result["exchanges"]) == 2
+        assert result["exchanges"][0]["strengths"] == ["Right structure"]
+        assert result["exchanges"][0]["stronger_answer_should_include"] == [
+            "Mention space"
+        ]
+        assert result["exchanges"][1]["strengths"] == []
+        assert result["exchanges"][1]["question"] == "What about space?"
+
+    @pytest.mark.asyncio
+    async def test_preserves_ai_feedback_for_wrong_and_unsure_answers(
+        self, mock_async_client
+    ):
+        """Critique/improvement feedback from the model survives repair."""
+        captured = [
+            {"question": "Why a hashmap?", "answer": "Because arrays are slow."},
+            {"question": "What about space?", "answer": "I'm not sure."},
+        ]
+        model_json = json.dumps(
+            {
+                "summary": "Mixed session",
+                "exchanges": [
+                    {
+                        "strengths": [],
+                        "improvements": ["A hashmap gives O(1) average lookups"],
+                        "stronger_answer_should_include": [
+                            "Mention amortized O(1) and hashing"
+                        ],
+                    },
+                    {
+                        "strengths": [],
+                        "improvements": ["Space is O(n) for the hashmap"],
+                        "stronger_answer_should_include": ["Talk through the tradeoff"],
+                    },
+                ],
+                "takeaway": "Keep going.",
+            }
+        )
+        mock_async_client.post.return_value = self._make_response(model_json)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test")
+        result = await service.get_structured_coaching_response(
+            problem="Two Sum",
+            code="code()",
+            language="python",
+            message=self._message(captured),
+            mode="debrief_report",
+            difficulty="medium",
+        )
+
+        assert result["exchanges"][0]["improvements"] == [
+            "A hashmap gives O(1) average lookups"
+        ]
+        assert result["exchanges"][0]["stronger_answer_should_include"] == [
+            "Mention amortized O(1) and hashing"
+        ]
+        assert result["exchanges"][1]["improvements"] == [
+            "Space is O(n) for the hashmap"
+        ]
+        assert result["exchanges"][1]["question"] == "What about space?"
+
+    @pytest.mark.asyncio
+    async def test_debrief_report_records_usage_under_own_endpoint(
+        self, mock_async_client
+    ):
+        """Debrief usage meters tokens under debrief-report and does not count
+        as a chat message (request_count=0)."""
+        captured = [
+            {"question": "Why a hashmap?", "answer": "For O(1) lookups."},
+        ]
+        mock_async_client.post.return_value = self._make_response(
+            json.dumps(
+                {
+                    "summary": "s",
+                    "exchanges": [
+                        {
+                            "question": "q",
+                            "answer": "a",
+                            "strengths": [],
+                            "improvements": [],
+                            "stronger_answer_should_include": [],
+                        }
+                    ],
+                    "takeaway": "t",
+                }
+            )
+        )
+        recorder = FakeRecorder()
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(
+            api_key="gsk_test", usage_recorder=recorder, user_id="user-1"
+        )
+        await service.get_structured_coaching_response(
+            problem="P",
+            code="c",
+            language="python",
+            message=self._message(captured),
+            mode="debrief_report",
+            difficulty="medium",
+            endpoint="debrief-report",
+        )
+        assert recorder.calls == [
+            {
+                "user_id": "user-1",
+                "provider": "groq",
+                "model": "llama-3.3-70b-versatile",
+                "endpoint": "debrief-report",
+                "input_tokens": 1,
+                "output_tokens": 1,
+                "request_count": 0,
+            }
+        ]
+
+    @pytest.mark.asyncio
+    async def test_requests_json_response_format(self, mock_async_client):
+        mock_async_client.post.return_value = self._make_response(
+            json.dumps(
+                {
+                    "summary": "s",
+                    "exchanges": [
+                        {"question": "q", "answer": "a", "strengths": [], "improvements": [], "stronger_answer_should_include": []}
+                    ],
+                    "takeaway": "t",
+                }
+            )
+        )
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test")
+        await service.get_structured_coaching_response(
+            problem="P",
+            code="c",
+            language="python",
+            message=self._message(
+                [{"question": "q", "answer": "a"}]
+            ),
+            mode="debrief_report",
+            difficulty="medium",
+        )
+        call = mock_async_client.post.call_args
+        assert call.kwargs["json"]["response_format"] == {"type": "json_object"}
+
+    @pytest.mark.asyncio
+    async def test_does_not_crash_when_model_returns_json_array(
+        self, mock_async_client
+    ):
+        """A JSON array (not object) from Groq must not 500 — report uses captured Q&A."""
+        captured = [
+            {"question": "Why a hashmap?", "answer": "For O(1) lookups."},
+            {"question": "What about space?", "answer": "Still O(n)."},
+        ]
+        mock_async_client.post.return_value = self._make_response(
+            '[{"summary": "not an object"}]'
+        )
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test")
+        result = await service.get_structured_coaching_response(
+            problem="Two Sum",
+            code="code()",
+            language="python",
+            message=self._message(captured),
+            mode="debrief_report",
+            difficulty="medium",
+        )
+
+        assert len(result["exchanges"]) == 2
+        assert result["exchanges"][0]["question"] == "Why a hashmap?"
+        assert result["exchanges"][1]["answer"] == "Still O(n)."
+        assert result["summary"]
+        assert result["takeaway"]
+
+    @pytest.mark.asyncio
+    async def test_does_not_crash_when_model_returns_plain_string(
+        self, mock_async_client
+    ):
+        captured = [
+            {"question": "Why a hashmap?", "answer": "For O(1) lookups."}
+        ]
+        mock_async_client.post.return_value = self._make_response('"just prose"')
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test")
+        result = await service.get_structured_coaching_response(
+            problem="Two Sum",
+            code="code()",
+            language="python",
+            message=self._message(captured),
+            mode="debrief_report",
+            difficulty="medium",
+        )
+
+        assert len(result["exchanges"]) == 1
+        assert result["exchanges"][0]["question"] == "Why a hashmap?"
+
+    def test_repair_non_dict_data_does_not_throw(self):
+        """Direct repair call with a list/string must not raise AttributeError."""
+        from app.services.groq_service import GroqService
+
+        message = json.dumps(
+            {
+                "problem": "p",
+                "code": "c",
+                "exchanges": [{"question": "Q", "answer": "A"}],
+            }
+        )
+        for bad in ([], "string", None, 42):
+            result = GroqService._repair_debrief_report(bad, message)
+            assert len(result["exchanges"]) == 1
+            assert result["exchanges"][0]["question"] == "Q"
+            assert result["exchanges"][0]["strengths"] == []
+
+    @pytest.mark.asyncio
+    async def test_non_debrief_mode_does_not_crash_on_json_array(
+        self, mock_async_client
+    ):
+        """A JSON array from Groq for hint/senior mode must not 500."""
+        mock_async_client.post.return_value = self._make_response(
+            '[{"summary": "not an object"}]'
+        )
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test")
+        result = await service.get_structured_coaching_response(
+            problem="T",
+            code="c",
+            language="python",
+            message="m",
+            mode="hint",
+            difficulty="easy",
+        )
+        assert isinstance(result, dict)
+        assert "summary" in result
+
+
 class TestGroqServiceStreaming:
     def _stream_response(self, lines):
         mock_response = MagicMock()
@@ -630,6 +970,7 @@ class TestGroqServiceStreaming:
                 "endpoint": "coach_stream",
                 "input_tokens": 5,
                 "output_tokens": 7,
+                "request_count": 1,
             }
         ]
 

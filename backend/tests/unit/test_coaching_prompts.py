@@ -232,14 +232,111 @@ class TestBuildStructuredUserPrompt:
         assert data["message"] == 'it\'s "broken" somehow'
 
 
+class TestBuildSeniorPrompt:
+    def test_identifies_junior_dev_persona(self):
+        prompt = build_system_prompt("senior", "python")
+        assert "junior developer" in prompt
+        assert "USER is the senior" in prompt
+
+    def test_requires_exactly_one_question(self):
+        prompt = build_system_prompt("senior", "python")
+        assert "EXACTLY ONE question" in prompt
+        assert "NOTHING else" in prompt
+
+    def test_forbids_hints_explanations_and_praise(self):
+        prompt = build_system_prompt("senior", "python")
+        assert "NO hints" in prompt
+        assert "NO explanations" in prompt
+        assert "NO praise" in prompt
+        assert "NO greetings" in prompt
+        assert "NO suggested answers" in prompt
+
+    def test_never_gives_the_answer(self):
+        prompt = build_system_prompt("senior", "python")
+        assert "Never provide the answer" in prompt
+
+    def test_structured_question_only(self):
+        prompt = build_structured_system_prompt("senior", "python")
+        assert "EXACTLY ONE question" in prompt
+        assert "No greeting" in prompt
+        assert "no hint" in prompt
+        assert "no explanation" in prompt
+
+    def test_structured_suppresses_other_fields(self):
+        prompt = build_structured_system_prompt("senior", "python")
+        assert "hints: []" in prompt
+        assert "ALL other fields: null or []" in prompt
+
+    def test_user_prompt_includes_senior_mode_label(self):
+        prompt = build_user_prompt("Two Sum", "def f(): pass", "My approach", "senior")
+        assert "Mode: senior" in prompt
+        assert "Two Sum" in prompt
+
+
+class TestBuildDebriefReportPrompt:
+    def test_identifies_report_mode(self):
+        prompt = build_structured_system_prompt("debrief_report", "python")
+        assert "debrief_report mode" in prompt
+        assert "Overall assessment" in prompt
+        assert "exchanges" in prompt
+    def test_requires_exchanges_feedback_shape(self):
+        prompt = build_structured_system_prompt("debrief_report", "python")
+        assert "exchanges" in prompt
+        assert "question" in prompt
+        assert "answer" in prompt
+        assert "strengths" in prompt
+        assert "improvements" in prompt
+        assert "stronger_answer_should_include" in prompt
+
+    def test_requires_takeaway(self):
+        prompt = build_structured_system_prompt("debrief_report", "python")
+        assert "takeaway" in prompt
+
+    def test_unstructured_mentions_honest_feedback(self):
+        prompt = build_system_prompt("debrief_report", "python")
+        assert "what they explained well" in prompt
+        assert "what they could improve" in prompt
+
+    def test_unstructured_requires_critique_for_wrong_answers(self):
+        prompt = build_system_prompt("debrief_report", "python")
+        assert "answer is wrong" in prompt
+        assert "actionable critique" in prompt
+
+    def test_unstructured_requires_critique_for_unsure_answers(self):
+        prompt = build_system_prompt("debrief_report", "python")
+        assert "unsure" in prompt
+        assert "missing concept" in prompt
+
+    def test_unstructured_forbids_praise_for_incorrect(self):
+        prompt = build_system_prompt("debrief_report", "python")
+        assert "generic praise" in prompt
+
+    def test_structured_requires_feedback_for_every_exchange(self):
+        prompt = build_structured_system_prompt("debrief_report", "python")
+        assert "at least one of strengths or improvements" in prompt
+        assert "wrong or unsure" in prompt
+        assert "Do NOT set all three feedback arrays empty" in prompt
+
+    def test_structured_replaces_coaching_schema(self):
+        prompt = build_structured_system_prompt("debrief_report", "python")
+        assert "Reverse Interview debrief report" in prompt
+        assert '"exchanges"' in prompt
+        assert "never leave all three feedback arrays empty" in prompt
+        assert "Socratic tutor" not in prompt
+        assert "code_review" not in prompt
+        assert "Always end with a question" not in prompt
+
+
 class TestModeSections:
-    def test_maps_all_five_modes(self):
+    def test_maps_all_seven_modes(self):
         assert set(MODE_SECTIONS.keys()) == {
             "hint",
             "review",
             "explain",
             "debug",
             "freeform",
+            "senior",
+            "debrief_report",
         }
 
     def test_each_mode_has_unstructured_section(self):

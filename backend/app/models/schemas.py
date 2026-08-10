@@ -22,6 +22,8 @@ class CoachingMode(str, Enum):
     EXPLAIN = "explain"
     DEBUG = "debug"
     FREEFORM = "freeform"
+    SENIOR = "senior"
+    DEBRIEF_REPORT = "debrief_report"
 
 
 class Language(str, Enum):
@@ -88,6 +90,54 @@ class StructuredCoachingResponse(BaseModel):
         None, description="Detailed explanation of concepts"
     )
     debug_help: Optional[str] = Field(None, description="Debugging assistance")
+
+
+class DebriefExchangeFeedback(BaseModel):
+    """Per-question feedback for a reverse-interview debrief report."""
+
+    question: str = Field(..., description="The question the junior developer asked")
+    answer: str = Field(..., description="The user's answer to that question")
+    strengths: list[str] = Field(
+        default=[], description="What the answer did well"
+    )
+    improvements: list[str] = Field(
+        default=[], description="What could be improved in the answer"
+    )
+    stronger_answer_should_include: list[str] = Field(
+        default=[], description="What a stronger answer should mention"
+    )
+
+
+class DebriefReportResponse(BaseModel):
+    """Structured debrief report covering every Q&A exchange."""
+
+    summary: str = Field(default="", description="Overall assessment of the debrief")
+    exchanges: list[DebriefExchangeFeedback] = Field(
+        default=[], description="Per-question feedback for each exchange"
+    )
+    takeaway: str = Field(
+        default="", description="The single most important takeaway"
+    )
+
+
+class DebriefExchangeInput(BaseModel):
+    """A single Q&A exchange captured during the debrief."""
+
+    question: str = Field(..., description="The question the junior developer asked")
+    answer: str = Field(..., description="The user's answer to that question")
+
+
+class DebriefReportRequest(BaseModel):
+    """Request to generate a debrief report from captured exchanges."""
+
+    problem: str = Field(
+        ..., max_length=20000, description="The coding problem description"
+    )
+    code: str = Field(..., max_length=50000, description="User's solution code")
+    language: Language = Field(..., description="Programming language")
+    exchanges: list[DebriefExchangeInput] = Field(
+        default=[], max_length=20, description="Captured Q&A exchanges"
+    )
 
 
 class CoachingResponse(BaseModel):

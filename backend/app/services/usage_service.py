@@ -27,8 +27,14 @@ class UsageService:
         endpoint: str,
         input_tokens: int,
         output_tokens: int,
+        request_count: int = 1,
     ) -> None:
-        """Persist one metered call (event + daily counter increment)."""
+        """Persist one metered call (event + daily counter increment).
+
+        ``request_count`` defaults to 1 so every metered call counts as one
+        daily AI message. Non-chat endpoints (e.g. debrief reports) pass 0 so
+        they meter tokens without consuming the chat daily-message quota.
+        """
         await self.repo.add_event(
             user_id=user_id,
             provider=provider,
@@ -42,6 +48,7 @@ class UsageService:
             usage_date=datetime.now(timezone.utc).date(),
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            request_count=request_count,
         )
 
     async def get_daily_usage(

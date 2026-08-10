@@ -18,7 +18,11 @@ _connect_args: dict = {}
 if settings.DATABASE_SEARCH_PATH:
     # Tests route queries to a dedicated schema via Postgres search_path.
     _connect_args["connect_args"] = {
-        "server_settings": {"search_path": settings.DATABASE_SEARCH_PATH}
+        "server_settings": {"search_path": settings.DATABASE_SEARCH_PATH},
+        # Poolers (e.g. Supabase/pgbouncer) reuse prepared-statement names
+        # across connections; disabling asyncpg's statement cache avoids
+        # DuplicatePreparedStatementError.
+        "statement_cache_size": 0,
     }
 
 engine: AsyncEngine = create_async_engine(

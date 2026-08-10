@@ -21,22 +21,27 @@ class FakeUsageRepo:
         self.events.append(kwargs)
 
     async def increment_daily(
-        self, *, user_id, usage_date, input_tokens, output_tokens
+        self, *, user_id, usage_date, input_tokens, output_tokens, request_count=1
     ):
         key = (user_id, usage_date)
-        cur_in, cur_out = self.daily.get(key, (0, 0))
-        self.daily[key] = (cur_in + input_tokens, cur_out + output_tokens)
+        cur_in, cur_out, cur_req = self.daily.get(key, (0, 0, 0))
+        self.daily[key] = (
+            cur_in + input_tokens,
+            cur_out + output_tokens,
+            cur_req + request_count,
+        )
 
     async def get_daily(self, user_id, usage_date):
         key = (user_id, usage_date)
         if key not in self.daily:
             return None
-        cur_in, cur_out = self.daily[key]
+        cur_in, cur_out, cur_req = self.daily[key]
         return DailyUsage(
             user_id=user_id,
             usage_date=usage_date,
             input_tokens=cur_in,
             output_tokens=cur_out,
+            request_count=cur_req,
         )
 
 
@@ -76,6 +81,37 @@ class TestUsageServiceRecord:
         daily = await service.get_daily_usage("nobody")
         assert daily.input_tokens == 0
         assert daily.output_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_record_defaults_to_one_request(self, service):
+        await service.record(
+            user_id="user-1",
+            provider="groq",
+            model="m",
+            endpoint="coach",
+            input_tokens=1,
+            output_tokens=1,
+        )
+        daily = await service.get_daily_usage("user-1")
+        assert daily.request_count == 1
+
+    @pytest.mark.asyncio
+    async def test_record_with_zero_request_count_does_not_consume_quota(
+        self, service
+    ):
+        await service.record(
+            user_id="user-1",
+            provider="groq",
+            model="m",
+            endpoint="debrief-report",
+            input_tokens=5,
+            output_tokens=5,
+            request_count=0,
+        )
+        daily = await service.get_daily_usage("user-1")
+        assert daily.input_tokens == 5
+        assert daily.output_tokens == 5
+        assert daily.request_count == 0
 
 
 class TestCheckCaps:

@@ -84,6 +84,18 @@ def _coaching_payload():
     }
 
 
+def _debrief_payload():
+    return {
+        "problem": "Two Sum",
+        "code": "def two_sum(nums, target):\n    return []",
+        "language": "python",
+        "exchanges": [
+            {"question": "Why a hashmap?", "answer": "For O(1) lookups."},
+            {"question": "What about space?", "answer": "I'm not sure."},
+        ],
+    }
+
+
 async def _set_plan(test_db, user_id: str, plan: str) -> None:
     """Promote a user's plan directly (main gates the coach behind premium)."""
     from sqlalchemy import update
@@ -234,6 +246,78 @@ class TestUsageEndpoint:
         res = await async_client.get("/api/usage", headers=headers)
         data = res.json()
         assert data["daily_remaining"] == 0
+
+
+@pytest.mark.usefixtures("test_env_vars")
+class TestDebriefReportQuotaSeparation:
+    """Debrief reports must NOT consume the daily AI-message quota."""
+
+    @pytest.mark.asyncio
+    async def test_debrief_report_does_not_consume_daily_chat_quota(
+        self, async_client, test_db, monkeypatch
+    ):
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
+        uid, headers = await _register_user(async_client, "debriefquota")
+        await _set_plan(test_db, uid, "premium")
+
+        first = await async_client.post(
+            "/api/coach/", json=_coaching_payload(), headers=headers
+        )
+        assert first.status_code == 200
+
+        report = await async_client.post(
+            "/api/coach/debrief-report",
+            json=_debrief_payload(),
+            headers=headers,
+        )
+        assert report.status_code == 200, report.text
+
+        res = await async_client.get("/api/usage", headers=headers)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["daily_used"] == 1
+        assert data["daily_remaining"] == 0
+
+    @pytest.mark.asyncio
+    async def test_debrief_report_still_allowed_after_chat_cap_exhausted(
+        self, async_client, test_db, monkeypatch
+    ):
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
+        uid, headers = await _register_user(async_client, "debriefcap")
+        await _set_plan(test_db, uid, "premium")
+
+        first = await async_client.post(
+            "/api/coach/", json=_coaching_payload(), headers=headers
+        )
+        assert first.status_code == 200
+        blocked = await async_client.post(
+            "/api/coach/", json=_coaching_payload(), headers=headers
+        )
+        assert blocked.status_code == 429
+
+        report = await async_client.post(
+            "/api/coach/debrief-report",
+            json=_debrief_payload(),
+            headers=headers,
+        )
+        assert report.status_code == 200, report.text
+
+    @pytest.mark.asyncio
+    async def test_debrief_report_does_not_emit_request_limit_headers(
+        self, async_client, test_db, monkeypatch
+    ):
+        monkeypatch.setenv("PRO_DAILY_REQUEST_CAP", "1")
+        uid, headers = await _register_user(async_client, "debriefhdr")
+        await _set_plan(test_db, uid, "premium")
+
+        report = await async_client.post(
+            "/api/coach/debrief-report",
+            json=_debrief_payload(),
+            headers=headers,
+        )
+        assert report.status_code == 200, report.text
+        assert "X-RateLimit-Limit" not in report.headers
+        assert "X-Usage-Remaining-Requests" not in report.headers
 
 
 @pytest.mark.usefixtures("test_env_vars")

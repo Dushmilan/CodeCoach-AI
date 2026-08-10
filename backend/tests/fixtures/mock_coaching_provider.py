@@ -25,7 +25,32 @@ class MockCoachingProvider(CoachingProvider):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        endpoint: str = "coach",
     ) -> Dict[str, Any]:
+        if mode == "debrief_report":
+            return {
+                "summary": "You explained your approach clearly.",
+                "exchanges": [
+                    {
+                        "question": "Why a hashmap?",
+                        "answer": "For O(1) lookups.",
+                        "strengths": ["Identified the right data structure"],
+                        "improvements": ["Mention the memory tradeoff"],
+                        "stronger_answer_should_include": [
+                            "Space complexity",
+                            "Edge case: empty input",
+                        ],
+                    }
+                ],
+                "takeaway": "Always justify space too.",
+                "hints": [],
+                "code_review": None,
+                "complexity_analysis": None,
+                "suggestions": [],
+                "edge_cases": [],
+                "explanation": None,
+                "debug_help": None,
+            }
         return {
             "summary": self.RESPONSES.get(
                 mode, "Here's some guidance for your problem."
@@ -49,5 +74,6 @@ class MockCoachingProvider(CoachingProvider):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        endpoint: str = "coach_stream",
     ) -> AsyncIterator[str]:
         yield self.RESPONSES.get(mode, "Here's some guidance for your problem.")

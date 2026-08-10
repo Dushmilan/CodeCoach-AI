@@ -21,6 +21,7 @@ class CoachingProvider(ABC):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        endpoint: str = "coach",
     ) -> Dict[str, Any]:
         """Return a structured coaching response as a dict."""
         ...
@@ -36,6 +37,7 @@ class CoachingProvider(ABC):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        endpoint: str = "coach_stream",
     ) -> AsyncIterator[str]:
         """Yield streaming text chunks from the coaching backend."""
         ...  # pragma: no cover

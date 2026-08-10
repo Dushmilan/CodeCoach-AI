@@ -15,6 +15,13 @@ from app.services.redis_service import RedisCache, _content_hash
 logger = logging.getLogger(__name__)
 
 
+def _as_string_list(value: Any) -> list:
+    """Coerce an arbitrary model value into a list of strings."""
+    if isinstance(value, list):
+        return [str(item) for item in value if item not in (None, "")]
+    return []
+
+
 class GroqService(CoachingProvider):
     """Groq adapter for AI coaching (OpenAI-compatible chat completions)."""
 
@@ -106,6 +113,8 @@ class GroqService(CoachingProvider):
             "top_p": 0.9,
             "stream": False,
         }
+        if mode == "debrief_report":
+            payload["response_format"] = {"type": "json_object"}
 
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
@@ -123,15 +132,26 @@ class GroqService(CoachingProvider):
                 result = response.json()
                 content = result["choices"][0]["message"]["content"]
                 structured_data = self.parser.parse_structured(content)
-                try:
-                    StructuredCoachingResponse(**structured_data)
-                except ValidationError as e:
-                    logger.warning(
-                        "Groq structured response failed schema validation: %s",
-                        e,
+                if mode == "debrief_report":
+                    structured_data = GroqService._repair_debrief_report(
+                        structured_data, message
                     )
-                    structured_data = self._repair_structured(structured_data)
-                    StructuredCoachingResponse(**structured_data)
+                else:
+                    if not isinstance(structured_data, dict):
+                        logger.warning(
+                            "Groq structured response was not an object: %s",
+                            type(structured_data).__name__,
+                        )
+                        structured_data = {}
+                    try:
+                        StructuredCoachingResponse(**structured_data)
+                    except ValidationError as e:
+                        logger.warning(
+                            "Groq structured response failed schema validation: %s",
+                            e,
+                        )
+                        structured_data = self._repair_structured(structured_data)
+                        StructuredCoachingResponse(**structured_data)
 
                 if self.cache and cache_key:
                     try:
@@ -243,6 +263,7 @@ class GroqService(CoachingProvider):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        endpoint: str = "coach",
     ) -> Dict[str, Any]:
         return await self.get_structured_coaching_response(
             problem=problem,
@@ -253,6 +274,7 @@ class GroqService(CoachingProvider):
             difficulty=difficulty,
             lesson_context=lesson_context,
             chat_history=chat_history,
+            endpoint=endpoint,
         )
 
     async def stream(
@@ -265,6 +287,7 @@ class GroqService(CoachingProvider):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        endpoint: str = "coach_stream",
     ) -> AsyncIterator[str]:
         async for chunk in self.get_coaching_response(
             problem=problem,
@@ -275,10 +298,80 @@ class GroqService(CoachingProvider):
             difficulty=difficulty,
             lesson_context=lesson_context,
             chat_history=chat_history,
+            endpoint=endpoint,
         ):
             yield chunk
 
     # ── helpers ───────────────────────────────────────────────────────
+
+    @staticmethod
+    def _repair_debrief_report(data: Dict[str, Any], message: str) -> Dict[str, Any]:
+        """Build a valid debrief report from model output and captured exchanges.
+
+        Always emits one feedback object per captured exchange (recovered from
+        ``message``), overlaying any strengths/improvements/stronger-answer
+        feedback the model did produce so the report never loses the user's Q&A.
+
+        ``data`` is the parsed model output. Groq can return non-object JSON
+        (arrays or strings) in json mode, so anything that is not a dict is
+        treated as empty rather than crashing the report endpoint.
+        """
+        if not isinstance(data, dict):
+            logger.warning(
+                "Groq debrief report returned non-object output: %s",
+                type(data).__name__,
+            )
+            data = {}
+        captured = []
+        try:
+            payload = json.loads(message)
+            if isinstance(payload, dict):
+                captured = payload.get("exchanges") or []
+        except (TypeError, ValueError):
+            pass
+
+        model_exchanges = data.get("exchanges")
+        if not isinstance(model_exchanges, list):
+            model_exchanges = []
+
+        feedback_by_index: Dict[int, Dict[str, Any]] = {}
+        for idx, ex in enumerate(model_exchanges):
+            if isinstance(ex, dict):
+                feedback_by_index[idx] = ex
+
+        exchanges = []
+        for idx, ex in enumerate(captured):
+            if not isinstance(ex, dict):
+                continue
+            feedback = feedback_by_index.get(idx, {})
+            if not isinstance(feedback, dict):
+                feedback = {}
+            exchanges.append(
+                {
+                    "question": ex.get("question") or "",
+                    "answer": ex.get("answer") or "",
+                    "strengths": _as_string_list(feedback.get("strengths")),
+                    "improvements": _as_string_list(feedback.get("improvements")),
+                    "stronger_answer_should_include": _as_string_list(
+                        feedback.get("stronger_answer_should_include")
+                    ),
+                }
+            )
+
+        summary = data.get("summary")
+        if not isinstance(summary, str) or not summary:
+            summary = "Your debrief is complete. Review the feedback for each question below."
+        takeaway = data.get("takeaway")
+        if not isinstance(takeaway, str) or not takeaway:
+            takeaway = (
+                "Teaching your code to someone else is the fastest way to find the gaps."
+            )
+
+        return {
+            "summary": summary[:2000],
+            "exchanges": exchanges,
+            "takeaway": takeaway,
+        }
 
     @staticmethod
     def _repair_structured(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -385,6 +478,7 @@ class GroqService(CoachingProvider):
                 endpoint=endpoint,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
+                request_count=0 if endpoint == "debrief-report" else 1,
             )
         except Exception as e:  # pragma: no cover - defensive
             logger.debug(f"Failed to record usage: {e}")

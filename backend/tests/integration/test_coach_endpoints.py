@@ -153,7 +153,7 @@ class TestCoachEndpoints:
         assert "modes" in data
         assert "descriptions" in data
 
-        expected_modes = ["hint", "review", "explain", "debug", "freeform"]
+        expected_modes = ["hint", "review", "explain", "debug", "freeform", "senior"]
         assert set(data["modes"]) == set(expected_modes)
 
         # Check descriptions
@@ -162,6 +162,159 @@ class TestCoachEndpoints:
         assert "review" in descriptions
         assert "explain" in descriptions
         assert "debug" in descriptions
+        assert "senior" in descriptions
+
+    def test_debrief_report_endpoint(self, test_client: TestClient):
+        """Debrief report endpoint returns per-exchange feedback."""
+        report_request = {
+            "problem": "Two Sum",
+            "code": "def two_sum(): pass",
+            "language": "python",
+            "exchanges": [
+                {
+                    "question": "Why a hashmap?",
+                    "answer": "For O(1) lookups.",
+                }
+            ],
+        }
+
+        with mock_auth():
+            response = test_client.post(
+                "/api/coach/debrief-report", json=report_request
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "summary" in data
+        assert "takeaway" in data
+        assert "exchanges" in data
+        assert len(data["exchanges"]) == 1
+        exchange = data["exchanges"][0]
+        assert exchange["question"] == "Why a hashmap?"
+        assert "strengths" in exchange
+        assert "improvements" in exchange
+        assert "stronger_answer_should_include" in exchange
+
+    def test_debrief_report_mode_not_public(self, test_client: TestClient):
+        """debrief_report is an internal mode and must not appear in /modes."""
+        with mock_auth():
+            response = test_client.get("/api/coach/modes")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "debrief_report" not in data["modes"]
+
+    def test_debrief_report_requires_auth(self, test_client: TestClient):
+        """Debrief report endpoint is protected by authentication."""
+        response = test_client.post(
+            "/api/coach/debrief-report",
+            json={
+                "problem": "Two Sum",
+                "code": "code()",
+                "language": "python",
+                "exchanges": [],
+            },
+        )
+        assert response.status_code == 401
+
+    def test_debrief_report_free_user_gets_403(
+        self, test_client: TestClient, test_env_vars
+    ):
+        with mock_auth(plan="free"):
+            response = test_client.post(
+                "/api/coach/debrief-report",
+                json={
+                    "problem": "Two Sum",
+                    "code": "code()",
+                    "language": "python",
+                    "exchanges": [],
+                },
+            )
+        assert response.status_code == 403
+        assert "premium" in response.json()["detail"].lower()
+
+    def test_debrief_report_accepts_empty_exchanges(
+        self, test_client: TestClient, test_env_vars
+    ):
+        """An empty exchanges list is accepted (no 422) and returns a 200 report."""
+        with mock_auth():
+            response = test_client.post(
+                "/api/coach/debrief-report",
+                json={
+                    "problem": "Two Sum",
+                    "code": "code()",
+                    "language": "python",
+                    "exchanges": [],
+                },
+            )
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data["exchanges"], list)
+        assert "summary" in data
+        assert "takeaway" in data
+
+    def test_debrief_report_rejects_too_many_exchanges(
+        self, test_client: TestClient, test_env_vars
+    ):
+        """More than 20 exchanges are rejected by request validation."""
+        exchanges = [
+            {"question": f"Q{i}", "answer": f"A{i}"} for i in range(21)
+        ]
+        with mock_auth():
+            response = test_client.post(
+                "/api/coach/debrief-report",
+                json={
+                    "problem": "Two Sum",
+                    "code": "code()",
+                    "language": "python",
+                    "exchanges": exchanges,
+                },
+            )
+        assert response.status_code == 422
+
+    def test_debrief_report_rejects_missing_exchange_fields(
+        self, test_client: TestClient, test_env_vars
+    ):
+        """An exchange missing question/answer is invalid."""
+        with mock_auth():
+            response = test_client.post(
+                "/api/coach/debrief-report",
+                json={
+                    "problem": "Two Sum",
+                    "code": "code()",
+                    "language": "python",
+                    "exchanges": [{"question": "Only a question"}],
+                },
+            )
+        assert response.status_code == 422
+
+    def test_debrief_report_provider_failure_returns_500(
+        self, test_client: TestClient, test_env_vars
+    ):
+        """A provider exception must surface as a 500, not crash silently."""
+
+        class ExplodingProvider(MockCoachingProvider):
+            async def get_structured(self, **kwargs):
+                raise RuntimeError("boom")
+
+        app.dependency_overrides[get_coaching_provider] = ExplodingProvider
+        try:
+            with mock_auth():
+                response = test_client.post(
+                    "/api/coach/debrief-report",
+                    json={
+                        "problem": "Two Sum",
+                        "code": "code()",
+                        "language": "python",
+                        "exchanges": [
+                            {"question": "Q", "answer": "A"}
+                        ],
+                    },
+                )
+        finally:
+            app.dependency_overrides.pop(get_coaching_provider, None)
+
+        assert response.status_code == 500
 
     def test_get_supported_languages(self, test_client: TestClient):
         """Test getting supported programming languages."""
@@ -247,7 +400,7 @@ class TestCoachEndpoints:
             "difficulty": "easy",
         }
 
-        modes = ["hint", "review", "explain", "debug"]
+        modes = ["hint", "review", "explain", "debug", "freeform", "senior"]
 
         for mode in modes:
             request = {**base_request, "mode": mode}
