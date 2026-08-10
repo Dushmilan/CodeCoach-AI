@@ -186,4 +186,71 @@ describe('CoachingService', () => {
       ).rejects.toThrow('Request failed: 429 Too Many Requests');
     });
   });
+
+  describe('getDebriefReport', () => {
+    it('posts to /api/coach/debrief-report with lowercased language', async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        summary: 'Great session',
+        exchanges: [
+          {
+            question: 'Why a hashmap?',
+            answer: 'For O(1) lookups.',
+            strengths: ['Good call'],
+            improvements: ['Mention space'],
+            stronger_answer_should_include: ['Space complexity'],
+          },
+        ],
+        takeaway: 'Always justify space too.',
+      });
+
+      const result = await service.getDebriefReport(
+        'Two Sum',
+        'Python',
+        'def two_sum(): pass',
+        [{ question: 'Why a hashmap?', answer: 'For O(1) lookups.' }],
+      );
+
+      expect(http.post).toHaveBeenCalledWith('/api/coach/debrief-report', {
+        problem: 'Two Sum',
+        code: 'def two_sum(): pass',
+        language: 'python',
+        exchanges: [
+          { question: 'Why a hashmap?', answer: 'For O(1) lookups.' },
+        ],
+      });
+      expect(result.summary).toBe('Great session');
+      expect(result.takeaway).toBe('Always justify space too.');
+      expect(result.exchanges[0].question).toBe('Why a hashmap?');
+      expect(result.exchanges[0].answer).toBe('For O(1) lookups.');
+      expect(result.exchanges[0].strongerAnswer).toEqual(['Space complexity']);
+    });
+
+    it('defaults missing feedback fields to empty arrays', async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        summary: '',
+        exchanges: [{ question: 'Q', answer: 'A' }],
+        takeaway: '',
+      });
+
+      const result = await service.getDebriefReport(
+        'Two Sum',
+        'python',
+        'code()',
+        [{ question: 'Q', answer: 'A' }],
+      );
+
+      expect(result.exchanges[0].strengths).toEqual([]);
+      expect(result.exchanges[0].improvements).toEqual([]);
+      expect(result.exchanges[0].strongerAnswer).toEqual([]);
+      expect(result.summary).toBe('');
+    });
+
+    it('throws when the report request fails', async () => {
+      vi.mocked(http.post).mockRejectedValue(new Error('Report failed'));
+
+      await expect(
+        service.getDebriefReport('Two Sum', 'python', 'code()', []),
+      ).rejects.toThrow('Report failed');
+    });
+  });
 });

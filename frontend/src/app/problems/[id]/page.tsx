@@ -7,6 +7,8 @@ import { AIPanelDrawer, useWorkspaceMode } from '@/components/layout/lessons';
 import { QuestionDescriptionPanel } from '@/components/sidebar/QuestionDescriptionPanel';
 import { ResizablePanelGroup } from '@/components/ui/ResizablePanelGroup';
 import { useCoaching } from '@/features/coaching/coaching.hook';
+import { useDebrief } from '@/features/debrief/use-debrief.hook';
+import { MissionDebrief } from '@/components/debrief/MissionDebrief';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
 import { Language, Question } from '@/types';
@@ -46,10 +48,22 @@ export default function ProblemWorkspacePage() {
     };
   }, [questionId]);
 
-  const { isRunning, output, executionError, handleRunCode, handleSubmitCode, isAuthenticated } =
-    useCodeRunner({ fullQuestion, language, currentCode });
-
   const { messages, isTyping, sendMessage } = useCoaching();
+
+  const debrief = useDebrief({ messages, isTyping, sendMessage });
+
+  const { isRunning, output, executionError, handleRunCode, handleSubmitCode, isAuthenticated } =
+    useCodeRunner({
+      fullQuestion,
+      language,
+      currentCode,
+      onSolved: () =>
+        debrief.openMissionComplete({
+          problem: fullQuestion?.title || 'Untitled problem',
+          code: currentCode,
+          language,
+        }),
+    });
 
   useEffect(() => {
     if (
@@ -178,6 +192,7 @@ export default function ProblemWorkspacePage() {
   return (
     <div className="h-dvh bg-background text-foreground flex flex-col overflow-hidden">
       <Header />
+      <MissionDebrief {...debrief} />
       <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
         <div className="flex items-center gap-2 px-1 py-2">
           <Link

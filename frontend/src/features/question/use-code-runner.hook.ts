@@ -11,6 +11,7 @@ interface UseCodeRunnerOptions {
   fullQuestion: Question | null;
   language: Language;
   currentCode: string;
+  onSolved?: () => void;
 }
 
 interface UseCodeRunnerReturn {
@@ -34,6 +35,7 @@ export function useCodeRunner({
   fullQuestion,
   language,
   currentCode,
+  onSolved,
 }: UseCodeRunnerOptions): UseCodeRunnerReturn {
   const {
     isRunning,
@@ -111,6 +113,7 @@ export function useCodeRunner({
 
       if (result.passed_count === result.total) {
         setUserProgress((prev) => ({ ...prev, [fullQuestion.id]: "solved" }));
+        onSolved?.();
         showToast("All tests passed!", "success");
       } else {
         setUserProgress((prev) => ({
@@ -132,6 +135,7 @@ export function useCodeRunner({
     submitCode,
     setUserProgress,
     isAuthenticated,
+    onSolved,
   ]);
 
   return {

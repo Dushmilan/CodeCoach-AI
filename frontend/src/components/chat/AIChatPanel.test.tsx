@@ -41,6 +41,9 @@ describe("AIChatPanel", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /debug/i })).toBeInTheDocument();
     expect(
+      screen.getByRole("button", { name: /reverse interview/i }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByPlaceholderText(
         "Ask a question or describe your approach...",
       ),

@@ -1,6 +1,10 @@
 import { HttpClient } from "@/lib/http-client";
 import { FetchClient } from "@/lib/fetch-client";
 import { StructuredCoachingResponse } from "@/types";
+import {
+  DebriefReport,
+  DebriefExchangeInput,
+} from "@/features/debrief/debrief.types";
 
 export interface CoachingRequest {
   problem: string;
@@ -53,6 +57,38 @@ export class CoachingService {
     return {
       response: data.response,
       structured: data.structured || null,
+    };
+  }
+
+  async getDebriefReport(
+    problem: string,
+    language: string,
+    code: string,
+    exchanges: DebriefExchangeInput[],
+  ): Promise<DebriefReport> {
+    const body = {
+      problem,
+      code,
+      language: language.toLowerCase(),
+      exchanges,
+    };
+    const data = await this.http.post<DebriefReport>("/api/coach/debrief-report", body);
+    const rawExchanges = (data.exchanges as unknown as Array<
+      DebriefReport["exchanges"][number] & {
+        stronger_answer_should_include?: string[];
+      }
+    >) || [];
+    return {
+      summary: data.summary || "",
+      takeaway: data.takeaway || "",
+      exchanges: rawExchanges.map((ex) => ({
+        question: ex.question || "",
+        answer: ex.answer || "",
+        strengths: ex.strengths || [],
+        improvements: ex.improvements || [],
+        strongerAnswer:
+          ex.strongerAnswer || ex.stronger_answer_should_include || [],
+      })),
     };
   }
 }

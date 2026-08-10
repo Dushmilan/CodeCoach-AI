@@ -1,6 +1,6 @@
 import { StructuredCoachingResponse, ChatMessage } from "@/types";
 
-export type CoachingMode = "hint" | "review" | "explain" | "debug" | "freeform";
+export type CoachingMode = "hint" | "review" | "explain" | "debug" | "freeform" | "senior";
 
 export interface CoachingRequest {
   problem: string;

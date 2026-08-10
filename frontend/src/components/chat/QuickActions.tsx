@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, BookOpen, Clock, Zap } from "lucide-react";
+import { AlertTriangle, BookOpen, Clock, GraduationCap, Zap } from "lucide-react";
 
 export interface QuickAction {
   id: string;
@@ -14,6 +14,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { id: "review", label: "Review", icon: Clock, mode: "review" },
   { id: "explain", label: "Explain", icon: BookOpen, mode: "explain" },
   { id: "debug", label: "Debug", icon: AlertTriangle, mode: "debug" },
+  { id: "senior", label: "Reverse Interview", icon: GraduationCap, mode: "senior" },
 ];
 
 interface QuickActionsProps {

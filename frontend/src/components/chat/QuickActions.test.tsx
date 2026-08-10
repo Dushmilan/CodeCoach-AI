@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QuickActions } from "./QuickActions";
 
 describe("QuickActions", () => {
-  it("renders all four action buttons", () => {
+  it("renders all five action buttons", () => {
     render(<QuickActions onActionClick={vi.fn()} />);
     expect(screen.getByRole("button", { name: /hint/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /review/i })).toBeInTheDocument();
@@ -12,6 +12,9 @@ describe("QuickActions", () => {
       screen.getByRole("button", { name: /explain/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /debug/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /reverse interview/i }),
+    ).toBeInTheDocument();
   });
 
   it("calls onActionClick with correct mode when clicked", async () => {
@@ -24,6 +27,9 @@ describe("QuickActions", () => {
 
     await user.click(screen.getByRole("button", { name: /debug/i }));
     expect(onActionClick).toHaveBeenCalledWith("debug");
+
+    await user.click(screen.getByRole("button", { name: /reverse interview/i }));
+    expect(onActionClick).toHaveBeenCalledWith("senior");
   });
 
   it("disables all buttons when disabled is true", () => {
