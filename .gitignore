@@ -89,10 +89,10 @@ out/
 
 # OpenNext / Cloudflare Workers
 .open-next/
+.wrangler/
 cloudflare-env.d.ts
 .dev.vars
 wrangler.local.jsonc
-.wrangler/
 
 # Nuxt.js
 .nuxt
