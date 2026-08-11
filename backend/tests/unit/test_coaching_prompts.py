@@ -112,6 +112,24 @@ class TestBuildStructuredSystemPrompt:
         prompt = build_structured_system_prompt("hint", "python")
         assert "end summary with a question" in prompt
 
+    def test_animation_contract_present(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "Animation Contract" in prompt
+        assert "linear_search" in prompt
+        assert "never return JavaScript" in prompt
+
+    def test_animation_never_invents_runtime_results(self):
+        prompt = build_structured_system_prompt("explain", "python")
+        assert "never invent runtime results" in prompt
+
+    def test_all_nine_fields_rule(self):
+        prompt = build_structured_system_prompt("hint", "python")
+        assert "ALL 9 fields" in prompt
+
+    def test_unstructured_prompt_omits_animation_contract(self):
+        prompt = build_system_prompt("hint", "python")
+        assert "Animation Contract" not in prompt
+
     def test_structured_frustration_escalation_strategy(self):
         prompt = build_structured_system_prompt("hint", "python")
         assert "frustration" in prompt

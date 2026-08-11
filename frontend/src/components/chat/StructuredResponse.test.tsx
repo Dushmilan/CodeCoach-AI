@@ -145,4 +145,42 @@ describe("StructuredResponse", () => {
     expect(screen.getByText("First bullet")).toBeInTheDocument();
     expect(screen.getByText("Second bullet")).toBeInTheDocument();
   });
+
+  it("renders an animation script when present", () => {
+    const withAnimation: StructuredCoachingResponse = {
+      ...validStructured,
+      animation: {
+        type: "linear_search",
+        title: "Searching for 4",
+        data: { values: [5, 1, 2, 3, 4, 5], target: 4 },
+        steps: [
+          {
+            operation: "compare",
+            index: 0,
+            result: "mismatch",
+            narration: "5 is not the target.",
+          },
+          {
+            operation: "compare",
+            index: 4,
+            result: "match",
+            narration: "Found the target.",
+          },
+        ],
+      },
+    };
+    render(<StructuredResponse structured={withAnimation} />);
+    expect(screen.getByText("Searching for 4")).toBeInTheDocument();
+    expect(screen.getByText("Target")).toBeInTheDocument();
+    expect(screen.getByText("5 is not the target.")).toBeInTheDocument();
+  });
+
+  it("does not render an animation section when null", () => {
+    render(
+      <StructuredResponse
+        structured={{ ...validStructured, animation: null }}
+      />,
+    );
+    expect(screen.queryByText("Searching for 4")).not.toBeInTheDocument();
+  });
 });

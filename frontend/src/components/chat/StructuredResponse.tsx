@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimationScriptRenderer } from "@/components/visualization";
 import { StructuredCoachingResponse } from "@/types";
 
 interface StructuredResponseProps {
@@ -161,6 +162,7 @@ export function StructuredResponse({
     edge_cases,
     explanation,
     debug_help,
+    animation,
   } = structured;
 
   // Build response sections
@@ -169,6 +171,11 @@ export function StructuredResponse({
   // Summary
   if (summary) {
     sections.push(<FormattedText key="summary" text={summary} />);
+  }
+
+  // Animation
+  if (animation) {
+    sections.push(<AnimationScriptRenderer key="animation" script={animation} />);
   }
 
   // Hints
