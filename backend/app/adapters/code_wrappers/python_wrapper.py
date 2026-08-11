@@ -2,6 +2,7 @@ import re
 from typing import Any, Dict, List
 
 from .base import CodeWrapper
+from .output_comparator import PYTHON_OUTPUT_MATCH
 
 
 class PythonCodeWrapper(CodeWrapper):
@@ -60,6 +61,8 @@ except Exception as e:
 
 {code}
 
+{PYTHON_OUTPUT_MATCH}
+
 def run_suite():
     __test_cases = {tc_repr}
     __results = []
@@ -103,7 +106,7 @@ def run_suite():
                 __actual = str(__out).lower()
             else:
                 __actual = str(__out)
-            __passed = __actual.strip() == __exp.strip()
+            __passed = __outputs_match(__actual, __exp)
         except Exception as __e:
             __actual = str(__e)
             __passed = False

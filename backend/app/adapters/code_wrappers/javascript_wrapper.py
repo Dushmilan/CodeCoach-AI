@@ -3,6 +3,7 @@ import re
 from typing import Any, Dict, List
 
 from .base import CodeWrapper
+from .output_comparator import JS_OUTPUT_MATCH
 
 
 class JavaScriptCodeWrapper(CodeWrapper):
@@ -73,6 +74,8 @@ try {{
 const testCases = {tc_json};
 const results = [];
 
+{JS_OUTPUT_MATCH}
+
 for (const tc of testCases) {{
     let actual = "";
     let passed = false;
@@ -104,7 +107,7 @@ for (const tc of testCases) {{
         }} else {{
             actual = String(out);
         }}
-        passed = actual.trim() === tc.expected.trim();
+        passed = outputsMatch(actual, tc.expected);
     }} catch (e) {{
         actual = "";
         passed = false;

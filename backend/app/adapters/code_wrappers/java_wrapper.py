@@ -3,6 +3,7 @@ import re
 from typing import Any, Dict, List
 
 from .base import CodeWrapper
+from .output_comparator import JAVA_OUTPUT_MATCH
 
 
 class JavaCodeWrapper(CodeWrapper):
@@ -319,7 +320,7 @@ class JavaCodeWrapper(CodeWrapper):
             "                } else {\n"
             "                    actual = toJson(result);\n"
             "                }\n"
-            "                passed = actual.trim().equals(expected.trim());\n"
+            "                passed = outputsMatch(actual, expected);\n"
             "            } catch (Exception e) {\n"
             '                actual = "";\n'
             "                passed = false;\n"
@@ -332,6 +333,9 @@ class JavaCodeWrapper(CodeWrapper):
             "    }\n"
             "\n"
             "    static Object _lastFirstArg = null;\n"
+            "\n"
+            + JAVA_OUTPUT_MATCH.strip("\n")
+            + "\n"
             "\n"
             "    static Object callSolution(String methodName, Object... args) throws Exception {\n"
             "        Class<?> clazz = Solution.class;\n"
