@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Language } from "@/types";
 import dynamic from "next/dynamic";
-import { CheckCircle, Play, RotateCcw } from "lucide-react";
+import { CheckCircle, ChevronDown, Play, RotateCcw } from "lucide-react";
 import { useRef } from "react";
 import { LANGUAGE_OPTIONS } from "./constants";
 
@@ -59,19 +59,19 @@ export function CodeEditor({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
-        <div className="flex items-center gap-1">
-          <div className="rounded-full bg-white/[0.03] ring-1 ring-white/5 p-0.5">
+        <div className="flex items-center gap-1 min-w-0">
+          <label
+            htmlFor="code-editor-language"
+            className="sr-only"
+          >
+            Programming language
+          </label>
+          <div className="relative inline-flex min-w-0 max-w-full">
             <select
+              id="code-editor-language"
               value={language}
               onChange={(e) => handleLanguageChange(e.target.value as Language)}
-              className="px-2.5 py-1 text-[11px] tracking-wide bg-transparent text-foreground/70 focus:outline-none cursor-pointer appearance-none"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: "right 4px center",
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "16px 12px",
-                paddingRight: "24px",
-              }}
+              className="w-full min-w-[9rem] max-w-[16rem] appearance-none rounded-md bg-white/[0.04] px-2.5 py-1.5 pr-7 text-xs font-medium tracking-wide text-foreground/80 ring-1 ring-white/10 transition-all duration-300 hover:bg-white/[0.07] hover:ring-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 cursor-pointer truncate"
             >
               {LANGUAGE_OPTIONS.map((option) => (
                 <option
@@ -84,6 +84,7 @@ export function CodeEditor({
                 </option>
               ))}
             </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
           </div>
         </div>
 
