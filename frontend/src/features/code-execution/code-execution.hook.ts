@@ -7,6 +7,7 @@ import {
   CodeExecutionFeature,
   SubmitResponse,
   TestCase,
+  TestCaseResultView,
   ValidationResponse,
 } from "./code-execution.types";
 import {
@@ -22,6 +23,9 @@ export function useCodeExecution(): CodeExecutionFeature {
   const [lastResult, setLastResult] = useState<ValidationResponse | null>(null);
   const [lastSubmitResult, setLastSubmitResult] =
     useState<SubmitResponse | null>(null);
+  const [testResults, setTestResults] = useState<TestCaseResultView[] | null>(
+    null,
+  );
 
   const runCode = useCallback(
     async (language: string, code: string, version?: string) => {
@@ -34,6 +38,7 @@ export function useCodeExecution(): CodeExecutionFeature {
           version,
         );
         setOutput(result.stdout || "");
+        setTestResults(null);
         return result;
       } catch (err) {
         const errorMessage =
@@ -65,6 +70,22 @@ export function useCodeExecution(): CodeExecutionFeature {
         lines.push(
           `Run Results: ${result.passed_tests}/${result.total_tests} passed\n`,
         );
+        const structured = result.results.map((r, index) => {
+          const tc = testCases[index];
+          return {
+            index: index + 1,
+            passed: r.passed,
+            testName: r.test_name || `Test ${index + 1}`,
+            input: tc?.input ?? "",
+            expected: tc?.expected_output ?? "",
+            actual: normalizeDisplayJson(r.stdout) || "",
+            error: r.error,
+            stderr: r.stderr,
+            hidden: false,
+          };
+        });
+        setTestResults(structured);
+
         result.results.forEach((r, index) => {
           const tc = testCases[index];
           lines.push(
@@ -110,6 +131,16 @@ export function useCodeExecution(): CodeExecutionFeature {
           code,
         );
         setLastSubmitResult(result);
+        const structured = result.results.map((r) => ({
+          index: r.index,
+          passed: r.passed,
+          testName: `Test ${r.index}`,
+          input: r.hidden ? "" : r.input,
+          expected: r.hidden ? "" : r.expected,
+          actual: r.hidden ? "" : r.actual,
+          hidden: r.hidden,
+        }));
+        setTestResults(structured);
         const outputLines = result.results.map((r) => {
           const status = r.passed ? "Pass" : "Fail";
           let line = `${r.passed ? "✅" : "❌"} Test ${r.index}: ${status}`;
@@ -157,6 +188,7 @@ export function useCodeExecution(): CodeExecutionFeature {
         const result = await executeClientJS(code, question);
         const outputText = formatClientJsOutput(result, question);
         setOutput(outputText);
+        setTestResults(null);
         return outputText;
       } catch (err: unknown) {
         const errorMessage =
@@ -175,6 +207,7 @@ export function useCodeExecution(): CodeExecutionFeature {
 
   const clearOutput = useCallback(() => {
     setOutput("");
+    setTestResults(null);
   }, []);
 
   const clearError = useCallback(() => {
@@ -187,6 +220,7 @@ export function useCodeExecution(): CodeExecutionFeature {
     error,
     lastResult,
     lastSubmitResult,
+    testResults,
     runCode,
     validateCode,
     submitCode,

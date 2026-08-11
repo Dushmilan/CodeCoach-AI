@@ -35,6 +35,19 @@ export interface CodeExecutionState {
   error: string | null;
   lastResult: ValidationResponse | null;
   lastSubmitResult: SubmitResponse | null;
+  testResults: TestCaseResultView[] | null;
+}
+
+export interface TestCaseResultView {
+  index: number;
+  passed: boolean;
+  testName: string;
+  input: string;
+  expected: string;
+  actual: string;
+  error?: string;
+  stderr?: string;
+  hidden: boolean;
 }
 
 export interface SubmitResult {

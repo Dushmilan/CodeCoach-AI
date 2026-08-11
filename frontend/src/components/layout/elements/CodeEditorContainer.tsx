@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { CodeEditor } from "@/components/editor/CodeEditor";
+import { TestCaseResults } from "@/components/results/TestCaseResults";
+import { TestCaseResultView } from "@/features/code-execution/code-execution.types";
 import { Language } from "@/types";
 import { ChevronDown, ChevronUp, GripVertical, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +17,7 @@ interface CodeEditorContainerProps {
   isRunning: boolean;
   output: string;
   error: string;
+  testResults?: TestCaseResultView[] | null;
   isInteractive?: boolean;
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: Language) => void;
@@ -30,6 +33,7 @@ export function CodeEditorContainer({
   isRunning,
   output,
   error,
+  testResults = null,
   isInteractive = false,
   onCodeChange,
   onLanguageChange,
@@ -186,6 +190,8 @@ export function CodeEditorContainer({
           <div className="flex-1 overflow-auto p-4">
             {isInteractive ? (
               <TerminalSimulation output={error || output} />
+            ) : testResults && testResults.length > 0 && !error ? (
+              <TestCaseResults results={testResults} />
             ) : (
               <div
                 className={cn(
