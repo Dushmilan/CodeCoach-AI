@@ -49,6 +49,16 @@ class TestHealthEndpoints:
         assert "piston_api" in dependencies
         assert "questions_db" in dependencies
 
+    def test_health_check_rate_limiting_disabled(
+        self, test_client: TestClient, monkeypatch
+    ):
+        """Health reports rate_limiting: disabled when RATE_LIMITING_ENABLED=False."""
+        monkeypatch.setenv("RATE_LIMITING_ENABLED", "False")
+        response = test_client.get("/health/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["features"]["rate_limiting"] == "disabled"
+
     @pytest.mark.asyncio
     async def test_health_check_async(self, async_client: AsyncClient):
         """Test health check with async client."""

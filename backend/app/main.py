@@ -86,7 +86,7 @@ app = FastAPI(
     redoc_url="/redoc" if not _production else None,
     lifespan=lifespan,
 )
-app.state.limiter = limiter
+app.state.limiter = limiter if settings.RATE_LIMITING_ENABLED else None
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(SecurityHeadersMiddleware)

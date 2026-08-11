@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import os
 
 from app.api.dependencies import get_usage_repo
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.ports.usage_repository import UsageRepository
 
@@ -11,7 +12,10 @@ router = APIRouter()
 
 @router.get("/")
 async def health_check(request: Request):
-    rate_limiting_enabled = hasattr(request.app.state, "limiter")
+    settings = get_settings()
+    rate_limiting_enabled = (
+        settings.RATE_LIMITING_ENABLED and hasattr(request.app.state, "limiter")
+    )
     return {
         "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
