@@ -24,6 +24,8 @@ const fullQuestion: Question = {
     go: '',
     rust: '',
     typescript: '',
+    r: '',
+    bash: '',
   },
   examples: [{ input: '[2,7,11,15], 9', output: '[0,1]' }],
   test_cases: [{ input: '[2,7], 9', expected_output: '[0,1]' }],

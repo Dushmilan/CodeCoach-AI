@@ -52,6 +52,8 @@ const linkedQuestion: Question = {
     go: '',
     rust: '',
     typescript: '',
+    r: '',
+    bash: '',
   },
   examples: [],
   test_cases: [],

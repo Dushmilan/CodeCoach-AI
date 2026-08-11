@@ -33,6 +33,8 @@ class Language(str, Enum):
     GO = "go"
     RUST = "rust"
     TYPESCRIPT = "typescript"
+    R = "r"
+    BASH = "bash"
 
 
 class Difficulty(str, Enum):

@@ -18,6 +18,8 @@ export interface Question extends QuestionSummary {
     go: string;
     rust: string;
     typescript: string;
+    r: string;
+    bash: string;
   };
   examples: Array<{
     input: string;
@@ -73,7 +75,7 @@ export interface UserProgress {
 }
 
 export type Language =
-  "python" | "javascript" | "java" | "cpp" | "c" | "go" | "rust" | "typescript";
+  "python" | "javascript" | "java" | "cpp" | "c" | "go" | "rust" | "typescript" | "r" | "bash";
 
 export interface CourseSummary {
   id: string;
@@ -109,7 +111,7 @@ export interface LessonSummary {
   course_id: string;
   module_id: string;
   title: string;
-  type: "theory" | "exercise";
+  type: "theory" | "exercise" | "practice";
   content: string;
   order: number;
   starter_code: string | null;

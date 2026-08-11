@@ -3,11 +3,15 @@ from .base import CodeWrapper
 from .python_wrapper import PythonCodeWrapper
 from .javascript_wrapper import JavaScriptCodeWrapper
 from .java_wrapper import JavaCodeWrapper
+from .r_wrapper import RCodeWrapper
+from .bash_wrapper import BashCodeWrapper
 
 _WRAPPERS: Dict[str, CodeWrapper] = {
     "python": PythonCodeWrapper(),
     "javascript": JavaScriptCodeWrapper(),
     "java": JavaCodeWrapper(),
+    "r": RCodeWrapper(),
+    "bash": BashCodeWrapper(),
 }
 
 

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 class LessonType(str, Enum):
     THEORY = "theory"
     EXERCISE = "exercise"
+    PRACTICE = "practice"
 
 
 class TestCase(BaseModel):

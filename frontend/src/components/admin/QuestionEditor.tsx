@@ -44,11 +44,13 @@ interface QuestionEditorProps {
   compact?: boolean;
 }
 
-const LANGUAGES = ["python", "javascript", "java"] as const;
+const LANGUAGES = ["python", "javascript", "java", "r", "bash"] as const;
 const LANG_LABELS: Record<string, string> = {
   python: "Python",
   javascript: "JavaScript",
   java: "Java",
+  r: "R",
+  bash: "Bash",
 };
 
 export default function QuestionEditor({

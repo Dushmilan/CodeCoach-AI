@@ -35,6 +35,8 @@ const question: Question = {
     go: '',
     rust: '',
     typescript: '',
+    r: '',
+    bash: '',
   },
   examples: [{ input: '1,2', output: '3' }],
   test_cases: [
@@ -59,6 +61,8 @@ const questionWithVarStarter: Question = {
     go: '',
     rust: '',
     typescript: '',
+    r: '',
+    bash: '',
   },
 };
 
@@ -73,6 +77,8 @@ const questionWithConstStarter: Question = {
     go: '',
     rust: '',
     typescript: '',
+    r: '',
+    bash: '',
   },
 };
 
@@ -200,6 +206,8 @@ describe('executeClientJS', () => {
         go: '',
         rust: '',
         typescript: '',
+        r: '',
+        bash: '',
       },
     };
     await expect(executeClientJS('const x = 42;', noFnQuestion)).rejects.toThrow(
@@ -230,6 +238,8 @@ describe('executeClientJS', () => {
         go: '',
         rust: '',
         typescript: '',
+        r: '',
+        bash: '',
       },
     };
     const code = `function greet(name) { return "Hello, " + name; }`;
@@ -250,6 +260,8 @@ describe('executeClientJS', () => {
         go: '',
         rust: '',
         typescript: '',
+        r: '',
+        bash: '',
       },
     };
     const code = `function foo(x) { return "not a json string"; }`;
@@ -273,6 +285,8 @@ describe('executeClientJS', () => {
         go: '',
         rust: '',
         typescript: '',
+        r: '',
+        bash: '',
       },
     };
     const code = `function rotate(matrix) {
@@ -304,6 +318,8 @@ describe('executeClientJS', () => {
         go: '',
         rust: '',
         typescript: '',
+        r: '',
+        bash: '',
       },
     };
     const code = `function push(arr) {

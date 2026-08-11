@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "stats-descriptive",
+      "course_id": "statistics-for-data-science",
+      "title": "Descriptive Statistics",
+      "description": "Summarize a dataset with measures of center, spread, percentiles, and shape.",
+      "order": 1
+    },
+    {
+      "id": "stats-probability",
+      "course_id": "statistics-for-data-science",
+      "title": "Probability Fundamentals",
+      "description": "Reason about events, conditional probability, Bayes' theorem, and independence.",
+      "order": 2
+    },
+    {
+      "id": "stats-distributions",
+      "course_id": "statistics-for-data-science",
+      "title": "Distributions and Sampling",
+      "description": "Meet the normal and binomial distributions, z-scores, sampling, and the central limit theorem.",
+      "order": 3
+    },
+    {
+      "id": "stats-inference",
+      "course_id": "statistics-for-data-science",
+      "title": "Inference and Relationships",
+      "description": "Build confidence intervals, run hypothesis tests, and model relationships with correlation and regression.",
+      "order": 4
+    },
+    {
+      "id": "stats-project",
+      "course_id": "statistics-for-data-science",
+      "title": "Applied Statistics Project",
+      "description": "Tie everything together: design a question, analyze a dataset, and justify your conclusions.",
+      "order": 5
+    }
+  ]
+}

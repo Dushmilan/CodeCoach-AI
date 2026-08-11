@@ -32,6 +32,7 @@ class PistonService(CodeExecutor):
 
     _PISTON_LANGUAGE_MAP = {
         "c": "gcc",
+        "r": "rscript",
     }
 
     def __init__(self, cache: Optional[RedisCache] = None):
@@ -49,6 +50,8 @@ class PistonService(CodeExecutor):
             "go": {"version": "1.16.2", "aliases": ["golang"]},
             "rust": {"version": "1.68.2", "aliases": ["rs", "rust"]},
             "typescript": {"version": "5.0.2", "aliases": ["ts", "typescript"]},
+            "r": {"version": "4.1.1", "aliases": ["r", "rscript"]},
+            "bash": {"version": "5.2.0", "aliases": ["sh", "bash"]},
         }
 
     async def execute(

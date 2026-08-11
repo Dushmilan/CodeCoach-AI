@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, BookOpen, Code } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Code, Hammer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LessonSummary } from '@/types';
 
@@ -11,6 +11,8 @@ interface LessonChromeProps {
 
 export function LessonChrome({ lesson, prevId, nextId }: LessonChromeProps) {
   const isExercise = lesson.type === 'exercise';
+  const isPractice = lesson.type === 'practice';
+  const isCode = isExercise || isPractice;
 
   return (
     <div className="flex items-center justify-between mb-6">
@@ -26,11 +28,13 @@ export function LessonChrome({ lesson, prevId, nextId }: LessonChromeProps) {
           <span
             className={cn(
               'flex h-7 w-7 items-center justify-center rounded-lg',
-              isExercise ? 'bg-emerald-500/8' : 'bg-white/[0.04]',
+              isCode ? 'bg-emerald-500/8' : 'bg-white/[0.04]',
             )}
           >
             {isExercise ? (
               <Code width={14} height={14} className="text-emerald-500/60" />
+            ) : isPractice ? (
+              <Hammer width={14} height={14} className="text-emerald-500/60" />
             ) : (
               <BookOpen width={14} height={14} className="text-muted-foreground/40" />
             )}
@@ -42,10 +46,14 @@ export function LessonChrome({ lesson, prevId, nextId }: LessonChromeProps) {
             <span
               className={cn(
                 'text-[10px] uppercase tracking-widest',
-                isExercise ? 'text-emerald-500/50' : 'text-muted-foreground/30',
+                isCode ? 'text-emerald-500/50' : 'text-muted-foreground/30',
               )}
             >
-              {isExercise ? 'Coding Exercise' : 'Theory Lesson'}
+              {isExercise
+                ? 'Coding Exercise'
+                : isPractice
+                  ? 'Practice Project'
+                  : 'Theory Lesson'}
             </span>
           </div>
         </div>

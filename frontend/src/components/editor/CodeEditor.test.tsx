@@ -111,7 +111,7 @@ describe("CodeEditor", () => {
   it("renders all language options including C", () => {
     render(<CodeEditor {...defaultProps} />);
     const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(8);
+    expect(options).toHaveLength(10);
     expect(options[0]).toHaveTextContent("Python");
     expect(options[1]).toHaveTextContent("JavaScript");
     expect(options[2]).toHaveTextContent("Java");
@@ -120,5 +120,7 @@ describe("CodeEditor", () => {
     expect(options[5]).toHaveTextContent("Go");
     expect(options[6]).toHaveTextContent("Rust");
     expect(options[7]).toHaveTextContent("TypeScript");
+    expect(options[8]).toHaveTextContent("R");
+    expect(options[9]).toHaveTextContent("Bash");
   });
 });

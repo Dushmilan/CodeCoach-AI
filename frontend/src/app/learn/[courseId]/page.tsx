@@ -266,7 +266,11 @@ export default function CoursePage() {
                               />
                             )}
                             <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40 w-10 flex-shrink-0 font-mono">
-                              {lesson.type === "theory" ? "Read" : "Code"}
+                              {lesson.type === "theory"
+                                ? "Read"
+                                : lesson.type === "practice"
+                                  ? "Build"
+                                  : "Code"}
                             </span>
                             <span
                               className={cn(

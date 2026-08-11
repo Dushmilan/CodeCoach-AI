@@ -56,6 +56,8 @@ const question: Question = {
     go: '',
     rust: '',
     typescript: '',
+    r: '',
+    bash: '',
   },
   examples: [],
   test_cases: [

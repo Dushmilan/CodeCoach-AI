@@ -24,6 +24,8 @@ _FILE_EXTENSIONS = {
     "go": "go",
     "rust": "rs",
     "typescript": "ts",
+    "r": "r",
+    "bash": "sh",
 }
 
 

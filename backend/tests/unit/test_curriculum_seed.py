@@ -86,7 +86,14 @@ class TestCurriculumSeedSchema:
             ]
             course = Course(**entry["course"], modules=[m.id for m in modules])
             assert course.id
-            assert course.language in {"python", "c", "java"}
+            assert course.language in {
+                "python",
+                "c",
+                "java",
+                "javascript",
+                "bash",
+                "r",
+            }
 
     def test_modules_valid(self, seed_content):
         for entry in seed_content:
@@ -149,7 +156,11 @@ class TestCurriculumSeedSchema:
 
     def test_exercises_are_question_linked_or_embedded(self, seed_content):
         """Every exercise must link to a bank question OR carry embedded
-        starter_code + test_cases — never neither, never both."""
+        starter_code + test_cases — never neither, never both.
+
+        Practice lessons (type='practice') are open-ended design/build work
+        with no automated grader, so they are exempt from this invariant.
+        """
         for entry in seed_content:
             for lesson in entry["lessons"]:
                 if lesson["type"] == "exercise":
@@ -168,3 +179,18 @@ class TestCurriculumSeedSchema:
                         assert lesson.get("test_cases"), (
                             f"exercise '{lesson['id']}' is missing test_cases"
                         )
+
+    def test_practice_lessons_are_open_ended(self, seed_content):
+        """Practice lessons must not carry automated grading artifacts."""
+        for entry in seed_content:
+            for lesson in entry["lessons"]:
+                if lesson["type"] == "practice":
+                    assert not lesson.get("question_id"), (
+                        f"practice lesson '{lesson['id']}' should not link a question"
+                    )
+                    assert not lesson.get("starter_code"), (
+                        f"practice lesson '{lesson['id']}' should not embed starter_code"
+                    )
+                    assert not lesson.get("test_cases"), (
+                        f"practice lesson '{lesson['id']}' should not embed test_cases"
+                    )

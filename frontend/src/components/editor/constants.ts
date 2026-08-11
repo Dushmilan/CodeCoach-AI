@@ -26,6 +26,8 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
     version: "5.0.2",
     disabled: false,
   },
+  { value: "r", label: "R", version: "4.1.1", disabled: false },
+  { value: "bash", label: "Bash", version: "5.2", disabled: false },
 ];
 
 export const getEnabledLanguages = () => {

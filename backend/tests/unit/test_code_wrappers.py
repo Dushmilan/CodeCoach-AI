@@ -794,3 +794,72 @@ class TestJavaWrapWithTests:
         runner = self._wrap(code, test_cases)
         assert "instanceof Object[]" in runner
         assert "toJson(arr[i])" in runner
+
+
+class TestRCodeWrapper:
+    def _wrap(self, code, test_cases):
+        wrapper = get_wrapper("r")
+        return wrapper.wrap_with_tests(code, test_cases)
+
+    def test_wrap_passes_script_through(self):
+        wrapper = get_wrapper("r")
+        code = "x <- 1\ncat(x)\n"
+        assert wrapper.wrap(code) == code
+
+    def test_suite_runner_embeds_test_cases(self):
+        code = "solve <- function(input) {\n    as.character(nchar(input))\n}"
+        test_cases = [
+            {"input": "hello", "expected_output": "5"},
+            {"input": "R\nis\nfun", "expected_output": "8"},
+        ]
+        runner = self._wrap(code, test_cases)
+        assert "solve <- function(input) {" in runner
+        assert "run_suite <- function()" in runner
+        assert "index = 1" in runner
+        assert "index = 2" in runner
+        assert "expected = '5'" in runner
+        assert "@@SUITE_RESULT@@" in runner
+
+    def test_suite_runner_escapes_input(self):
+        code = "solve <- function(input) input"
+        test_cases = [{"input": "it's \"quoted\"", "expected_output": "ok"}]
+        runner = self._wrap(code, test_cases)
+        assert "\\\\'" in runner or "it\\'s" in runner
+        assert "run_suite <- function()" in runner
+
+    def test_suite_runner_uses_last_function_as_entry(self):
+        code = """helper <- function(x) { x * 2 }
+main <- function(input) {
+    as.character(helper(as.numeric(input)))
+}"""
+        test_cases = [{"input": "21", "expected_output": "42"}]
+        runner = self._wrap(code, test_cases)
+        assert "main(t$input)" in runner
+        assert "helper(t$input)" not in runner
+
+
+class TestBashCodeWrapper:
+    def _wrap(self, code, test_cases):
+        wrapper = get_wrapper("bash")
+        return wrapper.wrap_with_tests(code, test_cases)
+
+    def test_wrap_passes_script_through(self):
+        wrapper = get_wrapper("bash")
+        code = "echo hello\n"
+        assert wrapper.wrap(code) == code
+
+    def test_suite_runner_embeds_solution_and_cases(self):
+        code = "echo hello"
+        test_cases = [{"input": "", "expected_output": "hello"}]
+        runner = self._wrap(code, test_cases)
+        assert "cat > /tmp/solution.sh" in runner
+        assert "CODEACH_SOLUTION_EOF_9x7" in runner
+        assert "@@SUITE_RESULT@@" in runner
+        assert "TOTAL=1" in runner
+
+    def test_suite_runner_base64_encodes_inputs(self):
+        code = "cat"
+        test_cases = [{"input": "multi\nline\ninput", "expected_output": "multi"}]
+        runner = self._wrap(code, test_cases)
+        assert "IN_B64=(" in runner
+        assert "base64 -d" in runner

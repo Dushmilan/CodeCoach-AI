@@ -332,5 +332,7 @@ async def get_supported_languages(
             Language.GO.value: "Go",
             Language.RUST.value: "Rust",
             Language.TYPESCRIPT.value: "TypeScript",
+            Language.R.value: "R",
+            Language.BASH.value: "Bash",
         },
     }
