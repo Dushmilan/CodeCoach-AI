@@ -8,7 +8,6 @@ import dataclasses
 import json
 import logging
 import os
-import re
 from typing import List, Optional
 
 import httpx
@@ -16,6 +15,7 @@ from fastapi import HTTPException
 
 from app.ports.code_executor import CodeExecutor, ExecutionResult, TestCaseResult
 from app.adapters.code_wrappers import build_runner, get_wrapper
+from app.adapters.code_wrappers.output_comparator import outputs_match
 from app.adapters.execution_result_formatter import ExecutionResultFormatter
 from app.services.static_code_validator import StaticCodeValidator, get_file_extension
 from app.services.redis_service import RedisCache, _content_hash
@@ -247,9 +247,7 @@ class PistonService(CodeExecutor):
             elif r:
                 # Re-verify: compare normalized actual vs expected to catch runner bugs
                 runner_passed = r.get("passed", False)
-                re_verified = self._normalize(actual) == self._normalize(
-                    tc.get("expected_output", "")
-                )
+                re_verified = outputs_match(actual, tc.get("expected_output", ""))
                 if runner_passed != re_verified:
                     logger.warning(
                         "Runner mismatch for test case %d: runner=%s re-verify=%s "
@@ -271,10 +269,6 @@ class PistonService(CodeExecutor):
                 )
             )
         return out
-
-    @staticmethod
-    def _normalize(s: str) -> str:
-        return re.sub(r"\s+", "", s.strip())
 
     def validate_code(self, language: str, code: str) -> dict:
         return self.validator.validate(language, code)

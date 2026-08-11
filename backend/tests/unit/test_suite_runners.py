@@ -194,12 +194,6 @@ class TestParseSuiteOutput:
         assert results[1].passed is False
         assert results[1].actual == ""  # no signal -> no crash annotation
 
-    def test_normalize_collapses_whitespace(self, service):
-        assert service._normalize("  [1, 2, 3]  ") == "[1,2,3]"
-        assert service._normalize("[1,\n2,\n3]") == "[1,2,3]"
-        assert service._normalize("  hello world  ") == "helloworld"
-        assert service._normalize("") == ""
-
     def test_normalize_re_verifies_whitespace_mismatch(self, service, caplog):
         """Runner returns passed=false but normalized actual==expected -> re-verify = True."""
         test_cases = [{"input": "1", "expected_output": "1", "hidden": False}]
@@ -590,6 +584,110 @@ class TestSuiteRunnerIntegration:
             )
 
 
+# ── End-to-end: generated runners fix string-returning problems ─────────
+
+
+class TestStringReturningRunnerEndToEnd:
+    """Issue #96 regression: correct string solutions must pass even though
+    expected outputs are stored as JSON string literals."""
+
+    def _run_python_runner(self, code, test_cases):
+        import subprocess
+        import sys
+
+        from app.adapters.code_wrappers.python_wrapper import PythonCodeWrapper
+
+        runner = PythonCodeWrapper().wrap_with_tests(code, test_cases)
+        proc = subprocess.run(
+            [sys.executable, "-c", runner], capture_output=True, text=True
+        )
+        assert proc.returncode == 0, proc.stderr
+        return proc.stdout
+
+    def _parse_suite(self, stdout):
+        marker = "@@SUITE_RESULT@@"
+        start = stdout.find(marker)
+        end = stdout.rfind(marker)
+        return json.loads(stdout[start + len(marker) : end])
+
+    def test_python_string_reverse_passes(self):
+        code = "def reverse_word(s):\n    return s[::-1]"
+        test_cases = [
+            {"input": '"dlrow"', "expected_output": '"world"', "hidden": False},
+            {"input": '"321"', "expected_output": '"123"', "hidden": False},
+        ]
+        results = self._parse_suite(self._run_python_runner(code, test_cases))
+        assert len(results) == 2
+        assert all(r["passed"] for r in results), results
+        assert results[0]["actual"] == "world"
+
+    def test_python_string_with_trailing_spaces_passes(self):
+        # Whitespace is meaningful: "  321" -> "123  "
+        code = "def pad(s):\n    return s[::-1]"
+        test_cases = [
+            {"input": '"123  "', "expected_output": '"  321"', "hidden": False},
+        ]
+        results = self._parse_suite(self._run_python_runner(code, test_cases))
+        assert results[0]["passed"] is True, results
+
+    def test_python_empty_string_roundtrip(self):
+        code = "def ident(s):\n    return s"
+        test_cases = [{"input": '""', "expected_output": '""', "hidden": False}]
+        results = self._parse_suite(self._run_python_runner(code, test_cases))
+        assert results[0]["passed"] is True, results
+
+    def test_python_unicode_string_passes(self):
+        code = "def ident(s):\n    return s"
+        test_cases = [
+            {"input": '"héllo"', "expected_output": '"héllo"', "hidden": False}
+        ]
+        results = self._parse_suite(self._run_python_runner(code, test_cases))
+        assert results[0]["passed"] is True, results
+
+    def test_python_wrong_string_still_fails(self):
+        code = "def reverse_word(s):\n    return s.upper()"
+        test_cases = [
+            {"input": '"dlrow"', "expected_output": '"world"', "hidden": False},
+        ]
+        results = self._parse_suite(self._run_python_runner(code, test_cases))
+        assert results[0]["passed"] is False, results
+
+    def test_python_arrays_booleans_numbers_still_pass(self):
+        cases = [
+            ("def arr(x):\n    return x", [1, 2, 3], "[1,2,3]"),
+            ("def even(x):\n    return x % 2 == 0", 4, "true"),
+            ("def num(x):\n    return x + 1", 41, "42"),
+        ]
+        for code, raw_input, expected in cases:
+            test_cases = [
+                {
+                    "input": json.dumps(raw_input, separators=(",", ":")),
+                    "expected_output": expected,
+                    "hidden": False,
+                }
+            ]
+            results = self._parse_suite(self._run_python_runner(code, test_cases))
+            assert results[0]["passed"] is True, (code, results)
+
+    def test_javascript_string_reverse_passes(self):
+        import shutil
+        import subprocess
+
+        if shutil.which("node") is None:
+            pytest.skip("node not available")
+        from app.adapters.code_wrappers.javascript_wrapper import JavaScriptCodeWrapper
+
+        code = "function reverseWord(s) { return s.split('').reverse().join(''); }"
+        test_cases = [
+            {"input": '"dlrow"', "expected_output": '"world"', "hidden": False},
+        ]
+        runner = JavaScriptCodeWrapper().wrap_with_tests(code, test_cases)
+        proc = subprocess.run(["node", "-e", runner], capture_output=True, text=True)
+        assert proc.returncode == 0, proc.stderr
+        results = self._parse_suite(proc.stdout)
+        assert results[0]["passed"] is True, results
+
+
 # ── Schema Normalization Tests ─────────────────────────────────────────
 
 
@@ -648,3 +746,117 @@ class TestSchemaNormalization:
         tc = TestCase(input="1", expected_output="[1, 2, 3]")
         # Already a string — passes through unchanged
         assert tc.expected_output == "[1, 2, 3]", f"got {tc.expected_output!r}"
+
+
+# ── Output Comparison Helper ────────────────────────────────────────────
+
+
+class TestOutputsMatch:
+    """Regression tests for issue #96: string-returning problems must not
+    falsely fail because JSON-encoded expected strings differ from the
+    plain text printed by runners, and meaningful whitespace is preserved."""
+
+    def _match(self, actual, expected):
+        from app.adapters.code_wrappers.output_comparator import outputs_match
+
+        return outputs_match(actual, expected)
+
+    # String-returning problems (JSON-encoded expected vs plain actual)
+    def test_plain_string_matches_json_encoded_expected(self):
+        # Question stores expected as "\"world\""; runner prints "world"
+        assert self._match("world", '"world"') is True
+
+    def test_string_with_surrounding_quotes_in_actual(self):
+        # Java toJson() emits quotes around strings
+        assert self._match('"world"', '"world"') is True
+
+    def test_string_reverse_example(self):
+        # "The Singularity's First Word": reverse "dlrow" -> "world"
+        assert self._match("world", '"world"') is True
+
+    def test_empty_string(self):
+        assert self._match("", '""') is True
+        assert self._match("x", '""') is False
+
+    def test_unicode_string(self):
+        assert self._match("héllo→", '"héllo→"') is True
+
+    def test_whitespace_is_meaningful(self):
+        # "123  " (trailing spaces) must not be stripped
+        assert self._match("123  ", '"123  "') is True
+        assert self._match("123", '"123  "') is False
+
+    def test_leading_whitespace_preserved(self):
+        assert self._match("  321", '"  321"') is True
+        assert self._match("321", '"  321"') is False
+
+    def test_trailing_process_newline_trimmed(self):
+        assert self._match("world\n", '"world"') is True
+
+    # Non-string outputs keep working
+    def test_array_output(self):
+        assert self._match("[1,2,3]", "[1, 2, 3]") is True
+        assert self._match("[1,2,4]", "[1,2,3]") is False
+
+    def test_nested_array_output(self):
+        assert self._match("[[1,2],[3,4]]", "[[1, 2], [3, 4]]") is True
+
+    def test_boolean_output(self):
+        assert self._match("true", "true") is True
+        assert self._match("true", "false") is False
+
+    def test_number_output(self):
+        assert self._match("42", "42") is True
+        assert self._match("42", "43") is False
+
+    def test_object_output(self):
+        assert self._match('{"a":1}', '{"a": 1}') is True
+
+    def test_plain_text_fallback(self):
+        # Non-JSON expected falls back to exact text compare
+        assert self._match("hello world", "hello world") is True
+        assert self._match("hello world", "hello  world") is False
+
+    def test_none_inputs(self):
+        assert self._match(None, None) is True
+        assert self._match(None, "x") is False
+
+    def test_non_string_json_expected_with_plain_actual(self):
+        # expected "[1,2,3]" but actual printed without JSON parse fails
+        assert self._match("[1,2,3]", "[1,2,3]") is True
+
+
+class TestEmbeddedOutputComparators:
+    """The generated runners must embed the shared comparator and use it."""
+
+    def test_python_runner_embeds_comparator(self):
+        from app.adapters.code_wrappers.python_wrapper import PythonCodeWrapper
+
+        runner = PythonCodeWrapper().wrap_with_tests(
+            "def f(x):\n    return x",
+            [{"input": "1", "expected_output": "1", "hidden": False}],
+        )
+        assert "__outputs_match(__actual, __exp)" in runner
+        assert "__actual.strip() == __exp.strip()" not in runner
+
+    def test_javascript_runner_embeds_comparator(self):
+        from app.adapters.code_wrappers.javascript_wrapper import JavaScriptCodeWrapper
+
+        runner = JavaScriptCodeWrapper().wrap_with_tests(
+            "function f(x) { return x; }",
+            [{"input": "1", "expected_output": "1", "hidden": False}],
+        )
+        assert "outputsMatch(actual, tc.expected)" in runner
+        assert "actual.trim() === tc.expected.trim()" not in runner
+
+    def test_java_runner_embeds_comparator(self):
+        from app.adapters.code_wrappers.java_wrapper import JavaCodeWrapper
+
+        code = "public class Solution {\n    public static String greet(String n) {\n        return n;\n    }\n}"
+        runner = JavaCodeWrapper().wrap_with_tests(
+            code, [{"input": '"x"', "expected_output": "x", "hidden": False}]
+        )
+        assert "outputsMatch(actual, expected)" in runner
+        assert "static boolean outputsMatch" in runner
+        assert "actual.trim().equals(expected.trim())" not in runner
+
