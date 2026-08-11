@@ -10,6 +10,7 @@ import { HydrationGuard } from '@/components/ui/HydrationGuard';
 import { showToast } from '@/components/ui/Toast';
 import { useCoaching } from '@/features/coaching/coaching.hook';
 import { useLesson } from '@/features/curriculum/use-curriculum.hook';
+import { TestCaseResultView } from '@/features/code-execution/code-execution.types';
 import { FetchClient, HttpError } from '@/lib/fetch-client';
 import { useAuth } from '@/providers';
 import { Language, LessonSummary, Question } from '@/types';
@@ -56,6 +57,9 @@ export default function LessonPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [runError, setRunError] = useState('');
+  const [testResults, setTestResults] = useState<TestCaseResultView[] | null>(
+    null,
+  );
   const [currentCode, setCurrentCode] = useState('');
   const [language, setLanguage] = useState<Language>((lesson?.language as Language) || 'python');
 
@@ -124,6 +128,7 @@ export default function LessonPage() {
   const handleRunCode = async (stdin: string) => {
     setIsRunning(true);
     setRunError('');
+    setTestResults(null);
     try {
       const res = (await api.post('/api/run/', {
         language,
@@ -158,9 +163,27 @@ export default function LessonPage() {
           passed: boolean;
           total: number;
           passed_count: number;
-          results: Array<{ index: number; passed: boolean; actual: string }>;
+          results: Array<{
+            index: number;
+            passed: boolean;
+            actual: string;
+            input: string;
+            expected: string;
+            hidden?: boolean;
+          }>;
         };
 
+        setTestResults(
+          submitRes.results.map((r) => ({
+            index: r.index,
+            passed: r.passed,
+            testName: `Test ${r.index}`,
+            input: r.hidden ? '' : r.input,
+            expected: r.hidden ? '' : r.expected,
+            actual: r.hidden ? '' : r.actual,
+            hidden: r.hidden ?? false,
+          })),
+        );
         const results = submitRes.results.map(
           (r: any) =>
             `Test ${r.index}: ${r.passed ? 'PASSED' : 'FAILED'}${
@@ -191,6 +214,7 @@ export default function LessonPage() {
 
     let passedCount = 0;
     const resultLines: string[] = [];
+    const structuredResults: TestCaseResultView[] = [];
 
     for (let i = 0; i < lessonTestCases.length; i++) {
       const tc = lessonTestCases[i];
@@ -210,12 +234,33 @@ export default function LessonPage() {
             tc.input
           }\n  Expected: ${expected}\n  Actual: ${actual}`,
         );
+        structuredResults.push({
+          index: i + 1,
+          passed,
+          testName: `Test ${i + 1}`,
+          input: tc.input,
+          expected,
+          actual,
+          hidden: false,
+        });
       } catch (err) {
         resultLines.push(
           `Test ${i + 1}: ERROR - ${err instanceof Error ? err.message : 'Execution failed'}`,
         );
+        structuredResults.push({
+          index: i + 1,
+          passed: false,
+          testName: `Test ${i + 1}`,
+          input: tc.input,
+          expected: tc.expected_output,
+          actual: '',
+          error: err instanceof Error ? err.message : 'Execution failed',
+          hidden: false,
+        });
       }
     }
+
+    setTestResults(structuredResults);
 
     const allPassed = passedCount === lessonTestCases.length;
     if (allPassed) {
@@ -284,6 +329,7 @@ export default function LessonPage() {
               isRunning={isRunning}
               output={output}
               error={runError}
+              testResults={testResults}
               isInteractive={linkedQuestion?.is_interactive ?? false}
               messages={messages}
               isTyping={isTyping}

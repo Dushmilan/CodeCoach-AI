@@ -41,6 +41,7 @@ export function MainWorkspace() {
   const {
     isRunning,
     output,
+    testResults,
     executionError,
     handleRunCode,
     handleSubmitCode,
@@ -122,6 +123,7 @@ export function MainWorkspace() {
               isRunning={isRunning}
               output={output}
               error={executionError || error || ""}
+              testResults={testResults}
               isInteractive={fullQuestion?.is_interactive || false}
               onCodeChange={setCurrentCode}
               onLanguageChange={setLanguage}

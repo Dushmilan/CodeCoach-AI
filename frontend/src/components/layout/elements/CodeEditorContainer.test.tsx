@@ -120,4 +120,58 @@ describe('CodeEditorContainer', () => {
     const editor = screen.getByTestId('mock-code-editor');
     expect(editor).toHaveAttribute('data-is-running', 'true');
   });
+
+  it('renders structured test results when provided', () => {
+    render(
+      <CodeEditorContainer
+        {...defaultProps}
+        output="ignored legacy string"
+        testResults={[
+          {
+            index: 1,
+            passed: true,
+            testName: 'Test 1',
+            input: '1',
+            expected: '1',
+            actual: '1',
+            hidden: false,
+          },
+          {
+            index: 2,
+            passed: false,
+            testName: 'Test 2',
+            input: '2',
+            expected: '3',
+            actual: '2',
+            hidden: false,
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText('Test Results: 1/2 passed · 1 failed')).toBeInTheDocument();
+    expect(screen.getByText('Test 1')).toBeInTheDocument();
+    expect(screen.getByText('Test 2')).toBeInTheDocument();
+  });
+
+  it('does not render structured results when error is present', () => {
+    render(
+      <CodeEditorContainer
+        {...defaultProps}
+        error="SyntaxError"
+        testResults={[
+          {
+            index: 1,
+            passed: true,
+            testName: 'Test 1',
+            input: '1',
+            expected: '1',
+            actual: '1',
+            hidden: false,
+          },
+        ]}
+      />,
+    );
+    expect(screen.queryByText(/Test Results:/)).not.toBeInTheDocument();
+    expect(screen.getByText('SyntaxError')).toBeInTheDocument();
+  });
 });

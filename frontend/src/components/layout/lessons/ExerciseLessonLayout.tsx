@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { CodeEditorContainer } from '@/components/layout/elements';
+import { TestCaseResultView } from '@/features/code-execution/code-execution.types';
 import { cn } from '@/lib/utils';
 import { ChatMessage, Language, LessonSummary, Question } from '@/types';
 import { AICoachPane } from './AICoachPane';
@@ -22,6 +23,7 @@ interface ExerciseLessonLayoutProps {
   isRunning: boolean;
   output: string;
   error: string;
+  testResults?: TestCaseResultView[] | null;
   isInteractive: boolean;
   messages: ChatMessage[];
   isTyping: boolean;
@@ -44,6 +46,7 @@ export function ExerciseLessonLayout({
   isRunning,
   output,
   error,
+  testResults = null,
   isInteractive,
   messages,
   isTyping,
@@ -127,6 +130,7 @@ export function ExerciseLessonLayout({
               isRunning={isRunning}
               output={output}
               error={error}
+              testResults={testResults}
               isInteractive={isInteractive}
               onCodeChange={onCodeChange}
               onLanguageChange={onLanguageChange}
@@ -165,6 +169,7 @@ export function ExerciseLessonLayout({
               isRunning={isRunning}
               output={output}
               error={error}
+              testResults={testResults}
               isInteractive={isInteractive}
               onCodeChange={onCodeChange}
               onLanguageChange={onLanguageChange}
