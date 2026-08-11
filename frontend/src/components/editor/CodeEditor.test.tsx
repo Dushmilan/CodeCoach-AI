@@ -39,7 +39,23 @@ describe("CodeEditor", () => {
 
   it("renders language selector", () => {
     render(<CodeEditor {...defaultProps} />);
-    expect(screen.getByRole("combobox")).toHaveValue("python");
+    const select = screen.getByRole("combobox", { name: /programming language/i });
+    expect(select).toHaveValue("python");
+  });
+
+  it("renders language selector with a visible, labelled, non-clipping control", () => {
+    render(<CodeEditor {...defaultProps} />);
+    const select = screen.getByRole("combobox", { name: /programming language/i });
+    // Visible container + focus affordance instead of a transparent bare select
+    expect(select).toHaveClass("bg-white/[0.04]");
+    expect(select).toHaveClass("ring-1");
+    expect(select).toHaveClass("focus-visible:ring-2");
+    expect(select).toHaveClass("appearance-none");
+    // Sized to avoid clipping on narrow practice panels
+    expect(select).toHaveClass("min-w-[9rem]");
+    expect(select).toHaveClass("truncate");
+    // The labelled control exposes its name to assistive tech
+    expect(screen.getByLabelText(/programming language/i)).toBe(select);
   });
 
   it("renders Reset, Run, and Submit buttons", () => {
@@ -95,7 +111,10 @@ describe("CodeEditor", () => {
       <CodeEditor {...defaultProps} onLanguageChange={onLanguageChange} />,
     );
 
-    await user.selectOptions(screen.getByRole("combobox"), "javascript");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /programming language/i }),
+      "javascript",
+    );
     expect(onLanguageChange).toHaveBeenCalledWith("javascript");
   });
 
