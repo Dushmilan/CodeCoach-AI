@@ -47,7 +47,7 @@ def outputs_match(actual: Optional[str], expected: Optional[str]) -> bool:
     return actual == expected
 
 
-PYTHON_OUTPUT_MATCH = r'''
+PYTHON_OUTPUT_MATCH = r"""
 def __outputs_match(__actual, __expected):
     if __actual.endswith("\n"):
         __actual = __actual[:-1]
@@ -66,10 +66,10 @@ def __outputs_match(__actual, __expected):
     if isinstance(__decoded_actual, str):
         return __actual == __expected or __decoded_actual == __expected
     return __actual == __expected
-'''
+"""
 
 
-JS_OUTPUT_MATCH = r'''
+JS_OUTPUT_MATCH = r"""
 function outputsMatch(actual, expected) {
   if (actual.endsWith('\n')) { actual = actual.slice(0, -1); }
   let decodedExpected = null;
@@ -84,10 +84,10 @@ function outputsMatch(actual, expected) {
   if (typeof decodedActual === 'string') { return actual === expected || decodedActual === expected; }
   return actual === expected;
 }
-'''
+"""
 
 
-JAVA_OUTPUT_MATCH = r'''
+JAVA_OUTPUT_MATCH = r"""
     static boolean outputsMatch(String actual, String expected) {
         if (actual.endsWith("\n")) { actual = actual.substring(0, actual.length() - 1); }
         return decode(actual).equals(decode(expected));
@@ -103,4 +103,4 @@ JAVA_OUTPUT_MATCH = r'''
         }
         return s;
     }
-'''
+"""

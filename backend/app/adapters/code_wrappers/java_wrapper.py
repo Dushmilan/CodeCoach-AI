@@ -333,9 +333,7 @@ class JavaCodeWrapper(CodeWrapper):
             "    }\n"
             "\n"
             "    static Object _lastFirstArg = null;\n"
-            "\n"
-            + JAVA_OUTPUT_MATCH.strip("\n")
-            + "\n"
+            "\n" + JAVA_OUTPUT_MATCH.strip("\n") + "\n"
             "\n"
             "    static Object callSolution(String methodName, Object... args) throws Exception {\n"
             "        Class<?> clazz = Solution.class;\n"

@@ -37,6 +37,39 @@ export interface Question extends QuestionSummary {
   is_interactive?: boolean;
 }
 
+export type AnimationOperation =
+  | "compare"
+  | "visit"
+  | "swap"
+  | "move"
+  | "insert"
+  | "remove"
+  | "mark"
+  | "output";
+
+export type AnimationResult =
+  | "checking"
+  | "match"
+  | "mismatch"
+  | "complete";
+
+export interface AnimationStep {
+  operation: AnimationOperation;
+  index?: number | null;
+  from_index?: number | null;
+  to_index?: number | null;
+  value?: unknown;
+  result?: AnimationResult | null;
+  narration: string;
+}
+
+export interface AnimationScript {
+  type: string;
+  title?: string;
+  data: Record<string, unknown>;
+  steps: AnimationStep[];
+}
+
 export interface StructuredCoachingResponse {
   summary: string;
   hints: string[];
@@ -46,6 +79,7 @@ export interface StructuredCoachingResponse {
   edge_cases: string[];
   explanation: string | null;
   debug_help: string | null;
+  animation?: AnimationScript | null;
 }
 
 export interface ChatMessage {

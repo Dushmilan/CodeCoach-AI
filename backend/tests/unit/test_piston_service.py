@@ -211,6 +211,66 @@ class TestPistonServiceExecute:
             assert result.stdout == ""
 
     @pytest.mark.asyncio
+    async def test_execute_uses_cached_result(self):
+        cached = {
+            "stdout": "cached\n",
+            "stderr": "",
+            "exit_code": 0,
+            "signal": None,
+            "execution_time": 0.0,
+            "memory_usage": None,
+            "language": "python",
+            "version": "3.10.0",
+        }
+
+        class FakeCache:
+            async def get(self, key):
+                return cached
+
+            async def set(self, key, value, ttl=300):
+                pass
+
+        service = PistonService(cache=FakeCache())
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_client.return_value = mock_instance
+
+            result = await service.execute("python", "print('never runs')")
+            mock_client.assert_not_called()
+            assert result.stdout == "cached\n"
+
+    @pytest.mark.asyncio
+    async def test_execute_caches_result_when_cache_enabled(self):
+        store: dict = {}
+
+        class FakeCache:
+            async def get(self, key):
+                return store.get(key)
+
+            async def set(self, key, value, ttl=300):
+                store[key] = value
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_client.return_value = mock_instance
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "run": {"stdout": "hi\n", "stderr": "", "code": 0},
+                "language": "python",
+                "version": "3.10.0",
+            }
+            mock_instance.post.return_value = mock_response
+
+            service = PistonService(cache=FakeCache())
+            result = await service.execute("python", "print('hi')")
+
+            assert result.stdout == "hi\n"
+            assert len(store) == 1
+
+    @pytest.mark.asyncio
     async def test_execute_piston_connection_error(self):
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
@@ -272,6 +332,27 @@ class TestPistonServiceRuntimes:
 
             assert len(runtimes) == 1
             assert runtimes[0]["language"] == "python"
+
+    @pytest.mark.asyncio
+    async def test_get_runtimes_uses_cached(self):
+        cached = [{"language": "python", "version": "3.10.0"}]
+
+        class FakeCache:
+            async def get(self, key):
+                return cached
+
+            async def set(self, key, value, ttl=300):
+                pass
+
+        service = PistonService(cache=FakeCache())
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_client.return_value = mock_instance
+
+            runtimes = await service.get_runtimes()
+            mock_client.assert_not_called()
+            assert runtimes == cached
 
     @pytest.mark.asyncio
     async def test_get_runtimes_non_200(self):

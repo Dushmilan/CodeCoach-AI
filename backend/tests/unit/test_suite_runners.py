@@ -859,4 +859,3 @@ class TestEmbeddedOutputComparators:
         assert "outputsMatch(actual, expected)" in runner
         assert "static boolean outputsMatch" in runner
         assert "actual.trim().equals(expected.trim())" not in runner
-

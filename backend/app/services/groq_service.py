@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from app.adapters.coaching_prompts import PromptBuilder
 from app.adapters.coaching_response_parser import CoachingResponseParser
 from app.ports.coaching_provider import CoachingProvider
+from app.services.animation_validator import AnimationValidator
 from app.services.redis_service import RedisCache, _content_hash
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ class GroqService(CoachingProvider):
 
         self.parser = CoachingResponseParser()
         self.prompts = PromptBuilder()
+        self.animation_validator = AnimationValidator()
 
     async def get_structured_coaching_response(
         self,
@@ -123,6 +125,7 @@ class GroqService(CoachingProvider):
                 result = response.json()
                 content = result["choices"][0]["message"]["content"]
                 structured_data = self.parser.parse_structured(content)
+                structured_data = self._validate_animation(structured_data)
                 try:
                     StructuredCoachingResponse(**structured_data)
                 except ValidationError as e:
@@ -281,6 +284,30 @@ class GroqService(CoachingProvider):
     # ── helpers ───────────────────────────────────────────────────────
 
     @staticmethod
+    def _validate_animation(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Drop invalid animation scripts, keep the rest of the response.
+
+        A structurally valid but semantically incorrect script is also
+        dropped — the animation must never lie about the algorithm. The
+        coaching text still renders, so the student experience degrades
+        gracefully instead of showing a wrong animation.
+        """
+        if not data.get("animation"):
+            return data
+        try:
+            validated, reason = AnimationValidator().validate(data["animation"])
+        except Exception as e:  # defensive: a bad script must never 500 the endpoint
+            logger.warning("Animation validation raised: %s", e)
+            data.pop("animation", None)
+            return data
+        if validated is None:
+            logger.warning("Dropping invalid animation script: %s", reason)
+            data.pop("animation", None)
+        else:
+            data["animation"] = validated
+        return data
+
+    @staticmethod
     def _repair_structured(data: Dict[str, Any]) -> Dict[str, Any]:
         """Repair a schema-mismatched structured dict into a valid shape.
 
@@ -326,6 +353,7 @@ class GroqService(CoachingProvider):
                 if isinstance(data.get("debug_help"), str)
                 else None
             ),
+            "animation": None,
         }
 
     def _raise_for_groq_status(

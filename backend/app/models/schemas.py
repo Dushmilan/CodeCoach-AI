@@ -1,6 +1,6 @@
 import json
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Union, Literal
 from enum import Enum
 
 
@@ -67,6 +67,52 @@ class CoachingRequest(BaseModel):
     )
 
 
+class AnimationStep(BaseModel):
+    """One frame of a declarative animation script.
+
+    The AI supplies structured data only — never executable code. The
+    frontend owns rendering, motion, and playback for every step.
+    """
+
+    operation: Literal[
+        "compare",
+        "visit",
+        "swap",
+        "move",
+        "insert",
+        "remove",
+        "mark",
+        "output",
+    ] = Field(..., description="What the frame does to the visualized data")
+    index: Optional[int] = Field(None, description="Primary index being acted on")
+    from_index: Optional[int] = Field(None, description="Source index (swap/move)")
+    to_index: Optional[int] = Field(None, description="Destination index (swap/move)")
+    value: Optional[Any] = Field(None, description="Value involved in the frame")
+    result: Optional[Literal["checking", "match", "mismatch", "complete"]] = Field(
+        None, description="Outcome of the operation for coloring purposes"
+    )
+    narration: str = Field(
+        default="",
+        max_length=300,
+        description="Human-readable narration for this frame",
+    )
+
+
+class AnimationScript(BaseModel):
+    """Declarative, validated animation script returned by the AI coach."""
+
+    type: str = Field(
+        ..., description="Algorithm kind, e.g. linear_search, bubble_sort"
+    )
+    title: str = Field(default="", description="Short title shown above the animation")
+    data: Dict[str, Any] = Field(
+        default_factory=dict, description="Input data the animation visualizes"
+    )
+    steps: List[AnimationStep] = Field(
+        default_factory=list, description="Ordered frames of the animation"
+    )
+
+
 class StructuredCoachingResponse(BaseModel):
     """Structured AI coaching response with categorized sections."""
 
@@ -88,6 +134,9 @@ class StructuredCoachingResponse(BaseModel):
         None, description="Detailed explanation of concepts"
     )
     debug_help: Optional[str] = Field(None, description="Debugging assistance")
+    animation: Optional[AnimationScript] = Field(
+        None, description="Declarative animation script to visualize the algorithm"
+    )
 
 
 class CoachingResponse(BaseModel):
