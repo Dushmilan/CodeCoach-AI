@@ -1,13 +1,32 @@
-"""Seed admin and super_admin users into the database/users.json."""
+#!/usr/bin/env python3
+"""Seed admin and super_admin users into the database.
 
-import json
+The app is fully DB-backed (PostgreSQL/Supabase primary); this script writes
+directly to the ``users`` table instead of the legacy ``data/users.json`` file.
+
+Usage:
+    DATABASE_URL=postgresql://... python scripts/seed_admin.py
+"""
+
+import asyncio
+import os
+import sys
 import uuid
-import bcrypt
 from datetime import datetime, timezone
 from pathlib import Path
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-USERS_FILE = DATA_DIR / "users.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import bcrypt
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession,
+    async_sessionmaker,
+)
+from sqlalchemy.pool import NullPool
+
+from app.models.orm import UserORM
 
 
 def hash_password(password: str) -> str:
@@ -30,46 +49,54 @@ ADMIN_USERS = [
 ]
 
 
-def seed():
-    if not USERS_FILE.exists():
-        users = []
-    else:
-        with open(USERS_FILE, "r") as f:
-            users = json.load(f)
+def _get_database_url() -> str:
+    url = os.getenv("DATABASE_URL")
+    if not url:
+        url = "postgresql+asyncpg://codecoach:codecoach@host.docker.internal:5432/codecoach"
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
 
-    existing_usernames = {u["username"] for u in users}
-    now = datetime.now(timezone.utc).isoformat()
+
+async def seed(session: AsyncSession) -> None:
+    now = datetime.now(timezone.utc)
 
     for au in ADMIN_USERS:
-        if au["username"] in existing_usernames:
-            # Update role if user already exists
-            for u in users:
-                if u["username"] == au["username"]:
-                    u["role"] = au["role"]
-                    print(f"  Updated role for '{au['username']}' to '{au['role']}'")
-                    break
+        result = await session.execute(
+            select(UserORM).where(UserORM.username == au["username"])
+        )
+        user = result.scalar_one_or_none()
+        if user is not None:
+            user.role = au["role"]
+            print(f"  Updated role for '{au['username']}' to '{au['role']}'")
         else:
-            users.append(
-                {
-                    "id": str(uuid.uuid4()),
-                    "username": au["username"],
-                    "email": au["email"],
-                    "hashed_password": hash_password(au["password"]),
-                    "created_at": now,
-                    "is_active": True,
-                    "oauth_provider": None,
-                    "oauth_id": None,
-                    "role": au["role"],
-                }
+            session.add(
+                UserORM(
+                    id=str(uuid.uuid4()),
+                    username=au["username"],
+                    email=au["email"],
+                    hashed_password=hash_password(au["password"]),
+                    created_at=now,
+                    is_active=1,
+                    role=au["role"],
+                )
             )
             print(f"  Created user '{au['username']}' with role '{au['role']}'")
-        existing_usernames.add(au["username"])
 
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
+    await session.commit()
 
-    print(f"\nDone. Users file: {USERS_FILE}")
+
+async def _main() -> None:
+    engine = create_async_engine(_get_database_url(), poolclass=NullPool)
+    try:
+        async with async_sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )() as session:
+            await seed(session)
+    finally:
+        await engine.dispose()
+    print("\nDone. Admin users seeded into the database.")
 
 
 if __name__ == "__main__":
-    seed()
+    asyncio.run(_main())
