@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "js-fundamentals",
+      "course_id": "javascript-and-web-development",
+      "title": "JavaScript Fundamentals",
+      "description": "Variables, data types, operators, functions, arrays, and objects — the building blocks of every JavaScript program.",
+      "order": 1
+    },
+    {
+      "id": "js-modern",
+      "course_id": "javascript-and-web-development",
+      "title": "Modern JavaScript",
+      "description": "Destructuring, modules, higher-order functions, and async basics — the ES2015+ features modern developers use daily.",
+      "order": 2
+    },
+    {
+      "id": "js-dom",
+      "course_id": "javascript-and-web-development",
+      "title": "HTML, CSS and the DOM",
+      "description": "Document structure, styling, events, and forms — the trio that turns scripts into real web pages.",
+      "order": 3
+    },
+    {
+      "id": "js-browser-apis",
+      "course_id": "javascript-and-web-development",
+      "title": "Browser APIs",
+      "description": "Fetch, JSON, localStorage, and error handling — talking to servers and persisting data in the browser.",
+      "order": 4
+    },
+    {
+      "id": "js-project",
+      "course_id": "javascript-and-web-development",
+      "title": "Frontend Project",
+      "description": "Plan, build, and polish a complete interactive browser application using everything you have learned.",
+      "order": 5
+    }
+  ]
+}

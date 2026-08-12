@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "backend-http",
+      "course_id": "backend-web-development",
+      "title": "Web and HTTP Fundamentals",
+      "description": "Requests and responses, methods, status codes, and JSON — the language every web client and server speaks.",
+      "order": 1
+    },
+    {
+      "id": "backend-api",
+      "course_id": "backend-web-development",
+      "title": "API Development",
+      "description": "Routing, validation, serialization, and REST conventions — the craft of designing endpoints people actually enjoy using.",
+      "order": 2
+    },
+    {
+      "id": "backend-persistence",
+      "course_id": "backend-web-development",
+      "title": "Persistence",
+      "description": "Relational data concepts, the repository pattern, migrations, and transactions — storing data safely and reliably.",
+      "order": 3
+    },
+    {
+      "id": "backend-auth",
+      "course_id": "backend-web-development",
+      "title": "Authentication and Security",
+      "description": "Password hashing, tokens, authorization, and input validation — keeping data and users safe.",
+      "order": 4
+    },
+    {
+      "id": "backend-project",
+      "course_id": "backend-web-development",
+      "title": "Backend Project",
+      "description": "Design and build a complete authenticated API — models, endpoints, auth wiring, and deployment.",
+      "order": 5
+    }
+  ]
+}

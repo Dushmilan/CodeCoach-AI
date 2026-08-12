@@ -1,0 +1,8 @@
+{
+  "id": "data-structures-and-algorithms",
+  "title": "Data Structures and Algorithms",
+  "description": "Master the fundamentals of computer science: time complexity, arrays, linked structures, recursion, searching and sorting, trees, graphs, and algorithmic problem-solving. Every concept is paired with Python exercises you can run right here.",
+  "language": "python",
+  "icon": "code",
+  "order": 9
+}

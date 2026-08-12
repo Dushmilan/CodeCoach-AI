@@ -1,0 +1,607 @@
+{
+  "items": [
+    {
+      "id": "js-fundamentals-values-variables",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-fundamentals",
+      "title": "Values and Variables",
+      "type": "theory",
+      "order": 1,
+      "content": "## Values and Variables\n\nEvery JavaScript program is made of **values** — numbers, text, and so on — stored in **variables** so you can refer to them later.\n\n### Declaring variables\n\n| Keyword | Scope    | When to use                              |\n|---------|----------|------------------------------------------|\n| `let`   | block    | A value you will reassign                 |\n| `const` | block    | A value that should not change (default)  |\n| `var`   | function | Legacy — avoid in new code                |\n\n```javascript\nconst name = \"Ada\";\nlet score = 92;\nscore = 95;        // fine for let\n// name = \"Grace\"; // TypeError: assignment to constant\n```\n\n### Core data types\n\n| Type       | Examples                        |\n|------------|---------------------------------|\n| `number`   | `42`, `3.14`, `-7`              |\n| `string`   | `\"hello\"`, `'world'`            |\n| `boolean`  | `true`, `false`                 |\n| `null`     | `null` (explicitly empty)       |\n| `undefined`| `undefined` (never assigned)    |\n| `object`   | `{...}`, `[...]`                |\n\n### Checking types\n\nThe `typeof` operator reports a value's type:\n\n```javascript\ntypeof 42        // \"number\"\ntypeof \"hi\"      // \"string\"\ntypeof true      // \"boolean\"\ntypeof []        // \"object\" (arrays are objects)\ntypeof null      // \"object\" (a famous historical quirk)\n```\n\n### Naming rules\n\n- Names are case-sensitive and cannot start with a digit.\n- Use `camelCase`: `totalPrice`, not `total_price` or `TotalPrice`.\n- Choose names that say what the value means.\n\n### Dynamic typing\n\nVariables are not locked to a type. You can reassign a `let` from a number to a string and JavaScript adapts at runtime — powerful, but another reason `const` is the default.\n\n```javascript\nlet thing = 5;\nthing = \"now a string\";   // legal\n```\n\n---\n\n**Next up:** operators — combining and comparing values.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-fundamentals-operators",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-fundamentals",
+      "title": "Operators and Expressions",
+      "type": "theory",
+      "order": 2,
+      "content": "## Operators and Expressions\n\nAn **expression** is any combination of values and operators that evaluates to a result. Operators do the combining.\n\n### Arithmetic\n\n```javascript\n5 + 2    // 7\n5 - 2    // 3\n5 * 2    // 10\n5 / 2    // 2.5\n5 % 2    // 1  (remainder)\n2 ** 3   // 8  (exponent)\n```\n\n### Comparison\n\nComparisons always produce a boolean:\n\n```javascript\n5 === 5      // true   (strict equal)\n5 === \"5\"    // false  (different types)\n5 !== 5      // false  (strict not equal)\n5 < 10       // true\n5 <= 5       // true\n```\n\nPrefer `===` and `!==`. The loose `==` performs type coercion and causes surprising bugs (`0 == false` is `true`).\n\n### Logical operators\n\n```javascript\ntrue && false   // false  (AND)\ntrue || false   // true   (OR)\n!true           // false  (NOT)\n```\n\n`&&` and `||` short-circuit: they stop evaluating as soon as the answer is known.\n\n### Falsy values\n\nJavaScript treats six values as \"falsey\" — everything else is truthy:\n\n```text\nfalse, 0, \"\", null, undefined, NaN\n```\n\n`0` is falsy, so `if (0)` does not run even though `0` is a valid number.\n\n### Assignment shortcuts\n\n```javascript\nlet count = 0;\ncount += 5;    // count is now 5\ncount *= 2;    // count is now 10\ncount++;       // count is now 11\n```\n\n### Operator precedence\n\n`*` and `/` bind tighter than `+` and `-`, so `2 + 3 * 4` is `14`. When in doubt, add parentheses — they are free and make intent obvious.\n\n```javascript\nconst total = (2 + 3) * 4;   // 20\n```\n\n---\n\n**Next up:** functions — the reusable building blocks of JavaScript.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-fundamentals-functions",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-fundamentals",
+      "title": "Functions",
+      "type": "theory",
+      "order": 3,
+      "content": "## Functions\n\nA **function** is a reusable block of code that takes inputs (parameters) and returns a result. Functions keep code organized and prevent repetition.\n\n### Function declarations\n\n```javascript\nfunction add(a, b) {\n  return a + b;\n}\n\nadd(3, 5);   // 8\n```\n\n`return` sends a value back; a function without `return` gives `undefined`.\n\n### Function expressions\n\n```javascript\nconst add = function (a, b) {\n  return a + b;\n};\n```\n\n### Arrow functions\n\n```javascript\nconst add = (a, b) => a + b;\n```\n\nArrow functions are the modern style: concise and they behave predictably with `this` (important later). They work everywhere expressions work.\n\n### Parameters and arguments\n\n- **Parameters** are the names in the definition.\n- **Arguments** are the values passed at the call site.\n\n```javascript\nfunction greet(name, punctuation = \"!\") {\n  return \"Hello, \" + name + punctuation;\n}\n\ngreet(\"Ada\");        // \"Hello, Ada!\"\ngreet(\"Ada\", \"?\");   // \"Hello, Ada?\"\n```\n\nDefaults make optional parameters explicit.\n\n### Returning early\n\n`return` can appear multiple times to exit with different results:\n\n```javascript\nfunction classify(score) {\n  if (score >= 90) return \"A\";\n  if (score >= 75) return \"B\";\n  return \"C\";\n}\n```\n\n### Scope\n\nVariables declared inside a function are **local** to it and disappear when it finishes. Variables outside are **global** and visible everywhere:\n\n```javascript\nconst globalMessage = \"visible everywhere\";\n\nfunction demo() {\n  const localOnly = \"hidden outside\";\n  return globalMessage;\n}\n```\n\nKeeping state local is what makes functions predictable and testable.\n\n---\n\n**Next up:** arrays and objects — the containers that model real data.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-fundamentals-arrays-objects",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-fundamentals",
+      "title": "Arrays and Objects",
+      "type": "theory",
+      "order": 4,
+      "content": "## Arrays and Objects\n\n**Arrays** hold ordered lists of values; **objects** hold named properties. Together they model almost all real-world data.\n\n### Arrays\n\n```javascript\nconst fruits = [\"apple\", \"banana\", \"cherry\"];\nfruits[0];            // \"apple\"\nfruits.length;        // 3\nfruits[fruits.length - 1];   // \"cherry\"\n```\n\nCommon methods:\n\n```javascript\nconst nums = [1, 2, 3];\nnums.push(4);          // add to end     → [1, 2, 3, 4]\nnums.pop();            // remove end     → [1, 2, 3]\nnums.indexOf(2);       // 1 (or -1 if absent)\nnums.includes(3);      // true\nnums.slice(1);         // [2, 3] (new array, original untouched)\n```\n\n### Objects\n\nObjects map keys to values:\n\n```javascript\nconst user = {\n  name: \"Ada\",\n  age: 36,\n  \"favorite language\": \"JavaScript\",\n};\n\nuser.name;             // \"Ada\" (dot notation)\nuser[\"age\"];           // 36 (bracket notation)\nuser.admin = true;     // add a property\n```\n\n### Arrays of objects\n\nThe most common data shape in web apps is an array of objects — users, posts, products:\n\n```javascript\nconst users = [\n  { name: \"Ada\", score: 92 },\n  { name: \"Linus\", score: 87 },\n];\n\nusers[1].score;        // 87\n```\n\n### Looping\n\n```javascript\nfor (const fruit of fruits) {\n  console.log(fruit);\n}\n\nfor (const key in user) {\n  console.log(key, user[key]);\n}\n```\n\n### Mutation vs new values\n\n`push`, `pop`, and property assignment **mutate** in place. `slice` and `concat` return **new** arrays. Prefer creating new values where practical — it makes data flow easier to reason about.\n\n---\n\n**Next up:** exercises — string helpers, array search, and FizzBuzz.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-fundamentals-exercise-vowels",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-fundamentals",
+      "title": "Exercise: Count Vowels",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Count Vowels\n\nWrite a function `solve(text)` that returns the number of vowels (`a`, `e`, `i`, `o`, `u`) in a string, ignoring case.\n\n### Sample\n\nInput: `hello`\n\nOutput: `2`\n\n### How your code runs\n\nThe runner calls your first declared function with the input parsed as JSON (a plain string stays a string). Return the count as a number.\n\n### Starter code\n\n```javascript\nfunction solve(text) {\n  let count = 0;\n  for (const ch of text.toLowerCase()) {\n    if (\"aeiou\".includes(ch)) count++;\n  }\n  return count;\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(solve(input));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(text) {\n  let count = 0;\n  for (const ch of text.toLowerCase()) {\n    if (\"aeiou\".includes(ch)) count++;\n  }\n  return count;\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(solve(input));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "hello",
+          "expected_output": "2",
+          "description": "hello has two vowels"
+        },
+        {
+          "input": "JAVASCRIPT",
+          "expected_output": "3",
+          "description": "Uppercase counts too"
+        },
+        {
+          "input": "rhythm",
+          "expected_output": "0",
+          "description": "No vowels"
+        },
+        {
+          "input": "aeiou",
+          "expected_output": "5",
+          "description": "All vowels"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-fundamentals-exercise-search",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-fundamentals",
+      "title": "Exercise: Find the Target",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Find the Target\n\nWrite a function `solve(nums, target)` that returns the **index** of `target` inside `nums`, or `-1` if it is not present.\n\n### Sample\n\nInput:\n\n```text\n[4, 1, 9, 7]\n9\n```\n\nOutput:\n\n```text\n2\n```\n\n### How your code runs\n\nThe runner calls your function with two arguments parsed from the two input lines: the first is a JSON array, the second a number.\n\n### Starter code\n\n```javascript\nfunction solve(nums, target) {\n  return nums.indexOf(target);\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const nums = JSON.parse(lines[0]);\n  const target = Number(lines[1]);\n  console.log(solve(nums, target));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(nums, target) {\n  return nums.indexOf(target);\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const nums = JSON.parse(lines[0]);\n  const target = Number(lines[1]);\n  console.log(solve(nums, target));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "[4, 1, 9, 7]\n9",
+          "expected_output": "2",
+          "description": "Found in the middle"
+        },
+        {
+          "input": "[4, 1, 9, 7]\n4",
+          "expected_output": "0",
+          "description": "Found at the start"
+        },
+        {
+          "input": "[4, 1, 9, 7]\n5",
+          "expected_output": "-1",
+          "description": "Not present"
+        },
+        {
+          "input": "[7]\n7",
+          "expected_output": "0",
+          "description": "Single-element array"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-fundamentals-exercise-fizzbuzz",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-fundamentals",
+      "title": "Exercise: FizzBuzz",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: FizzBuzz\n\nWrite a function `solve(n)` that returns an **array of strings** for the numbers 1 through `n`:\n\n- divisible by 3 → `\"Fizz\"`\n- divisible by 5 → `\"Buzz\"`\n- divisible by both → `\"FizzBuzz\"`\n- otherwise → the number as a string\n\n### Sample\n\nInput: `5`\n\nOutput:\n\n```text\n[\"1\",\"2\",\"Fizz\",\"4\",\"Buzz\"]\n```\n\n### How your code runs\n\nThe runner calls `solve(n)` with a single number. Return the array of strings; the harness prints it as JSON.\n\n### Starter code\n\n```javascript\nfunction solve(n) {\n  const result = [];\n  for (let i = 1; i <= n; i++) {\n    if (i % 15 === 0) result.push(\"FizzBuzz\");\n    else if (i % 3 === 0) result.push(\"Fizz\");\n    else if (i % 5 === 0) result.push(\"Buzz\");\n    else result.push(String(i));\n  }\n  return result;\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(JSON.stringify(solve(Number(input))));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(n) {\n  const result = [];\n  for (let i = 1; i <= n; i++) {\n    if (i % 15 === 0) result.push(\"FizzBuzz\");\n    else if (i % 3 === 0) result.push(\"Fizz\");\n    else if (i % 5 === 0) result.push(\"Buzz\");\n    else result.push(String(i));\n  }\n  return result;\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(JSON.stringify(solve(Number(input))));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "5",
+          "expected_output": "[\"1\",\"2\",\"Fizz\",\"4\",\"Buzz\"]",
+          "description": "Short run"
+        },
+        {
+          "input": "15",
+          "expected_output": "[\"1\",\"2\",\"Fizz\",\"4\",\"Buzz\",\"Fizz\",\"7\",\"8\",\"Fizz\",\"Buzz\",\"11\",\"Fizz\",\"13\",\"14\",\"FizzBuzz\"]",
+          "description": "Full classic run"
+        },
+        {
+          "input": "1",
+          "expected_output": "[\"1\"]",
+          "description": "Single number"
+        },
+        {
+          "input": "3",
+          "expected_output": "[\"1\",\"2\",\"Fizz\"]",
+          "description": "Fizz appears"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-modern-destructuring",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-modern",
+      "title": "Destructuring and Spread",
+      "type": "theory",
+      "order": 1,
+      "content": "## Destructuring and Spread\n\nModern JavaScript makes working with arrays and objects far less verbose through **destructuring** (unpacking values) and **spread** (spreading values out).\n\n### Array destructuring\n\n```javascript\nconst [first, second] = [10, 20, 30];\nfirst;    // 10\nsecond;   // 20\n```\n\nSwap variables without a temporary one:\n\n```javascript\nlet a = 1;\nlet b = 2;\n[a, b] = [b, a];   // a=2, b=1\n```\n\nThe rest element gathers the remaining items:\n\n```javascript\nconst [head, ...tail] = [1, 2, 3, 4];\nhead;   // 1\ntail;   // [2, 3, 4]\n```\n\n### Object destructuring\n\n```javascript\nconst user = { name: \"Ada\", age: 36 };\nconst { name, age } = user;\nname;   // \"Ada\"\n```\n\nRename with `:` and provide defaults with `=`:\n\n```javascript\nconst { name: displayName, admin = false } = user;\n```\n\n### Spread\n\nSpread copies arrays and objects:\n\n```javascript\nconst nums = [1, 2, 3];\nconst more = [...nums, 4];      // [1, 2, 3, 4]\n\nconst base = { name: \"Ada\" };\nconst user = { ...base, age: 36 };\n```\n\nLater properties override earlier ones — the classic way to apply defaults:\n\n```javascript\nconst settings = { ...defaults, ...userOverrides };\n```\n\n### Why it matters\n\nDestructuring is everywhere in modern code — React props, API responses, config objects. It makes the shape of data explicit and removes repetitive `obj.` prefixes.\n\n---\n\n**Next up:** modules — splitting code into files with import and export.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-modern-modules",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-modern",
+      "title": "Modules: import and export",
+      "type": "theory",
+      "order": 2,
+      "content": "## Modules: import and export\n\nAs programs grow, code is split into files. **ES modules** are JavaScript's official way to share code between files using `import` and `export`.\n\n### Named exports\n\n```javascript\n// math.js\nexport function square(x) {\n  return x * x;\n}\nexport const PI = 3.14159;\n```\n\n```javascript\n// app.js\nimport { square, PI } from \"./math.js\";\nsquare(5);   // 25\n```\n\n### Default exports\n\nEach module can have one **default export** — the main thing it provides:\n\n```javascript\n// greeting.js\nexport default function greet(name) {\n  return `Hello, ${name}!`;\n}\n```\n\n```javascript\n// app.js\nimport greet from \"./greeting.js\";\n```\n\n### Importing everything\n\n```javascript\nimport * as math from \"./math.js\";\nmath.square(3);   // 9\n```\n\n### Module rules\n\n- Modules are **always in strict mode**.\n- Each module has its **own scope** — nothing leaks to the global object.\n- `import` is hoisted and each module runs once, even if imported in several places.\n\n### In the browser\n\n```html\n<script type=\"module\" src=\"app.js\"></script>\n```\n\nModule scripts are deferred and can `import` other files. For production, **bundlers** like Vite, Webpack, or esbuild combine modules into optimized files.\n\n### CommonJS vs ES modules\n\nNode historically used CommonJS:\n\n```javascript\nconst fs = require(\"fs\");\nmodule.exports = { square };\n```\n\nThe ecosystem is converging on ES modules, but `require` still appears in tooling and older codebases. Both are worth recognizing.\n\n---\n\n**Next up:** higher-order functions — map, filter, and reduce.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-modern-higher-order",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-modern",
+      "title": "Higher-Order Functions",
+      "type": "theory",
+      "order": 3,
+      "content": "## Higher-Order Functions\n\nA **higher-order function** takes a function as an argument or returns one. The most useful trio is `map`, `filter`, and `reduce` — they replace most manual loops over arrays.\n\n### map — transform every element\n\n```javascript\nconst nums = [1, 2, 3];\nconst doubled = nums.map((n) => n * 2);   // [2, 4, 6]\n```\n\n`map` always returns a new array of the **same length**.\n\n### filter — keep matching elements\n\n```javascript\nconst nums = [1, 2, 3, 4, 5, 6];\nconst evens = nums.filter((n) => n % 2 === 0);   // [2, 4, 6]\n```\n\n`filter` keeps elements where the callback returns `true`.\n\n### reduce — boil the array down\n\n```javascript\nconst nums = [1, 2, 3, 4];\nconst total = nums.reduce((acc, n) => acc + n, 0);   // 10\n```\n\n`reduce` threads an **accumulator** through the array. The first argument is the previous accumulator (starting at the initial value), the second is the current element.\n\n### Chaining\n\nThe three compose beautifully:\n\n```javascript\nconst nums = [1, 2, 3, 4, 5, 6];\nconst result = nums\n  .filter((n) => n % 2 === 0)      // [2, 4, 6]\n  .map((n) => n * n)               // [4, 16, 36]\n  .reduce((acc, n) => acc + n, 0); // 56\n```\n\n### Callbacks\n\nA **callback** is any function passed to another function. Array methods, `setTimeout`, event listeners, and `fetch` all rely on them:\n\n```javascript\nsetTimeout(() => console.log(\"later\"), 1000);\n```\n\n### Why prefer them\n\n- No off-by-one indexing bugs.\n- No manual accumulator bookkeeping.\n- Each method has a single, clear purpose — code reads as a pipeline.\n\n---\n\n**Next up:** async basics — promises and async/await.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-modern-async-basics",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-modern",
+      "title": "Async Basics",
+      "type": "theory",
+      "order": 4,
+      "content": "## Async Basics\n\nJavaScript is single-threaded: it cannot run two scripts at the same time. Long operations — network requests, timers, file reads — must not block the thread, so they are **asynchronous**: they start now and finish later.\n\n### Callbacks\n\nThe original pattern passes a function to run when the work completes:\n\n```javascript\nsetTimeout(() => {\n  console.log(\"one second later\");\n}, 1000);\n```\n\nNesting many callbacks produces \"callback hell\":\n\n```javascript\ngetData((a) => {\n  getMore(a, (b) => {\n    getEvenMore(b, (c) => {\n      // hard to read, hard to fix\n    });\n  });\n});\n```\n\n### Promises\n\nA **Promise** represents a value that will exist later. It is either `pending`, `fulfilled`, or `rejected`:\n\n```javascript\nfetch(\"/api/users\")\n  .then((res) => res.json())\n  .then((users) => console.log(users))\n  .catch((err) => console.error(err));\n```\n\n`.then` chains steps; `.catch` handles failure anywhere in the chain.\n\n### async / await\n\n`async` functions always return a Promise. Inside them, `await` pauses until a Promise settles:\n\n```javascript\nasync function loadUsers() {\n  const res = await fetch(\"/api/users\");\n  const users = await res.json();\n  return users;\n}\n```\n\n`await` reads top-to-bottom — no nesting. Errors propagate with `try/catch`:\n\n```javascript\ntry {\n  const users = await loadUsers();\n  console.log(users);\n} catch (err) {\n  console.error(\"failed to load\", err);\n}\n```\n\n### The mental model\n\n- `await` does **not** make things synchronous — the thread stays free; your code just waits its turn.\n- Everything after `await` runs later as a microtask.\n- `Promise.all` runs independent tasks in parallel.\n\nAsync is how browsers fetch data, load images, and respond to input. This module's exercises keep async logic pure and synchronous, but the browser API module puts it to real use.\n\n---\n\n**Next up:** exercises — reduce, closures, and a destructuring swap.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-modern-exercise-reduce-sum",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-modern",
+      "title": "Exercise: Reduce to Sum",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Reduce to Sum\n\nWrite a function `solve(nums)` that returns the **sum** of all numbers in the array using `.reduce()`. The computation happens inside your `solve` function.\n\n### Sample\n\nInput:\n\n```text\n[1, 2, 3, 4]\n```\n\nOutput:\n\n```text\n10\n```\n\n### How your code runs\n\nThe runner calls `solve(nums)` with a single JSON array. Use `reduce` with an initial value of `0` and return the number.\n\n### Starter code\n\n```javascript\nfunction solve(nums) {\n  return nums.reduce((sum, n) => sum + n, 0);\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(solve(JSON.parse(input)));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(nums) {\n  return nums.reduce((sum, n) => sum + n, 0);\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(solve(JSON.parse(input)));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "[1, 2, 3, 4]",
+          "expected_output": "10",
+          "description": "Simple sum"
+        },
+        {
+          "input": "[5, -2, 10]",
+          "expected_output": "13",
+          "description": "Negative values"
+        },
+        {
+          "input": "[]",
+          "expected_output": "0",
+          "description": "Empty array"
+        },
+        {
+          "input": "[100]",
+          "expected_output": "100",
+          "description": "Single element"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-modern-exercise-closures-counter",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-modern",
+      "title": "Exercise: Closure Counter",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Closure Counter\n\nWrite a function `solve(ops)` that drives a **counter built with a closure**. A closure is a function that remembers the variables from the scope where it was created.\n\nThe counter exposes methods as strings in the `ops` array:\n\n- `\"inc\"` — increment the count\n- `\"dec\"` — decrement the count\n- `\"get\"` — record the current count into the result\n\n`solve` returns the **array of values recorded by `\"get\"` calls**.\n\n### Sample\n\nInput:\n\n```text\n[\"inc\", \"inc\", \"get\", \"inc\", \"get\"]\n```\n\nOutput:\n\n```text\n[2, 3]\n```\n\n### How your code runs\n\nThe runner calls `solve(ops)` with a JSON array of strings. Build the counter as a closure that keeps `count` private, then dispatch each operation.\n\n### Starter code\n\n```javascript\nfunction solve(ops) {\n  let count = 0;\n  const results = [];\n  const counter = {\n    inc: () => { count += 1; },\n    dec: () => { count -= 1; },\n    get: () => count,\n  };\n  for (const op of ops) {\n    if (op === \"inc\") counter.inc();\n    else if (op === \"dec\") counter.dec();\n    else if (op === \"get\") results.push(counter.get());\n  }\n  return results;\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(JSON.stringify(solve(JSON.parse(input))));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(ops) {\n  let count = 0;\n  const results = [];\n  const counter = {\n    inc: () => { count += 1; },\n    dec: () => { count -= 1; },\n    get: () => count,\n  };\n  for (const op of ops) {\n    if (op === \"inc\") counter.inc();\n    else if (op === \"dec\") counter.dec();\n    else if (op === \"get\") results.push(counter.get());\n  }\n  return results;\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(JSON.stringify(solve(JSON.parse(input))));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "[\"inc\", \"inc\", \"get\", \"inc\", \"get\"]",
+          "expected_output": "[2,3]",
+          "description": "Increments and reads"
+        },
+        {
+          "input": "[\"get\"]",
+          "expected_output": "[0]",
+          "description": "Starts at zero"
+        },
+        {
+          "input": "[\"inc\", \"dec\", \"dec\", \"get\"]",
+          "expected_output": "[-1]",
+          "description": "Goes negative"
+        },
+        {
+          "input": "[\"inc\", \"get\", \"get\"]",
+          "expected_output": "[1,1]",
+          "description": "Reading does not change the count"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-modern-exercise-destructure-swap",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-modern",
+      "title": "Exercise: Destructuring Swap",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Destructuring Swap\n\nWrite a function `solve(a, b)` that returns an array `[b, a]` — the values swapped — using **array destructuring** rather than a temporary variable.\n\n### Sample\n\nInput:\n\n```text\n3\n5\n```\n\nOutput:\n\n```text\n[5, 3]\n```\n\n### How your code runs\n\nThe runner calls `solve(a, b)` with two numbers parsed from the two input lines. Use `[a, b] = [b, a]` inside the function and return the array.\n\n### Starter code\n\n```javascript\nfunction solve(a, b) {\n  [a, b] = [b, a];\n  return [a, b];\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const a = Number(lines[0]);\n  const b = Number(lines[1]);\n  console.log(JSON.stringify(solve(a, b)));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(a, b) {\n  [a, b] = [b, a];\n  return [a, b];\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const a = Number(lines[0]);\n  const b = Number(lines[1]);\n  console.log(JSON.stringify(solve(a, b)));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "3\n5",
+          "expected_output": "[5,3]",
+          "description": "Simple swap"
+        },
+        {
+          "input": "10\n10",
+          "expected_output": "[10,10]",
+          "description": "Equal values"
+        },
+        {
+          "input": "-1\n7",
+          "expected_output": "[7,-1]",
+          "description": "Negative value"
+        },
+        {
+          "input": "0\n0",
+          "expected_output": "[0,0]",
+          "description": "Zeros"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-dom-structure",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-dom",
+      "title": "HTML Document Structure",
+      "type": "theory",
+      "order": 1,
+      "content": "## HTML Document Structure\n\n**HTML** gives a web page its structure. It is a tree of nested **elements**, and the browser parses it into the **DOM** (Document Object Model) that JavaScript can inspect and modify.\n\n### A minimal page\n\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <title>My Page</title>\n  </head>\n  <body>\n    <h1>Hello!</h1>\n    <p>This is a paragraph.</p>\n  </body>\n</html>\n```\n\n- `<head>` holds metadata — title, stylesheet links, settings.\n- `<body>` holds everything the user sees.\n\n### Elements and attributes\n\nAn element is an opening tag, content, and a closing tag. Attributes configure it:\n\n```html\n<a href=\"https://example.com\" class=\"nav-link\">Visit</a>\n<img src=\"photo.jpg\" alt=\"A photo\" />\n<input type=\"text\" placeholder=\"Your name\" />\n```\n\n- `id` must be **unique** on a page — good for hooks JavaScript targets.\n- `class` can repeat — good for styling groups.\n\n### Semantic elements\n\nModern HTML describes meaning, not just appearance:\n\n| Tag          | Meaning                              |\n|--------------|--------------------------------------|\n| `<header>`   | Intro or navigation region           |\n| `<nav>`      | Navigation links                     |\n| `<main>`     | Primary content                      |\n| `<section>`  | A themed group of content            |\n| `<article>`  | A self-contained piece               |\n| `<footer>`   | Closing region                       |\n| `<button>`   | A clickable action (not `<div>`)     |\n\nSemantic tags improve accessibility and make code self-documenting.\n\n### Nesting\n\nElements nest to form the tree the DOM mirrors:\n\n```html\n<ul>\n  <li>One</li>\n  <li>Two</li>\n</ul>\n```\n\n`<li>` elements are children of the `<ul>`. JavaScript later navigates exactly this parent/child structure.\n\n---\n\n**Next up:** CSS — styling the structure.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-dom-styling",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-dom",
+      "title": "Styling with CSS",
+      "type": "theory",
+      "order": 2,
+      "content": "## Styling with CSS\n\n**CSS** (Cascading Style Sheets) controls how HTML looks. A rule pairs a **selector** (which elements) with **declarations** (how they look).\n\n### Anatomy of a rule\n\n```css\n.nav-link {\n  color: #1e90ff;\n  font-weight: bold;\n}\n```\n\n`.nav-link` is a class selector (leading dot). An `#id` selector uses a hash; a plain name is a type selector:\n\n```css\nh1 { color: navy; }\n#app { max-width: 800px; }\n```\n\n### Common properties\n\n```css\n.card {\n  background: #f5f5f5;\n  padding: 16px;\n  margin: 8px 0;\n  border: 1px solid #ccc;\n  border-radius: 8px;\n}\n```\n\n### The box model\n\nEvery element is a box: content, then **padding**, then **border**, then **margin** (outside to inside). Understanding this explains most layout surprises.\n\n```css\n.box {\n  padding: 12px;   /* space inside the border */\n  margin: 12px;    /* space outside the border */\n}\n```\n\n### Flexbox\n\nA one-line tool for laying out rows or columns:\n\n```css\n.toolbar {\n  display: flex;\n  gap: 8px;\n  justify-content: space-between;\n}\n```\n\n### Adding CSS to a page\n\n```html\n<link rel=\"stylesheet\" href=\"styles.css\" />\n```\n\nOr inline on an element (highest priority, use sparingly):\n\n```html\n<p style=\"color: red;\">Important</p>\n```\n\n### CSS in the DOM course\n\nJavaScript frequently toggles classes to change styles:\n\n```javascript\nelement.classList.add(\"highlighted\");\nelement.classList.remove(\"highlighted\");\nelement.classList.toggle(\"highlighted\");\n```\n\nStyle stays in CSS; JavaScript only switches which classes apply. That separation keeps both files clean.\n\n---\n\n**Next up:** events — making pages respond to users.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-dom-events",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-dom",
+      "title": "Events and the DOM",
+      "type": "theory",
+      "order": 3,
+      "content": "## Events and the DOM\n\nThe **DOM** is JavaScript's live view of the page. **Events** are how the page tells your code what the user did.\n\n### Selecting elements\n\n```javascript\nconst button = document.querySelector(\"#submit\");\nconst buttons = document.querySelectorAll(\".btn\");\n```\n\n`querySelector` returns the first match; `querySelectorAll` returns all matches.\n\n### Reading and writing\n\n```javascript\nconst title = document.querySelector(\"#title\");\ntitle.textContent = \"New title\";\ntitle.textContent;          // \"New title\"\n```\n\n### Adding an event listener\n\n```javascript\nconst button = document.querySelector(\"#submit\");\nbutton.addEventListener(\"click\", (event) => {\n  console.log(\"Clicked!\", event.target);\n});\n```\n\nThe callback receives an **event object** with details like `target` (the element that fired) and, for keyboard events, `key`.\n\n### Common events\n\n| Event      | Fires when                          |\n|------------|-------------------------------------|\n| `click`    | Element is clicked                  |\n| `input`    | An input's value changes            |\n| `change`   | A select/checkbox changes           |\n| `submit`   | A form is submitted                 |\n| `keydown`  | A key is pressed                    |\n| `DOMContentLoaded` | The HTML has been parsed   |\n\n### Creating and removing nodes\n\n```javascript\nconst li = document.createElement(\"li\");\nli.textContent = \"New item\";\ndocument.querySelector(\"#list\").appendChild(li);\n```\n\n`textContent` is safe by default — unlike `innerHTML`, it never parses HTML, which prevents many XSS issues.\n\n### Event delegation\n\nAttach one listener to a container and let events bubble up:\n\n```javascript\ndocument.querySelector(\"#list\").addEventListener(\"click\", (event) => {\n  if (event.target.matches(\"li\")) {\n    console.log(\"Item:\", event.target.textContent);\n  }\n});\n```\n\nThis stays correct even when items are added later — a key technique for dynamic lists.\n\n---\n\n**Next up:** forms — collecting and validating user input.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-dom-forms",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-dom",
+      "title": "Forms and User Input",
+      "type": "theory",
+      "order": 4,
+      "content": "## Forms and User Input\n\n**Forms** are the standard way to collect input. JavaScript intercepts submission, reads the values, validates them, and decides what happens next.\n\n### A simple form\n\n```html\n<form id=\"signup\">\n  <input type=\"text\" id=\"name\" name=\"name\" placeholder=\"Name\" required />\n  <input type=\"email\" id=\"email\" name=\"email\" placeholder=\"Email\" required />\n  <button type=\"submit\">Sign up</button>\n</form>\n```\n\n### Reading values\n\n```javascript\nconst form = document.querySelector(\"#signup\");\nform.addEventListener(\"submit\", (event) => {\n  event.preventDefault();   // stop the page reloading\n  const name = document.querySelector(\"#name\").value;\n  const email = document.querySelector(\"#email\").value;\n  console.log({ name, email });\n});\n```\n\nAlways call `event.preventDefault()` on submit — otherwise the browser reloads the page.\n\n### Input types\n\n| Type        | Purpose                 | Example value       |\n|-------------|-------------------------|---------------------|\n| `text`      | Short text              | `\"Ada\"`             |\n| `email`     | Email address           | `\"a@b.com\"`         |\n| `number`    | Numeric input           | `\"36\"`              |\n| `password`  | Masked text             | `\"secret\"`          |\n| `checkbox`  | On/off boolean          | `true`/`false`      |\n| `select`    | Pick from options       | chosen value        |\n\n### Checking a checkbox\n\n```javascript\nconst subscribe = document.querySelector(\"#subscribe\");\nsubscribe.checked;   // true or false\n```\n\n### Client-side validation\n\nHTML attributes like `required` help, but real validation needs JavaScript:\n\n```javascript\nfunction validate(email) {\n  if (!email.includes(\"@\")) return \"Enter a valid email.\";\n  if (email.length < 5) return \"Email is too short.\";\n  return null;   // no error\n}\n```\n\n### Showing errors\n\nCreate message elements dynamically and clear them on the next attempt:\n\n```javascript\nconst errorBox = document.querySelector(\"#errors\");\nerrorBox.textContent = \"\";\nerrorBox.textContent = validate(email);\n```\n\nClient-side validation improves UX; it never replaces server-side validation — a theme you will revisit in the backend course.\n\n---\n\n**Next up:** exercises — chunking, plus DOM practice with events and forms.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-dom-exercise-chunking",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-dom",
+      "title": "Exercise: Array Chunking",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Array Chunking\n\nWrite a function `solve(arr, size)` that splits an array into chunks of at most `size` elements and returns an array of chunks. Chunking is the logic behind paginated lists and infinite scroll grids.\n\n### Sample\n\nInput:\n\n```text\n[1, 2, 3, 4, 5]\n2\n```\n\nOutput:\n\n```text\n[[1,2],[3,4],[5]]\n```\n\n### How your code runs\n\nThe runner calls `solve(arr, size)` with a JSON array and a number. Use a loop and `slice()` to build the chunks.\n\n### Starter code\n\n```javascript\nfunction solve(arr, size) {\n  const chunks = [];\n  for (let i = 0; i < arr.length; i += size) {\n    chunks.push(arr.slice(i, i + size));\n  }\n  return chunks;\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const arr = JSON.parse(lines[0]);\n  const size = Number(lines[1]);\n  console.log(JSON.stringify(solve(arr, size)));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(arr, size) {\n  const chunks = [];\n  for (let i = 0; i < arr.length; i += size) {\n    chunks.push(arr.slice(i, i + size));\n  }\n  return chunks;\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const arr = JSON.parse(lines[0]);\n  const size = Number(lines[1]);\n  console.log(JSON.stringify(solve(arr, size)));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "[1, 2, 3, 4, 5]\n2",
+          "expected_output": "[[1,2],[3,4],[5]]",
+          "description": "Trailing partial chunk"
+        },
+        {
+          "input": "[1, 2, 3, 4]\n2",
+          "expected_output": "[[1,2],[3,4]]",
+          "description": "Exact division"
+        },
+        {
+          "input": "[1, 2, 3]\n1",
+          "expected_output": "[[1],[2],[3]]",
+          "description": "Size one"
+        },
+        {
+          "input": "[]\n3",
+          "expected_output": "[]",
+          "description": "Empty array"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-dom-exercise-event-practice",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-dom",
+      "title": "Practice: Event Counter",
+      "type": "theory",
+      "order": 6,
+      "content": "## Practice: Event Counter\n\nThis is a **practice-only** exercise — it runs in the browser, so it has no automated test cases. Build it in your own HTML file and verify by clicking.\n\n### The task\n\nCreate a page with a button and a counter display. Every click increments the counter and updates the display.\n\n### Starter HTML\n\n```html\n<button id=\"click-me\">Click me</button>\n<p id=\"count\">0</p>\n```\n\n### Starter JavaScript\n\n```javascript\nlet count = 0;\nconst button = document.querySelector(\"#click-me\");\nconst display = document.querySelector(\"#count\");\n\nbutton.addEventListener(\"click\", () => {\n  count += 1;\n  display.textContent = count;\n});\n```\n\n### Extend it\n\n1. Add a \"Reset\" button that sets the count back to `0`.\n2. Change the display color to red when the count reaches 10 (`classList.toggle`).\n3. Use **event delegation**: place both buttons in one container and read `event.target.id` to decide what to do.\n4. Prevent double-counting on a double-click by disabling the button briefly.\n\n### Check yourself\n\n- Does the page reload when you click? If a `<form>` wraps the button, call `event.preventDefault()`.\n- Does the count survive a refresh? It should not — persistence arrives with localStorage in the next module.\n\nEvent handling is the core of every interactive page. Once this feels natural, forms and browser APIs will slot right in.\n\n---\n\n**Next up:** Browser APIs — fetch, JSON, and localStorage.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-dom-exercise-form-practice",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-dom",
+      "title": "Practice: Form Validation",
+      "type": "theory",
+      "order": 7,
+      "content": "## Practice: Form Validation\n\nThis is a **practice-only** exercise — it runs in the browser with no automated tests. Build and test it yourself.\n\n### The task\n\nCreate a signup form with email and password fields. On submit, validate both fields and show an error list without reloading the page.\n\n### Starter HTML\n\n```html\n<form id=\"signup\">\n  <input type=\"email\" id=\"email\" placeholder=\"Email\" />\n  <input type=\"password\" id=\"password\" placeholder=\"Password\" />\n  <button type=\"submit\">Sign up</button>\n</form>\n<ul id=\"errors\"></ul>\n```\n\n### Starter JavaScript\n\n```javascript\nconst form = document.querySelector(\"#signup\");\nconst errors = document.querySelector(\"#errors\");\n\nform.addEventListener(\"submit\", (event) => {\n  event.preventDefault();\n  const email = document.querySelector(\"#email\").value;\n  const password = document.querySelector(\"#password\").value;\n\n  const messages = [];\n  if (!email.includes(\"@\")) messages.push(\"Email must contain @\");\n  if (password.length < 8) messages.push(\"Password must be at least 8 characters\");\n\n  errors.textContent = \"\";\n  messages.forEach((m) => {\n    const li = document.createElement(\"li\");\n    li.textContent = m;\n    errors.appendChild(li);\n  });\n});\n```\n\n### Extend it\n\n1. Live-validate the password `input` event as the user types (clear errors when fixed).\n2. Add a \"confirm password\" field that must match.\n3. Show a green success message when everything passes.\n4. Style `.errors li` with red text via CSS.\n\n### Check yourself\n\n- Does the page reload on submit? You forgot `preventDefault()`.\n- Are errors cleared before showing new ones? You must reset the list each submit.\n\nThis mirrors what a real registration form does — and the backend course will protect it with server-side checks.\n\n---\n\n**Next up:** Module 4 — the browser APIs that fetch and store data.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-browser-fetch",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-browser-apis",
+      "title": "The Fetch API",
+      "type": "theory",
+      "order": 1,
+      "content": "## The Fetch API\n\nThe **Fetch API** is the modern way to make HTTP requests from the browser. It returns a Promise, so it pairs naturally with `async`/`await`.\n\n### A GET request\n\n```javascript\nasync function loadUsers() {\n  const res = await fetch(\"/api/users\");\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  const users = await res.json();\n  return users;\n}\n```\n\n`fetch` sends the request and resolves to a **Response** object once headers arrive. The body is read separately with `res.json()` or `res.text()`.\n\n### The Response object\n\n| Property / method | Meaning                              |\n|-------------------|--------------------------------------|\n| `res.ok`          | `true` for status 200–299            |\n| `res.status`      | Numeric status code                  |\n| `res.statusText`  | Status text like `\"OK\"`              |\n| `res.json()`      | Parse body as JSON (returns Promise) |\n| `res.text()`      | Parse body as text (returns Promise) |\n| `res.headers`     | Response headers                     |\n\n### A POST request\n\n```javascript\nasync function createUser(user) {\n  const res = await fetch(\"/api/users\", {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(user),\n  });\n  return res.json();\n}\n```\n\n### Request options\n\n| Option        | Purpose                          |\n|---------------|----------------------------------|\n| `method`      | `\"GET\"`, `\"POST\"`, `\"PUT\"`, `\"DELETE\"`, ... |\n| `headers`     | Request headers object           |\n| `body`        | Request body (string)            |\n| `credentials` | `\"same-origin\"` to send cookies  |\n\n### Two failure modes\n\n`fetch` only rejects on **network failures**. An HTTP 404 is a normal response — check `res.ok` or `res.status` yourself:\n\n```javascript\ntry {\n  const res = await fetch(\"/api/users\");\n  if (!res.ok) throw new Error(`Request failed: ${res.status}`);\n  return await res.json();\n} catch (err) {\n  console.error(\"Fetch failed:\", err);\n}\n```\n\nFetch is the data transport behind almost every interactive page. The project module builds a small app on top of it.\n\n---\n\n**Next up:** JSON — the wire format fetch sends and receives.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-browser-json",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-browser-apis",
+      "title": "Working with JSON",
+      "type": "theory",
+      "order": 2,
+      "content": "## Working with JSON\n\n**JSON** (JavaScript Object Notation) is the standard text format for data over HTTP. It looks like JavaScript object literals — because it was designed by a JavaScript programmer.\n\n### Example\n\n```json\n{\n  \"name\": \"Ada\",\n  \"age\": 36,\n  \"skills\": [\"JavaScript\", \"Python\"],\n  \"active\": true\n}\n```\n\n### The two conversion functions\n\n```javascript\nJSON.stringify(value);   // object → JSON string\nJSON.parse(string);      // JSON string → object\n```\n\n```javascript\nconst user = { name: \"Ada\", age: 36 };\nconst text = JSON.stringify(user);      // '{\"name\":\"Ada\",\"age\":36}'\nconst parsed = JSON.parse(text);        // { name: \"Ada\", age: 36 }\n```\n\n### JSON rules\n\n| Rule                 | Example                         |\n|----------------------|---------------------------------|\n| Keys are double-quoted | `\"name\"` not `name`            |\n| Strings use double quotes | `\"hi\"` not `'hi'`          |\n| Supported values     | object, array, string, number, boolean, null |\n| No comments, no `undefined`, no functions | — |\n\n`undefined`, functions, and `NaN` **disappear** when stringified:\n\n```javascript\nJSON.stringify({ a: undefined, b: NaN });\n// '{\"b\":null}'\n```\n\n### Parsing failures\n\nMalformed JSON throws a `SyntaxError`:\n\n```javascript\ntry {\n  JSON.parse(\"{ bad json \");\n} catch (err) {\n  console.error(\"Invalid JSON\");\n}\n```\n\n### JSON and fetch\n\nThey are inseparable:\n\n```javascript\nconst res = await fetch(\"/api/users\");\nconst users = await res.json();             // parse incoming\n\nawait fetch(\"/api/users\", {\n  method: \"POST\",\n  headers: { \"Content-Type\": \"application/json\" },\n  body: JSON.stringify(newUser),            // serialize outgoing\n});\n```\n\n### Deep clone gotcha\n\n`JSON.parse(JSON.stringify(data))` is a common quick clone, but it drops functions, converts `undefined` to nothing, and turns `Date` into a string. Use it only for plain data.\n\n---\n\n**Next up:** localStorage — persisting data in the browser.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-browser-storage",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-browser-apis",
+      "title": "localStorage",
+      "type": "theory",
+      "order": 3,
+      "content": "## localStorage\n\n**localStorage** is a small persistent key/value store built into every browser. Data survives page reloads and browser restarts — perfect for settings, draft text, and small app state.\n\n### Basic API\n\n```javascript\nlocalStorage.setItem(\"theme\", \"dark\");\nlocalStorage.getItem(\"theme\");    // \"dark\"\nlocalStorage.removeItem(\"theme\");\nlocalStorage.clear();\n```\n\nKeys and values are **always strings**.\n\n### Storing structured data\n\nBecause values are strings, objects must be serialized with JSON:\n\n```javascript\nconst user = { name: \"Ada\", score: 92 };\n\n// save\nlocalStorage.setItem(\"user\", JSON.stringify(user));\n\n// load\nconst raw = localStorage.getItem(\"user\");\nconst parsed = raw ? JSON.parse(raw) : null;\nparsed.name;   // \"Ada\"\n```\n\n### The JSON round-trip\n\n1. `JSON.stringify(value)` — serialize.\n2. `localStorage.setItem(key, serialized)` — store.\n3. `localStorage.getItem(key)` — retrieve.\n4. `JSON.parse(...)` — deserialize.\n\nThis pattern is exactly what the storage exercise in this module simulates with pure logic.\n\n### sessionStorage\n\n`sessionStorage` works identically but clears when the tab closes — useful for temporary form state.\n\n### Pitfalls\n\n- **Limit:** roughly 5 MB per origin. Large blobs will throw.\n- **`getItem` returns `null`** for missing keys — always handle it.\n- **Corrupt JSON crashes `parse`** — wrap in `try/catch` and fall back to a default.\n- **Not for secrets:** any script on the page can read localStorage. Never store passwords or tokens here long-term (the backend course returns to this).\n\n### Where it fits\n\nlocalStorage powers \"remember me\" lists, themes, and offline drafts. In the project module it keeps a todo list alive between visits.\n\n---\n\n**Next up:** error handling — failing gracefully.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-browser-error-handling",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-browser-apis",
+      "title": "Error Handling",
+      "type": "theory",
+      "order": 4,
+      "content": "## Error Handling\n\nReal apps hit failures: servers return 500s, JSON is malformed, storage is full. **Error handling** is how code survives those moments instead of crashing.\n\n### try / catch / finally\n\n```javascript\ntry {\n  const data = JSON.parse(raw);\n  console.log(data.name);\n} catch (err) {\n  console.error(\"Parse failed:\", err.message);\n} finally {\n  console.log(\"Always runs\");\n}\n```\n\n- `try` — the risky code.\n- `catch (err)` — runs only if something in `try` throws.\n- `finally` — always runs, for cleanup.\n\n### Throwing errors\n\nCreate failures deliberately with `throw`:\n\n```javascript\nfunction divide(a, b) {\n  if (b === 0) throw new Error(\"Cannot divide by zero\");\n  return a / b;\n}\n```\n\nThe thrown value lands in whatever `catch` is above it.\n\n### Custom error types\n\n```javascript\nclass ValidationError extends Error {}\nthrow new ValidationError(\"Email is required\");\n```\n\n### Async errors\n\nPromises reject instead of throwing — handle with `.catch` or `try/catch` around `await`:\n\n```javascript\ntry {\n  const res = await fetch(\"/api/users\");\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  const users = await res.json();\n  return users;\n} catch (err) {\n  return [];   // degrade gracefully\n}\n```\n\n### Error objects\n\n`err.message` is the human-readable string; `err.stack` is a call trace. Log both in development.\n\n### Principles\n\n- **Fail fast:** validate inputs early and throw clear errors.\n- **Degrade gracefully:** return a safe default (`[]`, `null`) instead of letting the UI crash.\n- **Never swallow silently:** `catch` with an empty body hides bugs.\n- **Re-throw when you cannot handle it:** sometimes the caller needs to know.\n\nSolid error handling is what separates a demo from a dependable app.\n\n---\n\n**Next up:** exercises — object flattening, debounce logic, and a JSON round-trip.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-browser-exercise-object-flatten",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-browser-apis",
+      "title": "Exercise: Flatten a Nested Object",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Flatten a Nested Object\n\nWrite a function `solve(obj)` that returns a **flattened** version of a nested object — nested keys become dot-separated keys. Flattening is common when preparing API data for tables or storage.\n\n### Sample\n\nInput:\n\n```text\n{\"a\": {\"b\": 1, \"c\": {\"d\": 2}}, \"e\": 3}\n```\n\nOutput:\n\n```text\n{\"a.b\":1,\"a.c.d\":2,\"e\":3}\n```\n\n### How your code runs\n\nThe runner calls `solve(obj)` with one JSON object. Walk the object recursively, building flattened keys with a prefix, and return the flat object.\n\n### Starter code\n\n```javascript\nfunction solve(obj) {\n  const flat = {};\n  function walk(node, prefix) {\n    for (const key in node) {\n      const path = prefix ? prefix + \".\" + key : key;\n      if (node[key] !== null && typeof node[key] === \"object\" && !Array.isArray(node[key])) {\n        walk(node[key], path);\n      } else {\n        flat[path] = node[key];\n      }\n    }\n  }\n  walk(obj, \"\");\n  return flat;\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(JSON.stringify(solve(JSON.parse(input))));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(obj) {\n  const flat = {};\n  function walk(node, prefix) {\n    for (const key in node) {\n      const path = prefix ? prefix + \".\" + key : key;\n      if (node[key] !== null && typeof node[key] === \"object\" && !Array.isArray(node[key])) {\n        walk(node[key], path);\n      } else {\n        flat[path] = node[key];\n      }\n    }\n  }\n  walk(obj, \"\");\n  return flat;\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(JSON.stringify(solve(JSON.parse(input))));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "{\"a\": {\"b\": 1, \"c\": {\"d\": 2}}, \"e\": 3}",
+          "expected_output": "{\"a.b\":1,\"a.c.d\":2,\"e\":3}",
+          "description": "Two levels deep"
+        },
+        {
+          "input": "{\"x\": 1}",
+          "expected_output": "{\"x\":1}",
+          "description": "Already flat"
+        },
+        {
+          "input": "{\"a\": {\"b\": {\"c\": {\"d\": 4}}}}",
+          "expected_output": "{\"a.b.c.d\":4}",
+          "description": "Deeply nested"
+        },
+        {
+          "input": "{\"a\": [1, {\"b\": 2}]}",
+          "expected_output": "{\"a\":[1,{\"b\":2}]}",
+          "description": "Arrays stay intact"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-browser-exercise-debounce",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-browser-apis",
+      "title": "Exercise: Debounce Logic",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Debounce Logic\n\nWrite a function `solve(events, delay)` that simulates **debouncing** — the technique that delays a handler until the user stops typing.\n\n`events` is an array of `[time, value]` pairs sorted by time. A value **fires** when no later event arrives within `delay` units of time. Return the array of values that fire, in order.\n\n### Sample\n\nInput:\n\n```text\n[[0, \"a\"], [5, \"b\"], [20, \"c\"]]\n10\n```\n\n`\"a\"` at time 0 is followed by `\"b\"` at 5 (within 10) so it is cancelled. `\"b\"` is followed by `\"c\"` at 20 — a gap of 15 — so `\"b\"` fires. `\"c\"` has nothing after it, so it fires too:\n\nOutput:\n\n```text\n[\"b\",\"c\"]\n```\n\n### How your code runs\n\nThe runner calls `solve(events, delay)` with a JSON array of pairs and a number. Compare each event's time with the next event's time.\n\n### Starter code\n\n```javascript\nfunction solve(events, delay) {\n  const fired = [];\n  for (let i = 0; i < events.length; i++) {\n    const [time, value] = events[i];\n    const nextTime = i + 1 < events.length ? events[i + 1][0] : Infinity;\n    if (nextTime - time >= delay) fired.push(value);\n  }\n  return fired;\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const events = JSON.parse(lines[0]);\n  const delay = Number(lines[1]);\n  console.log(JSON.stringify(solve(events, delay)));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(events, delay) {\n  const fired = [];\n  for (let i = 0; i < events.length; i++) {\n    const [time, value] = events[i];\n    const nextTime = i + 1 < events.length ? events[i + 1][0] : Infinity;\n    if (nextTime - time >= delay) fired.push(value);\n  }\n  return fired;\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const events = JSON.parse(lines[0]);\n  const delay = Number(lines[1]);\n  console.log(JSON.stringify(solve(events, delay)));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "[[0, \"a\"], [5, \"b\"], [20, \"c\"]]\n10",
+          "expected_output": "[\"b\",\"c\"]",
+          "description": "b fires after a gap of 15"
+        },
+        {
+          "input": "[[0, \"a\"], [10, \"b\"]]\n10",
+          "expected_output": "[\"a\",\"b\"]",
+          "description": "Exact gap of 10 fires both"
+        },
+        {
+          "input": "[[0, \"a\"], [1, \"b\"], [2, \"c\"]]\n5",
+          "expected_output": "[\"c\"]",
+          "description": "Only the last of a burst fires"
+        },
+        {
+          "input": "[[0, \"only\"]]\n10",
+          "expected_output": "[\"only\"]",
+          "description": "Single event always fires"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-browser-exercise-json-roundtrip",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-browser-apis",
+      "title": "Exercise: localStorage JSON Round-Trip",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: localStorage JSON Round-Trip\n\nWrite a function `solve(data)` that simulates saving data to localStorage and reading it back — **without a browser**. The runner passes an object; your function must return the JSON string that a save would produce.\n\n### Sample\n\nInput:\n\n```text\n{\"name\": \"Ada\", \"skills\": [\"JS\", \"Python\"]}\n```\n\nOutput:\n\n```text\n{\"name\":\"Ada\",\"skills\":[\"JS\",\"Python\"]}\n```\n\n### How your code runs\n\nThe runner calls `solve(data)` with one JSON object. Serialize it with `JSON.stringify` and return the string.\n\n### Starter code\n\n```javascript\nfunction solve(data) {\n  return JSON.stringify(data);\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(solve(JSON.parse(input)));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(data) {\n  return JSON.stringify(data);\n}\n\nfunction main() {\n  const input = require('fs').readFileSync(0, 'utf-8').trim();\n  if (!input) return;\n  console.log(solve(JSON.parse(input)));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "{\"name\": \"Ada\", \"skills\": [\"JS\", \"Python\"]}",
+          "expected_output": "{\"name\":\"Ada\",\"skills\":[\"JS\",\"Python\"]}",
+          "description": "Object with array"
+        },
+        {
+          "input": "{\"a\": {\"b\": 1}}",
+          "expected_output": "{\"a\":{\"b\":1}}",
+          "description": "Nested object"
+        },
+        {
+          "input": "[1, 2, 3]",
+          "expected_output": "[1,2,3]",
+          "description": "Array input"
+        },
+        {
+          "input": "{\"flag\": true, \"none\": null}",
+          "expected_output": "{\"flag\":true,\"none\":null}",
+          "description": "Booleans and null"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-project-planning",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-project",
+      "title": "Planning the Application",
+      "type": "theory",
+      "order": 1,
+      "content": "## Planning the Application\n\nThe final module builds an interactive browser application. Before writing UI code, plan it the way a real team would.\n\n### 1. Choose the app\n\nPick something small but real — a **todo list** is the classic choice: it needs input, state, rendering, filtering, and persistence. You will build the pieces across this module.\n\n### 2. Define requirements\n\nWrite down what it must do:\n\n- Add a todo item.\n- Mark an item complete.\n- Filter items (all / active / completed).\n- Persist items between reloads.\n\n### 3. Sketch the layout\n\nDraw the regions: an input row, filter buttons, and a list. Knowing where things live before styling saves a lot of rework.\n\n### 4. Design the state\n\nDecide the single data shape the app manages:\n\n```javascript\nconst state = {\n  todos: [\n    { id: 1, title: \"Learn JS\", done: false },\n  ],\n  filter: \"all\",\n};\n```\n\nAll UI renders from this one object.\n\n### 5. Plan the files\n\nKeep concerns separate:\n\n```text\nindex.html     structure\nstyles.css     styling\napp.js         logic and rendering\n```\n\n### 6. List the functions\n\nBefore coding, name the core functions and what they return — these become the runnable and practice exercises in this module:\n\n- `filterTodos(todos, filter)` — pure filtering logic.\n- `render()` — draw state into the DOM.\n- `addTodo(title)` — update state then render.\n- `save()` / `load()` — localStorage persistence.\n\n### A small project beats a big one\n\nA tiny app you finish beats an ambitious one you abandon. This module's exercises build the todo app in pieces so each part is small and testable.\n\n---\n\n**Next up:** building the HTML and CSS structure.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-project-html-css",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-project",
+      "title": "HTML and CSS Structure",
+      "type": "theory",
+      "order": 2,
+      "content": "## HTML and CSS Structure\n\nWith a plan, build the static shell: the page structure and its styling, before any behavior exists.\n\n### The HTML skeleton\n\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>My Todos</title>\n    <link rel=\"stylesheet\" href=\"styles.css\" />\n  </head>\n  <body>\n    <main class=\"app\">\n      <h1>My Todos</h1>\n\n      <form id=\"add-form\">\n        <input type=\"text\" id=\"new-todo\" placeholder=\"What needs doing?\" />\n        <button type=\"submit\">Add</button>\n      </form>\n\n      <nav class=\"filters\">\n        <button data-filter=\"all\" class=\"active\">All</button>\n        <button data-filter=\"active\">Active</button>\n        <button data-filter=\"completed\">Completed</button>\n      </nav>\n\n      <ul id=\"todo-list\"></ul>\n    </main>\n    <script type=\"module\" src=\"app.js\"></script>\n  </body>\n</html>\n```\n\n### The CSS shell\n\n```css\nbody { font-family: system-ui; max-width: 480px; margin: 2rem auto; }\n.filters button.active { background: #1e90ff; color: #fff; }\nli.done { text-decoration: line-through; color: #888; }\n```\n\n### Design the hooks\n\nJavaScript will need stable selectors. Note the `id`s (`add-form`, `new-todo`, `todo-list`) and the `data-filter` attributes — they are the contract between HTML and JS.\n\n### Build static first\n\nPut a few hard-coded `<li>` items in the list and style them. When it looks right, delete them and let JavaScript take over. This \"static-first\" approach catches CSS problems early.\n\n---\n\n**Next up:** managing state and rendering from it.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-project-state-rendering",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-project",
+      "title": "State and Rendering",
+      "type": "theory",
+      "order": 3,
+      "content": "## State and Rendering\n\nThe heart of a frontend app is the **render cycle**: change state, then redraw the UI from it. Keep the DOM a pure function of state and bugs become rare.\n\n### The core loop\n\n```javascript\nfunction render() {\n  const list = document.querySelector(\"#todo-list\");\n  list.textContent = \"\";\n\n  for (const todo of state.todos) {\n    const li = document.createElement(\"li\");\n    li.textContent = todo.title;\n    if (todo.done) li.classList.add(\"done\");\n    list.appendChild(li);\n  }\n}\n```\n\n### Mutating state then re-rendering\n\n```javascript\nfunction addTodo(title) {\n  state.todos.push({ id: Date.now(), title, done: false });\n  render();\n}\n```\n\n### Wiring events\n\n```javascript\nconst form = document.querySelector(\"#add-form\");\nform.addEventListener(\"submit\", (event) => {\n  event.preventDefault();\n  const input = document.querySelector(\"#new-todo\");\n  const title = input.value.trim();\n  if (!title) return;\n  addTodo(title);\n  input.value = \"\";\n});\n```\n\n### Event delegation for dynamic lists\n\nEach `<li>` created at render time cannot be wired once — attach one listener to the list instead:\n\n```javascript\ndocument.querySelector(\"#todo-list\").addEventListener(\"click\", (event) => {\n  if (event.target.tagName !== \"LI\") return;\n  // toggle done for the matching todo, then render()\n});\n```\n\n### Toggling completion\n\n```javascript\nfunction toggleTodo(id) {\n  const todo = state.todos.find((t) => t.id === id);\n  if (todo) todo.done = !todo.done;\n  render();\n}\n```\n\n### Key ideas\n\n- **One source of truth** — the `state` object.\n- **Re-render on every change** — small pages can afford it; clarity wins.\n- **Read from state, never from the DOM** — no `textContent` sniffing.\n\nRendering is pure and predictable, which makes the next step — persistence — trivial.\n\n---\n\n**Next up:** persisting state and finishing the app.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-project-persistence-finish",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-project",
+      "title": "Persistence and Finishing",
+      "type": "theory",
+      "order": 4,
+      "content": "## Persistence and Finishing\n\nThe last pieces: save state between visits, then review and polish.\n\n### Saving with localStorage\n\n```javascript\nfunction save() {\n  localStorage.setItem(\"todos\", JSON.stringify(state.todos));\n}\n```\n\nCall `save()` after every mutation — inside `addTodo`, `toggleTodo`, and any delete.\n\n### Loading on startup\n\n```javascript\nfunction load() {\n  try {\n    const raw = localStorage.getItem(\"todos\");\n    state.todos = raw ? JSON.parse(raw) : [];\n  } catch {\n    state.todos = [];\n  }\n}\n\nload();\nrender();\n```\n\nThe `try/catch` guards against corrupt saved data — a real-world failure mode.\n\n### Delete support\n\n```javascript\nfunction removeTodo(id) {\n  state.todos = state.todos.filter((t) => t.id !== id);\n  save();\n  render();\n}\n```\n\n### The filter trio\n\n```javascript\nfunction filterTodos(todos, filter) {\n  if (filter === \"active\") return todos.filter((t) => !t.done);\n  if (filter === \"completed\") return todos.filter((t) => t.done);\n  return todos;\n}\n```\n\nButtons update `state.filter`, then `render()` re-filters.\n\n### Review checklist\n\n- [ ] Empty input is rejected\n- [ ] Add, toggle, and delete all work\n- [ ] Filters show the right subset\n- [ ] State survives a page reload\n- [ ] Corrupt localStorage does not crash\n- [ ] The page degrades gracefully on errors\n\n### Celebrate the milestone\n\nYou now know enough to build and ship simple web apps: structure (HTML), style (CSS), behavior (JS), data transport (fetch), and persistence (localStorage). From here, the backend course shows you how to add a real server.\n\n---\n\n**Next up:** exercises — todo filtering logic, then practice building the app.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-project-exercise-todo-filter",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-project",
+      "title": "Exercise: Todo Filter Logic",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Todo Filter Logic\n\nWrite a function `solve(todos, filter)` that returns the filtered list of todos.\n\nEach todo is an object like `{\"id\": 1, \"title\": \"Learn JS\", \"done\": false}`. The filter is one of:\n\n- `\"all\"` — return everything\n- `\"active\"` — only `done: false`\n- `\"completed\"` — only `done: true`\n\n### Sample\n\nInput:\n\n```text\n[{\"id\": 1, \"title\": \"Learn JS\", \"done\": false}, {\"id\": 2, \"title\": \"Build app\", \"done\": true}]\nactive\n```\n\nOutput:\n\n```text\n[{\"id\":1,\"title\":\"Learn JS\",\"done\":false}]\n```\n\n### How your code runs\n\nThe runner calls `solve(todos, filter)` with a JSON array and a plain string. Return the filtered array.\n\n### Starter code\n\n```javascript\nfunction solve(todos, filter) {\n  if (filter === \"active\") return todos.filter((t) => !t.done);\n  if (filter === \"completed\") return todos.filter((t) => t.done);\n  return todos;\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const todos = JSON.parse(lines[0]);\n  const filter = lines[1].trim();\n  console.log(JSON.stringify(solve(todos, filter)));\n}\n\nif (require.main === module) main();\n```\n\nGood luck!",
+      "starter_code": "function solve(todos, filter) {\n  if (filter === \"active\") return todos.filter((t) => !t.done);\n  if (filter === \"completed\") return todos.filter((t) => t.done);\n  return todos;\n}\n\nfunction main() {\n  const lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\n  if (!lines[0]) return;\n  const todos = JSON.parse(lines[0]);\n  const filter = lines[1].trim();\n  console.log(JSON.stringify(solve(todos, filter)));\n}\n\nif (require.main === module) main();\n",
+      "test_cases": [
+        {
+          "input": "[{\"id\": 1, \"title\": \"Learn JS\", \"done\": false}, {\"id\": 2, \"title\": \"Build app\", \"done\": true}]\nactive",
+          "expected_output": "[{\"id\":1,\"title\":\"Learn JS\",\"done\":false}]",
+          "description": "Active filter"
+        },
+        {
+          "input": "[{\"id\": 1, \"title\": \"Learn JS\", \"done\": false}, {\"id\": 2, \"title\": \"Build app\", \"done\": true}]\ncompleted",
+          "expected_output": "[{\"id\":2,\"title\":\"Build app\",\"done\":true}]",
+          "description": "Completed filter"
+        },
+        {
+          "input": "[{\"id\": 1, \"title\": \"Learn JS\", \"done\": false}]\nall",
+          "expected_output": "[{\"id\":1,\"title\":\"Learn JS\",\"done\":false}]",
+          "description": "All filter"
+        },
+        {
+          "input": "[]\nactive",
+          "expected_output": "[]",
+          "description": "Empty list"
+        }
+      ],
+      "language": "javascript"
+    },
+    {
+      "id": "js-project-exercise-render-practice",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-project",
+      "title": "Practice: Render Function",
+      "type": "theory",
+      "order": 6,
+      "content": "## Practice: Render Function\n\nThis is a **practice-only** exercise — it needs the browser's DOM, so it has no automated tests. Run it in a local HTML page.\n\n### The task\n\nWrite a `render(todos)` function that draws an array of todos into `<ul id=\"todo-list\">`, marking completed items with a `done` class.\n\n### Starter HTML\n\n```html\n<ul id=\"todo-list\"></ul>\n```\n\n### Starter JavaScript\n\n```javascript\nfunction render(todos) {\n  const list = document.querySelector(\"#todo-list\");\n  list.textContent = \"\";\n\n  for (const todo of todos) {\n    const li = document.createElement(\"li\");\n    li.textContent = todo.title;\n    if (todo.done) li.classList.add(\"done\");\n    list.appendChild(li);\n  }\n}\n\nconst todos = [\n  { id: 1, title: \"Learn JS\", done: true },\n  { id: 2, title: \"Build the app\", done: false },\n];\nrender(todos);\n```\n\n### Extend it\n\n1. Add a delete button to each row and handle its click via **event delegation**.\n2. Show an empty-state message like \"Nothing here\" when the list is empty.\n3. Add a counter `<p id=\"count\">` that shows the number of active items.\n4. Toggle a todo when its row is clicked.\n\n### Check yourself\n\n- Does the list clear before re-rendering? Otherwise items duplicate.\n- Is a completed item visually distinct? Check the `.done` class applies.\n\nRendering from state is the same idea whether the app has 10 lines or 10,000 — once it feels natural, you have the frontend mindset.\n\n---\n\n**Next up:** practice — assembling the complete app.",
+      "language": "javascript"
+    },
+    {
+      "id": "js-project-exercise-full-app",
+      "course_id": "javascript-and-web-development",
+      "module_id": "js-project",
+      "title": "Practice: The Complete App",
+      "type": "theory",
+      "order": 7,
+      "content": "## Practice: The Complete App\n\nThis is the **practice capstone** of the course — a browser-only exercise with no automated tests. Build the whole app and make it yours.\n\n### The task\n\nAssemble the todo app from every piece of the course: HTML structure, CSS styling, state, rendering, events, filtering, and localStorage persistence.\n\n### Starter structure\n\n```html\n<main class=\"app\">\n  <h1>My Todos</h1>\n  <form id=\"add-form\">\n    <input type=\"text\" id=\"new-todo\" placeholder=\"What needs doing?\" />\n    <button type=\"submit\">Add</button>\n  </form>\n  <nav class=\"filters\">\n    <button data-filter=\"all\" class=\"active\">All</button>\n    <button data-filter=\"active\">Active</button>\n    <button data-filter=\"completed\">Completed</button>\n  </nav>\n  <ul id=\"todo-list\"></ul>\n</main>\n```\n\n### Starter JavaScript\n\n```javascript\nconst state = {\n  todos: [],\n  filter: \"all\",\n};\n\nfunction load() {\n  try {\n    const raw = localStorage.getItem(\"todos\");\n    state.todos = raw ? JSON.parse(raw) : [];\n  } catch {\n    state.todos = [];\n  }\n}\n\nfunction save() {\n  localStorage.setItem(\"todos\", JSON.stringify(state.todos));\n}\n\nfunction filterTodos(todos, filter) {\n  if (filter === \"active\") return todos.filter((t) => !t.done);\n  if (filter === \"completed\") return todos.filter((t) => t.done);\n  return todos;\n}\n\nfunction render() {\n  const list = document.querySelector(\"#todo-list\");\n  const visible = filterTodos(state.todos, state.filter);\n  list.textContent = \"\";\n  for (const todo of visible) {\n    const li = document.createElement(\"li\");\n    li.textContent = todo.title;\n    if (todo.done) li.classList.add(\"done\");\n    list.appendChild(li);\n  }\n}\n\n// add event listeners here, then:\nload();\nrender();\n```\n\n### Finish the wiring\n\nAdd the missing pieces:\n\n- `submit` listener on `#add-form` that adds a todo and re-renders.\n- `click` listener on `.filters` that sets `state.filter` and re-renders.\n- A way to toggle and delete todos (delegation on `#todo-list`).\n- Call `save()` after every change.\n\n### Stretch goals\n\n- Store the active filter too, and restore it on load.\n- Show a count of remaining items.\n- Add a \"Clear completed\" button.\n\n### Ship it\n\nWhen it works, you have built a complete frontend application — the skills behind countless real products.\n\n---\n\n**Next up:** the Backend Web Development course — adding a server to this frontend.",
+      "language": "javascript"
+    }
+  ]
+}

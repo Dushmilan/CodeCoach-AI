@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "cyber-foundations",
+      "course_id": "cybersecurity-fundamentals",
+      "title": "Security Foundations",
+      "description": "Threats, assets, attack surface, least privilege, and the CIA triad — the vocabulary and mindset of security.",
+      "order": 1
+    },
+    {
+      "id": "cyber-web",
+      "course_id": "cybersecurity-fundamentals",
+      "title": "Web Security",
+      "description": "Injection, XSS, CSRF, and authentication weaknesses — understood conceptually so you can detect and prevent them.",
+      "order": 2
+    },
+    {
+      "id": "cyber-secure-code",
+      "course_id": "cybersecurity-fundamentals",
+      "title": "Secure Programming",
+      "description": "Input validation, output encoding, secrets handling, and dependency risk — the habits that keep code safe by default.",
+      "order": 3
+    },
+    {
+      "id": "cyber-networks",
+      "course_id": "cybersecurity-fundamentals",
+      "title": "Networks and Access Control",
+      "description": "HTTP and TLS, sessions and tokens, permissions and role-based access, plus defensive network fundamentals.",
+      "order": 4
+    },
+    {
+      "id": "cyber-project",
+      "course_id": "cybersecurity-fundamentals",
+      "title": "Secure Application Project",
+      "description": "Find and fix vulnerabilities in a safe code sandbox: redaction, escaping, and access checks in pure Python logic.",
+      "order": 5
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "statistics-for-data-science",
+  "title": "Statistics for Data Science",
+  "description": "The statistics a data scientist actually uses: descriptive statistics, probability and conditional reasoning, the distributions that underpin sampling, confidence intervals and hypothesis tests, and correlation and regression. Concepts stay front and center, with every exercise running on base R so you can practice the interpretation, not just the arithmetic.",
+  "language": "r",
+  "icon": "bar-chart",
+  "order": 8
+}

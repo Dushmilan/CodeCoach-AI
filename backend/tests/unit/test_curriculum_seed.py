@@ -86,7 +86,14 @@ class TestCurriculumSeedSchema:
             ]
             course = Course(**entry["course"], modules=[m.id for m in modules])
             assert course.id
-            assert course.language in {"python", "c", "java"}
+            assert course.language in {
+                "python",
+                "c",
+                "java",
+                "javascript",
+                "bash",
+                "r",
+            }
 
     def test_modules_valid(self, seed_content):
         for entry in seed_content:

@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "dsa-complexity",
+      "course_id": "data-structures-and-algorithms",
+      "title": "Complexity and Arrays",
+      "description": "Learn to reason about algorithm speed with Big-O, then build on arrays with prefix sums and two-pointer techniques.",
+      "order": 1
+    },
+    {
+      "id": "dsa-linked",
+      "course_id": "data-structures-and-algorithms",
+      "title": "Linked Structures and Recursion",
+      "description": "Understand nodes and pointers, and master recursion — the technique behind linked lists, trees, and more.",
+      "order": 2
+    },
+    {
+      "id": "dsa-search",
+      "course_id": "data-structures-and-algorithms",
+      "title": "Searching and Sorting",
+      "description": "From linear and binary search to selection sort and merge, learn the algorithms that organize and find data.",
+      "order": 3
+    },
+    {
+      "id": "dsa-trees",
+      "course_id": "data-structures-and-algorithms",
+      "title": "Trees and Graphs",
+      "description": "Explore tree terminology, traversals, binary search trees, and graphs with breadth- and depth-first search.",
+      "order": 4
+    },
+    {
+      "id": "dsa-problems",
+      "course_id": "data-structures-and-algorithms",
+      "title": "Algorithmic Problem Solving",
+      "description": "Combine everything in a structured problem-solving method, then apply greedy and dynamic-programming ideas.",
+      "order": 5
+    }
+  ]
+}
