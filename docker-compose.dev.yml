@@ -20,11 +20,7 @@ services:
       - USER_RATE_LIMIT_PER_MINUTE=${USER_RATE_LIMIT_PER_MINUTE:-60}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-    # Use bind mount instead of named volume so JSON data updates
-    # are reflected immediately without needing to recreate volumes.
-    # Named volumes snapshot at creation and never sync from host.
-    volumes:
-      - ./backend/data:/app/data
+    # The app is fully DB-backed; no local data volume is mounted.
     depends_on:
       - piston
     networks:

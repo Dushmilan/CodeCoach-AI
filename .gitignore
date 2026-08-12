@@ -219,9 +219,6 @@ piston/
 
 # User data (created at runtime)
 data/*
-!backend/data/
-backend/data/*
-!backend/data/courses/
 
 # Ruff cache
 .ruff_cache/

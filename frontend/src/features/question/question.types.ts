@@ -1,13 +1,19 @@
-import { Question, QuestionSummary } from "@/types";
+import { Question, QuestionSummary } from '@/types';
+
+export type QuestionSortKey = 'daily' | 'title' | 'difficulty' | 'category' | 'status';
 
 export interface QuestionFilters {
-  difficulty?: "easy" | "medium" | "hard";
+  difficulty?: 'easy' | 'medium' | 'hard';
   category?: string;
-  status?: "solved" | "attempted" | "not_started";
+  company?: string;
+  status?: 'solved' | 'attempted' | 'not_started';
+  search?: string;
+  sort?: QuestionSortKey;
 }
 
 export interface QuestionState {
   questions: QuestionSummary[];
+  allQuestions: QuestionSummary[];
   selectedQuestion: QuestionSummary | null;
   fullQuestion: Question | null;
   isLoading: boolean;
