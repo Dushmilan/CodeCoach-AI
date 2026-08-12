@@ -244,6 +244,24 @@ class TestGroqIntegration:
         result = GroqService._validate_animation(data)
         assert result == data
 
+    def test_validator_raising_is_swallowed(self):
+        from unittest.mock import patch
+
+        from app.services.groq_service import GroqService
+
+        data = {
+            "summary": "Keep coaching",
+            "hints": [],
+            "animation": _linear_search([4, 1], 4, [_compare(0, "match")]),
+        }
+        with patch(
+            "app.services.animation_validator.AnimationValidator.validate",
+            side_effect=RuntimeError("boom"),
+        ):
+            result = GroqService._validate_animation(data)
+        assert "animation" not in result
+        assert result["summary"] == "Keep coaching"
+
 
 class TestValidatorInstance:
     def test_module_level_singleton(self):
