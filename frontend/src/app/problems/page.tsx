@@ -2,13 +2,15 @@
 
 import { Header } from "@/components/header/Header";
 import { useQuestion } from "@/features/question/question.hook";
+import { getAbandonedProblems } from "@/features/rescue/rescue.storage";
+import { AbandonedProblem } from "@/features/rescue/rescue.types";
 import { useLocalStorage } from "@/hooks";
 import { getDailySeed, seededShuffle } from "@/lib/shuffle";
 import { cn } from "@/lib/utils";
 import { QuestionSummary } from "@/types";
 import { CheckCircle, Circle, Loader2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const difficultyStyles: Record<string, string> = {
   easy: "text-green-400 bg-green-500/10",
@@ -23,9 +25,11 @@ export default function ProblemsPage() {
     "user_progress",
     {},
   );
+  const [abandoned, setAbandoned] = useState<AbandonedProblem[]>([]);
 
   useEffect(() => {
     loadQuestions();
+    setAbandoned(getAbandonedProblems());
   }, [loadQuestions]);
 
   const shuffled = useMemo(() => {
@@ -73,6 +77,53 @@ export default function ProblemsPage() {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <Header />
       <main className="max-w-4xl mx-auto px-6 pt-20 pb-32">
+        {abandoned.length > 0 && (
+          <div className="mb-6 flex flex-col rounded-[2rem] bg-white/[0.03] ring-1 ring-amber-500/20 p-1.5">
+            <div className="flex flex-col rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] overflow-hidden">
+              <div className="px-6 py-4 border-b border-white/5">
+                <h2 className="text-sm font-semibold tracking-tight text-amber-200">
+                  Pick up where you left off
+                </h2>
+                <p className="text-xs text-muted-foreground/60 mt-0.5">
+                  You were working on these problems — each has a tiny next step.
+                </p>
+              </div>
+              <div className="flex flex-col">
+                {abandoned.map((p) => {
+                  const q = (allQuestions ?? []).find(
+                    (item: QuestionSummary) => item.id === p.questionId,
+                  );
+                  return (
+                    <button
+                      key={p.questionId}
+                      onClick={() => router.push(`/problems/${p.questionId}`)}
+                      className="flex items-center gap-3 px-6 py-3.5 border-b border-white/[0.02] last:border-b-0 hover:bg-white/[0.03] transition-colors text-left"
+                    >
+                      <div className="h-2 w-2 rounded-full bg-amber-400/70 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-foreground/80 truncate">
+                          {q?.title || p.title}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground/50 mt-0.5">
+                          {p.stuckCheckpoint
+                            ? `You were stuck at: ${p.stuckCheckpoint}`
+                            : `${p.passedCount}/${p.total} tests passing`}
+                          {p.passedCount > 0 && (
+                            <span> · {p.passedCount}/{p.total} tests passing</span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground/40">
+                        Continue →
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col rounded-[2rem] bg-white/[0.03] ring-1 ring-white/5 p-1.5">
           <div className="flex flex-col rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] overflow-hidden">
             <div className="px-6 py-4 border-b border-white/5">

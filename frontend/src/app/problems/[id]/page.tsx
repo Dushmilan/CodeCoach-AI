@@ -4,11 +4,13 @@ import { Header } from '@/components/header/Header';
 import { AIChatPanelContainer } from '@/components/layout/elements/AIChatPanelContainer';
 import { CodeEditorContainer } from '@/components/layout/elements/CodeEditorContainer';
 import { AIPanelDrawer, useWorkspaceMode } from '@/components/layout/lessons';
+import { RescueIntervention } from '@/components/rescue/RescueIntervention';
 import { QuestionDescriptionPanel } from '@/components/sidebar/QuestionDescriptionPanel';
 import { ResizablePanelGroup } from '@/components/ui/ResizablePanelGroup';
 import { useCoaching } from '@/features/coaching/coaching.hook';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
+import { useRescueContract } from '@/features/rescue/use-rescue-contract.hook';
 import { Language, Question } from '@/types';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -46,10 +48,26 @@ export default function ProblemWorkspacePage() {
     };
   }, [questionId]);
 
-  const { isRunning, output, executionError, handleRunCode, handleSubmitCode, isAuthenticated } =
-    useCodeRunner({ fullQuestion, language, currentCode });
+  const {
+    isRunning,
+    output,
+    testResults,
+    executionError,
+    lastSubmitResult,
+    handleRunCode,
+    handleSubmitCode,
+    isAuthenticated,
+  } = useCodeRunner({ fullQuestion, language, currentCode });
 
   const { messages, isTyping, sendMessage } = useCoaching();
+
+  const rescue = useRescueContract({
+    questionId,
+    questionTitle: fullQuestion?.title ?? '',
+    testCases: fullQuestion?.test_cases ?? [],
+    lastSubmitResult,
+  });
+  const { registerActivity: rescueActivity } = rescue;
 
   useEffect(() => {
     if (
@@ -67,9 +85,39 @@ export default function ProblemWorkspacePage() {
   const handleSendMessage = useCallback(
     async (message: string, mode: string) => {
       if (!fullQuestion) return;
+      rescueActivity();
       await sendMessage(message, mode as any, fullQuestion.title, currentCode, language);
     },
-    [fullQuestion, currentCode, language, sendMessage],
+    [fullQuestion, currentCode, language, sendMessage, rescueActivity],
+  );
+
+  const handleRunCodeRescue = useCallback(
+    (stdin: string) => {
+      rescueActivity();
+      handleRunCode(stdin);
+    },
+    [handleRunCode, rescueActivity],
+  );
+
+  const handleSubmitCodeRescue = useCallback(() => {
+    rescueActivity();
+    handleSubmitCode();
+  }, [handleSubmitCode, rescueActivity]);
+
+  const handleCodeChangeRescue = useCallback(
+    (code: string) => {
+      rescueActivity();
+      setCurrentCode(code);
+    },
+    [rescueActivity],
+  );
+
+  const handleLanguageChangeRescue = useCallback(
+    (lang: Language) => {
+      rescueActivity();
+      setLanguage(lang);
+    },
+    [rescueActivity],
   );
 
   const { ref: workspaceRef, mode } = useWorkspaceMode();
@@ -78,6 +126,24 @@ export default function ProblemWorkspacePage() {
   useEffect(() => {
     if (mode === 'wide' && drawerOpen) setDrawerOpen(false);
   }, [mode, drawerOpen]);
+
+  // Open the AI chat drawer when the rescue escalates to T2+ so the learner
+  // can take the targeted coach help / re-plan offer.
+  useEffect(() => {
+    if ((rescue.tier === 't2' || rescue.tier === 't3') && mode !== 'wide') {
+      setDrawerOpen(true);
+    }
+  }, [rescue.tier, mode]);
+
+  const requestCoachHelp = useCallback(() => {
+    rescueActivity();
+    if (mode !== 'wide') setDrawerOpen(true);
+  }, [rescueActivity, mode]);
+
+  const requestReplan = useCallback(() => {
+    rescueActivity();
+    if (mode !== 'wide') setDrawerOpen(true);
+  }, [rescueActivity, mode]);
 
   if (loading) {
     return (
@@ -152,11 +218,12 @@ export default function ProblemWorkspacePage() {
           isRunning={isRunning}
           output={output}
           error={executionError || error || ''}
+          testResults={testResults}
           isInteractive={fullQuestion.is_interactive || false}
-          onCodeChange={setCurrentCode}
-          onLanguageChange={setLanguage}
-          onRunCode={handleRunCode}
-          onSubmitCode={handleSubmitCode}
+          onCodeChange={handleCodeChangeRescue}
+          onLanguageChange={handleLanguageChangeRescue}
+          onRunCode={handleRunCodeRescue}
+          onSubmitCode={handleSubmitCodeRescue}
           isAuthenticated={isAuthenticated}
         />
       </div>
@@ -271,6 +338,17 @@ export default function ProblemWorkspacePage() {
               )}
             </>
           )}
+
+          <RescueIntervention
+            tier={rescue.tier}
+            checkpoints={rescue.checkpoints}
+            isSuppressed={rescue.isSuppressed}
+            onLeaveMeAlone={rescue.leaveMeAlone}
+            onResume={rescue.resume}
+            onRequestCoachHelp={requestCoachHelp}
+            onReplan={requestReplan}
+            onContinue={rescueActivity}
+          />
         </div>
       </div>
     </div>
