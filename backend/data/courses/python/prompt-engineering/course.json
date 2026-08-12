@@ -1,9 +1,0 @@
-{
-  "id": "prompt-engineering",
-  "title": "Prompt Engineering",
-  "description": "Learn to communicate with large language models effectively: prompt structure, core techniques like few-shot and chain-of-thought, output structuring, advanced patterns, and evaluation. Each module pairs focused theory lessons with hands-on exercises that analyze and build better prompts.",
-  "language": "python",
-  "domain": "ai",
-  "icon": "prompt",
-  "order": 5
-}

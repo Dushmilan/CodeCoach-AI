@@ -1,3 +1,22 @@
+# AGENTS.md
+
+## MANDATORY: Database Is the Single Source of Truth
+
+**Hard rule — Do NOT skip.** The database (PostgreSQL/Supabase) is the ONLY
+source of truth for all application data: questions, courses, modules,
+lessons, users, progress, admin, usage.
+
+- **No local data files.** Do not create, read, or re-introduce local JSON
+  data files (e.g. question banks, curriculum files, `users.json`) as data
+  stores. Runtime repositories are SQL-backed only (`app/repositories/`).
+- **No file-repository work.** Never add or migrate a file-backed repository
+  into the codebase. Seed/bootstrap operations write to the database.
+- **TDD always.** Every code change must be driven by a failing test first
+  (red → green), with tests asserting the DB-backed behavior.
+- If a local JSON export is ever used to bootstrap content, it must be
+  transient and deleted after the database sync (see
+  `backend/scripts/sync_local_to_db.py`), never kept as a runtime store.
+
 ## MANDATORY: Graphify-First Codebase Exploration
 
 **Hard rule — Do NOT skip.** Before ANY grep, read, glob, or file search for codebase exploration, you MUST first run a graphify command. Only fall back to raw file tools if graphify returns nothing useful.

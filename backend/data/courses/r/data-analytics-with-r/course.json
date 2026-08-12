@@ -1,8 +1,0 @@
-{
-  "id": "data-analytics-with-r",
-  "title": "Data Analytics with R",
-  "description": "A complete analytics workflow in R: frame a question, import data, wrangle it into shape, explore distributions and relationships, run statistical checks, and report actionable recommendations. Concepts mirror the tidyverse style, while every exercise runs on base R so you can practice right here.",
-  "language": "r",
-  "icon": "r",
-  "order": 7
-}

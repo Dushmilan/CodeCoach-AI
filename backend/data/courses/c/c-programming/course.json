@@ -1,9 +1,0 @@
-{
-  "id": "c-programming",
-  "title": "C Programming",
-  "description": "Learn C from first principles: compilation, data types, control flow, functions, pointers, arrays, structs, memory management, and file handling. Each module pairs focused theory lessons with hands-on coding exercises compiled and run in a real C environment.",
-  "language": "c",
-  "domain": "se",
-  "icon": "c",
-  "order": 2
-}

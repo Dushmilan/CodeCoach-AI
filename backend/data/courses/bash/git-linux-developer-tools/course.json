@@ -1,8 +1,0 @@
-{
-  "id": "git-linux-developer-tools",
-  "title": "Git and Linux Developer Tools",
-  "description": "Command-line fundamentals, shell automation, version control with Git, debugging and system tooling, and a team collaboration workflow. Every concept is paired with hands-on bash exercises you can run right here using only shell built-ins and coreutils.",
-  "language": "bash",
-  "icon": "terminal",
-  "order": 12
-}

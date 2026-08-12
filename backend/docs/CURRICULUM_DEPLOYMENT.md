@@ -1,68 +1,42 @@
-# Curriculum Deployment Workflow
+# Curriculum & Question Data Management
 
-The versioned curriculum repository under `backend/data/courses/` is the
-**canonical source of truth** for courses, modules, lessons, exercises,
-starter code, and test cases. The database (PostgreSQL/Supabase) is a
-generated deployment target.
+The **database (PostgreSQL/Supabase) is the single source of truth** for
+questions, courses, modules, lessons, exercises, starter code, and test cases.
+There are no checked-in data files: the application never reads content from
+the filesystem at runtime.
 
-## Repository layout
+## Data model
 
-```
-backend/data/courses/<language>/<course-slug>/
-├── course.json      # course metadata (id, title, language, order, version)
-├── modules.json     # {"items": [module...]} (id, course_id, order, version)
-└── lessons.json     # {"items": [lesson...]} (id, module_id, type, order, version)
-```
+| Table            | Purpose                                             |
+|------------------|-----------------------------------------------------|
+| `questions`      | Question bank (difficulty, category, test cases…)   |
+| `courses`        | Course metadata (id, title, language, order)        |
+| `modules`        | Module metadata (course_id, title, order)           |
+| `lessons`        | Lesson content (theory/exercise, order, question link) |
+| `users`          | Accounts (auth, roles, plans)                       |
+| `course_progress`| Per-user progress                                   |
 
-Every course, module, and lesson carries a `version` integer (starts at 1).
-Bump it when the content changes so consumers can detect revisions.
+All application repositories are SQL-backed (see `app/repositories/`) and are
+selected unconditionally by `app/api/dependencies.py`.
 
-## Validation
+## One-time bootstrap from a JSON export
 
-Two layers keep the repository healthy:
-
-1. **Unit tests** (pure data, no DB):
-   - `backend/tests/unit/test_curriculum_seed.py` — schema validity, unique
-     IDs, ordering, exercise→question linkage.
-   - `backend/tests/unit/test_verify_curriculum.py` — the verifier's integrity
-     gate on real + synthetic content.
-
-2. **Verifier script** (`backend/scripts/verify_curriculum.py`):
-   ```bash
-   python scripts/verify_curriculum.py
-   ```
-   Runs schema lint, version presence, unique-ID, referential-integrity, and
-   orphan checks (lesson→module, module→course, exercise→question). Exit 0 =
-   valid, 1 = violation.
-
-CI runs a `curriculum-validation` job whenever a PR touches curriculum data.
-
-## Seeding
+`backend/scripts/sync_local_to_db.py` upserts a local JSON export
+(`questions/sample_questions.json` + `data/courses/**`) into the database. It
+is **idempotent and non-destructive**: missing rows are inserted, existing
+rows with the same ID are updated, and unrelated database data is never
+deleted. Safe to re-run.
 
 ```bash
-# Normal (idempotent) seed — existing courses/modules/lessons are skipped
-python scripts/seed_curriculum.py
-
-# Force re-seed — deletes each course subtree first, then inserts it
-python scripts/seed_curriculum.py --force
-
-# Verify-only — validates repo content (+ compares DB counts if reachable)
-python scripts/seed_curriculum.py --verify
+python scripts/sync_local_to_db.py            # uses DATABASE_URL from .env
+python scripts/sync_local_to_db.py --url postgresql://...
 ```
 
-`--force` is destructive: it deletes the course + its modules + lessons
-before re-inserting. Do not use it against production without a backup.
+The local JSON files are a transient bootstrap only and are not required at
+runtime; the database remains the canonical store.
 
-## Re-seeding semantics
+## Tests
 
-| Flag       | Behavior                                                              |
-|------------|-----------------------------------------------------------------------|
-| (none)     | Insert missing rows; leave existing rows untouched (idempotent)       |
-| `--force`  | Delete course subtree, then insert fresh                             |
-| `--verify` | Integrity gate only; writes nothing                                  |
-
-## DB count integrity check
-
-`--verify` with a reachable `DATABASE_URL` compares repo counts
-(courses/modules/lessons) against the database and fails on mismatch.
-Without a database it still runs the full pure-data gate.
+Test fixtures are defined in code (`tests/conftest.py`) and seed the isolated
+`codecoach_test` schema directly — no data files are involved. The sync
+utility itself is covered by `tests/unit/test_local_sync.py`.

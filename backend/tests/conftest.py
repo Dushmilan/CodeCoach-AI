@@ -210,7 +210,6 @@ from httpx import AsyncClient, ASGITransport  # noqa: E402
 import json  # noqa: E402
 import os  # noqa: E402
 import tempfile  # noqa: E402
-from pathlib import Path  # noqa: E402
 
 from app.main import app  # noqa: E402
 from app.services.question_bank import QuestionBank  # noqa: E402
@@ -246,13 +245,161 @@ def _test_db_url() -> str:
     return db_url
 
 
-async def _seed_questions() -> int:
-    """Seed the sample question bank into the test database if empty.
+_TEST_QUESTIONS = [
+    {
+        "id": "test-two-sum",
+        "title": "Two Sum",
+        "difficulty": "easy",
+        "category": "arrays",
+        "company_tags": ["Google"],
+        "description": (
+            "Given an array of integers nums and an integer target, return the "
+            "indices of the two numbers that add up to the target."
+        ),
+        "starter": {
+            "python": "def two_sum(nums, target):\n    pass",
+            "javascript": "function twoSum(nums, target) {}",
+            "java": "class Solution { public int[] twoSum(int[] nums, int target) { return null; } }",
+        },
+        "examples": [
+            {
+                "input": "[2,7,11,15], 9",
+                "output": "[0,1]",
+                "explanation": "Basic case",
+            }
+        ],
+        "test_cases": [
+            {
+                "input": "[2,7,11,15]\n9",
+                "expected_output": "[0,1]",
+                "hidden": False,
+            }
+        ],
+        "hints": ["Use a hash map."],
+        "solution": (
+            "def two_sum(nums, target):\n"
+            "    seen = {}\n"
+            "    for i, n in enumerate(nums):\n"
+            "        diff = target - n\n"
+            "        if diff in seen:\n"
+            "            return [seen[diff], i]\n"
+            "        seen[n] = i\n"
+            "    return []"
+        ),
+        "time_complexity": "O(n)",
+        "space_complexity": "O(n)",
+        "constraints": ["2 <= nums.length <= 10^4"],
+        "is_interactive": False,
+    },
+    {
+        "id": "test-reverse-string",
+        "title": "Reverse String",
+        "difficulty": "easy",
+        "category": "strings",
+        "company_tags": ["Meta"],
+        "description": "Reverse the characters of a string in place.",
+        "starter": {
+            "python": "def reverse_string(s):\n    pass",
+            "javascript": "function reverseString(s) {}",
+            "java": "class Solution { public void reverseString(char[] s) {} }",
+        },
+        "examples": [
+            {
+                "input": '["h","e","l","l","o"]',
+                "output": '["o","l","l","e","h"]',
+                "explanation": "Reversed",
+            }
+        ],
+        "test_cases": [
+            {
+                "input": '["h","e","l","l","o"]',
+                "expected_output": '["o","l","l","e","h"]',
+                "hidden": False,
+            }
+        ],
+        "hints": ["Use two pointers."],
+        "solution": "Swap the first and last characters, moving inward.",
+        "time_complexity": "O(n)",
+        "space_complexity": "O(1)",
+        "constraints": ["1 <= s.length <= 10^5"],
+        "is_interactive": False,
+    },
+    {
+        "id": "test-max-subarray",
+        "title": "Maximum Subarray",
+        "difficulty": "medium",
+        "category": "dynamic-programming",
+        "company_tags": ["Amazon"],
+        "description": "Find the contiguous subarray with the largest sum.",
+        "starter": {
+            "python": "def max_sub_array(nums):\n    pass",
+            "javascript": "function maxSubArray(nums) {}",
+            "java": "class Solution { public int maxSubArray(int[] nums) { return 0; } }",
+        },
+        "examples": [
+            {
+                "input": "[-2,1,-3,4,-1,2,1,-5,4]",
+                "output": "6",
+                "explanation": "Subarray [4,-1,2,1] has the largest sum.",
+            }
+        ],
+        "test_cases": [
+            {
+                "input": "[-2,1,-3,4,-1,2,1,-5,4]",
+                "expected_output": "6",
+                "hidden": False,
+            }
+        ],
+        "hints": ["Kadane's algorithm."],
+        "solution": "Track a running sum, resetting when it drops below zero.",
+        "time_complexity": "O(n)",
+        "space_complexity": "O(1)",
+        "constraints": ["1 <= nums.length <= 10^5"],
+        "is_interactive": False,
+    },
+    {
+        "id": "test-merge-intervals",
+        "title": "Merge Intervals",
+        "difficulty": "hard",
+        "category": "arrays",
+        "company_tags": ["Microsoft"],
+        "description": "Merge all overlapping intervals into one.",
+        "starter": {
+            "python": "def merge(intervals):\n    pass",
+            "javascript": "function merge(intervals) {}",
+            "java": "class Solution { public int[][] merge(int[][] intervals) { return null; } }",
+        },
+        "examples": [
+            {
+                "input": "[[1,3],[2,6],[8,10],[15,18]]",
+                "output": "[[1,6],[8,10],[15,18]]",
+                "explanation": "Overlapping intervals are merged.",
+            }
+        ],
+        "test_cases": [
+            {
+                "input": "[[1,3],[2,6],[8,10],[15,18]]",
+                "expected_output": "[[1,6],[8,10],[15,18]]",
+                "hidden": False,
+            }
+        ],
+        "hints": ["Sort by start time."],
+        "solution": "Sort intervals by start, then merge overlapping ones.",
+        "time_complexity": "O(n log n)",
+        "space_complexity": "O(n)",
+        "constraints": ["1 <= intervals.length <= 10^4"],
+        "is_interactive": False,
+    },
+]
 
-    The file-based question repository used to load sample_questions.json
-    automatically; with a DB-backed bank the test database starts empty, so
-    the same questions are seeded for API/integration tests. Unit SQL
-    repository tests clean tables (test_db) for isolation.
+
+async def _seed_questions() -> int:
+    """Seed a minimal inline question bank into the test database if empty.
+
+    The test database starts empty (the app is fully DB-backed); these inline
+    fixtures are defined in code — not read from any data file — so the API and
+    integration tests have data to query. Unit SQL repository tests clean tables
+    (test_db) for isolation.
     """
     from sqlalchemy.ext.asyncio import (
         create_async_engine,
@@ -271,56 +418,48 @@ async def _seed_questions() -> int:
         engine, class_=AsyncSession, expire_on_commit=False
     )
 
-    questions_path = (
-        Path(__file__).resolve().parent.parent / "questions" / "sample_questions.json"
-    )
     count = 0
-    if questions_path.exists():
-        with open(questions_path, encoding="utf-8") as f:
-            data = json.load(f)
-        questions = data.get("questions", data) if isinstance(data, dict) else data
+    async with async_session() as session:
+        from sqlalchemy import select
 
-        async with async_session() as session:
-            from sqlalchemy import select
+        existing = (await session.execute(select(QuestionORM.id))).scalars().all()
+        if not existing:
+            from app.models.schemas import Question
 
-            existing = (await session.execute(select(QuestionORM.id))).scalars().all()
-            if not existing:
-                from app.models.schemas import Question
-
-                for item in questions:
-                    try:
-                        q = Question(**item)
-                    except Exception:
-                        continue
-                    session.add(
-                        QuestionORM(
-                            id=q.id,
-                            title=q.title,
-                            difficulty=q.difficulty.value,
-                            category=q.category,
-                            company_tags=q.company_tags,
-                            description=q.description,
-                            starter_code=q.starter.model_dump()
-                            if hasattr(q.starter, "model_dump")
-                            else q.starter,
-                            examples=[
-                                e.model_dump() if hasattr(e, "model_dump") else e
-                                for e in q.examples
-                            ],
-                            test_cases=[
-                                tc.model_dump() if hasattr(tc, "model_dump") else tc
-                                for tc in q.test_cases
-                            ],
-                            hints=q.hints,
-                            solution=q.solution,
-                            time_complexity=q.time_complexity,
-                            space_complexity=q.space_complexity,
-                            constraints=q.constraints,
-                            is_interactive=1 if q.is_interactive else 0,
-                        )
+            for item in _TEST_QUESTIONS:
+                try:
+                    q = Question(**item)
+                except Exception:
+                    continue
+                session.add(
+                    QuestionORM(
+                        id=q.id,
+                        title=q.title,
+                        difficulty=q.difficulty.value,
+                        category=q.category,
+                        company_tags=q.company_tags,
+                        description=q.description,
+                        starter_code=q.starter.model_dump()
+                        if hasattr(q.starter, "model_dump")
+                        else q.starter,
+                        examples=[
+                            e.model_dump() if hasattr(e, "model_dump") else e
+                            for e in q.examples
+                        ],
+                        test_cases=[
+                            tc.model_dump() if hasattr(tc, "model_dump") else tc
+                            for tc in q.test_cases
+                        ],
+                        hints=q.hints,
+                        solution=q.solution,
+                        time_complexity=q.time_complexity,
+                        space_complexity=q.space_complexity,
+                        constraints=q.constraints,
+                        is_interactive=1 if q.is_interactive else 0,
                     )
-                    count += 1
-                await session.commit()
+                )
+                count += 1
+            await session.commit()
     await engine.dispose()
     return count
 

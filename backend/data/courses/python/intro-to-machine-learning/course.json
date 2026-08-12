@@ -1,9 +1,0 @@
-{
-  "id": "intro-to-machine-learning",
-  "title": "Introduction to Machine Learning",
-  "description": "Learn machine learning from first principles: what ML is, how to work with data in Python, supervised learning, unsupervised learning, and model evaluation. Each module pairs focused theory lessons with hands-on coding exercises.",
-  "language": "python",
-  "domain": "ml",
-  "icon": "ml",
-  "order": 4
-}

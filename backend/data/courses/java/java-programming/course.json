@@ -1,9 +1,0 @@
-{
-  "id": "java-programming",
-  "title": "Java Programming",
-  "description": "Learn Java from first principles: the JVM, syntax, control flow, classes and OOP, collections, exceptions, file I/O, generics, and lambdas. Each module pairs focused theory lessons with hands-on coding exercises compiled and run in a real Java environment.",
-  "language": "java",
-  "domain": "se",
-  "icon": "java",
-  "order": 3
-}

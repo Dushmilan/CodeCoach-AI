@@ -1,8 +1,0 @@
-{
-  "id": "cybersecurity-fundamentals",
-  "title": "Cybersecurity Fundamentals",
-  "description": "Build a security mindset from the ground up: security foundations, web vulnerabilities and how to prevent them, secure coding habits, networks and access control, and a defensive project where you find and fix vulnerabilities in a safe Python sandbox.",
-  "language": "python",
-  "icon": "shield",
-  "order": 14
-}

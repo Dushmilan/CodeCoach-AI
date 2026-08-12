@@ -1,8 +1,0 @@
-{
-  "id": "javascript-and-web-development",
-  "title": "JavaScript and Web Development",
-  "description": "Learn JavaScript from the ground up and build for the browser: language fundamentals, modern ES2015+ features, HTML and CSS, the DOM and browser APIs, and finally an interactive frontend project. Every concept is paired with runnable exercises plus hands-on DOM practice.",
-  "language": "javascript",
-  "icon": "globe",
-  "order": 10
-}
