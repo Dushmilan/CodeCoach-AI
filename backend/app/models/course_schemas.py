@@ -23,6 +23,7 @@ class Lesson(BaseModel):
     type: LessonType = Field(..., description="Theory or exercise")
     content: str = Field(..., description="Markdown lesson body")
     order: int = Field(..., description="Display order within module")
+    version: int = Field(default=1, description="Content revision number")
     starter_code: Optional[str] = Field(
         None, description="Starter code for exercises (legacy, prefer question_id)"
     )
@@ -42,6 +43,7 @@ class Module(BaseModel):
     title: str = Field(..., description="Module title")
     description: str = Field(..., description="Module overview")
     order: int = Field(..., description="Display order within course")
+    version: int = Field(default=1, description="Content revision number")
     lessons: List[str] = Field(..., description="Ordered list of lesson IDs")
 
 
@@ -52,6 +54,7 @@ class Course(BaseModel):
     language: str = Field(..., description="Programming language tag (python, c, java)")
     icon: str = Field(default="code", description="Icon identifier for the UI")
     order: int = Field(..., description="Display order")
+    version: int = Field(default=1, description="Content revision number")
     modules: List[str] = Field(..., description="Ordered list of module IDs")
 
 
