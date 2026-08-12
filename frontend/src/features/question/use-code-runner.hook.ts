@@ -3,7 +3,10 @@
 import { useCallback } from "react";
 import { Question, Language } from "@/types";
 import { useCodeExecution } from "@/features/code-execution/code-execution.hook";
-import { TestCaseResultView } from "@/features/code-execution/code-execution.types";
+import {
+  SubmitResponse,
+  TestCaseResultView,
+} from "@/features/code-execution/code-execution.types";
 import { useLocalStorage } from "@/hooks";
 import { showToast } from "@/components/ui/Toast";
 import { useAuth } from "@/providers";
@@ -26,6 +29,7 @@ interface UseCodeRunnerReturn {
   isRunning: boolean;
   output: string;
   testResults: TestCaseResultView[] | null;
+  lastSubmitResult: SubmitResponse | null;
   executionError: string | null;
   clearOutput: () => void;
   clearExecutionError: () => void;
@@ -42,6 +46,7 @@ export function useCodeRunner({
     output,
     error: executionError,
     testResults,
+    lastSubmitResult,
     validateCode,
     submitCode,
     runLocalJavaScript,
@@ -145,6 +150,7 @@ export function useCodeRunner({
     isRunning,
     output,
     testResults,
+    lastSubmitResult,
     executionError,
     clearOutput,
     clearExecutionError,
