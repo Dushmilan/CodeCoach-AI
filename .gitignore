@@ -87,10 +87,12 @@ jspm_packages/
 .next/
 out/
 
-# Cloudflare/OpenNext
+# OpenNext / Cloudflare Workers
 .open-next/
 .wrangler/
 cloudflare-env.d.ts
+.dev.vars
+wrangler.local.jsonc
 
 # Nuxt.js
 .nuxt
@@ -99,6 +101,8 @@ dist
 # Gatsby files
 .cache/
 public
+!frontend/public/
+!frontend/public/**
 
 # Storybook build outputs
 .out

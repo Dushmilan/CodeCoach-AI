@@ -44,7 +44,7 @@ export default function UsersPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
+      const data = (await res.json()) as { users?: UserItem[]; total?: number };
       setUsers(data.users || []);
       setTotal(data.total || 0);
     } catch {
