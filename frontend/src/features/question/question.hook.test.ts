@@ -277,6 +277,50 @@ describe('useQuestion', () => {
     });
   });
 
+  describe('search & company filters', () => {
+    it('filters by search term', async () => {
+      mockGetQuestions.mockResolvedValue(sampleQuestions);
+      const { result } = renderHook(() => useQuestion());
+      await act(async () => {
+        await result.current.loadQuestions();
+      });
+      act(() => {
+        result.current.setFilters({ search: 'two sum' });
+      });
+      expect(result.current.questions).toHaveLength(1);
+      expect(result.current.questions[0].title).toBe('Two Sum');
+    });
+
+    it('filters by company tag', async () => {
+      mockGetQuestions.mockResolvedValue(sampleQuestions);
+      const { result } = renderHook(() => useQuestion());
+      await act(async () => {
+        await result.current.loadQuestions();
+      });
+      act(() => {
+        result.current.setFilters({ company: 'Meta' });
+      });
+      expect(result.current.questions).toHaveLength(1);
+      expect(result.current.questions[0].title).toBe('Median of Two Sorted Arrays');
+    });
+
+    it('sorts by title', async () => {
+      mockGetQuestions.mockResolvedValue(sampleQuestions);
+      const { result } = renderHook(() => useQuestion());
+      await act(async () => {
+        await result.current.loadQuestions();
+      });
+      act(() => {
+        result.current.setFilters({ sort: 'title' });
+      });
+      expect(result.current.questions.map((q) => q.title)).toEqual([
+        'Add Two Numbers',
+        'Median of Two Sorted Arrays',
+        'Two Sum',
+      ]);
+    });
+  });
+
   describe('clearError', () => {
     it('clears error state', () => {
       const { result } = renderHook(() => useQuestion());
