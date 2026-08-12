@@ -1,5 +1,39 @@
 # AGENTS.md
 
+## MANDATORY: Production-First Engineering
+
+**Hard rule — Do NOT skip.** This is a production project. Every decision is made
+along production lines: reliable, maintainable, observable, and safe to operate.
+
+- **Production over hacks:** prefer reliable, maintainable solutions over quick
+  patches, shortcuts, or workarounds that trade long-term health for speed.
+- **Contract stability:** preserve existing API contracts, schemas, and data
+  semantics unless a change is explicitly requested and reviewed. Breaking
+  changes require migration and rollout planning.
+- **Security & secrets:** validate input at boundaries, never log or commit
+  secrets, follow least privilege, and review auth/authz on every change that
+  touches user data. Security findings are release-blocking.
+- **Scalability & failure handling:** design for load and for failure. Never
+  block hot paths on slow external calls; degrade gracefully and fail safe.
+- **Observability:** changes that affect behavior must remain observable —
+  structured logs, request correlation, and metric-friendly paths where they
+  already exist.
+- **Quality gates:** lint, typecheck, and tests must pass before committing.
+  Rebuild affected Docker images after code changes (see Docker section below).
+- **Migration & deployment impact:** review schema/migration, Docker, and
+  deployment impact before modifying infrastructure. Prefer idempotent,
+  re-runnable operations.
+- **No speculative work:** don't add features, abstractions, or
+  backward-compatibility layers without a concrete, current need.
+- **Document decisions:** significant architectural or operational decisions are
+  recorded so the rationale survives the session.
+- **Ask before destructive action:** before making destructive, irreversible,
+  or contract-breaking changes (drops, deletes, force-pushes, secret rotation,
+  breaking API changes), confirm with the user first.
+
+**Standard workflow:** inspect → plan → failing test → implement → verify →
+production-readiness review.
+
 ## MANDATORY: TDD (Test-Driven Development) Always
 
 **Hard rule — Do NOT skip.** Every code change must be driven by a failing test
