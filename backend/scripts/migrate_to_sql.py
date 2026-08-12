@@ -4,7 +4,7 @@
 Usage:
     python scripts/migrate_to_sql.py [--url DATABASE_URL]
 
-Defaults to DATABASE_URL from .env or sqlite+aiosqlite:///./codecoach.db
+Defaults to DATABASE_URL from .env or the local PostgreSQL instance.
 """
 
 import asyncio
@@ -35,7 +35,7 @@ from app.models.schemas import Question
 def _get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
-        url = "mysql+aiomysql://codecoach:codecoach@host.docker.internal:3306/codecoach"
+        url = "postgresql+asyncpg://codecoach:codecoach@host.docker.internal:5432/codecoach"
     return url
 
 
