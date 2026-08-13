@@ -16,6 +16,13 @@ from app.services.redis_service import RedisCache, _content_hash
 logger = logging.getLogger(__name__)
 
 
+def _jsonable(value: Optional[Dict[str, Any]]) -> str:
+    """Deterministic string form of an optional payload, for cache keys."""
+    if value is None:
+        return ""
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
 class GroqService(CoachingProvider):
     """Groq adapter for AI coaching (OpenAI-compatible chat completions)."""
 
@@ -25,6 +32,7 @@ class GroqService(CoachingProvider):
         "medium": "llama-3.3-70b-versatile",
         "hard": "llama-3.3-70b-versatile",
         "stream": "llama-3.1-8b-instant",
+        "animate": "llama-3.3-70b-versatile",
     }
 
     def __init__(
@@ -68,20 +76,43 @@ class GroqService(CoachingProvider):
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
         endpoint: str = "coach",
+        initial_code: Optional[str] = None,
+        question: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         from app.models.schemas import StructuredCoachingResponse
 
         cache_key = None
         if self.cache and not chat_history:
             content_hash = _content_hash(
-                problem, code, message, mode, difficulty, lesson_context or "", "v3"
+                problem,
+                code,
+                message,
+                mode,
+                difficulty,
+                lesson_context or "",
+                initial_code or "",
+                _jsonable(question),
+                "v6",
             )
             cache_key = RedisCache.key("groq", "coaching", content_hash)
             cached = await self.cache.get(cache_key)
             if cached is not None:
-                return cached
+                if mode == "animate":
+                    # Animate cache entries must be revalidated on read: stale
+                    # legacy-format or too-thin scripts from older versions would
+                    # otherwise reach the viewer as a title-plus-narration frame.
+                    cached = self._validate_animation(cached)
+                    if cached.get("animation") is None:
+                        cached = None
+                if cached is not None:
+                    return cached
 
-        model = self.models.get(difficulty, self.models["medium"])
+        # Animate embeds full user/solution code arrays plus steps, so it always
+        # uses a capable dedicated model rather than the difficulty-tied tier.
+        if mode == "animate":
+            model = self.models["animate"]
+        else:
+            model = self.models.get(difficulty, self.models["medium"])
 
         system_prompt, user_prompt = self.prompts.build(
             mode=mode,
@@ -91,6 +122,8 @@ class GroqService(CoachingProvider):
             message=message,
             structured=True,
             lesson_context=lesson_context,
+            initial_code=initial_code,
+            question=question,
         )
 
         messages = [
@@ -100,10 +133,14 @@ class GroqService(CoachingProvider):
             messages.extend(chat_history)
         messages.append({"role": "user", "content": user_prompt})
 
+        # Animate responses embed full user/solution code arrays plus steps —
+        # 1000 tokens truncates the JSON, and the brace-repair parser then
+        # yields no usable animation. Give animate mode a larger budget.
+        max_tokens = 2000 if mode == "animate" else 1000
         payload = {
             "model": model,
             "messages": messages,
-            "max_completion_tokens": 1000,
+            "max_completion_tokens": max_tokens,
             "temperature": 0.1,
             "top_p": 0.9,
             "stream": False,
@@ -169,6 +206,7 @@ class GroqService(CoachingProvider):
         structured: bool = False,
         chat_history: Optional[list] = None,
         endpoint: str = "coach_stream",
+        initial_code: Optional[str] = None,
     ) -> AsyncIterator[str]:
         model = self.models["stream"]
 
@@ -180,6 +218,7 @@ class GroqService(CoachingProvider):
             message=message,
             structured=structured,
             lesson_context=lesson_context,
+            initial_code=initial_code,
         )
 
         messages = [
@@ -234,6 +273,49 @@ class GroqService(CoachingProvider):
             logger.error(f"Error calling Groq API: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal server error")
 
+    async def get_animation_script(
+        self,
+        problem: str,
+        code: str,
+        language: str,
+        difficulty: str = "medium",
+        lesson_context: Optional[str] = None,
+        initial_code: Optional[str] = None,
+        question: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Return a validated visual algorithm animation (no chat text).
+
+        Backs the standalone Animate viewer endpoint. Returns None when the
+        model produces no usable animation so the endpoint can fail cleanly
+        instead of rendering a text-only chat response.
+
+        Exactly one Groq request is made: the dedicated animation model is
+        expected to follow the Animate contract, and a second attempt would
+        both double our provider load and risk a 429 surfacing to the user
+        after an already-usable first response.
+        """
+        structured = await self.get_structured_coaching_response(
+            problem=problem,
+            code=code,
+            language=language,
+            message="animate",
+            mode="animate",
+            difficulty=difficulty,
+            lesson_context=lesson_context,
+            initial_code=initial_code,
+            endpoint="animate",
+            question=question,
+        )
+        animation = structured.get("animation")
+        if animation is None:
+            logger.warning(
+                "Animate: produced no usable animation (problem=%.80r, language=%s)",
+                problem,
+                language,
+            )
+            return None
+        return animation
+
     # ── CoachingProvider port ─────────────────────────────────────────
 
     async def get_structured(
@@ -246,6 +328,7 @@ class GroqService(CoachingProvider):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        initial_code: Optional[str] = None,
     ) -> Dict[str, Any]:
         return await self.get_structured_coaching_response(
             problem=problem,
@@ -256,6 +339,7 @@ class GroqService(CoachingProvider):
             difficulty=difficulty,
             lesson_context=lesson_context,
             chat_history=chat_history,
+            initial_code=initial_code,
         )
 
     async def stream(
@@ -268,6 +352,7 @@ class GroqService(CoachingProvider):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        initial_code: Optional[str] = None,
     ) -> AsyncIterator[str]:
         async for chunk in self.get_coaching_response(
             problem=problem,
@@ -278,24 +363,51 @@ class GroqService(CoachingProvider):
             difficulty=difficulty,
             lesson_context=lesson_context,
             chat_history=chat_history,
+            initial_code=initial_code,
         ):
             yield chunk
 
     # ── helpers ───────────────────────────────────────────────────────
 
     @staticmethod
+    def _is_legacy_animation(animation: Any) -> bool:
+        """True when the model returned a pre-generic typed animation.
+
+        Legacy animations carry a top-level ``type`` or per-step ``operation``
+        fields. They contain no renderable shapes/motion, so they would reach
+        the viewer as a title-plus-narration frame — reject them outright.
+        """
+        if not isinstance(animation, dict):
+            return True
+        if "type" in animation:
+            return True
+        steps = animation.get("steps")
+        return isinstance(steps, list) and any(
+            isinstance(step, dict) and "operation" in step for step in steps
+        )
+
+    @staticmethod
     def _validate_animation(data: Dict[str, Any]) -> Dict[str, Any]:
         """Drop invalid animation scripts, keep the rest of the response.
 
-        A structurally valid but semantically incorrect script is also
-        dropped — the animation must never lie about the algorithm. The
-        coaching text still renders, so the student experience degrades
-        gracefully instead of showing a wrong animation.
+        The generic scene validator enforces structural rules (bounds,
+        uniqueness, caps, motion-target resolution) plus the richness floor
+        (at least 3 steps, at least 2 shapes, motion in every step). A scene
+        that fails them is dropped so the viewer never receives unrenderable
+        data — the coaching text still renders, so the student experience
+        degrades gracefully instead of showing a broken animation.
         """
         if not data.get("animation"):
             return data
         try:
-            validated, reason = AnimationValidator().validate(data["animation"])
+            animation = data["animation"]
+            if GroqService._is_legacy_animation(animation):
+                logger.warning(
+                    "Dropping legacy-format animation (generic scene required)"
+                )
+                data.pop("animation", None)
+                return data
+            validated, reason = AnimationValidator().validate(animation)
         except Exception as e:  # defensive: a bad script must never 500 the endpoint
             logger.warning("Animation validation raised: %s", e)
             data.pop("animation", None)

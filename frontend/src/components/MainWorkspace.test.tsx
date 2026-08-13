@@ -362,6 +362,64 @@ describe('MainWorkspace', () => {
       questions[0].title,
       '',
       'python',
+      undefined,
+      undefined,
+      '',
+    );
+  });
+
+  it('passes the starter code as initialCode when a full question is loaded', async () => {
+    const fullQuestion: Question = {
+      id: '1',
+      title: 'Two Sum',
+      difficulty: 'easy',
+      category: 'arrays',
+      company_tags: [],
+      description: 'test',
+      examples: [],
+      hints: [],
+      starter: {
+        python: 'def two_sum(nums, target):\n    pass',
+        javascript: '',
+        java: '',
+        cpp: '',
+        c: '',
+        go: '',
+        rust: '',
+        typescript: '',
+      },
+      solution: '',
+      time_complexity: '',
+      space_complexity: '',
+      test_cases: [],
+    };
+    mockUseQuestion.mockImplementation(() => ({
+      questions,
+      selectedQuestion: questions[0],
+      fullQuestion,
+      isLoading: false,
+      isLoadingQuestion: false,
+      error: null,
+      loadQuestions: mockLoadQuestions,
+      selectQuestion: mockSelectQuestion,
+      clearError: mockClearError,
+    }));
+
+    act(() => {
+      render(<MainWorkspace />);
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Change Code'));
+    await user.click(screen.getByText('Send Message'));
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      'hello',
+      'freeform',
+      'Two Sum',
+      'new code',
+      'python',
+      undefined,
+      undefined,
+      'def two_sum(nums, target):\n    pass',
     );
   });
 

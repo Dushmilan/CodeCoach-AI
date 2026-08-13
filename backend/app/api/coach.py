@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
+from pydantic import ValidationError
 from typing import AsyncIterator, Optional
 import asyncio
 import json
@@ -7,14 +8,23 @@ import logging
 import os
 import time
 
-from app.models.schemas import CoachingRequest, CoachingResponse, CoachingMode, Language
+from app.models.schemas import (
+    CoachingRequest,
+    CoachingResponse,
+    CoachingMode,
+    Language,
+    AnimateRequest,
+    AnimateResponse,
+)
 from app.ports.coaching_provider import CoachingProvider
+from app.ports.code_executor import CodeExecutor
 from app.services.groq_service import GroqService
 from app.services.redis_service import RedisCache
 from app.services.usage_service import UsageService, check_caps, usage_headers
+from app.services.solution_animation_service import SolutionAnimationService
 from app.api.auth_deps import require_premium
 from app.api.daily_limits import enforce_daily_request_cap
-from app.api.dependencies import get_redis_cache, get_usage_service
+from app.api.dependencies import get_redis_cache, get_usage_service, get_executor
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
 
@@ -123,6 +133,7 @@ async def get_coaching(
             difficulty=coaching_request.difficulty.value,
             lesson_context=coaching_request.lesson_context,
             chat_history=chat_history_list,
+            initial_code=coaching_request.initial_code,
         )
 
         raw_response = _format_structured_as_text(structured_data)
@@ -152,6 +163,92 @@ async def get_coaching(
         logger.error("=======================")
         raise HTTPException(
             status_code=500, detail=f"Error generating coaching response: {str(e)}"
+        )
+
+
+@router.post("/animate", response_model=AnimateResponse)
+@limiter.limit(COACH_RATE_LIMIT)
+async def get_animation(
+    request: Request,
+    response: Response,
+    animate_request: AnimateRequest,
+    provider: CoachingProvider = Depends(get_coaching_provider),
+    executor: CodeExecutor = Depends(get_executor),
+    user: UserResponse = Depends(require_premium),
+    _usage_guard: None = Depends(check_daily_token_cap),
+    _rate_guard: None = Depends(enforce_user_rate_limit),
+    _daily_guard: None = Depends(enforce_daily_request_cap),
+):
+    """
+    Generate a visual algorithm animation for the standalone Animate viewer.
+
+    Unlike /api/coach/, this endpoint returns only a validated animation
+    script — never a chat response. The animation is generated from the
+    canonical optimal solution for the question (executed against the first
+    public example), never from the user's typed code. The frontend plays it
+    back as a Motion Canvas animation in a dedicated window, completely
+    separate from the AI Coach chat panel.
+    """
+    try:
+        # Preferred path: execute the question's canonical optimal solution
+        # against examples[0].input and compile its trace into the animation.
+        # The user's code is never used here.
+        animation = None
+        if animate_request.question is not None:
+            try:
+                animation = await SolutionAnimationService(
+                    executor=executor
+                ).build_animation(
+                    question=animate_request.question.model_dump(),
+                )
+            except Exception as e:  # defensive: trace path must never 500
+                logger.warning("Trace animation failed, using fallback: %s", e)
+
+        # Fallback for questions without a curated canonical solution.
+        if animation is None:
+            animation = await provider.get_animation_script(
+                problem=animate_request.problem,
+                code=animate_request.code,
+                language=animate_request.language.value,
+                difficulty=animate_request.difficulty.value,
+                lesson_context=animate_request.lesson_context,
+                initial_code=animate_request.initial_code,
+                question=(
+                    animate_request.question.model_dump()
+                    if animate_request.question
+                    else None
+                ),
+            )
+        if not animation:
+            raise HTTPException(
+                status_code=502,
+                detail="Failed to generate a valid animation for this problem.",
+            )
+
+        response.headers.update(getattr(request.state, "usage_headers", {}))
+        response.headers.update(getattr(request.state, "daily_limit_headers", {}))
+
+        try:
+            return AnimateResponse(animation=animation)
+        except ValidationError as exc:
+            # A scene that passed structural checks but fails the response
+            # schema is not renderable — treat it like any other failed
+            # generation (502) instead of surfacing a 500 with schema
+            # internals.
+            logger.warning("Animation failed response validation: %s", exc)
+            raise HTTPException(
+                status_code=502,
+                detail="Failed to generate a valid animation for this problem.",
+            ) from exc
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("=== COACH ANIMATE API ERROR ===")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Error message: {str(e)}")
+        logger.error("===============================")
+        raise HTTPException(
+            status_code=500, detail=f"Error generating animation: {str(e)}"
         )
 
 
@@ -260,6 +357,7 @@ async def get_coaching_stream(
                 difficulty=coaching_request.difficulty.value,
                 lesson_context=coaching_request.lesson_context,
                 chat_history=chat_history_list,
+                initial_code=coaching_request.initial_code,
             ):
                 chunk_count += 1
                 # Format as SSE
@@ -312,6 +410,7 @@ async def get_coaching_modes(
             CoachingMode.EXPLAIN.value: "Get explanations of concepts or approaches",
             CoachingMode.DEBUG.value: "Get help debugging your code",
             CoachingMode.FREEFORM.value: "Ask any question and get a natural response",
+            CoachingMode.ANIMATE.value: "Animate the optimal solution for the problem",
         },
     }
 

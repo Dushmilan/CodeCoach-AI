@@ -50,6 +50,67 @@ STRUCTURED_CONTENT = (
     '"explanation": null, "debug_help": null}'
 )
 
+STRUCTURED_CONTENT_WITH_ANIMATION = (
+    '{"summary": "Watch the search unfold", "hints": [], "code_review": null, '
+    '"complexity_analysis": null, "suggestions": [], "edge_cases": [], '
+    '"explanation": null, "debug_help": null, '
+    '"animation": {"title": "Searching for 4", '
+    '"data": {"values": [5, 1, 2, 3, 4, 6], "target": 4}, '
+    '"steps": [{"narration": "5 is not the target.", '
+    '"shapes": [{"id": "cell_0", "type": "rect", "x": -240, "y": 0, '
+    '"width": 88, "height": 88, "fill": "#1e293b"}], '
+    '"motion": [{"target": "cell_0", "op": "appear", "duration": 0.3}]}, '
+    '{"narration": "Moving on.", '
+    '"motion": [{"target": "cell_0", "op": "move", "to": [0, 0], '
+    '"duration": 0.3}]}, '
+    '{"narration": "Found 4!", '
+    '"shapes": [{"id": "ptr", "type": "polygon", "x": 0, "y": -80, '
+    '"points": [[-12, -30], [0, -60], [12, -30]], "fill": "#facc15"}], '
+    '"motion": [{"target": "ptr", "op": "appear", "duration": 0.3}, '
+    '{"target": "cell_0", "op": "fill", "to": "#22c55e", "duration": 0.3}]}]}}'
+)
+
+LEGACY_CACHED_ANIMATION = {
+    "summary": "cached legacy",
+    "hints": [],
+    "animation": {
+        "type": "linear_search",
+        "title": "Your code vs the solution",
+        "steps": [{"operation": "compare_code", "narration": "x"}],
+    },
+}
+
+VALID_CACHED_ANIMATION = {
+    "summary": "cached",
+    "hints": [],
+    "animation": {
+        "title": "Searching for 4",
+        "data": {"values": [5, 1, 2, 3, 4, 6], "target": 4},
+        "steps": [
+            {
+                "narration": "a",
+                "shapes": [
+                    {"id": "c", "type": "rect", "width": 10, "height": 10},
+                    {"id": "d", "type": "rect", "width": 10, "height": 10},
+                ],
+                "motion": [{"target": "c", "op": "appear", "duration": 0.3}],
+            },
+            {
+                "narration": "b",
+                "motion": [
+                    {"target": "c", "op": "move", "to": [10, 0], "duration": 0.3}
+                ],
+            },
+            {
+                "narration": "c",
+                "motion": [
+                    {"target": "d", "op": "fill", "to": "#22c55e", "duration": 0.3}
+                ],
+            },
+        ],
+    },
+}
+
 
 class TestGroqServiceInit:
     def test_init_with_api_key_arg(self):
@@ -83,6 +144,7 @@ class TestGroqServiceInit:
             assert service.models["medium"] == "llama-3.3-70b-versatile"
             assert service.models["hard"] == "llama-3.3-70b-versatile"
             assert service.models["stream"] == "llama-3.1-8b-instant"
+            assert service.models["animate"] == "llama-3.3-70b-versatile"
 
     def test_model_map_env_overrides(self):
         with patch.dict(
@@ -91,6 +153,7 @@ class TestGroqServiceInit:
                 "GROQ_API_KEY": "gsk_test",
                 "GROQ_MODEL_EASY": "custom-easy",
                 "GROQ_MODEL_MEDIUM": "custom-medium",
+                "GROQ_MODEL_ANIMATE": "custom-animate",
             },
         ):
             from app.services.groq_service import GroqService
@@ -99,6 +162,7 @@ class TestGroqServiceInit:
             assert service.models["easy"] == "custom-easy"
             assert service.models["medium"] == "custom-medium"
             assert service.models["hard"] == "llama-3.3-70b-versatile"
+            assert service.models["animate"] == "custom-animate"
 
 
 class TestGroqServiceStructured:
@@ -261,6 +325,86 @@ class TestGroqServiceStructured:
         assert result == cached
         mock_async_client.post.assert_not_called()
         assert recorder.calls == []
+
+    @pytest.mark.asyncio
+    async def test_animate_cache_hit_with_valid_animation_skips_api(
+        self, mock_async_client
+    ):
+        cache = FakeCache(cached_value=VALID_CACHED_ANIMATION)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", cache=cache, user_id="u")
+        result = await service.get_structured_coaching_response(
+            problem="Find 4",
+            code="def s(): pass",
+            language="python",
+            message="animate",
+            mode="animate",
+            difficulty="easy",
+        )
+
+        mock_async_client.post.assert_not_called()
+        assert result["animation"]["title"] == "Searching for 4"
+
+    @pytest.mark.asyncio
+    async def test_animate_cache_hit_with_legacy_animation_regenerates(
+        self, mock_async_client
+    ):
+        body = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT_WITH_ANIMATION}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+        cache = FakeCache(cached_value=LEGACY_CACHED_ANIMATION)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", cache=cache, user_id="u")
+        result = await service.get_structured_coaching_response(
+            problem="Find 4",
+            code="def s(): pass",
+            language="python",
+            message="animate",
+            mode="animate",
+            difficulty="easy",
+        )
+
+        mock_async_client.post.assert_called_once()
+        assert result["animation"]["title"] == "Searching for 4"
+        assert result["animation"]["steps"][0]["shapes"][0]["id"] == "cell_0"
+
+    @pytest.mark.asyncio
+    async def test_animate_cache_key_includes_content_version_v6(
+        self, mock_async_client
+    ):
+        body = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT_WITH_ANIMATION}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+        cache = FakeCache()
+
+        from app.services.groq_service import GroqService
+        from app.services.groq_service import _jsonable
+        from app.services.redis_service import RedisCache, _content_hash
+
+        service = GroqService(api_key="gsk_test", cache=cache, user_id="u")
+        await service.get_structured_coaching_response(
+            problem="P",
+            code="c",
+            language="python",
+            message="animate",
+            mode="animate",
+            difficulty="medium",
+        )
+
+        expected_hash = _content_hash(
+            "P", "c", "animate", "animate", "medium", "", "", _jsonable(None), "v6"
+        )
+        assert cache.set_calls[0][0] == RedisCache.key(
+            "groq", "coaching", expected_hash
+        )
 
     @pytest.mark.asyncio
     async def test_structured_401_maps_to_500(self, mock_async_client):
@@ -800,3 +944,175 @@ class TestGroqServiceStreaming:
         assert chunks == ["hi"]
         assert recorder.calls[0]["input_tokens"] == 2
         assert recorder.calls[0]["output_tokens"] == 6
+
+
+class TestGroqServiceAnimateScript:
+    """get_animation_script returns only the validated animation, no chat text."""
+
+    @pytest.fixture
+    def mock_async_client(self):
+        with patch("httpx.AsyncClient") as mock_cls:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_cls.return_value = mock_instance
+            yield mock_instance
+
+    def _make_response(self, status_code=200, body=None):
+        mock_response = MagicMock()
+        mock_response.status_code = status_code
+        mock_response.text = "error body"
+        mock_response.headers = {"retry-after": "5"}
+        if body is not None:
+            mock_response.json.return_value = body
+        return mock_response
+
+    @pytest.mark.asyncio
+    async def test_returns_valid_animation_script(self, mock_async_client):
+        body = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT_WITH_ANIMATION}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", user_id="u")
+        result = await service.get_animation_script(
+            problem="Find 4",
+            code="def s(): pass",
+            language="python",
+        )
+
+        assert result is not None
+        assert result["title"] == "Searching for 4"
+        assert result["data"]["target"] == 4
+        assert len(result["steps"]) == 3
+        assert result["steps"][0]["shapes"][0]["id"] == "cell_0"
+        # Never leaks chat text
+        assert "summary" not in result
+
+    @pytest.mark.asyncio
+    async def test_returns_none_when_model_omits_animation(self, mock_async_client):
+        body = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", user_id="u")
+        result = await service.get_animation_script(
+            problem="Find 4",
+            code="def s(): pass",
+            language="python",
+        )
+
+        assert result is None
+        # The Animate endpoint must not burn a second Groq call on a retry.
+        assert mock_async_client.post.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_returns_none_when_animation_invalid(self, mock_async_client):
+        invalid = (
+            '{"summary": "x", "hints": [], "code_review": null, '
+            '"complexity_analysis": null, "suggestions": [], "edge_cases": [], '
+            '"explanation": null, "debug_help": null, '
+            '"animation": {"title": "broken", "data": {}, "steps": []}}'
+        )
+        body = {
+            "choices": [{"message": {"content": invalid}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", user_id="u")
+        result = await service.get_animation_script(
+            problem="Find 2",
+            code="def s(): pass",
+            language="python",
+        )
+
+        assert result is None
+        assert mock_async_client.post.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_no_retry_when_first_animation_attempt_omits_animation(
+        self, mock_async_client
+    ):
+        no_anim = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        with_anim = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT_WITH_ANIMATION}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        # A second response exists only to prove the endpoint does not retry.
+        mock_async_client.post.side_effect = [
+            self._make_response(200, no_anim),
+            self._make_response(200, with_anim),
+        ]
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", user_id="u")
+        result = await service.get_animation_script(
+            problem="Find 4",
+            code="def s(): pass",
+            language="python",
+        )
+
+        assert result is None
+        assert mock_async_client.post.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_animate_uses_dedicated_animation_model(self, mock_async_client):
+        body = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT_WITH_ANIMATION}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(
+            api_key="gsk_test", usage_recorder=FakeRecorder(), user_id="u"
+        )
+        await service.get_animation_script(
+            problem="Find 4",
+            code="def s(): pass",
+            language="python",
+            difficulty="easy",
+        )
+
+        call = mock_async_client.post.call_args
+        # Animate needs a capable model regardless of problem difficulty; it
+        # must never fall back to the fast 8b model.
+        assert call.kwargs["json"]["model"] == "llama-3.3-70b-versatile"
+
+    @pytest.mark.asyncio
+    async def test_animate_payload_uses_raised_max_completion_tokens(
+        self, mock_async_client
+    ):
+        body = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT_WITH_ANIMATION}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", user_id="u")
+        await service.get_animation_script(
+            problem="Find 4",
+            code="def s(): pass",
+            language="python",
+        )
+
+        payload = mock_async_client.post.call_args.kwargs["json"]
+        # code_comparison JSON is long; 1000 tokens truncates it into a
+        # brace-repaired response with no usable animation.
+        assert payload["max_completion_tokens"] == 2000

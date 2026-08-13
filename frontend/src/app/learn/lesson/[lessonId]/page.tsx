@@ -1,6 +1,7 @@
 'use client';
 
 import { Header } from '@/components/header/Header';
+import { AnimateLauncher } from '@/components/animate/AnimateLauncher';
 import {
   ExerciseLessonLayout,
   LessonChrome,
@@ -95,6 +96,9 @@ export default function LessonPage() {
     }
   }, [lesson?.question_id]);
 
+  const resolvedStarterCode =
+    (linkedQuestion?.starter as any)?.[language] || lesson?.starter_code || '';
+
   const handleSendMessage = useCallback(
     async (message: string, mode: string) => {
       const lessonContext = lesson ? `${lesson.title}` : undefined;
@@ -106,9 +110,17 @@ export default function LessonPage() {
         language,
         lessonContext,
         linkedQuestion?.difficulty,
+        resolvedStarterCode,
       );
     },
-    [lesson, currentCode, language, sendMessage, linkedQuestion?.difficulty],
+    [
+      lesson,
+      currentCode,
+      language,
+      sendMessage,
+      linkedQuestion?.difficulty,
+      resolvedStarterCode,
+    ],
   );
 
   const handleMarkComplete = async () => {
@@ -301,8 +313,6 @@ export default function LessonPage() {
 
   const isExercise = lesson.type === 'exercise';
   const resolvedTestCases = linkedQuestion?.test_cases || lesson.test_cases || [];
-  const resolvedStarterCode =
-    (linkedQuestion?.starter as any)?.[language] || lesson.starter_code || '';
 
   return (
     <HydrationGuard>
@@ -315,7 +325,22 @@ export default function LessonPage() {
         <Header />
 
         <main className="flex-1 flex flex-col px-6 pt-6 pb-4 w-full min-h-0 overflow-hidden">
-          <LessonChrome lesson={lesson} prevId={prevId} nextId={nextId} />
+          <LessonChrome
+            lesson={lesson}
+            prevId={prevId}
+            nextId={nextId}
+            actions={
+              <AnimateLauncher
+                problem={lesson.title}
+                code={currentCode}
+                language={language}
+                difficulty={linkedQuestion?.difficulty}
+                lessonContext={lesson.title}
+                initialCode={resolvedStarterCode}
+                question={linkedQuestion}
+              />
+            }
+          />
 
           {isExercise ? (
             <ExerciseLessonLayout

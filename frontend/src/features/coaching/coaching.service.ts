@@ -11,6 +11,7 @@ export interface CoachingRequest {
   difficulty?: string;
   lesson_context?: string;
   chat_history?: { role: string; content: string }[];
+  initial_code?: string;
 }
 
 export interface CoachingResponse {
@@ -30,6 +31,7 @@ export class CoachingService {
     difficulty: string = "medium",
     lessonContext?: string,
     chatHistory?: { role: string; content: string }[],
+    initialCode?: string,
   ): Promise<CoachingResponse> {
     const body: CoachingRequest = {
       problem,
@@ -44,6 +46,9 @@ export class CoachingService {
     }
     if (chatHistory && chatHistory.length > 0) {
       body.chat_history = chatHistory;
+    }
+    if (initialCode !== undefined) {
+      body.initial_code = initialCode;
     }
     const data = await this.http.post<{
       response: string;

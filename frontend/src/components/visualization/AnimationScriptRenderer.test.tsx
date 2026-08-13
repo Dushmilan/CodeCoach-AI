@@ -97,6 +97,76 @@ describe("AnimationScriptRenderer", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders a code comparison animation with user and solution code", () => {
+    const comparison: AnimationScript = {
+      type: "code_comparison",
+      title: "Your code vs the solution",
+      data: {
+        language: "python",
+        user_code: ["def find(nums, target):", "    return nums.index(target)"],
+        solution_code: [
+          "def find(nums, target):",
+          "    for i, n in enumerate(nums):",
+          "        if n == target:",
+          "            return i",
+        ],
+      },
+      steps: [
+        {
+          operation: "compare_code",
+          line_number: 2,
+          user_line: "    return nums.index(target)",
+          solution_line: "    for i, n in enumerate(nums):",
+          result: "mismatch",
+          narration: "You return immediately, but the solution scans each element.",
+        },
+      ],
+    };
+    render(<AnimationScriptRenderer script={comparison} />);
+    expect(screen.getByText("Your code vs the solution")).toBeInTheDocument();
+    expect(screen.getByText("Your code")).toBeInTheDocument();
+    expect(screen.getByText("Solution code")).toBeInTheDocument();
+    expect(
+      screen.getByText("You return immediately, but the solution scans each element."),
+    ).toBeInTheDocument();
+  });
+
+  it("highlights the active comparison line in the code comparison", () => {
+    const comparison: AnimationScript = {
+      type: "code_comparison",
+      title: "Your code vs the solution",
+      data: {
+        language: "python",
+        user_code: ["def find(nums, target):", "    return nums.index(target)"],
+        solution_code: [
+          "def find(nums, target):",
+          "    for i, n in enumerate(nums):",
+        ],
+      },
+      steps: [
+        {
+          operation: "compare_code",
+          line_number: 2,
+          user_line: "    return nums.index(target)",
+          solution_line: "    for i, n in enumerate(nums):",
+          result: "mismatch",
+          narration: "Different approach.",
+        },
+      ],
+    };
+    const { container } = render(
+      <AnimationScriptRenderer script={comparison} />,
+    );
+    const active = container.querySelectorAll("[data-active-line='true']");
+    expect(active).toHaveLength(2);
+    const text = Array.from(active).map((node) => node.textContent ?? "");
+    expect(text.join(" ")).toContain("    return nums.index(target)");
+    expect(text.join(" ")).toContain("    for i, n in enumerate(nums):");
+    active.forEach((node) => {
+      expect(node.textContent).not.toContain("def find");
+    });
+  });
+
   it("renders a plain trace for unsupported animation types", () => {
     const unknown: AnimationScript = {
       type: "quantum_sort",

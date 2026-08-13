@@ -74,6 +74,53 @@ describe('CoachingService', () => {
       expect(result.structured).toBeNull();
     });
 
+    it('passes initial_code when provided', async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        response: 'Animating your code',
+        structured: null,
+      });
+
+      await service.getCoachResponse(
+        defaultArgs.problem,
+        defaultArgs.language,
+        defaultArgs.code,
+        defaultArgs.message,
+        'animate',
+        defaultArgs.difficulty,
+        undefined,
+        undefined,
+        'def two_sum(nums, target):\n    pass',
+      );
+
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/coach/',
+        expect.objectContaining({
+          mode: 'animate',
+          initial_code: 'def two_sum(nums, target):\n    pass',
+        }),
+      );
+    });
+
+    it('omits initial_code when not provided', async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        response: 'Ok',
+        structured: null,
+      });
+
+      await service.getCoachResponse(
+        defaultArgs.problem,
+        defaultArgs.language,
+        defaultArgs.code,
+        defaultArgs.message,
+        defaultArgs.mode,
+        defaultArgs.difficulty,
+      );
+
+      expect(vi.mocked(http.post).mock.calls[0][1]).not.toHaveProperty(
+        'initial_code',
+      );
+    });
+
     it('defaults difficulty to medium', async () => {
       vi.mocked(http.post).mockResolvedValue({
         response: 'Okay',
