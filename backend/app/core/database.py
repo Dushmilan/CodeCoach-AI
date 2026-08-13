@@ -21,6 +21,12 @@ if settings.DATABASE_SEARCH_PATH:
         "server_settings": {"search_path": settings.DATABASE_SEARCH_PATH}
     }
 
+if not is_production() and settings.DATABASE_URL.startswith("postgresql"):
+    # Supabase poolers reuse prepared-statement names across connections;
+    # disable asyncpg's statement cache so DDL / DML does not hit
+    # DuplicatePreparedStatementError (mirrors tests/conftest.py).
+    _connect_args.setdefault("connect_args", {})["statement_cache_size"] = 0
+
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     poolclass=NullPool if not is_production() else None,

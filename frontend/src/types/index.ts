@@ -7,6 +7,21 @@ export interface QuestionSummary {
   solved?: boolean;
 }
 
+export type RecommendationReason =
+  | "weak_skill"
+  | "missing_prerequisite"
+  | "due_for_review"
+  | "new_skill"
+  | "strengthen";
+
+export interface RecommendedQuestion {
+  skill_slug: string;
+  skill_name: string;
+  reason: RecommendationReason;
+  reason_text: string;
+  question: Question;
+}
+
 export interface Question extends QuestionSummary {
   description: string;
   starter: {

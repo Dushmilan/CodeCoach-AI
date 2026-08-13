@@ -81,6 +81,13 @@ export const handlers = [
   http.get("/health", () => {
     return HttpResponse.json({ status: "healthy" });
   }),
+  http.get("/api/skills/me/recommended-questions", ({ request }) => {
+    const auth = request.headers.get("Authorization");
+    if (!auth) {
+      return HttpResponse.json({ detail: "Not authenticated" }, { status: 401 });
+    }
+    return HttpResponse.json([]);
+  }),
   http.get("/api/courses/", () => {
     return HttpResponse.json({
       courses: [
