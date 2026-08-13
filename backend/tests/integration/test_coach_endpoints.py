@@ -153,7 +153,7 @@ class TestCoachEndpoints:
         assert "modes" in data
         assert "descriptions" in data
 
-        expected_modes = ["hint", "review", "explain", "debug", "freeform"]
+        expected_modes = ["hint", "review", "explain", "debug", "freeform", "animate"]
         assert set(data["modes"]) == set(expected_modes)
 
         # Check descriptions
@@ -162,6 +162,7 @@ class TestCoachEndpoints:
         assert "review" in descriptions
         assert "explain" in descriptions
         assert "debug" in descriptions
+        assert "animate" in descriptions
 
     def test_get_supported_languages(self, test_client: TestClient):
         """Test getting supported programming languages."""
