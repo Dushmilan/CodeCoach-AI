@@ -41,6 +41,9 @@ describe("AIChatPanel", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /debug/i })).toBeInTheDocument();
     expect(
+      screen.queryByRole("button", { name: /animate/i }),
+    ).not.toBeInTheDocument();
+    expect(
       screen.getByPlaceholderText(
         "Ask a question or describe your approach...",
       ),
@@ -75,6 +78,17 @@ describe("AIChatPanel", () => {
 
     await user.click(screen.getByRole("button", { name: /explain/i }));
     expect(onSendMessage).toHaveBeenCalledWith("", "explain");
+  });
+
+  it("does not send animate messages through the chat", async () => {
+    const onSendMessage = vi.fn();
+    const user = userEvent.setup();
+    render(<AIChatPanel {...defaultProps} onSendMessage={onSendMessage} />);
+
+    expect(
+      screen.queryByRole("button", { name: /animate/i }),
+    ).not.toBeInTheDocument();
+    expect(onSendMessage).not.toHaveBeenCalled();
   });
 
   it("disables inputs when isTyping", () => {

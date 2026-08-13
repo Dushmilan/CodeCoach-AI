@@ -18,10 +18,18 @@ export default defineConfig({
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
     { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
   ],
-  webServer: {
-    command: 'pnpm dev',
-    port: 3000,
-    reuseExistingServer: true,
-    timeout: 120000,
-  },
+  webServer: [
+    {
+      command: 'pnpm dev',
+      port: 3000,
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+    {
+      command: 'pnpm --dir ../motion-canvas-lab dev --port 9000 --strictPort',
+      url: 'http://localhost:9000/viewer.html',
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+  ],
 });

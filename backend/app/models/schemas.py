@@ -22,6 +22,7 @@ class CoachingMode(str, Enum):
     EXPLAIN = "explain"
     DEBUG = "debug"
     FREEFORM = "freeform"
+    ANIMATE = "animate"
 
 
 class Language(str, Enum):
@@ -65,48 +66,98 @@ class CoachingRequest(BaseModel):
         max_length=20,
         description="Previous conversation messages for context",
     )
+    initial_code: Optional[str] = Field(
+        None,
+        max_length=50000,
+        description="Starter code the user began with, used to detect edits for animation",
+    )
+
+
+class SceneShape(BaseModel):
+    """One declarative vector shape in an animation scene (data, never code).
+
+    The AI supplies structured geometry only — the viewer instantiates Motion
+    Canvas nodes from this data and animates them per the motion timeline.
+    """
+
+    id: str = Field(
+        ..., max_length=64, description="Unique shape id referenced by motion ops"
+    )
+    type: Literal["rect", "ellipse", "line", "polygon", "text"] = Field(
+        ..., description="Kind of vector primitive to draw"
+    )
+    x: float = Field(0, description="Center/left x position")
+    y: float = Field(0, description="Center/top y position")
+    width: Optional[float] = Field(None, gt=0, description="Width (rect/ellipse)")
+    height: Optional[float] = Field(None, gt=0, description="Height (rect/ellipse)")
+    radius: Optional[float] = Field(None, ge=0, description="Corner radius (rect)")
+    points: Optional[List[List[float]]] = Field(
+        None, description="Vertex list (line/polygon)"
+    )
+    text: Optional[str] = Field(None, max_length=200, description="Text content (text)")
+    fontSize: Optional[float] = Field(None, gt=0, description="Font size (text)")
+    fill: Optional[str] = Field(
+        None, pattern=r"^#[0-9a-fA-F]{6}$", description="Hex fill color"
+    )
+    stroke: Optional[str] = Field(
+        None, pattern=r"^#[0-9a-fA-F]{6}$", description="Hex stroke color"
+    )
+    lineWidth: Optional[float] = Field(None, gt=0, description="Stroke width")
+    opacity: Optional[float] = Field(None, ge=0, le=1, description="Base opacity")
+
+
+class MotionOp(BaseModel):
+    """One tween applied to a shape in a step's timeline."""
+
+    target: str = Field(..., max_length=64, description="Shape id this op animates")
+    op: Literal[
+        "appear",
+        "disappear",
+        "move",
+        "fill",
+        "stroke",
+        "scale",
+        "rotate",
+        "label",
+    ] = Field(..., description="What the op does to the shape")
+    to: Optional[Any] = Field(
+        None,
+        description="Target: [x, y] for move, hex color for fill/stroke, number for scale/rotate",
+    )
+    duration: float = Field(0.3, gt=0, le=5, description="Tween duration in seconds")
 
 
 class AnimationStep(BaseModel):
-    """One frame of a declarative animation script.
+    """One frame of a declarative animation scene."""
 
-    The AI supplies structured data only — never executable code. The
-    frontend owns rendering, motion, and playback for every step.
-    """
-
-    operation: Literal[
-        "compare",
-        "visit",
-        "swap",
-        "move",
-        "insert",
-        "remove",
-        "mark",
-        "output",
-    ] = Field(..., description="What the frame does to the visualized data")
-    index: Optional[int] = Field(None, description="Primary index being acted on")
-    from_index: Optional[int] = Field(None, description="Source index (swap/move)")
-    to_index: Optional[int] = Field(None, description="Destination index (swap/move)")
-    value: Optional[Any] = Field(None, description="Value involved in the frame")
-    result: Optional[Literal["checking", "match", "mismatch", "complete"]] = Field(
-        None, description="Outcome of the operation for coloring purposes"
-    )
     narration: str = Field(
         default="",
         max_length=300,
         description="Human-readable narration for this frame",
     )
+    shapes: List[SceneShape] = Field(
+        default_factory=list, description="Shapes created in this step"
+    )
+    motion: List[MotionOp] = Field(
+        default_factory=list, description="Tweens applied to shapes this step"
+    )
 
 
 class AnimationScript(BaseModel):
-    """Declarative, validated animation script returned by the AI coach."""
+    """Declarative, validated animation scene returned by the AI coach.
 
-    type: str = Field(
-        ..., description="Algorithm kind, e.g. linear_search, bubble_sort"
+    A fully generic, data-driven scene: the model authors the subject and the
+    algorithm visuals as primitives (shapes) plus a per-step motion timeline.
+    No algorithm-type or subject-kind catalogs exist — every scene adapts to
+    the question that produced it.
+    """
+
+    title: str = Field(
+        default="", max_length=200, description="Short title shown above the animation"
     )
-    title: str = Field(default="", description="Short title shown above the animation")
     data: Dict[str, Any] = Field(
-        default_factory=dict, description="Input data the animation visualizes"
+        default_factory=dict,
+        description="Optional input data the scene references",
     )
     steps: List[AnimationStep] = Field(
         default_factory=list, description="Ordered frames of the animation"
@@ -146,6 +197,85 @@ class CoachingResponse(BaseModel):
     )
     mode: CoachingMode = Field(..., description="Coaching mode used")
     language: Language = Field(..., description="Programming language")
+
+
+class QuestionInput(BaseModel):
+    """Curated subset of a question sent to the animation generator.
+
+    The full question context (description, examples, test cases, constraints)
+    lets the model build scenes that reflect the actual problem — real values,
+    real target, real-world subject — instead of guessing from a title.
+    """
+
+    title: Optional[str] = Field(None, max_length=500, description="Question title")
+    description: Optional[str] = Field(
+        None, max_length=20000, description="Full problem description"
+    )
+    category: Optional[str] = Field(
+        None, max_length=100, description="Question category"
+    )
+    difficulty: Optional[str] = Field(
+        None, max_length=20, description="Question difficulty"
+    )
+    id: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Stable question id so the animation resolver pins the exact algorithm",
+    )
+    examples: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Example test cases"
+    )
+    test_cases: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Hidden test cases"
+    )
+    constraints: List[str] = Field(
+        default_factory=list, description="Problem constraints"
+    )
+    starter: Optional[Dict[str, Any]] = Field(
+        None, description="Starter code per language"
+    )
+
+
+class AnimateRequest(BaseModel):
+    """Request for the standalone algorithm-animation endpoint.
+
+    Unlike CoachingRequest this never carries chat history: the Animate
+    viewer is independent of the AI Coach conversation, so nothing from the
+    chat context is reused here.
+    """
+
+    problem: str = Field(
+        ..., max_length=20000, description="The coding problem description"
+    )
+    code: str = Field(..., max_length=50000, description="User's current code attempt")
+    language: Language = Field(..., description="Programming language")
+    difficulty: Difficulty = Field(
+        default=Difficulty.MEDIUM, description="Problem difficulty"
+    )
+    lesson_context: Optional[str] = Field(
+        None, max_length=2000, description="Lesson context for scoped animation"
+    )
+    initial_code: Optional[str] = Field(
+        None,
+        max_length=50000,
+        description="Starter code the user began with, used to detect edits for animation",
+    )
+    question: Optional[QuestionInput] = Field(
+        None,
+        description="Full question context so the scene reflects the actual problem",
+    )
+
+
+class AnimateResponse(BaseModel):
+    """Visual algorithm animation for the standalone Animate viewer.
+
+    This response intentionally has no chat text — it is played back as a
+    Motion Canvas animation in a dedicated window, never as a chat message.
+    """
+
+    animation: AnimationScript = Field(
+        ..., description="Validated visual algorithm animation"
+    )
 
 
 class CodeExecutionRequest(BaseModel):

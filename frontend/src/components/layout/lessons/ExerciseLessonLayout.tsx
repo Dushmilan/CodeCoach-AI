@@ -1,16 +1,20 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { CodeEditorContainer } from '@/components/layout/elements';
-import { TestCaseResultView } from '@/features/code-execution/code-execution.types';
-import { cn } from '@/lib/utils';
-import { ChatMessage, Language, LessonSummary, Question } from '@/types';
-import { AICoachPane } from './AICoachPane';
-import { AIPanelDrawer } from './AIPanelDrawer';
-import { ExerciseDescriptionPane, ExerciseTestCase } from './ExerciseDescriptionPane';
-import { PanelResizer } from './PanelResizer';
-import { useResizablePanels } from './useResizablePanels';
-import { useWorkspaceMode } from './useWorkspaceMode';
+import React, { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
+import { CodeEditorContainer } from "@/components/layout/elements";
+import { TestCaseResultView } from "@/features/code-execution/code-execution.types";
+import { cn } from "@/lib/utils";
+import { ChatMessage, Language, LessonSummary, Question } from "@/types";
+import { AICoachPane } from "./AICoachPane";
+import { AIPanelDrawer } from "./AIPanelDrawer";
+import {
+  ExerciseDescriptionPane,
+  ExerciseTestCase,
+} from "./ExerciseDescriptionPane";
+import { PanelResizer } from "./PanelResizer";
+import { useResizablePanels } from "./useResizablePanels";
+import { useWorkspaceMode } from "./useWorkspaceMode";
 
 interface ExerciseLessonLayoutProps {
   lesson: LessonSummary;
@@ -74,14 +78,14 @@ export function ExerciseLessonLayout({
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
-    if (mode === 'wide' && drawerOpen) {
+    if (mode === "wide" && drawerOpen) {
       openAI();
       setDrawerOpen(false);
     }
   }, [mode, drawerOpen, openAI]);
 
-  const isWide = mode === 'wide';
-  const isStacked = mode === 'stacked';
+  const isWide = mode === "wide";
+  const isStacked = mode === "stacked";
   const showSideColumn = isWide && isAIOpen;
   const showDrawer = !isWide && drawerOpen;
 
@@ -103,7 +107,7 @@ export function ExerciseLessonLayout({
         workspaceRef.current = el;
         modeRef(el);
       }}
-      className={cn('flex-1 flex min-h-0 relative', isStacked && 'flex-col')}
+      className={cn("flex-1 flex min-h-0 relative", isStacked && "flex-col")}
       data-testid="exercise-layout-workspace"
     >
       {isDragging && (
@@ -156,9 +160,9 @@ export function ExerciseLessonLayout({
           <PanelResizer
             boundary="description"
             label="Resize lesson description"
-            onMouseDown={startDrag('description')}
+            onMouseDown={startDrag("description")}
             onResizeBy={resizeBy}
-            isActive={activeBoundary === 'description'}
+            isActive={activeBoundary === "description"}
           />
 
           <div className="flex-1 min-w-0 flex flex-col min-h-0">
@@ -185,9 +189,9 @@ export function ExerciseLessonLayout({
           <PanelResizer
             boundary="ai"
             label="Resize AI coach panel"
-            onMouseDown={startDrag('ai')}
+            onMouseDown={startDrag("ai")}
             onResizeBy={resizeBy}
-            isActive={activeBoundary === 'ai'}
+            isActive={activeBoundary === "ai"}
           />
           <div
             data-testid="ai-pane"
@@ -201,15 +205,16 @@ export function ExerciseLessonLayout({
         !showDrawer && (
           <div
             className={`flex flex-col items-center justify-center p-4 ${
-              isStacked ? 'absolute bottom-4 right-4 z-30' : ''
+              isStacked ? "absolute bottom-4 right-4 z-30" : ""
             }`}
           >
             <button
               onClick={() => (isWide ? openAI() : setDrawerOpen(true))}
-              className="p-3 bg-white/[0.05] hover:bg-white/[0.08] rounded-full transition-all"
               aria-label="Open AI Panel"
+              className="inline-flex items-center gap-2 rounded-full bg-white/[0.05] hover:bg-white/[0.08] px-4 py-2 text-xs font-medium text-muted-foreground/70 hover:text-foreground ring-1 ring-white/[0.06] transition-all active:scale-[0.97]"
             >
-              <div className="w-5 h-5 bg-primary/60 rounded-full" />
+              <Sparkles className="h-3.5 w-3.5 text-primary/70" />
+              Ask Coach
             </button>
           </div>
         )

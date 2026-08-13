@@ -5,7 +5,7 @@ selection, and lesson context injection are internal details.
 """
 
 import json
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 
 # ── Constants (internal) ──────────────────────────────────────────────
@@ -50,36 +50,29 @@ You MUST respond with ONLY a valid JSON object. No text before or after.
 }
 
 ## Animation Contract
-When the problem involves an algorithm over an array and the code is present, generate an "animation" object so the student can watch the algorithm run. Otherwise set "animation": null.
+When the problem involves an algorithm and the code is present, generate an "animation" object so the student can watch the algorithm run. Otherwise set "animation": null.
 
-Animation shape:
+The animation is a fully data-driven declarative scene — no fixed animation types. Author the subject AND the algorithm visuals yourself for the question in the input:
+
 {
-    "type": "linear_search",
     "title": "Searching for 4",
-    "data": {
-        "values": [5, 1, 2, 3, 4, 5],
-        "target": 4
-    },
+    "data": { "values": [5, 1, 2, 3, 4, 5], "target": 4 },
     "steps": [
         {
-            "operation": "compare",
-            "index": 0,
-            "value": 5,
-            "result": "mismatch",
-            "narration": "5 is not the target, continue searching."
+            "narration": "5 is not the target, continue searching.",
+            "shapes": [ { "id": "cell_0", "type": "rect", "x": -240, "y": 0, "width": 88, "height": 88, "radius": 12, "fill": "#1e293b", "stroke": "#334155" } ],
+            "motion": [ { "target": "cell_0", "op": "appear", "duration": 0.3 } ]
         }
     ]
 }
 
 Animation rules:
-1. ONLY support "linear_search" for now — the student's code must implement linear search (scanning the array element by element comparing to a target).
-2. "values" MUST come from the problem statement or the student's own test data — never invent runtime results. If no concrete array exists, set "animation": null.
-3. Use the real values from the array; the target is the value being searched for.
-4. Emit exactly one step per comparison: operation "compare", the current index, the value at that index, result "mismatch" until the match, then "match".
-5. A "match" step MUST have result "match" and its value must equal the target. A "mismatch" step MUST NOT equal the target.
-6. Never emit indexes outside the array bounds. Keep the array small (<= 50 values) and the trace short (<= 200 steps).
-7. Write a short human narration for every step (under 300 characters).
-8. This is DATA, not code — never return JavaScript, JSX, or CSS. No executable instructions.
+1. Shapes are vector primitives with a unique "id" and a "type" of: "rect" (needs width/height), "ellipse" (needs width/height), "line" or "polygon" (need points), or "text" (needs text and fontSize). Optional: x/y (between -960..960 / -540..540), fill/stroke (#rrggbb hex), lineWidth, opacity, radius.
+2. Motion ops have a "target" (a shape id), an "op" of: appear, disappear, move ([x,y]), fill or stroke (hex), scale, rotate, plus a "duration" (0.1-5s).
+3. "values" MUST come from the problem statement or the student's own test data — never invent runtime results. If no concrete data exists, set "animation": null.
+4. Build the scene step by step so the student watches the algorithm solve the question: cells appear, a pointer moves, colors change, matches highlight. Write a short narration for every step (under 300 characters).
+5. At most 100 steps, 60 shapes total, 20 shapes and 30 motion ops per step.
+6. This is DATA, not code — never return JavaScript, JSX, SVG markup, or CSS. No executable instructions.
 
 ## Rules
 1. ALL 9 fields must be present in every response
@@ -155,7 +148,108 @@ _MODE_SECTIONS = {
 - summary: Main answer
 - Use other fields as appropriate for the question""",
     },
+    "animate": {
+        "unstructured": """### 6. Animate (mode: animate)
+- Produce a step-by-step animation of the OPTIMAL SOLUTION solving the problem
+- Always animate the intended optimal solution for the question — never the student's typed code
+- Return declarative animation data only — never executable code""",
+        "structured": """**animate mode:**
+- summary: Brief description of the animation that follows
+- animation: REQUIRED — follow the Animate Mode Contract below
+- Other fields: null or []""",
+    },
 }
+
+_ANIMATE_CONTRACT = """## Animate Mode Contract
+The user pressed "Animate". The response MUST include a non-null "animation" object — returning "animation": null is FORBIDDEN in animate mode. Build a fully data-driven declarative scene: the animation VISUALLY SOLVES the problem for the question in the input, so the student watches how the algorithm works. Every scene is generated fresh from THIS question — real values from its examples/test cases, real target, and a vector subject that reflects what the question is about.
+
+NON-NEGOTIABLE OUTPUT RULE: You MUST include a non-null "animation" object. The animation always shows the OPTIMAL solution for the question — the student's typed code is never inspected, compared, or animated. "animation": null is a hard error.
+
+### Generic Scene Contract
+The "animation" is declarative VECTOR data. The viewer builds shapes from this data and plays the motion timeline step by step. There are NO predefined animation types or subject catalogs — you author the subject and the algorithm visuals yourself for each question.
+
+WORKED EXAMPLE — a linear search for 4 in [5,1,2,3,4]. Study how the pointer MOVES every step; this is the shape your output must take:
+{
+    "title": "Searching for 4",
+    "data": { "values": [5, 1, 2, 3, 4], "target": 4 },
+    "steps": [
+        {
+            "narration": "Start at index 0 — the value is 5.",
+            "shapes": [
+                { "id": "cell_0", "type": "rect", "x": -240, "y": 0, "width": 88, "height": 88, "radius": 12, "fill": "#1e293b", "stroke": "#334155", "text": "5" },
+                { "id": "cell_1", "type": "rect", "x": -120, "y": 0, "width": 88, "height": 88, "radius": 12, "fill": "#1e293b", "stroke": "#334155", "text": "1" },
+                { "id": "cell_2", "type": "rect", "x": 0, "y": 0, "width": 88, "height": 88, "radius": 12, "fill": "#1e293b", "stroke": "#334155", "text": "2" },
+                { "id": "cell_3", "type": "rect", "x": 120, "y": 0, "width": 88, "height": 88, "radius": 12, "fill": "#1e293b", "stroke": "#334155", "text": "3" },
+                { "id": "cell_4", "type": "rect", "x": 240, "y": 0, "width": 88, "height": 88, "radius": 12, "fill": "#1e293b", "stroke": "#334155", "text": "4" },
+                { "id": "ptr", "type": "polygon", "points": [[-12, -30], [0, -60], [12, -30]], "x": -240, "y": -80, "fill": "#facc15" }
+            ],
+            "motion": [
+                { "target": "cell_0", "op": "appear", "duration": 0.2 },
+                { "target": "cell_1", "op": "appear", "duration": 0.2 },
+                { "target": "cell_2", "op": "appear", "duration": 0.2 },
+                { "target": "cell_3", "op": "appear", "duration": 0.2 },
+                { "target": "cell_4", "op": "appear", "duration": 0.2 },
+                { "target": "ptr", "op": "appear", "duration": 0.2 }
+            ]
+        },
+        {
+            "narration": "5 is not the target — move the pointer to index 1.",
+            "motion": [ { "target": "ptr", "op": "move", "to": [-120, -80], "duration": 0.4 } ]
+        },
+        {
+            "narration": "1 is not the target — move the pointer to index 2.",
+            "motion": [
+                { "target": "cell_1", "op": "fill", "to": "#334155", "duration": 0.2 },
+                { "target": "ptr", "op": "move", "to": [0, -80], "duration": 0.4 }
+            ]
+        },
+        {
+            "narration": "2 is not the target — move the pointer to index 3.",
+            "motion": [ { "target": "ptr", "op": "move", "to": [120, -80], "duration": 0.4 } ]
+        },
+        {
+            "narration": "3 is not the target — move the pointer to index 4.",
+            "motion": [ { "target": "ptr", "op": "move", "to": [240, -80], "duration": 0.4 } ]
+        },
+        {
+            "narration": "Found 4 at index 4 — highlight the match.",
+            "motion": [
+                { "target": "cell_4", "op": "fill", "to": "#14532d", "duration": 0.3 },
+                { "target": "cell_4", "op": "stroke", "to": "#22c55e", "duration": 0.3 }
+            ]
+        }
+    ]
+}
+Notice: every step after the first moves the pointer or recolors a cell — never just fade a shape in and stop.
+
+### Shapes (add to a step's "shapes" list)
+Each shape has an "id" (unique across the whole animation) and a "type":
+- "rect": requires "width" and "height"; optional "radius" for rounded corners; optional "text" to render a value inside the cell.
+- "ellipse": requires "width" and "height".
+- "line": requires "points" = [[x, y], [x, y], ...] (at least 2).
+- "polygon": requires "points" = [[x, y], [x, y], ...] (at least 2, a closed shape).
+- "text": requires "text" (non-empty string) and "fontSize".
+Every shape takes optional "x"/"y" (center position), "fill"/"stroke" (#rrggbb hex), "lineWidth", "opacity" (0-1).
+
+### Motion ops (add to a step's "motion" list)
+Each op has "target" (a shape id added in this step or an earlier step), "op", optional "to", and "duration" (0.1-5 seconds):
+- "appear": fade the shape in. "disappear": fade it out.
+- "move": "to" = [x, y] new position.
+- "fill": "to" = #rrggbb hex fill color. "stroke": "to" = #rrggbb hex stroke color.
+- "scale": "to" = positive number. "rotate": "to" = degrees.
+
+### Scene rules
+1. Coordinates: x between -960 and 960, y between -540 and 540. Point offsets within -2000 and 2000.
+2. Use the REAL data from the question input: values from its examples or test cases, the real target, the real subject the question describes (e.g. cars for a Car Fleet question, an array of cells for a Two Sum question, two code panels for a code comparison). Never invent runtime results.
+3. Build the scene step by step so each step advances the algorithm: cells appear, a pointer moves, colors change (e.g. checking → match), values highlight. Write narration that explains each step.
+4. Richness floor: produce at least 3 steps (aim for 5-10). Every step must move the algorithm forward — show the real data values from the examples/test cases and advance a pointer, scan index, or loop position each step. A static frame, a single shape, or a step with no motion is a failure.
+5. Always animate the OPTIMAL solution for the question. Never compare against the student's typed code — it is irrelevant to the animation.
+6. Caps: at most 100 steps, 60 shapes total, 20 shapes and 30 motion ops per step, 64 chars per id.
+7. This is DATA, not code — never return JavaScript, JSX, SVG markup, or CSS. Shapes and motions are plain JSON objects only.
+8. Define every shape exactly once — in the step where it first appears. Never repeat a shape id in a later step. Later steps only animate existing shapes via motion ops (move/fill/stroke/scale/rotate).
+9. A step that ONLY appears/disappears shapes is a static frame and is REJECTED by the validator. Every step after the first MUST include at least one transform op — move, fill, stroke, scale, or rotate — on an existing shape, so the animation visibly moves forward. Fading a shape in is not animation.
+10. Include a dedicated pointer or scan-marker shape (e.g. a small triangle or highlighted cell) that MOVES to each position the algorithm visits. The viewer must see motion every step: a pointer sliding, a cell changing color, a shape scaling. If your scene has no moving pointer or changing colors, it is a failure.
+"""
 
 
 # ── Deep module ───────────────────────────────────────────────────────
@@ -174,10 +268,21 @@ class PromptBuilder:
         message: str,
         structured: bool = False,
         lesson_context: Optional[str] = None,
+        initial_code: Optional[str] = None,
+        question: Optional[Dict[str, Any]] = None,
     ) -> Tuple[str, str]:
         """Return (system_prompt, user_prompt) for the given coaching request."""
         system = self._build_system(mode, language, structured, lesson_context)
-        user = self._build_user(problem, code, message, mode, structured, language)
+        user = self._build_user(
+            problem,
+            code,
+            message,
+            mode,
+            structured,
+            language,
+            initial_code,
+            question,
+        )
         return system, user
 
     # ── Internal: system prompt ───────────────────────────────────────
@@ -208,6 +313,10 @@ class PromptBuilder:
             parts.append(ctx)
 
         parts.append(_GENERAL_GUIDELINES)
+
+        if structured and mode == "animate":
+            parts.append(_ANIMATE_CONTRACT)
+
         return "\n\n".join(parts)
 
     def _mode_section(self, mode: str, structured: bool) -> str:
@@ -238,6 +347,8 @@ Connect the student's current struggle back to the lesson's main objective."""
         mode: str,
         structured: bool,
         language: str = "",
+        initial_code: Optional[str] = None,
+        question: Optional[Dict[str, Any]] = None,
     ) -> str:
         if structured:
             user_data = {
@@ -248,6 +359,15 @@ Connect the student's current struggle back to the lesson's main objective."""
             }
             if language:
                 user_data["language"] = language
+            if initial_code is not None:
+                user_data["initial_code"] = initial_code
+            if question:
+                # Hidden test cases are curriculum secrets and must never reach
+                # a third-party model. Keep the visible context (title,
+                # description, examples, constraints) the scene needs.
+                prompt_question = dict(question)
+                prompt_question.pop("test_cases", None)
+                user_data["question"] = prompt_question
             return json.dumps(user_data, indent=2)
         suffix = "Please provide helpful coaching feedback."
         return f"""Problem: {problem}

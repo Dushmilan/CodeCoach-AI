@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     GROQ_MODEL_MEDIUM: str = "llama-3.3-70b-versatile"
     GROQ_MODEL_HARD: str = "llama-3.3-70b-versatile"
     GROQ_MODEL_STREAM: str = "llama-3.1-8b-instant"
+    GROQ_MODEL_ANIMATE: str = "llama-3.3-70b-versatile"
 
     # Per-user token metering (daily caps)
     DAILY_TOKEN_INPUT_CAP: int = 250_000

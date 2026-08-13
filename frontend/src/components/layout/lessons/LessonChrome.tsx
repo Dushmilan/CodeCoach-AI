@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LessonSummary } from '@/types';
@@ -7,9 +8,15 @@ interface LessonChromeProps {
   lesson: LessonSummary;
   prevId: string | null;
   nextId: string | null;
+  actions?: ReactNode;
 }
 
-export function LessonChrome({ lesson, prevId, nextId }: LessonChromeProps) {
+export function LessonChrome({
+  lesson,
+  prevId,
+  nextId,
+  actions,
+}: LessonChromeProps) {
   const isExercise = lesson.type === 'exercise';
 
   return (
@@ -52,6 +59,7 @@ export function LessonChrome({ lesson, prevId, nextId }: LessonChromeProps) {
       </div>
 
       <div className="flex items-center gap-1">
+        {actions}
         {prevId && (
           <Link
             href={`/learn/lesson/${prevId}`}

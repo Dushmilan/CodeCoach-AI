@@ -1,6 +1,7 @@
 'use client';
 
 import { Header } from '@/components/header/Header';
+import { AnimateLauncher } from '@/components/animate/AnimateLauncher';
 import { AIChatPanelContainer } from '@/components/layout/elements/AIChatPanelContainer';
 import { CodeEditorContainer } from '@/components/layout/elements/CodeEditorContainer';
 import { AIPanelDrawer, useWorkspaceMode } from '@/components/layout/lessons';
@@ -82,13 +83,27 @@ export default function ProblemWorkspacePage() {
     }
   }, [language, fullQuestion]);
 
+  const starterCode =
+    fullQuestion?.starter && typeof fullQuestion.starter === 'object'
+      ? fullQuestion.starter[language as keyof typeof fullQuestion.starter] || ''
+      : '';
+
   const handleSendMessage = useCallback(
     async (message: string, mode: string) => {
       if (!fullQuestion) return;
       rescueActivity();
-      await sendMessage(message, mode as any, fullQuestion.title, currentCode, language);
+      await sendMessage(
+        message,
+        mode as any,
+        fullQuestion.title,
+        currentCode,
+        language,
+        undefined,
+        undefined,
+        starterCode,
+      );
     },
-    [fullQuestion, currentCode, language, sendMessage, rescueActivity],
+    [fullQuestion, currentCode, language, sendMessage, rescueActivity, starterCode],
   );
 
   const handleRunCodeRescue = useCallback(
@@ -210,11 +225,7 @@ export default function ProblemWorkspacePage() {
         <CodeEditorContainer
           language={language}
           currentCode={currentCode}
-          initialCode={
-            fullQuestion.starter && typeof fullQuestion.starter === 'object'
-              ? fullQuestion.starter[language as keyof typeof fullQuestion.starter] || ''
-              : ''
-          }
+          initialCode={starterCode}
           isRunning={isRunning}
           output={output}
           error={executionError || error || ''}
@@ -258,6 +269,15 @@ export default function ProblemWorkspacePage() {
           <span className="text-xs text-foreground/60 truncate max-w-[200px]">
             {fullQuestion.title}
           </span>
+          <div className="flex-1" />
+          <AnimateLauncher
+            problem={fullQuestion.title}
+            code={currentCode}
+            language={language}
+            difficulty={fullQuestion.difficulty}
+            initialCode={starterCode}
+            question={fullQuestion}
+          />
         </div>
 
         <div ref={workspaceRef} data-testid="problem-workspace" className="flex-1 min-h-0 relative">

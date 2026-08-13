@@ -41,6 +41,45 @@ class TestBoundaryConditions:
         assert request.code == max_code
         assert request.message == max_message
 
+    def test_coaching_request_accepts_initial_code(self):
+        """Test coaching request accepts an initial_code (starter) field."""
+        request = CoachingRequest(
+            problem="Two Sum",
+            code="def two_sum(nums, target):\n    pass",
+            language=Language.PYTHON,
+            message="",
+            mode=CoachingMode.ANIMATE,
+            difficulty=Difficulty.EASY,
+            initial_code="def two_sum(nums, target):\n    pass",
+        )
+
+        assert request.mode == CoachingMode.ANIMATE
+        assert request.mode.value == "animate"
+        assert request.initial_code == "def two_sum(nums, target):\n    pass"
+
+    def test_coaching_request_initial_code_is_optional(self):
+        """Test initial_code defaults to None when not provided."""
+        request = CoachingRequest(
+            problem="p",
+            code="c",
+            language=Language.PYTHON,
+            message="m",
+        )
+
+        assert request.initial_code is None
+
+    def test_coaching_request_initial_code_max_length(self):
+        """Test initial_code respects the max length boundary."""
+        request = CoachingRequest(
+            problem="p",
+            code="c",
+            language=Language.PYTHON,
+            message="m",
+            initial_code="x" * 50000,
+        )
+
+        assert len(request.initial_code) == 50000
+
     def test_coaching_request_empty_strings(self):
         """Test coaching request with empty strings."""
         request = CoachingRequest(

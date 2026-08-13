@@ -7,6 +7,21 @@ export interface QuestionSummary {
   solved?: boolean;
 }
 
+export type RecommendationReason =
+  | "weak_skill"
+  | "missing_prerequisite"
+  | "due_for_review"
+  | "new_skill"
+  | "strengthen";
+
+export interface RecommendedQuestion {
+  skill_slug: string;
+  skill_name: string;
+  reason: RecommendationReason;
+  reason_text: string;
+  question: Question;
+}
+
 export interface Question extends QuestionSummary {
   description: string;
   starter: {
@@ -45,7 +60,8 @@ export type AnimationOperation =
   | "insert"
   | "remove"
   | "mark"
-  | "output";
+  | "output"
+  | "compare_code";
 
 export type AnimationResult =
   | "checking"
@@ -53,18 +69,62 @@ export type AnimationResult =
   | "mismatch"
   | "complete";
 
+export type SceneShapeType = "rect" | "ellipse" | "line" | "polygon" | "text";
+
+export interface SceneShape {
+  id: string;
+  type: SceneShapeType;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  radius?: number;
+  points?: [number, number][];
+  text?: string;
+  fontSize?: number;
+  fill?: string;
+  stroke?: string;
+  lineWidth?: number;
+  opacity?: number;
+}
+
+export type MotionOpName =
+  | "appear"
+  | "disappear"
+  | "move"
+  | "fill"
+  | "stroke"
+  | "scale"
+  | "rotate"
+  | "label";
+
+export interface MotionOp {
+  target: string;
+  op: MotionOpName;
+  to?: unknown;
+  duration: number;
+}
+
 export interface AnimationStep {
-  operation: AnimationOperation;
+  // Generic scene fields (current contract)
+  narration: string;
+  shapes?: SceneShape[];
+  motion?: MotionOp[];
+  // Legacy typed-frame fields (kept optional for backward compatibility)
+  operation?: AnimationOperation | null;
   index?: number | null;
   from_index?: number | null;
   to_index?: number | null;
   value?: unknown;
+  line_number?: number | null;
+  user_line?: string | null;
+  solution_line?: string | null;
   result?: AnimationResult | null;
-  narration: string;
 }
 
 export interface AnimationScript {
-  type: string;
+  // `type` is legacy; the current contract is a generic declarative scene.
+  type?: string;
   title?: string;
   data: Record<string, unknown>;
   steps: AnimationStep[];

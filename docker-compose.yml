@@ -91,6 +91,10 @@ services:
       - codecoach-network
     environment:
       - PISTON_DISABLE_NETWORK_ACCESS=true
+      # The default 1024-byte stdout cap is too small for the animation trace
+      # (one event per algorithm step) and for solutions that print several
+      # lines. 64KB comfortably fits a full bubble-sort trace.
+      - PISTON_OUTPUT_MAX_SIZE=65536
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:2000/api/v2/runtimes',r=>process.exit(r.statusCode==200?0:1)).on('error',()=>process.exit(1))"]
       interval: 30s

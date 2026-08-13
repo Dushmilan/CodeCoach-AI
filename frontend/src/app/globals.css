@@ -163,6 +163,28 @@ body::after {
   }
 }
 
+@keyframes sort-pulse {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  50% {
+    transform: scaleY(1.45);
+  }
+}
+
+.sort-bar {
+  transform-origin: bottom;
+  animation: sort-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sort-bar {
+    animation: none;
+  }
+}
+
 @keyframes slide-in-right {
   from {
     opacity: 0;

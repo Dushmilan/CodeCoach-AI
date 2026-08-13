@@ -21,6 +21,7 @@ class CoachingProvider(ABC):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        initial_code: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Return a structured coaching response as a dict."""
         ...
@@ -36,6 +37,26 @@ class CoachingProvider(ABC):
         difficulty: str = "medium",
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
+        initial_code: Optional[str] = None,
     ) -> AsyncIterator[str]:
         """Yield streaming text chunks from the coaching backend."""
         ...  # pragma: no cover
+
+    async def get_animation_script(
+        self,
+        problem: str,
+        code: str,
+        language: str,
+        difficulty: str = "medium",
+        lesson_context: Optional[str] = None,
+        initial_code: Optional[str] = None,
+        question: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Return a standalone visual algorithm animation script.
+
+        Unlike get_structured this returns only the validated animation (no
+        chat text) for the dedicated Animate viewer. Returns None when a
+        valid animation could not be generated. Adapters that only support
+        text coaching may leave this unimplemented.
+        """
+        raise NotImplementedError  # pragma: no cover

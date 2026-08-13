@@ -53,8 +53,40 @@ export const handlers = [
       language: "python",
     });
   }),
+  http.post("/api/coach/animate", () => {
+    return HttpResponse.json({
+      animation: {
+        type: "linear_search",
+        title: "Searching for 4",
+        data: { values: [5, 1, 2, 3, 4, 6], target: 4 },
+        steps: [
+          {
+            operation: "compare",
+            index: 0,
+            value: 5,
+            result: "mismatch",
+            narration: "5 is not the target, continue searching.",
+          },
+          {
+            operation: "compare",
+            index: 4,
+            value: 4,
+            result: "match",
+            narration: "Found the target 4 at index 4.",
+          },
+        ],
+      },
+    });
+  }),
   http.get("/health", () => {
     return HttpResponse.json({ status: "healthy" });
+  }),
+  http.get("/api/skills/me/recommended-questions", ({ request }) => {
+    const auth = request.headers.get("Authorization");
+    if (!auth) {
+      return HttpResponse.json({ detail: "Not authenticated" }, { status: 401 });
+    }
+    return HttpResponse.json([]);
   }),
   http.get("/api/courses/", () => {
     return HttpResponse.json({

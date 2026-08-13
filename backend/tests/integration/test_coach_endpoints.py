@@ -153,7 +153,7 @@ class TestCoachEndpoints:
         assert "modes" in data
         assert "descriptions" in data
 
-        expected_modes = ["hint", "review", "explain", "debug", "freeform"]
+        expected_modes = ["hint", "review", "explain", "debug", "freeform", "animate"]
         assert set(data["modes"]) == set(expected_modes)
 
         # Check descriptions
@@ -162,6 +162,7 @@ class TestCoachEndpoints:
         assert "review" in descriptions
         assert "explain" in descriptions
         assert "debug" in descriptions
+        assert "animate" in descriptions
 
     def test_get_supported_languages(self, test_client: TestClient):
         """Test getting supported programming languages."""
@@ -403,6 +404,99 @@ class TestCoachEndpoints:
 
         response = test_client.delete("/api/coach/")
         assert response.status_code == 405
+
+
+@pytest.mark.usefixtures("test_env_vars")
+class TestAnimateEndpoint:
+    """The /api/coach/animate endpoint returns a visual animation only.
+
+    This is the dedicated endpoint behind the standalone Animate viewer: it
+    must return a validated animation script and never a chat/coaching text
+    response.
+    """
+
+    def _animate_request(self) -> dict:
+        return {
+            "problem": "Find the target value in an array using linear search",
+            "code": "def search(arr, target):\n    for i, v in enumerate(arr):\n        if v == target:\n            return i\n    return -1",
+            "language": "python",
+            "difficulty": "easy",
+            "initial_code": "def search(arr, target):\n    pass",
+        }
+
+    def test_animate_returns_valid_animation(
+        self, test_client: TestClient, test_env_vars
+    ):
+        with mock_auth():
+            response = test_client.post(
+                "/api/coach/animate", json=self._animate_request()
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert "animation" in data
+        animation = data["animation"]
+        assert "title" in animation
+        assert "steps" in animation and len(animation["steps"]) > 0
+        assert "shapes" in animation["steps"][0]
+        assert "motion" in animation["steps"][0]
+        # Never a chat response
+        assert "response" not in data
+        assert "summary" not in data
+
+    def test_animate_rejects_missing_animation(
+        self, test_client: TestClient, test_env_vars, monkeypatch
+    ):
+        from tests.fixtures.mock_coaching_provider import MockCoachingProvider
+
+        class NoAnimationProvider(MockCoachingProvider):
+            async def get_animation_script(self, *args, **kwargs):
+                return None
+
+        from app.api.coach import get_coaching_provider
+
+        app.dependency_overrides[get_coaching_provider] = NoAnimationProvider
+        try:
+            with mock_auth():
+                response = test_client.post(
+                    "/api/coach/animate", json=self._animate_request()
+                )
+        finally:
+            app.dependency_overrides.pop(get_coaching_provider, None)
+
+        assert response.status_code == 502
+
+    def test_animate_invalid_language_422(self, test_client: TestClient, test_env_vars):
+        request = self._animate_request()
+        request["language"] = "invalid_language"
+        with mock_auth():
+            response = test_client.post("/api/coach/animate", json=request)
+        assert response.status_code == 422
+
+    def test_animate_missing_required_fields_422(
+        self, test_client: TestClient, test_env_vars
+    ):
+        with mock_auth():
+            response = test_client.post(
+                "/api/coach/animate", json={"problem": "x", "language": "python"}
+            )
+        assert response.status_code == 422
+
+    def test_animate_free_user_gets_403(self, test_client: TestClient, test_env_vars):
+        with mock_auth(plan="free"):
+            response = test_client.post(
+                "/api/coach/animate", json=self._animate_request()
+            )
+        assert response.status_code == 403
+
+    def test_animate_usage_headers_set(self, test_client: TestClient, test_env_vars):
+        with mock_auth():
+            response = test_client.post(
+                "/api/coach/animate", json=self._animate_request()
+            )
+        assert response.status_code == 200
+        assert response.headers.get("x-usage-remaining-input") is not None
 
 
 @pytest.mark.usefixtures("test_env_vars")

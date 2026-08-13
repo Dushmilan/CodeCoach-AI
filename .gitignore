@@ -242,6 +242,9 @@ graphify-out/
 frontend/test-results/
 frontend/e2e-report/
 
+# Playwright MCP output
+.playwright-mcp/
+
 # Agentic development (AI agent config, not for public)
 CLAUDE.md
 AGENTS.md

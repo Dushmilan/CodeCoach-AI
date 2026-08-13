@@ -5,6 +5,7 @@ from app.adapters.coaching_prompts import (
     build_user_prompt,
     build_structured_user_prompt,
     MODE_SECTIONS,
+    PromptBuilder,
 )
 
 
@@ -115,7 +116,8 @@ class TestBuildStructuredSystemPrompt:
     def test_animation_contract_present(self):
         prompt = build_structured_system_prompt("hint", "python")
         assert "Animation Contract" in prompt
-        assert "linear_search" in prompt
+        assert "shapes" in prompt
+        assert "motion" in prompt
         assert "never return JavaScript" in prompt
 
     def test_animation_never_invents_runtime_results(self):
@@ -249,15 +251,260 @@ class TestBuildStructuredUserPrompt:
         data = json.loads(prompt)
         assert data["message"] == 'it\'s "broken" somehow'
 
+    def test_structured_user_prompt_includes_question(self):
+        builder = PromptBuilder()
+        _, user = builder.build(
+            mode="animate",
+            language="python",
+            problem="Two Sum",
+            code="def f(): pass",
+            message="animate",
+            structured=True,
+            initial_code="def f():\n    pass",
+            question={"title": "Two Sum", "category": "hash_map"},
+        )
+        data = json.loads(user)
+        assert data["question"]["title"] == "Two Sum"
+        assert data["question"]["category"] == "hash_map"
+
+    def test_structured_user_prompt_never_leaks_hidden_test_cases(self):
+        # Hidden test cases are curriculum secrets: they must never reach the
+        # third-party model even though they live on the question object.
+        builder = PromptBuilder()
+        _, user = builder.build(
+            mode="animate",
+            language="python",
+            problem="Two Sum",
+            code="def f(): pass",
+            message="animate",
+            structured=True,
+            initial_code="def f():\n    pass",
+            question={
+                "title": "Two Sum",
+                "category": "hash_map",
+                "test_cases": [{"input": "secret input", "output": "secret"}],
+            },
+        )
+        data = json.loads(user)
+        assert data["question"]["title"] == "Two Sum"
+        assert "test_cases" not in data["question"]
+        assert "secret input" not in user
+
+    def test_structured_user_prompt_omits_question_when_absent(self):
+        builder = PromptBuilder()
+        _, user = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        data = json.loads(user)
+        assert "question" not in data
+
+
+class TestAnimateMode:
+    def test_animate_is_in_mode_sections(self):
+        assert "animate" in MODE_SECTIONS
+
+    def test_structured_prompt_includes_animate_contract(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "Animate Mode" in system
+        assert "Generic Scene Contract" in system
+        assert '"rect"' in system
+        assert '"move"' in system
+        assert "never return JavaScript" in system
+
+    def test_animate_contract_enforces_a_rich_multi_step_scene(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "at least 3 steps" in system
+        assert "pointer" in system
+
+    def test_animate_contract_requires_single_shape_definition(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "Define every shape exactly once" in system
+        assert "Never repeat a shape id" in system
+
+    def test_animate_contract_requires_transform_op_per_step(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "only appear" not in system
+        assert "visibly moves forward" in system
+        assert "MUST include at least one transform op" in system
+
+    def test_animate_contract_forces_a_moving_pointer(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "pointer" in system
+        assert "advance" in system
+        assert "move" in system
+
+    def test_unstructured_prompt_includes_animate_section(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=False,
+        )
+        assert "Animate (mode: animate)" in system
+
+    def test_non_animate_modes_omit_animate_contract(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="hint",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+        )
+        assert "Animate Mode" not in system
+
+    def test_structured_user_prompt_includes_initial_code(self):
+        builder = PromptBuilder()
+        _, user = builder.build(
+            mode="animate",
+            language="python",
+            problem="Two Sum",
+            code="def f(): pass",
+            message="animate",
+            structured=True,
+            initial_code="def f():\n    pass",
+        )
+        data = json.loads(user)
+        assert data["initial_code"] == "def f():\n    pass"
+
+    def test_structured_user_prompt_omits_initial_code_when_absent(self):
+        builder = PromptBuilder()
+        _, user = builder.build(
+            mode="hint",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+        )
+        data = json.loads(user)
+        assert "initial_code" not in data
+
+    def test_animate_contract_requires_a_non_null_animation(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "FORBIDDEN" in system
+        assert "NON-NEGOTIABLE" in system
+        assert "null" in system
+
+    def test_animate_contract_never_uses_student_code(self):
+        """The animation shows the OPTIMAL solution — the student's typed code
+        is never compared, inspected, or visualized."""
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "OPTIMAL solution" in system
+        assert "Never compare against the student" in system
+        assert "side-by-side" not in system
+
+    def test_animate_contract_uses_question_input_data(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "question" in system
+        assert "never invent runtime results" in system
+
+    def test_animate_contract_keeps_scene_data_not_code(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "This is DATA, not code" in system
+        assert "SVG" in system
+
 
 class TestModeSections:
-    def test_maps_all_five_modes(self):
+    def test_maps_all_six_modes(self):
         assert set(MODE_SECTIONS.keys()) == {
             "hint",
             "review",
             "explain",
             "debug",
             "freeform",
+            "animate",
         }
 
     def test_each_mode_has_unstructured_section(self):

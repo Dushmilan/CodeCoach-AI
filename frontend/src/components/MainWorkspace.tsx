@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { Sparkles } from "lucide-react";
 import { Header } from "@/components/header/Header";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
@@ -72,6 +73,12 @@ export function MainWorkspace() {
   const displayQuestion: Question | QuestionSummary | null =
     fullQuestion || selectedQuestion;
 
+  const initialCode =
+    fullQuestion && typeof fullQuestion.starter === "object"
+      ? fullQuestion.starter[language as keyof typeof fullQuestion.starter] ||
+        ""
+      : "";
+
   const handleRunCodeWrapper = (stdin: string) => {
     handleRunCode(stdin);
   };
@@ -86,9 +93,12 @@ export function MainWorkspace() {
         displayQuestion.title,
         currentCode,
         language,
+        undefined,
+        undefined,
+        initialCode,
       );
     },
-    [displayQuestion, currentCode, language, sendMessage],
+    [displayQuestion, currentCode, language, sendMessage, initialCode],
   );
 
   if (!isMounted || isLoading) {
@@ -113,13 +123,7 @@ export function MainWorkspace() {
             <CodeEditorContainer
               language={language}
               currentCode={currentCode}
-              initialCode={
-                fullQuestion && typeof fullQuestion.starter === "object"
-                  ? fullQuestion.starter[
-                      language as keyof typeof fullQuestion.starter
-                    ] || ""
-                  : ""
-              }
+              initialCode={initialCode}
               isRunning={isRunning}
               output={output}
               error={executionError || error || ""}
@@ -149,10 +153,11 @@ export function MainWorkspace() {
             <div className="flex flex-col items-center justify-center p-4">
               <button
                 onClick={() => setIsAIChatOpen(true)}
-                className="p-3 bg-white/[0.05] hover:bg-white/[0.08] rounded-full transition-all"
                 aria-label="Open AI Panel"
+                className="inline-flex items-center gap-2 rounded-full bg-white/[0.05] hover:bg-white/[0.08] px-4 py-2 text-xs font-medium text-muted-foreground/70 hover:text-foreground ring-1 ring-white/[0.06] transition-all active:scale-[0.97]"
               >
-                <div className="w-5 h-5 bg-primary/60 rounded-full" />
+                <Sparkles className="h-3.5 w-3.5 text-primary/70" />
+                Ask Coach
               </button>
             </div>
           )}

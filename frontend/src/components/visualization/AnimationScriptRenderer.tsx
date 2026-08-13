@@ -4,6 +4,7 @@ import { ComponentType } from "react";
 import { AnimationScript, AnimationStep } from "@/types";
 import { AnimationPlayer } from "./AnimationPlayer";
 import { LinearSearchVisualizer } from "./LinearSearchVisualizer";
+import { CodeComparisonVisualizer } from "./CodeComparisonVisualizer";
 
 export interface VisualizerProps {
   script: AnimationScript;
@@ -13,6 +14,7 @@ export interface VisualizerProps {
 
 const VISUALIZERS: Record<string, ComponentType<VisualizerProps>> = {
   linear_search: LinearSearchVisualizer,
+  code_comparison: CodeComparisonVisualizer,
 };
 
 function FallbackTrace({ script }: { script: AnimationScript }) {
@@ -35,7 +37,7 @@ export function AnimationScriptRenderer({ script }: { script: AnimationScript })
   const steps = Array.isArray(script?.steps) ? script.steps : [];
   if (steps.length === 0) return null;
 
-  const Visualizer = VISUALIZERS[script.type];
+  const Visualizer = script.type ? VISUALIZERS[script.type] : undefined;
   if (!Visualizer) return <FallbackTrace script={script} />;
 
   return (

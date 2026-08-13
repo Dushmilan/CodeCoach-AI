@@ -27,6 +27,10 @@ vi.mock('@/components/header/Header', () => ({
   Header: () => <div data-testid="header" />,
 }));
 
+vi.mock('@/features/skill-graph/RecommendedQuestions', () => ({
+  RecommendedQuestions: () => <div data-testid="recommended-questions" />,
+}));
+
 vi.mock('@/hooks', () => ({
   useLocalStorage: () => [mockProgress, vi.fn()],
 }));
@@ -82,6 +86,11 @@ describe('ProblemsPage', () => {
   it('loads questions on mount', () => {
     render(<ProblemsPage />);
     expect(mockLoadQuestions).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the practice-next recommendations panel', () => {
+    render(<ProblemsPage />);
+    expect(screen.getByTestId('recommended-questions')).toBeInTheDocument();
   });
 
   it('renders all questions in the table with difficulty badges and categories', () => {

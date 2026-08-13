@@ -3,6 +3,7 @@ from sqlalchemy import (
     String,
     Text,
     Integer,
+    Float,
     DateTime,
     Date,
     ForeignKey,
@@ -230,4 +231,95 @@ class RateLimitEventORM(Base):
     __table_args__ = (
         Index("ix_rate_limit_events_user_created", "user_id", "created_at"),
         Index("ix_rate_limit_events_ip_created", "ip", "created_at"),
+    )
+
+
+class SkillORM(Base):
+    __tablename__ = "skills"
+    slug = Column(String(64), primary_key=True)
+    name = Column(String(128), nullable=False)
+    description = Column(Text, nullable=False, default="")
+    parent_id = Column(String(64), nullable=True)
+    prerequisite_ids = Column(JSONType, default=list, nullable=False)
+
+
+class QuestionSkillORM(Base):
+    __tablename__ = "question_skills"
+    id = Column(String(64), primary_key=True)
+    question_id = Column(
+        String(64),
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    skill_slug = Column(
+        String(64),
+        ForeignKey("skills.slug", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    weight = Column(Float, nullable=False, default=1.0)
+
+    __table_args__ = (
+        Index("ix_question_skills_question", "question_id", "skill_slug"),
+    )
+
+
+class LearningEventORM(Base):
+    __tablename__ = "learning_events"
+    id = Column(String(64), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    event_type = Column(String(40), nullable=False)
+    question_id = Column(String(64), nullable=True)
+    lesson_id = Column(String(36), nullable=True)
+    skill_slug = Column(String(64), nullable=True, index=True)
+    event_metadata = Column(JSONType, default=dict, nullable=False)
+    occurred_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+
+    __table_args__ = (
+        Index("ix_learning_events_user_occurred", "user_id", "occurred_at"),
+    )
+
+
+class UserSkillStateORM(Base):
+    __tablename__ = "user_skill_states"
+    id = Column(String(64), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    skill_slug = Column(
+        String(64),
+        ForeignKey("skills.slug", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    mastery_score = Column(Float, nullable=False, default=0.0)
+    confidence = Column(Float, nullable=False, default=0.0)
+    evidence_count = Column(Integer, nullable=False, default=0)
+    recent_error_count = Column(Integer, nullable=False, default=0)
+    distinct_question_ids = Column(JSONType, default=list, nullable=False)
+    last_seen_at = Column(DateTime(timezone=True), nullable=True)
+    last_reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index("ix_user_skill_states_user_slug", "user_id", "skill_slug", unique=True),
     )
