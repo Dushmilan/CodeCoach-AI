@@ -15,6 +15,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.models.orm import Base
 from app.core.config import get_settings
+from app.core.db_url import (
+    escape_configparser,
+    normalize_db_url,
+    pooler_connect_args,
+    strip_pgbouncer,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -24,7 +30,13 @@ config = context.config
 settings = get_settings()
 db_url = os.getenv("DATABASE_URL", settings.DATABASE_URL)
 if db_url:
-    config.set_main_option("sqlalchemy.url", db_url)
+    # Force the asyncpg driver, strip Supabase's `?pgbouncer=true` param (not a
+    # real connection option), and escape `%` characters so the ConfigParser
+    # (interpolation) accepts percent-encoded passwords.
+    config.set_main_option(
+        "sqlalchemy.url",
+        escape_configparser(strip_pgbouncer(normalize_db_url(db_url))),
+    )
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
@@ -58,6 +70,7 @@ async def run_async_migrations() -> None:
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=pooler_connect_args(),
     )
 
     async with connectable.connect() as connection:

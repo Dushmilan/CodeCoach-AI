@@ -1,6 +1,6 @@
 ---
 name: Good First Issue
-about: A beginner-friendly task for new contributors
+about: A small, well-scoped task ideal for onboarding an internal developer
 title: '[Good First Issue] '
 labels: good first issue
 assignees: ''
@@ -36,7 +36,7 @@ assignees: ''
 cd backend && python -m pytest
 
 # Frontend tests
-cd frontend && npm run test:run
+cd frontend && pnpm test:run
 ```
 
 ## Resources

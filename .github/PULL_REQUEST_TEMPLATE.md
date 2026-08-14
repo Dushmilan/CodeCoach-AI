@@ -28,7 +28,7 @@
 <!-- Describe the tests you ran and how to reproduce them -->
 
 - [ ] Backend tests pass (`cd backend && python -m pytest`)
-- [ ] Frontend tests pass (`cd frontend && npm run test:run`)
+- [ ] Frontend tests pass (`cd frontend && pnpm test:run`)
 - [ ] TypeScript check passes (`cd frontend && npm run typecheck`)
 - [ ] Lint passes (`cd frontend && npm run lint`)
 

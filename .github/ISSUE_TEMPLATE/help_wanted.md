@@ -1,6 +1,6 @@
 ---
 name: Help Wanted
-about: A task that needs community contribution
+about: A task that needs a dedicated owner
 title: '[Help Wanted] '
 labels: help wanted
 assignees: ''
@@ -36,7 +36,7 @@ assignees: ''
 cd backend && python -m pytest
 
 # Frontend
-cd frontend && npm run test:run
+cd frontend && pnpm test:run
 ```
 
 ## Notes

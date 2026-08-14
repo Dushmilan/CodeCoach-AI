@@ -199,7 +199,7 @@ Rules:
 - **Backend:** FastAPI + async SQLAlchemy against Supabase/PostgreSQL. Pydantic
   schemas, repository ports with `sql_*` implementations, service layer,
   dependency-injected routes in `app/api/`. Auth via Supabase + JWT; code
-  execution via Piston; AI coaching via Groq/NIM.
+  execution via Piston; AI coaching via Groq.
 - **Frontend:** Next.js 14 (App Router) + TypeScript + Tailwind, shadcn-style
   components, Supabase client auth, Vitest + Testing Library + MSW for unit tests,
   Playwright for E2E. Cloudflare Workers deployment via OpenNext.
@@ -209,4 +209,4 @@ Rules:
   events, and admin data all live in Supabase. See `backend/docs/CURRICULUM_DEPLOYMENT.md`.
 
 **Historical session notes** from older phases have been removed from this file;
-if you need the project's changelog, see `Progress.md`, `Phase1.md`, and `Issues.md`.
+if you need the project's changelog and status, see `Progress.md` and `Ideas.md`.
