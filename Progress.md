@@ -114,11 +114,10 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
 - Skill taxonomy maps 21 of the 109 live questions (4 more mapping ids are
   test-only and not present in the DB); the rest have no recommendations.
 - C/Java curricula planned but not yet committed
-- **Live DB migration pending:** the repair migration `c8d0e1f2a3b4`
-  (creates the missing `rate_limit_events` + `user_daily_usage.request_count`)
-  and `d9e1f2a3b4c5` (`submissions`) are committed but **not yet applied to the
-  live Supabase database** — run `alembic upgrade head` (via `DIRECT_URL`,
-  session pooler) before deploying the backend.
+- ~~Live DB migration pending~~ — **DONE (Aug 15):** live Supabase is at head
+  `e1f2a3b4c5d6`; verified `rate_limit_events`, `user_daily_usage.request_count`,
+  `submissions`, and `question_skills` all exist on live; `alembic upgrade head`
+  is a clean no-op.
 - `backend/.env` contains credentials that appeared in plain text on this
   machine — **rotate before any real deployment**. Tests now refuse non-local
   database hosts (`tests/db_guard.py`).
