@@ -4,14 +4,12 @@ Runs against the isolated per-suite schema. These tests are purely sync
 (alembic.command drives its own event loop), which is why they live outside
 pytest-asyncio's auto loop management.
 
-MySQL's `DESCRIBE` can transiently return 1684 ("table skipped, DDL in flight")
-right after back-to-back create/drop of the same table name, so migration ops
-are wrapped in a bounded retry — the same resilience pattern recommended for
-CI migration jobs.
+Back-to-back create/drop of the same table can transiently fail on the
+pooler backed by Supabase, so migration ops are wrapped in a bounded retry —
+the same resilience pattern recommended for CI migration jobs.
 """
 
 import time
-import urllib.parse
 from typing import Callable, List, Tuple
 
 from alembic import command
@@ -19,7 +17,7 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, text
 
-from tests.migrations.conftest import BACKEND_DIR, _is_postgres
+from tests.migrations.conftest import BACKEND_DIR
 
 _RETRIES = 4
 _BACKOFF_S = 0.5
@@ -46,11 +44,7 @@ def _is_transient_db_race(exc: Exception) -> bool:
 
 
 def _sync_engine(url: str):
-    if _is_postgres(url):
-        return create_engine(
-            url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
-        )
-    return create_engine(url.replace("mysql+aiomysql://", "mysql+pymysql://"))
+    return create_engine(url.replace("postgresql+asyncpg://", "postgresql+psycopg://"))
 
 
 def _current_version(url: str) -> str:
@@ -223,26 +217,12 @@ def test_alembic_version_table_required(
     alembic_config: Config, migration_url: str
 ) -> None:
     _retry(lambda: command.upgrade(alembic_config, "head"), "upgrade head")
-    if _is_postgres(migration_url):
-        with _sync_engine(migration_url).connect() as conn:
-            row = conn.execute(
-                text(
-                    "SELECT COUNT(*) FROM information_schema.tables "
-                    "WHERE table_schema = current_schema() "
-                    "AND table_name = 'alembic_version'"
-                )
-            ).scalar_one()
-    else:
-        with _sync_engine(migration_url).connect() as conn:
-            row = conn.execute(
-                text(
-                    "SELECT COUNT(*) FROM information_schema.tables "
-                    "WHERE table_schema = :schema AND table_name = 'alembic_version'"
-                ),
-                {
-                    "schema": urllib.parse.urlparse(
-                        migration_url.replace("mysql+aiomysql://", "mysql://")
-                    ).path.lstrip("/")
-                },
-            ).scalar_one()
+    with _sync_engine(migration_url).connect() as conn:
+        row = conn.execute(
+            text(
+                "SELECT COUNT(*) FROM information_schema.tables "
+                "WHERE table_schema = current_schema() "
+                "AND table_name = 'alembic_version'"
+            )
+        ).scalar_one()
     assert row == 1

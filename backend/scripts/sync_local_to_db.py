@@ -54,7 +54,10 @@ def _strip_pgbouncer(url: str) -> str:
 def _get_database_url() -> str:
     url = _strip_pgbouncer(os.getenv("DATABASE_URL"))
     if not url:
-        url = "postgresql://codecoach:codecoach@host.docker.internal:5432/codecoach"
+        raise SystemExit(
+            "ERROR: DATABASE_URL is required (Supabase/PostgreSQL connection "
+            "string); no local fallback is allowed."
+        )
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url

@@ -52,7 +52,10 @@ ADMIN_USERS = [
 def _get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
-        url = "postgresql+asyncpg://codecoach:codecoach@host.docker.internal:5432/codecoach"
+        raise SystemExit(
+            "ERROR: DATABASE_URL is required (Supabase/PostgreSQL connection "
+            "string); no local fallback is allowed."
+        )
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url
