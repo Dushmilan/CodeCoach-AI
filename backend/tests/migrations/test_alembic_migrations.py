@@ -264,11 +264,67 @@ def test_repair_migration_recreates_missing_request_tracking(
         col_ok = conn.execute(
             text(
                 "SELECT COUNT(*) FROM information_schema.columns "
-                "WHERE table_name = 'user_daily_usage' "
+                "WHERE table_schema = 'public' "
+                "AND table_name = 'user_daily_usage' "
                 "AND column_name = 'request_count'"
             )
         ).scalar_one()
     assert table_ok, "rate_limit_events was not recreated by the repair migration"
     assert col_ok, (
-        "user_daily_usage.request_count was not recreated by the repair migration"
+        "public.user_daily_usage.request_count was not recreated by the repair "
+        "migration (the guard must scope to 'public', not any schema)"
     )
+
+
+def test_ensure_public_request_count_migration_repairs_public_only(
+    alembic_config: Config, migration_url: str
+) -> None:
+    """A stray schema carrying `user_daily_usage.request_count` must not fool
+    the ensure-public migration: `public` gets the column regardless (this is
+    the exact live-DB condition the first repair migration missed)."""
+    # Step back below the ensure-public migration so it runs again.
+    _retry(
+        lambda: command.downgrade(alembic_config, "d9e1f2a3b4c5"),
+        "downgrade to d9e1f2a3b4c5",
+    )
+
+    # Simulate the drift: public column missing + a stray schema has it.
+    with _sync_engine(migration_url).connect() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE public.user_daily_usage "
+                "DROP COLUMN IF EXISTS request_count"
+            )
+        )
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS stray_test"))
+        conn.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS stray_test.user_daily_usage "
+                "(id text, request_count integer)"
+            )
+        )
+        conn.commit()
+
+    _retry(
+        lambda: command.upgrade(alembic_config, "head"),
+        "upgrade head (ensure-public migration)",
+    )
+
+    try:
+        with _sync_engine(migration_url).connect() as conn:
+            col = conn.execute(
+                text(
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                    "WHERE table_schema = 'public' "
+                    "AND table_name = 'user_daily_usage' "
+                    "AND column_name = 'request_count'"
+                )
+            ).scalar_one()
+        assert col == 1, (
+            "ensure-public migration did not add request_count to public "
+            "when a stray schema already had it"
+        )
+    finally:
+        with _sync_engine(migration_url).connect() as conn:
+            conn.execute(text("DROP SCHEMA IF EXISTS stray_test CASCADE"))
+            conn.commit()

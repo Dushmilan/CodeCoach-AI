@@ -44,11 +44,17 @@ def _rate_limit_events_table_exists(conn) -> bool:
 
 
 def _request_count_column_exists(conn) -> bool:
-    """True when `user_daily_usage.request_count` already exists."""
+    """True when `public.user_daily_usage.request_count` already exists.
+
+    Scoped to the ``public`` schema: a stray test schema (e.g.
+    ``codecoach_test``) may carry a same-named column, which must NOT satisfy
+    this guard or the real column is never created.
+    """
     row = conn.execute(
         sa.text(
             "SELECT COUNT(*) FROM information_schema.columns "
-            "WHERE table_name = 'user_daily_usage' "
+            "WHERE table_schema = 'public' "
+            "AND table_name = 'user_daily_usage' "
             "AND column_name = 'request_count'"
         )
     ).scalar_one()
