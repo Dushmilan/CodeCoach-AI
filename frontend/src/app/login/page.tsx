@@ -1,50 +1,64 @@
-"use client";
+'use client';
 
-import { Header } from "@/components/header/Header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/Input";
-import { useAuth } from "@/providers/AuthProvider";
-import { motion } from "framer-motion";
-import { Lock, LogIn, User } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { Header } from '@/components/header/Header';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/Input';
+import { useAuth } from '@/providers/AuthProvider';
+import { signInWithGoogle } from '@/features/auth/auth.service';
+import { motion } from 'framer-motion';
+import { Lock, LogIn, User } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      setError("");
+      setError('');
 
       // Client-side validation
       if (username.length < 3) {
-        setError("Username must be at least 3 characters");
+        setError('Username must be at least 3 characters');
         return;
       }
       if (password.length < 6) {
-        setError("Password must be at least 6 characters");
+        setError('Password must be at least 6 characters');
         return;
       }
 
       setIsLoading(true);
       try {
         await login(username, password);
-        router.push("/");
+        router.push('/');
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Login failed");
+        setError(err instanceof Error ? err.message : 'Login failed');
       } finally {
         setIsLoading(false);
       }
     },
     [username, password, login, router],
   );
+
+  const handleGoogle = useCallback(async () => {
+    setError('');
+    setIsGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+      // The browser is redirected to Supabase; no further action here.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed');
+      setIsGoogleLoading(false);
+    }
+  }, []);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">
@@ -63,10 +77,7 @@ export default function LoginPage() {
               <div className="text-center mb-8">
                 <div className="mb-4 flex justify-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
-                    <LogIn
-                      className="h-6 w-6 text-primary/80"
-                      strokeWidth={1.5}
-                    />
+                    <LogIn className="h-6 w-6 text-primary/80" strokeWidth={1.5} />
                   </div>
                 </div>
                 <h1 className="text-2xl font-semibold tracking-tight text-foreground/90">
@@ -77,7 +88,26 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleGoogle}
+                  disabled={isGoogleLoading}
+                  aria-label="Continue with Google"
+                >
+                  {isGoogleLoading ? 'Redirecting...' : 'Continue with Google'}
+                </Button>
+
+                <div className="flex items-center gap-3 text-[11px] text-muted-foreground/40">
+                  <span className="h-px flex-1 bg-white/[0.06]" />
+                  or
+                  <span className="h-px flex-1 bg-white/[0.06]" />
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <Input
                   id="username"
                   type="text"
@@ -112,12 +142,12 @@ export default function LoginPage() {
                 )}
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign in"}
+                  {isLoading ? 'Signing in...' : 'Sign in'}
                 </Button>
               </form>
 
               <p className="text-center text-xs text-muted-foreground/60 mt-6">
-                Don&apos;t have an account?{" "}
+                Don&apos;t have an account?{' '}
                 <Link
                   href="/register"
                   className="text-primary/80 hover:text-primary transition-colors font-medium"

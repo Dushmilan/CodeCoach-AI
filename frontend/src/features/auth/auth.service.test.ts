@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AuthService } from "./auth.service";
-import { HttpClient } from "@/lib/http-client";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { AuthService } from './auth.service';
+import { HttpClient } from '@/lib/http-client';
 
 function createMockHttp(): HttpClient {
   return {
@@ -11,7 +11,7 @@ function createMockHttp(): HttpClient {
   };
 }
 
-describe("AuthService", () => {
+describe('AuthService', () => {
   let http: ReturnType<typeof createMockHttp>;
   let service: AuthService;
 
@@ -20,154 +20,217 @@ describe("AuthService", () => {
     service = new AuthService(http);
   });
 
-  describe("login", () => {
-    it("calls POST /api/auth/login with credentials", async () => {
+  describe('login', () => {
+    it('calls POST /api/auth/login with credentials', async () => {
       vi.mocked(http.post).mockResolvedValue({
-        access_token: "jwt",
-        token_type: "bearer",
+        access_token: 'jwt',
+        token_type: 'bearer',
         expires_in: 86400,
         user: {
-          id: "1",
-          username: "u",
-          email: "u@t.com",
-          created_at: "2024-01-01",
+          id: '1',
+          username: 'u',
+          email: 'u@t.com',
+          created_at: '2024-01-01',
           is_active: true,
         },
       });
 
-      await service.login({ username: "u", password: "p" });
+      await service.login({ username: 'u', password: 'p' });
 
-      expect(http.post).toHaveBeenCalledWith("/api/auth/login", {
-        username: "u",
-        password: "p",
+      expect(http.post).toHaveBeenCalledWith('/api/auth/login', {
+        username: 'u',
+        password: 'p',
       });
     });
 
-    it("returns token response on success", async () => {
+    it('returns token response on success', async () => {
       const mockResponse = {
-        access_token: "jwt_token",
-        token_type: "bearer",
+        access_token: 'jwt_token',
+        token_type: 'bearer',
         expires_in: 86400,
         user: {
-          id: "1",
-          username: "u",
-          email: "u@t.com",
-          created_at: "2024-01-01",
+          id: '1',
+          username: 'u',
+          email: 'u@t.com',
+          created_at: '2024-01-01',
           is_active: true,
         },
       };
       vi.mocked(http.post).mockResolvedValue(mockResponse);
 
-      const result = await service.login({ username: "u", password: "p" });
+      const result = await service.login({ username: 'u', password: 'p' });
 
-      expect(result.access_token).toBe("jwt_token");
-      expect(result.user.username).toBe("u");
+      expect(result.access_token).toBe('jwt_token');
+      expect(result.user.username).toBe('u');
     });
 
-    it("throws on invalid credentials", async () => {
-      vi.mocked(http.post).mockRejectedValue(
-        new Error("Invalid username or password"),
-      );
+    it('throws on invalid credentials', async () => {
+      vi.mocked(http.post).mockRejectedValue(new Error('Invalid username or password'));
 
-      await expect(
-        service.login({ username: "u", password: "wrong" }),
-      ).rejects.toThrow("Invalid username or password");
+      await expect(service.login({ username: 'u', password: 'wrong' })).rejects.toThrow(
+        'Invalid username or password',
+      );
     });
   });
 
-  describe("register", () => {
-    it("calls POST /api/auth/register with user data", async () => {
+  describe('register', () => {
+    it('calls POST /api/auth/register with user data', async () => {
       vi.mocked(http.post).mockResolvedValue({
-        access_token: "jwt",
-        token_type: "bearer",
+        access_token: 'jwt',
+        token_type: 'bearer',
         expires_in: 86400,
         user: {
-          id: "1",
-          username: "new",
-          email: "n@t.com",
-          created_at: "2024-01-01",
+          id: '1',
+          username: 'new',
+          email: 'n@t.com',
+          created_at: '2024-01-01',
           is_active: true,
         },
       });
 
       await service.register({
-        username: "new",
-        email: "n@t.com",
-        password: "pass",
+        username: 'new',
+        email: 'n@t.com',
+        password: 'pass',
       });
 
-      expect(http.post).toHaveBeenCalledWith("/api/auth/register", {
-        username: "new",
-        email: "n@t.com",
-        password: "pass",
+      expect(http.post).toHaveBeenCalledWith('/api/auth/register', {
+        username: 'new',
+        email: 'n@t.com',
+        password: 'pass',
       });
     });
   });
 
-  describe("loginWithSupabase", () => {
-    it("calls POST /api/auth/supabase with access token", async () => {
+  describe('loginWithSupabase', () => {
+    it('calls POST /api/auth/supabase with access token', async () => {
       vi.mocked(http.post).mockResolvedValue({
-        access_token: "jwt",
-        token_type: "bearer",
+        access_token: 'jwt',
+        token_type: 'bearer',
         expires_in: 86400,
         user: {
-          id: "1",
-          username: "u",
-          email: "u@t.com",
-          created_at: "2024-01-01",
+          id: '1',
+          username: 'u',
+          email: 'u@t.com',
+          created_at: '2024-01-01',
           is_active: true,
         },
       });
 
-      await service.loginWithSupabase({ access_token: "supabase_token" });
+      await service.loginWithSupabase({ access_token: 'supabase_token' });
 
-      expect(http.post).toHaveBeenCalledWith("/api/auth/supabase", {
-        access_token: "supabase_token",
+      expect(http.post).toHaveBeenCalledWith('/api/auth/supabase', {
+        access_token: 'supabase_token',
       });
     });
   });
 
-  describe("refresh", () => {
-    it("calls POST /api/auth/refresh with refresh token", async () => {
+  describe('refresh', () => {
+    it('calls POST /api/auth/refresh with refresh token', async () => {
       vi.mocked(http.post).mockResolvedValue({
-        access_token: "new_jwt",
-        refresh_token: "rotated_refresh",
-        token_type: "bearer",
+        access_token: 'new_jwt',
+        refresh_token: 'rotated_refresh',
+        token_type: 'bearer',
         expires_in: 1800,
         user: {
-          id: "1",
-          username: "u",
-          email: "u@t.com",
-          created_at: "2024-01-01",
+          id: '1',
+          username: 'u',
+          email: 'u@t.com',
+          created_at: '2024-01-01',
           is_active: true,
         },
       });
 
-      const result = await service.refresh("refresh_token_123");
+      const result = await service.refresh('refresh_token_123');
 
-      expect(http.post).toHaveBeenCalledWith("/api/auth/refresh", {
-        refresh_token: "refresh_token_123",
+      expect(http.post).toHaveBeenCalledWith('/api/auth/refresh', {
+        refresh_token: 'refresh_token_123',
       });
-      expect(result.access_token).toBe("new_jwt");
-      expect(result.refresh_token).toBe("rotated_refresh");
+      expect(result.access_token).toBe('new_jwt');
+      expect(result.refresh_token).toBe('rotated_refresh');
     });
   });
 
-  describe("getMe", () => {
-    it("calls GET /api/auth/me with Authorization header", async () => {
+  describe('getMe', () => {
+    it('calls GET /api/auth/me with Authorization header', async () => {
       vi.mocked(http.get).mockResolvedValue({
-        id: "1",
-        username: "u",
-        email: "u@t.com",
-        created_at: "2024-01-01",
+        id: '1',
+        username: 'u',
+        email: 'u@t.com',
+        created_at: '2024-01-01',
         is_active: true,
       });
 
-      await service.getMe("my_token");
+      await service.getMe('my_token');
 
-      expect(http.get).toHaveBeenCalledWith("/api/auth/me", {
-        headers: { Authorization: "Bearer my_token" },
+      expect(http.get).toHaveBeenCalledWith('/api/auth/me', {
+        headers: { Authorization: 'Bearer my_token' },
       });
     });
+  });
+});
+
+describe('signInWithGoogle', () => {
+  const mockSignInWithOAuth = vi.fn();
+  const mockCreateBrowserClient = vi.fn();
+
+  beforeEach(() => {
+    vi.resetModules();
+    mockSignInWithOAuth.mockReset();
+    mockCreateBrowserClient.mockReset();
+    vi.stubGlobal('window', { location: { origin: 'http://localhost:3000' } });
+
+    vi.doMock('@supabase/ssr', () => ({
+      createBrowserClient: (...args: unknown[]) => {
+        mockCreateBrowserClient(...args);
+        return {
+          auth: { signInWithOAuth: mockSignInWithOAuth },
+        };
+      },
+    }));
+
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://test.supabase.co');
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'sb_publishable_test');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('redirects to Supabase Google OAuth with the callback URL', async () => {
+    mockSignInWithOAuth.mockResolvedValue({ error: null });
+
+    const { signInWithGoogle } = await import('./auth.service');
+
+    await signInWithGoogle();
+
+    expect(mockCreateBrowserClient).toHaveBeenCalledWith(
+      'https://test.supabase.co',
+      'sb_publishable_test',
+    );
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'http://localhost:3000/auth/callback' },
+    });
+  });
+
+  it('throws when the redirect_to fails', async () => {
+    mockSignInWithOAuth.mockResolvedValue({
+      error: new Error('provider not enabled'),
+    });
+
+    const { signInWithGoogle } = await import('./auth.service');
+
+    await expect(signInWithGoogle()).rejects.toThrow('provider not enabled');
+  });
+
+  it('throws a clear error when Supabase env vars are missing', async () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', '');
+
+    const { signInWithGoogle } = await import('./auth.service');
+
+    await expect(signInWithGoogle()).rejects.toThrow('Supabase is not configured');
   });
 });
