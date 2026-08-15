@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FetchClient, HttpError } from "./fetch-client";
+import {
+  getAccessToken,
+  setAccessToken,
+  setCsrfToken,
+  getCsrfToken,
+} from "./auth-session";
 
 function createMockResponse(overrides: Partial<Response> = {}): Response {
   return {
@@ -288,25 +294,19 @@ describe("FetchClient", () => {
   });
 
   describe("refresh-on-401", () => {
-    let storage: Map<string, string>;
-
     beforeEach(() => {
-      storage = new Map();
-      vi.stubGlobal("localStorage", {
-        getItem: (key: string) => storage.get(key) ?? null,
-        setItem: (key: string, value: string) => storage.set(key, value),
-        removeItem: (key: string) => storage.delete(key),
-        clear: () => storage.clear(),
-      });
+      // SEC-2: the access token lives in memory (auth-session), never
+      // localStorage. Reset it per test.
+      vi.resetModules();
+      setAccessToken("expired_jwt");
     });
 
     afterEach(() => {
-      vi.unstubAllGlobals();
+      setAccessToken(null);
+      setCsrfToken(null);
     });
 
-    it("refreshes token and retries original request on 401", async () => {
-      storage.set("auth_token", JSON.stringify("expired_jwt"));
-      storage.set("auth_refresh_token", JSON.stringify("valid_refresh"));
+    it("refreshes via httpOnly cookie and retries original request on 401", async () => {
       client = new FetchClient();
 
       fetchSpy
@@ -322,7 +322,6 @@ describe("FetchClient", () => {
           createMockResponse({
             json: vi.fn().mockResolvedValue({
               access_token: "new_jwt",
-              refresh_token: "rotated_refresh",
               token_type: "bearer",
               expires_in: 1800,
               user: { id: "1", username: "u" },
@@ -338,45 +337,57 @@ describe("FetchClient", () => {
       const result = await client.get("/api/protected");
 
       expect(result).toEqual({ protected: true });
+      // Refresh is cookie-based: no body (the httpOnly cookie travels with
+      // credentials: "include"), access token returned in the response body.
       expect(fetchSpy).toHaveBeenNthCalledWith(
         2,
         "http://localhost:8000/api/auth/refresh",
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ refresh_token: "valid_refresh" }),
+          credentials: "include",
         }),
       );
-      expect(storage.get("auth_token")).toBe(JSON.stringify("new_jwt"));
-      expect(storage.get("auth_refresh_token")).toBe(
-        JSON.stringify("rotated_refresh"),
-      );
+      const refreshCall = fetchSpy.mock.calls[1][1] as RequestInit;
+      expect(refreshCall.body).toBeUndefined();
+      // New access token lands in memory, not localStorage.
+      expect(getAccessToken()).toBe("new_jwt");
+      expect(localStorage.getItem("auth_token")).toBeNull();
       const retryCall = fetchSpy.mock.calls[2][1] as RequestInit;
       const retryHeaders = retryCall.headers as Record<string, string>;
       expect(retryHeaders["Authorization"]).toBe("Bearer new_jwt");
     });
 
-    it("does not retry when no refresh token is stored", async () => {
-      storage.set("auth_token", JSON.stringify("expired_jwt"));
+    it("always attempts cookie refresh on 401 (server rejects if no cookie)", async () => {
+      setAccessToken(null);
       client = new FetchClient();
 
-      fetchSpy.mockResolvedValue(
-        createMockResponse({
-          ok: false,
-          status: 401,
-          statusText: "Unauthorized",
-          text: vi.fn().mockResolvedValue("expired"),
-        }),
-      );
+      fetchSpy
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: "Unauthorized",
+            text: vi.fn().mockResolvedValue("expired"),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: "Unauthorized",
+            text: vi.fn().mockResolvedValue("no session"),
+          }),
+        );
 
       await expect(client.get("/api/protected")).rejects.toMatchObject({
         status: 401,
       });
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      // One original call + one refresh attempt; no retry because refresh
+      // failed (no httpOnly cookie on the server side).
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
 
-    it("clears tokens and does not retry when refresh fails", async () => {
-      storage.set("auth_token", JSON.stringify("expired_jwt"));
-      storage.set("auth_refresh_token", JSON.stringify("bad_refresh"));
+    it("clears the in-memory token and does not retry when refresh fails", async () => {
       client = new FetchClient();
 
       fetchSpy
@@ -401,13 +412,12 @@ describe("FetchClient", () => {
         status: 401,
       });
       expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(getAccessToken()).toBeNull();
       expect(localStorage.getItem("auth_token")).toBeNull();
-      expect(localStorage.getItem("auth_refresh_token")).toBeNull();
     });
 
     it("single-flights concurrent refresh requests", async () => {
-      storage.set("auth_token", JSON.stringify("expired_jwt"));
-      storage.set("auth_refresh_token", JSON.stringify("valid_refresh"));
+      setAccessToken("expired_jwt");
       client = new FetchClient();
 
       fetchSpy
@@ -455,6 +465,38 @@ describe("FetchClient", () => {
         ([url]) => url === "http://localhost:8000/api/auth/refresh",
       );
       expect(refreshCalls).toHaveLength(1);
+    });
+
+    it("attaches X-CSRF-Token header on mutating requests when csrf is set", async () => {
+      setAccessToken("valid_jwt");
+      setCsrfToken("csrf-value-123");
+      client = new FetchClient();
+
+      fetchSpy.mockResolvedValue(
+        createMockResponse({ json: vi.fn().mockResolvedValue({ ok: 1 }) }),
+      );
+
+      await client.post("/api/run/", { code: "x" });
+
+      const callArgs = fetchSpy.mock.calls[0][1] as RequestInit;
+      const headers = callArgs.headers as Record<string, string>;
+      expect(headers["X-CSRF-Token"]).toBe("csrf-value-123");
+    });
+
+    it("omits X-CSRF-Token on GET requests", async () => {
+      setAccessToken("valid_jwt");
+      setCsrfToken("csrf-value-123");
+      client = new FetchClient();
+
+      fetchSpy.mockResolvedValue(
+        createMockResponse({ json: vi.fn().mockResolvedValue({ ok: 1 }) }),
+      );
+
+      await client.get("/api/questions/");
+
+      const callArgs = fetchSpy.mock.calls[0][1] as RequestInit;
+      const headers = callArgs.headers as Record<string, string>;
+      expect(headers["X-CSRF-Token"]).toBeUndefined();
     });
   });
 });

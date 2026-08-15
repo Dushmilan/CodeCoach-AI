@@ -1,7 +1,8 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 import logging
+import secrets
 
 from app.services.auth_service import AuthService
 from app.ports.user_repository import UserRepository
@@ -67,6 +68,28 @@ async def require_super_admin(
             detail="Insufficient permissions: super_admin role required",
         )
     return current_user
+
+
+REFRESH_COOKIE = "refresh_token"
+CSRF_COOKIE = "csrf_token"
+
+
+async def require_csrf(request: Request) -> None:
+    """Double-submit CSRF check for cookie-authenticated mutating endpoints.
+
+    Only enforced when a session (refresh_token cookie) is present — Bearer-only
+    requests have no cookie to protect. When a session exists, the X-CSRF-Token
+    header must match the csrf_token cookie value; otherwise 403.
+    """
+    if not request.cookies.get(REFRESH_COOKIE):
+        return  # No cookie session -> nothing to protect.
+    csrf_cookie = request.cookies.get(CSRF_COOKIE)
+    header = request.headers.get("x-csrf-token")
+    if not csrf_cookie or not header or not secrets.compare_digest(header, csrf_cookie):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CSRF token missing or invalid",
+        )
 
 
 async def require_premium(

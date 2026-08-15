@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FetchClient, HttpError } from "./fetch-client";
+import { setAccessToken } from "./auth-session";
 
 function createMockFetch(status: number, body: unknown) {
   return vi.fn().mockResolvedValue({
@@ -90,8 +91,8 @@ describe("FetchClient", () => {
     await expect(client.get("/api/test/999")).rejects.toThrow(HttpError);
   });
 
-  it("includes auth token from localStorage", async () => {
-    localStorage.setItem("auth_token", JSON.stringify("test-token"));
+  it("includes access token from the in-memory session store", async () => {
+    setAccessToken("test-token");
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       status: 200,
@@ -103,6 +104,8 @@ describe("FetchClient", () => {
     const callArgs = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
     const headers = callArgs.headers as Record<string, string>;
     expect(headers["Authorization"]).toBe("Bearer test-token");
+    // SEC-2: token is memory-only, never persisted.
+    expect(localStorage.getItem("auth_token")).toBeNull();
   });
 
   it("times out after specified duration", async () => {
