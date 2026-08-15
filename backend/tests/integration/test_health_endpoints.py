@@ -140,6 +140,35 @@ class TestHealthEndpoints:
         assert response.status_code == 200
         assert response.json()["dependencies"]["questions_db"] == "unavailable"
 
+    def test_health_check_db_probe_tolerates_slow_pooler(
+        self, test_client: TestClient, monkeypatch
+    ):
+        """The DB probe must tolerate Supabase pooler latency (~1.6s round
+        trip), not only sub-second local connections."""
+        import asyncio
+
+        import app.api.health as health
+
+        class _SlowSession:
+            """Session whose connection establishment (__aenter__) is slow,
+            like the Supabase pooler round-trip."""
+
+            async def __aenter__(self):
+                await asyncio.sleep(2.5)  # longer than a local round-trip
+                return self
+
+            async def execute(self, *args, **kwargs):
+                return None
+
+            async def __aexit__(self, *args):
+                return False
+
+        monkeypatch.setattr(health, "async_session_maker", lambda: _SlowSession())
+
+        response = test_client.get("/health/")
+
+        assert response.json()["dependencies"]["questions_db"] == "ok"
+
     def test_health_check_detailed_response_time(self, test_client: TestClient):
         """Test detailed health check response time."""
         import time

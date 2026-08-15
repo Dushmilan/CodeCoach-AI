@@ -12,7 +12,7 @@ from app.ports.usage_repository import UsageRepository
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-_DB_PROBE_TIMEOUT_S = 1.0
+_DB_PROBE_TIMEOUT_S = 5.0  # must tolerate Supabase pooler round-trip (~1.6s)
 
 
 async def db_reachable(timeout: float = _DB_PROBE_TIMEOUT_S) -> str:
