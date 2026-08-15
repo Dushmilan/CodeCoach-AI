@@ -4,8 +4,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv, find_dotenv
 import logging
 import os
@@ -46,7 +44,11 @@ from app.api import (  # noqa: E402
     submissions,
 )
 from app.core.config import get_settings, is_production  # noqa: E402
-from app.middleware.rate_limit import limiter  # noqa: E402
+from app.middleware.rate_limit import (  # noqa: E402
+    limiter,
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,
+)
 from app.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
 from app.services.redis_service import RedisCache  # noqa: E402
 
