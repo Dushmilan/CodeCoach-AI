@@ -44,6 +44,52 @@ describe("MarkdownRenderer", () => {
     expect(screen.getByText("click")).toBeInTheDocument();
   });
 
+  it("does not render protocol-relative (//) URLs as clickable links", () => {
+    render(<MarkdownRenderer content={"[click](//evil.example/path)"} />);
+    // `//evil.example` is protocol-relative: its scheme is unknown at render
+    // time, so it must not become a link (referrer leak / open-redirect risk).
+    expect(document.querySelector("a[href^='//']")).toBeNull();
+    expect(document.querySelector("a")).toBeNull();
+    expect(screen.getByText("click")).toBeInTheDocument();
+  });
+
+  it("does not render data: URLs as clickable links", () => {
+    render(
+      <MarkdownRenderer
+        content={"[click](data:text/html,<script>alert(1)</script>)"}
+      />,
+    );
+    expect(document.querySelector("a[href^='data:']")).toBeNull();
+    expect(document.querySelector("a")).toBeNull();
+  });
+
+  it("does not render javascript:/data: image sources", () => {
+    render(
+      <MarkdownRenderer
+        content={"![js](javascript:alert(1)) ![data](data:text/html,<b>x</b>)"}
+      />,
+    );
+    expect(document.querySelector("img[src^='javascript:']")).toBeNull();
+    expect(document.querySelector("img[src^='data:']")).toBeNull();
+  });
+
+  it("neutralizes raw HTML elements (script, iframe, svg onload, img onerror)", () => {
+    render(
+      <MarkdownRenderer
+        content={
+          "# T\n\n<script>window.__xss=1</script>\n\n" +
+          '<iframe src="https://evil.example"></iframe>\n\n' +
+          "<svg onload=alert(1)></svg>\n\n" +
+          "<img src=x onerror=alert(1)>"
+        }
+      />,
+    );
+    expect(document.querySelector("script")).toBeNull();
+    expect(document.querySelector("iframe")).toBeNull();
+    expect(document.querySelector("svg")).toBeNull();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
   it("renders safe external links with noreferrer", () => {
     render(<MarkdownRenderer content={"[docs](https://example.com)"} />);
     const link = document.querySelector("a");
@@ -54,7 +100,9 @@ describe("MarkdownRenderer", () => {
   it("renders GFM tables as real table elements", () => {
     render(
       <MarkdownRenderer
-        content={"| Type | Example |\n|---|---|\n| `int` | 42 |\n| `str` | \"hi\" |"}
+        content={
+          '| Type | Example |\n|---|---|\n| `int` | 42 |\n| `str` | "hi" |'
+        }
       />,
     );
     const table = document.querySelector("table");
