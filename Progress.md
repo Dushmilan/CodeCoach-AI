@@ -31,7 +31,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | Skill Graph           | ✅     | Learning events → mastery per skill; statuses new/learning/developing/strong/needs_review; decay + prerequisites. Tables applied to the live DB    |
 | Practice Next         | ✅     | Recommended-questions API + UI queue on `/problems` (21 of 109 questions mapped)                                                                   |
 | Rescue Contract       | ✅     | Checkpoints, RescueIntervention, ProblemFlowMap / SolutionFlowMap                                                                                  |
-| Auth                  | ✅     | Email/password (JWT + bcrypt), refresh tokens, Supabase OAuth (Google)                                                                             |
+| Auth                  | ✅     | Email/password (JWT + bcrypt), refresh tokens, Supabase OAuth (Google) — "Continue with Google" button on `/login`                                 |
 | Usage Metering        | ✅     | Daily input/output token caps, `X-Usage-*` headers, Redis-backed limits                                                                            |
 | Plans & Gates         | ✅     | Per-user plan, **quota-gated** coaching (free 20 req/day, paid 500), usage bar, upgrade modal                                                      |
 | Attempt History       | ✅     | `submissions` table persists every graded submit (attempt_index, error_signature) + `GET /api/submissions/me` — foundation for mistake-memory (#1) |
@@ -73,6 +73,12 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 - **Auth:** Email/password (bcrypt + JWT) + Supabase OAuth (Google)
 - **Rate Limiting:** slowapi per-minute per-user limit (default 60/min), per-mode coach/run/submit limits
 - **Migrations:** `backend/alembic/versions/` — initial schema, admin tables, usage/request tracking, user plan column, skill-graph tables
+
+> **IMP — Environment status:** The currently wired Supabase project
+> (`qazpxjpcvsjbmgbzuxxp`) is the **TEST** database and the Google OAuth is
+> **TEST OAuth**. A production database is NOT configured yet. See
+> [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md) for the full test
+> wiring (keys, OAuth URLs, verification commands).
 
 ## Test Counts (committed test files)
 
