@@ -7,11 +7,11 @@
 //   - NEXT_PUBLIC_API_URL: inlined into the client bundle. In Docker this is
 //     the browser-reachable URL (http://localhost:8000); on Cloudflare it is
 //     the public backend URL used directly by the browser.
-const REWRITE_TARGET = process.env.API_URL || "http://localhost:8000";
+const REWRITE_TARGET = process.env.API_URL || 'http://localhost:8000';
 
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
   },
   webpack: (config) => {
     config.cache = false;
@@ -25,13 +25,49 @@ const nextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          // Baseline hardening headers (mirrors the backend middleware).
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(), microphone=(), camera=()',
+          },
+          // CSP: keep Next.js + Monaco working ('unsafe-inline'/'unsafe-eval'
+          // are required by hydration scripts and the editor) while blocking
+          // the obvious XSS sinks (object-src, frame-ancestors, base-uri).
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data:",
+              "connect-src 'self' https: wss: ws:",
+              "worker-src 'self' blob:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "frame-ancestors 'none'",
+              "form-action 'self'",
+            ].join('; '),
+          },
+        ],
+      },
+    ];
+  },
 };
 
 // Integrate Cloudflare bindings with the Next.js dev server only.
 // @opennextjs/cloudflare is a devDependency; requiring it at runtime in the
 // Docker standalone production image would fail.
-if (process.env.NODE_ENV !== "production") {
-  const { initOpenNextCloudflareForDev } = require("@opennextjs/cloudflare");
+if (process.env.NODE_ENV !== 'production') {
+  const { initOpenNextCloudflareForDev } = require('@opennextjs/cloudflare');
   initOpenNextCloudflareForDev();
 }
 

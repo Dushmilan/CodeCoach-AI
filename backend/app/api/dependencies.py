@@ -14,6 +14,8 @@ from app.ports.question_admin_repository import QuestionAdminRepository
 from app.ports.course_admin_repository import CourseAdminRepository
 from app.ports.user_repository import UserRepository
 from app.ports.usage_repository import UsageRepository
+from app.ports.submission_repository import SubmissionRepository
+from app.repositories.sql_submission_repository import SqlSubmissionRepository
 from app.repositories.sql_question_repository import SqlQuestionRepository
 from app.repositories.sql_course_repository import SqlCourseRepository
 from app.repositories.sql_progress_repository import SqlProgressRepository
@@ -70,6 +72,12 @@ def get_usage_service(
     usage_repo: UsageRepository = Depends(get_usage_repo),
 ) -> UsageService:
     return UsageService(repo=usage_repo)
+
+
+async def get_submission_repo(
+    db: AsyncSession = Depends(get_db),
+) -> AsyncGenerator[SubmissionRepository, None]:
+    yield SqlSubmissionRepository(db)
 
 
 async def get_admin_repo(

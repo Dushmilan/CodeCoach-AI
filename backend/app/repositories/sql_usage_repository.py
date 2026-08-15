@@ -3,7 +3,6 @@ from datetime import date, datetime, timezone
 from typing import Optional, Sequence
 
 from sqlalchemy import select, func
-from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,29 +64,19 @@ class SqlUsageRepository(UsageRepository):
             "output_tokens": output_tokens,
             "request_count": request_count,
         }
-        dialect = self.session.bind.dialect.name if self.session.bind else "mysql"
-        if dialect == "postgresql":
-            stmt = pg_insert(UserDailyUsageORM).values(**values)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=[
-                    UserDailyUsageORM.user_id,
-                    UserDailyUsageORM.usage_date,
-                ],
-                set_={
-                    "input_tokens": UserDailyUsageORM.input_tokens + input_tokens,
-                    "output_tokens": UserDailyUsageORM.output_tokens + output_tokens,
-                    "request_count": UserDailyUsageORM.request_count + request_count,
-                    "updated_at": datetime.now(timezone.utc),
-                },
-            )
-        else:
-            stmt = mysql_insert(UserDailyUsageORM).values(**values)
-            stmt = stmt.on_duplicate_key_update(
-                input_tokens=UserDailyUsageORM.input_tokens + input_tokens,
-                output_tokens=UserDailyUsageORM.output_tokens + output_tokens,
-                request_count=UserDailyUsageORM.request_count + request_count,
-                updated_at=datetime.now(timezone.utc),
-            )
+        stmt = pg_insert(UserDailyUsageORM).values(**values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[
+                UserDailyUsageORM.user_id,
+                UserDailyUsageORM.usage_date,
+            ],
+            set_={
+                "input_tokens": UserDailyUsageORM.input_tokens + input_tokens,
+                "output_tokens": UserDailyUsageORM.output_tokens + output_tokens,
+                "request_count": UserDailyUsageORM.request_count + request_count,
+                "updated_at": datetime.now(timezone.utc),
+            },
+        )
         await self.session.execute(stmt)
         await self.session.commit()
 

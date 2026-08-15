@@ -91,28 +91,15 @@ class SqlQuestionRepository(QuestionRepository):
         return [r[0] for r in result.all()]
 
     async def get_company_tags(self) -> List[str]:
-        # JSONB array elements extracted via unnest for PostgreSQL, generic JSON path for MySQL
-        dialect = self.session.bind.dialect.name if self.session.bind else "mysql"
-        if dialect == "postgresql":
-            result = await self.session.execute(
-                text("""
-                    SELECT DISTINCT jsonb_array_elements_text(company_tags) as tag
-                    FROM questions
-                    WHERE company_tags IS NOT NULL AND jsonb_array_length(company_tags) > 0
-                """)
-            )
-        else:
-            stmt = select(QuestionORM.company_tags).where(
-                QuestionORM.company_tags.isnot(None)
-            )
-            result = await self.session.execute(stmt)
-            tags = set()
-            for row in result.all():
-                row_tags = row[0]
-                if isinstance(row_tags, list):
-                    for t in row_tags:
-                        tags.add(str(t))
-            return sorted(tags)
+        # JSONB array elements extracted via unnest (PostgreSQL/Supabase only).
+        result = await self.session.execute(
+            text("""
+                SELECT DISTINCT jsonb_array_elements_text(company_tags) as tag
+                FROM questions
+                WHERE company_tags IS NOT NULL AND jsonb_array_length(company_tags) > 0
+            """)
+        )
+        return [r[0] for r in result.all()]
         return sorted([r[0] for r in result.all()])
 
     async def add(self, question: Question) -> None:

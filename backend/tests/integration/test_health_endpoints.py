@@ -117,6 +117,29 @@ class TestHealthEndpoints:
             f"Health check took {response_time}ms, expected < 100ms"
         )
 
+    def test_health_check_reports_db_ok_when_reachable(self, test_client: TestClient):
+        """`questions_db` must reflect a real DB probe, not a hardcoded value."""
+        response = test_client.get("/health/")
+
+        assert response.status_code == 200
+        assert response.json()["dependencies"]["questions_db"] in ("ok", "unavailable")
+
+    def test_health_check_reports_db_unavailable_when_down(
+        self, test_client: TestClient, monkeypatch
+    ):
+        """A failing DB connection must surface as `questions_db: unavailable`."""
+        import app.api.health as health
+
+        async def _db_down():
+            raise RuntimeError("simulated DB outage")
+
+        monkeypatch.setattr(health, "async_session_maker", _db_down)
+
+        response = test_client.get("/health/")
+
+        assert response.status_code == 200
+        assert response.json()["dependencies"]["questions_db"] == "unavailable"
+
     def test_health_check_detailed_response_time(self, test_client: TestClient):
         """Test detailed health check response time."""
         import time

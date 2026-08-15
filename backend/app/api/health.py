@@ -1,12 +1,46 @@
 from fastapi import APIRouter, Depends, Request
 from datetime import datetime, timedelta, timezone
+import asyncio
+import logging
 import os
+from sqlalchemy import text
 
 from app.api.dependencies import get_usage_repo
-from app.core.database import get_db
+from app.core.database import async_session_maker, get_db
 from app.ports.usage_repository import UsageRepository
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+_DB_PROBE_TIMEOUT_S = 1.0
+
+
+async def db_reachable(timeout: float = _DB_PROBE_TIMEOUT_S) -> str:
+    """Probe the database with a bounded timeout.
+
+    Returns "ok" when the database answers `SELECT 1`, otherwise
+    "unavailable" — the endpoint never fails hard on a DB outage so it can
+    report the truth while staying up itself.
+    """
+    try:
+        async with asyncio.timeout(timeout):
+            async with async_session_maker() as session:
+                await session.execute(text("SELECT 1"))
+        return "ok"
+    except asyncio.CancelledError:
+        # Cancellation (e.g. the probe's own deadline or the client task being
+        # torn down) means we could not confirm the DB; report it truthfully
+        # instead of surfacing a 500. CancelledError is a BaseException, so a
+        # bare `except Exception` would let it escape.
+        logger.debug("Health DB probe cancelled")
+        return "unavailable"
+    except Exception as exc:  # noqa: BLE001 - any probe failure means unreachable
+        # A failing DB is expected while an outage lasts (the healthcheck runs
+        # every 30s), so log the cause at debug and a one-line warning — no
+        # traceback spam.
+        logger.debug("Health DB probe failed", exc_info=True)
+        logger.warning("Health DB probe failed: %s", exc)
+        return "unavailable"
 
 
 @router.get("/")
@@ -24,7 +58,7 @@ async def health_check(request: Request):
         "dependencies": {
             "groq": "configured" if os.getenv("GROQ_API_KEY") else "not_configured",
             "piston_api": "configured",
-            "questions_db": "loaded",
+            "questions_db": await db_reachable(),
         },
     }
 

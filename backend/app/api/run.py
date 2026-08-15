@@ -39,7 +39,7 @@ async def execute_code(
         raise
     except Exception as e:
         logger.error(f"Error executing code: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error executing code: {str(e)}")
+        raise HTTPException(status_code=500, detail="Code execution failed")
 
 
 @router.post("/validate")
@@ -70,7 +70,8 @@ async def validate_code(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error validating code: {str(e)}")
+        logger.error(f"Error validating code: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Code validation failed")
 
 
 @router.get("/languages")
@@ -100,9 +101,8 @@ async def get_supported_languages(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching languages: {str(e)}"
-        )
+        logger.error(f"Error fetching languages: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch languages")
 
 
 @router.get("/runtimes")
@@ -116,6 +116,5 @@ async def get_runtimes(executor: CodeExecutor = Depends(get_executor)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching runtimes: {str(e)}"
-        )
+        logger.error(f"Error fetching runtimes: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch runtimes")

@@ -10,7 +10,7 @@ Usage:
     python scripts/sync_local_to_db.py [--url DATABASE_URL]
 
 Defaults to DATABASE_URL from the environment (PostgreSQL/Supabase, or local
-MySQL if configured). Safe to re-run.
+when a legacy source is configured). Safe to re-run.
 """
 
 import argparse

@@ -4,11 +4,11 @@ from sqlalchemy import (
     Text,
     Integer,
     Float,
+    Boolean,
     DateTime,
     Date,
     ForeignKey,
     Index,
-    JSON,
 )
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
@@ -16,8 +16,8 @@ from datetime import datetime, timezone
 
 Base = declarative_base()
 
-# Use JSONB for PostgreSQL, JSON for MySQL
-JSONType = JSONB().with_variant(JSON, "mysql")
+# Supabase/PostgreSQL is the only database — JSONB everywhere.
+JSONType = JSONB()
 
 
 class UserORM(Base):
@@ -182,6 +182,46 @@ class UserUsageEventORM(Base):
     )
 
     __table_args__ = (Index("ix_usage_events_user_created", "user_id", "created_at"),)
+
+
+class SubmissionORM(Base):
+    """One persisted code attempt (submit) per user per question.
+
+    This is the foundation of the mistake-memory data layer: per-user error
+    history, spaced-repetition reviews, and attempt-journey replay all hang
+    off this table.
+    """
+
+    __tablename__ = "submissions"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    question_id = Column(
+        String(64),
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    code = Column(Text, nullable=False)
+    language = Column(String(20), nullable=False)
+    passed = Column(Boolean, nullable=False, default=False)
+    error_signature = Column(String(255), nullable=True)
+    attempt_index = Column(Integer, nullable=False, default=0)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+
+    __table_args__ = (
+        Index("ix_submissions_user_question", "user_id", "question_id"),
+        Index("ix_submissions_user_created", "user_id", "created_at"),
+    )
 
 
 class UserDailyUsageORM(Base):

@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { showToast } from "@/components/ui/Toast";
-import { FetchClient } from "@/lib/fetch-client";
-import {
-  validateLessonForm,
-  validateIdUnique,
-  FieldErrors,
-} from "@/lib/validation";
-import MarkdownPreview from "./MarkdownPreview";
-import QuestionEditor from "./QuestionEditor";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { showToast } from '@/components/ui/Toast';
+import { FetchClient } from '@/lib/fetch-client';
+import { validateLessonForm, validateIdUnique, FieldErrors } from '@/lib/validation';
+import MarkdownPreview from './MarkdownPreview';
+import QuestionEditor from './QuestionEditor';
 
 const api = new FetchClient();
 
@@ -59,24 +55,24 @@ export default function LessonForm({
 }: LessonFormProps) {
   const isEdit = !!initial;
   const [f, setF] = useState({
-    id: initial?.id || "",
-    title: initial?.title || "",
-    type: initial?.type || "theory",
-    content: initial?.content || "",
+    id: initial?.id || '',
+    title: initial?.title || '',
+    type: initial?.type || 'theory',
+    content: initial?.content || '',
     order: initial?.order ?? 1,
-    starter_code: initial?.starter_code || "",
-    question_id: initial?.question_id || "",
+    starter_code: initial?.starter_code || '',
+    question_id: initial?.question_id || '',
   });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [idChecking, setIdChecking] = useState(false);
-  const [contentTab, setContentTab] = useState<"edit" | "preview">("edit");
+  const [contentTab, setContentTab] = useState<'edit' | 'preview'>('edit');
   const [questionData, setQuestionData] = useState<QuestionData>(
     initialQuestion || {
-      title: "",
-      difficulty: "medium",
-      category: "",
-      description: "",
-      starter_code: { python: "", javascript: "", java: "" },
+      title: '',
+      difficulty: 'medium',
+      category: '',
+      description: '',
+      starter_code: { python: '', javascript: '', java: '' },
       examples: [],
       test_cases: [],
       hints: [],
@@ -97,11 +93,11 @@ export default function LessonForm({
   useEffect(() => {
     const syncErrors = validateLessonForm(f);
     setErrors(syncErrors);
-  }, [f.id, f.title, f.order]);
+  }, [f]);
 
   const saveQuestion = async (): Promise<string | null> => {
     if (!questionData.title) {
-      showToast("Question title is required for exercises", "error");
+      showToast('Question title is required for exercises', 'error');
       return null;
     }
 
@@ -111,8 +107,8 @@ export default function LessonForm({
         f.question_id ||
         questionData.title
           .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
       const body = {
         id: questionId,
         title: questionData.title,
@@ -129,12 +125,12 @@ export default function LessonForm({
       if (f.question_id) {
         await api.put(`/api/admin/questions/${f.question_id}`, body);
       } else {
-        await api.post("/api/admin/questions", body);
+        await api.post('/api/admin/questions', body);
       }
 
       return questionId;
     } catch (e: any) {
-      showToast(e.message || "Failed to save question", "error");
+      showToast(e.message || 'Failed to save question', 'error');
       return null;
     } finally {
       setQuestionSaving(false);
@@ -150,7 +146,7 @@ export default function LessonForm({
 
     if (!isEdit) {
       setIdChecking(true);
-      const idErr = await validateIdUnique("lesson", f.id, isEdit);
+      const idErr = await validateIdUnique('lesson', f.id, isEdit);
       setIdChecking(false);
       if (idErr) {
         setErrors({ id: idErr });
@@ -160,7 +156,7 @@ export default function LessonForm({
 
     let lessonData = { ...f };
 
-    if (f.type === "exercise" && questionData.title) {
+    if (f.type === 'exercise' && questionData.title) {
       const qId = await saveQuestion();
       if (qId) {
         lessonData.question_id = qId;
@@ -174,51 +170,39 @@ export default function LessonForm({
 
   const inputClass = (field: string) =>
     `w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border outline-none transition-all duration-200 ${
-      errors[field]
-        ? "border-destructive ring-1 ring-destructive/20"
-        : "border-border"
-    } ${field === "id" ? "font-mono" : ""}`;
+      errors[field] ? 'border-destructive ring-1 ring-destructive/20' : 'border-border'
+    } ${field === 'id' ? 'font-mono' : ''}`;
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">
-            ID *
-          </label>
+          <label className="text-xs text-muted-foreground block mb-1">ID *</label>
           <input
-            className={inputClass("id")}
+            className={inputClass('id')}
             value={f.id}
-            onChange={(e) => set("id", e.target.value)}
+            onChange={(e) => set('id', e.target.value)}
             disabled={isEdit}
             placeholder="hello-world"
           />
-          {errors.id && (
-            <p className="text-xs text-destructive mt-1">{errors.id}</p>
-          )}
+          {errors.id && <p className="text-xs text-destructive mt-1">{errors.id}</p>}
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">
-            Order
-          </label>
+          <label className="text-xs text-muted-foreground block mb-1">Order</label>
           <input
             type="number"
-            className={inputClass("order")}
+            className={inputClass('order')}
             value={f.order}
-            onChange={(e) => set("order", Number(e.target.value))}
+            onChange={(e) => set('order', Number(e.target.value))}
           />
-          {errors.order && (
-            <p className="text-xs text-destructive mt-1">{errors.order}</p>
-          )}
+          {errors.order && <p className="text-xs text-destructive mt-1">{errors.order}</p>}
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">
-            Type
-          </label>
+          <label className="text-xs text-muted-foreground block mb-1">Type</label>
           <select
             className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
             value={f.type}
-            onChange={(e) => set("type", e.target.value)}
+            onChange={(e) => set('type', e.target.value)}
           >
             <option value="theory">Theory</option>
             <option value="exercise">Exercise</option>
@@ -226,18 +210,14 @@ export default function LessonForm({
         </div>
       </div>
       <div>
-        <label className="text-xs text-muted-foreground block mb-1">
-          Title *
-        </label>
+        <label className="text-xs text-muted-foreground block mb-1">Title *</label>
         <input
-          className={inputClass("title")}
+          className={inputClass('title')}
           value={f.title}
-          onChange={(e) => set("title", e.target.value)}
+          onChange={(e) => set('title', e.target.value)}
           placeholder="Hello, World!"
         />
-        {errors.title && (
-          <p className="text-xs text-destructive mt-1">{errors.title}</p>
-        )}
+        {errors.title && <p className="text-xs text-destructive mt-1">{errors.title}</p>}
       </div>
 
       {/* Content — Split Pane with Edit/Preview Tabs */}
@@ -245,44 +225,39 @@ export default function LessonForm({
         <div className="flex items-center justify-between mb-1">
           <label className="text-xs text-muted-foreground">
             Content (Markdown)
-            {f.type === "exercise" && !questionData.title && (
-              <span className="ml-2 text-yellow-400">
-                No question data — add test cases below
-              </span>
+            {f.type === 'exercise' && !questionData.title && (
+              <span className="ml-2 text-yellow-400">No question data — add test cases below</span>
             )}
           </label>
           <div className="flex gap-1">
             <button
-              onClick={() => setContentTab("edit")}
+              onClick={() => setContentTab('edit')}
               className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-                contentTab === "edit"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                contentTab === 'edit'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Edit
             </button>
             <button
-              onClick={() => setContentTab("preview")}
+              onClick={() => setContentTab('preview')}
               className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-                contentTab === "preview"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                contentTab === 'preview'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Preview
             </button>
           </div>
         </div>
-        <div
-          className="border border-border rounded-lg overflow-hidden"
-          style={{ minHeight: 200 }}
-        >
-          {contentTab === "edit" ? (
+        <div className="border border-border rounded-lg overflow-hidden" style={{ minHeight: 200 }}>
+          {contentTab === 'edit' ? (
             <textarea
               className="w-full h-48 text-sm bg-muted/50 px-3 py-2 border-0 outline-none resize-y font-mono"
               value={f.content}
-              onChange={(e) => set("content", e.target.value)}
+              onChange={(e) => set('content', e.target.value)}
               placeholder="# Lesson title&#10;&#10;Content here..."
             />
           ) : (
@@ -294,7 +269,7 @@ export default function LessonForm({
       </div>
 
       {/* Exercise: Question Editor with test cases */}
-      {f.type === "exercise" && (
+      {f.type === 'exercise' && (
         <div className="border border-border rounded-lg p-4 space-y-4 bg-muted/20">
           <div className="flex items-center justify-between">
             <label className="text-xs font-medium text-muted-foreground">
@@ -310,10 +285,10 @@ export default function LessonForm({
             initial={
               initialQuestion || {
                 title: f.title,
-                description: "",
-                difficulty: "medium",
-                category: "",
-                starter_code: { python: "", javascript: "", java: "" },
+                description: '',
+                difficulty: 'medium',
+                category: '',
+                starter_code: { python: '', javascript: '', java: '' },
                 examples: [],
                 test_cases: [],
                 hints: [],
@@ -331,20 +306,15 @@ export default function LessonForm({
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={
-              saving ||
-              idChecking ||
-              questionSaving ||
-              Object.keys(errors).length > 0
-            }
+            disabled={saving || idChecking || questionSaving || Object.keys(errors).length > 0}
           >
             {saving || questionSaving
-              ? "Saving..."
+              ? 'Saving...'
               : idChecking
-                ? "Checking..."
+                ? 'Checking...'
                 : initial
-                  ? "Update"
-                  : "Create"}
+                  ? 'Update'
+                  : 'Create'}
           </Button>
           <Button variant="outline" size="sm" onClick={onCancel}>
             Cancel

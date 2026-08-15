@@ -50,11 +50,19 @@ def _ensure_test_database() -> str:
     """
     from dotenv import load_dotenv, find_dotenv
 
+    from tests.db_guard import assert_test_db_allowed
+
     load_dotenv(find_dotenv())
 
     base_url = os.environ.get(
         "DATABASE_URL",
         "postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach",
+    )
+    # Never run the suite against the production pooler unless explicitly
+    # overridden — the suite drops/recreates an isolated schema and runs DDL.
+    assert_test_db_allowed(
+        base_url,
+        allow_production=os.environ.get("ALLOW_PRODUCTION_TEST_DB"),
     )
     return _ensure_postgres_test_schema(base_url)
 
@@ -413,7 +421,7 @@ async def test_db():
     """Provide an isolated DB-backed session for SQL repository tests.
 
     Cleans all tables before each test so tests do not interfere with each
-    other or with the running application's database. Works on both MySQL and
+    other or with the running application's database. Works on
     PostgreSQL/Supabase (search_path points at the `codecoach_test` schema).
     """
     from sqlalchemy import text
@@ -679,3 +687,15 @@ def temp_questions_file():
 
     # Cleanup
     os.unlink(temp_path)
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter_state():
+    """Give every test a clean slowapi rate-limit slate.
+
+    slowapi's in-memory storage is process-global; without a reset, per-IP
+    counters leak across tests and make later tests fail spuriously once the
+    limit window is exhausted (e.g. question reads at 100/minute).
+    """
+    yield
+    app.state.limiter.reset()

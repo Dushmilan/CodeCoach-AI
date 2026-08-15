@@ -190,7 +190,7 @@ def apply_event(state: UserSkillState, event: LearningEvent) -> UserSkillState:
 
 
 def _as_utc(value: datetime) -> datetime:
-    """Normalise naive datetimes (MySQL) to aware UTC for safe subtraction."""
+    """Normalise naive datetimes to aware UTC for safe subtraction."""
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)

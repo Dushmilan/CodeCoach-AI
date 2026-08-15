@@ -10,6 +10,7 @@ import {
 import { HydrationGuard } from '@/components/ui/HydrationGuard';
 import { showToast } from '@/components/ui/Toast';
 import { useCoaching } from '@/features/coaching/coaching.hook';
+import { CoachingMode } from '@/features/coaching/coaching.types';
 import { useLesson } from '@/features/curriculum/use-curriculum.hook';
 import { TestCaseResultView } from '@/features/code-execution/code-execution.types';
 import { FetchClient, HttpError } from '@/lib/fetch-client';
@@ -38,7 +39,7 @@ function useAdjacentLessons(lesson: LessonSummary | null) {
       )
       .then((d) => setAdjacent({ prevId: d.prev_id, nextId: d.next_id }))
       .catch((err) => console.error('Failed to fetch adjacent lessons:', err));
-  }, [lesson?.id]);
+  }, [lesson]);
   return adjacent;
 }
 
@@ -58,9 +59,7 @@ export default function LessonPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [runError, setRunError] = useState('');
-  const [testResults, setTestResults] = useState<TestCaseResultView[] | null>(
-    null,
-  );
+  const [testResults, setTestResults] = useState<TestCaseResultView[] | null>(null);
   const [currentCode, setCurrentCode] = useState('');
   const [language, setLanguage] = useState<Language>((lesson?.language as Language) || 'python');
 
@@ -84,7 +83,7 @@ export default function LessonPage() {
       .get<{ completed_lessons: string[] }>(`/api/progress/${lesson.course_id}`)
       .then((p) => setIsCompleted(p.completed_lessons?.includes(lesson.id) ?? false))
       .catch(() => setIsCompleted(false));
-  }, [lesson?.id, lesson?.course_id, isAuthenticated]);
+  }, [lesson, lesson?.course_id, isAuthenticated]);
 
   // Load linked question data
   useEffect(() => {
@@ -100,11 +99,11 @@ export default function LessonPage() {
     (linkedQuestion?.starter as any)?.[language] || lesson?.starter_code || '';
 
   const handleSendMessage = useCallback(
-    async (message: string, mode: string) => {
+    async (message: string, mode: CoachingMode) => {
       const lessonContext = lesson ? `${lesson.title}` : undefined;
       await sendMessage(
         message,
-        mode as any,
+        mode,
         lesson?.title || 'Coding exercise',
         currentCode,
         language,
@@ -113,14 +112,7 @@ export default function LessonPage() {
         resolvedStarterCode,
       );
     },
-    [
-      lesson,
-      currentCode,
-      language,
-      sendMessage,
-      linkedQuestion?.difficulty,
-      resolvedStarterCode,
-    ],
+    [lesson, currentCode, language, sendMessage, linkedQuestion?.difficulty, resolvedStarterCode],
   );
 
   const handleMarkComplete = async () => {
@@ -306,7 +298,7 @@ export default function LessonPage() {
       setCurrentCode(starter);
       codeInitialized.current = true;
     }
-  }, [lesson?.id, linkedQuestion?.id, language, linkedQuestion?.starter]);
+  }, [lesson?.id, linkedQuestion?.id, language, linkedQuestion?.starter, lesson?.starter_code]);
 
   if (isLoading) return <div>Loading...</div>;
   if (error || !lesson) return <div>Error</div>;

@@ -3,10 +3,49 @@ API-level security tests (CORS, headers, methods, size limits).
 """
 
 from fastapi.testclient import TestClient
+from app.main import app
 
 
 class TestApiSecurity:
     """Tests for API-level security controls."""
+
+    def test_questions_read_endpoints_rate_limited(
+        self, test_client: TestClient, monkeypatch
+    ):
+        """Public question/course reads must be rate limited so a single IP
+        cannot hammer the database through the unauthenticated endpoints."""
+        monkeypatch.setenv("QUESTIONS_RATE_LIMIT", "2/minute")
+        app.state.limiter.reset()
+
+        first = test_client.get("/api/questions/")
+        second = test_client.get("/api/questions/")
+        third = test_client.get("/api/questions/")
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert third.status_code == 429
+
+    def test_500_errors_do_not_leak_internals(self, test_client: TestClient):
+        """Internal exception text must never reach the client body."""
+        from app.api.dependencies import get_question_bank
+
+        class _BoomBank:
+            async def query(self, *args, **kwargs):
+                raise RuntimeError("secret-internal-detail-db-password")
+
+        async def _override_bank():
+            return _BoomBank()
+
+        app.dependency_overrides[get_question_bank] = _override_bank
+        try:
+            response = test_client.get("/api/questions/")
+        finally:
+            app.dependency_overrides.pop(get_question_bank, None)
+
+        assert response.status_code == 500
+        detail = response.json()["detail"]
+        assert "secret-internal-detail-db-password" not in detail
+        assert detail  # still a human-readable, generic message
 
     def test_cors_no_wildcard_for_auth(self, test_client: TestClient):
         """Authenticated endpoints should not return CORS wildcard."""

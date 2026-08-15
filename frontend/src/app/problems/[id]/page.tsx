@@ -9,6 +9,7 @@ import { RescueIntervention } from '@/components/rescue/RescueIntervention';
 import { QuestionDescriptionPanel } from '@/components/sidebar/QuestionDescriptionPanel';
 import { ResizablePanelGroup } from '@/components/ui/ResizablePanelGroup';
 import { useCoaching } from '@/features/coaching/coaching.hook';
+import { CoachingMode } from '@/features/coaching/coaching.types';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
 import { useRescueContract } from '@/features/rescue/use-rescue-contract.hook';
@@ -89,12 +90,12 @@ export default function ProblemWorkspacePage() {
       : '';
 
   const handleSendMessage = useCallback(
-    async (message: string, mode: string) => {
+    async (message: string, mode: CoachingMode) => {
       if (!fullQuestion) return;
       rescueActivity();
       await sendMessage(
         message,
-        mode as any,
+        mode,
         fullQuestion.title,
         currentCode,
         language,

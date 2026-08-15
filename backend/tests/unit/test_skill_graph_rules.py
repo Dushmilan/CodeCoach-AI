@@ -225,7 +225,7 @@ class TestDecay:
         assert a.mastery_score == b.mastery_score
 
     def test_decay_handles_naive_datetime(self):
-        """MySQL stores naive datetimes; decay must not crash on them."""
+        """Naive datetimes must not crash decay (legacy row formats)."""
         from datetime import datetime as dt
 
         base = _state(mastery=0.7)

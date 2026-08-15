@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Optional
+import logging
 
 from app.models.course_schemas import Lesson
 from app.ports.course_repository import CourseRepository
@@ -9,6 +10,9 @@ from app.services.redis_service import RedisCache
 from app.api.auth_deps import get_optional_current_user
 from app.api.dependencies import get_course_repo, get_progress_repo, get_redis_cache
 from app.models.auth_schemas import UserResponse
+from app.middleware.rate_limit import limiter, QUESTIONS_RATE_LIMIT
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -24,7 +28,9 @@ def get_course_service(
 
 
 @router.get("/")
+@limiter.limit(QUESTIONS_RATE_LIMIT)
 async def list_courses(
+    request: Request,
     current_user: Optional[UserResponse] = Depends(get_optional_current_user),
     course_service: CourseService = Depends(get_course_service),
 ):
@@ -33,12 +39,15 @@ async def list_courses(
             user_id=current_user.id if current_user else None
         )
         return {"courses": courses}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching courses: {str(e)}")
+    except Exception:
+        logger.exception("Failed to fetch courses")
+        raise HTTPException(status_code=500, detail="Failed to fetch courses")
 
 
 @router.get("/{course_id}")
+@limiter.limit(QUESTIONS_RATE_LIMIT)
 async def get_course(
+    request: Request,
     course_id: str,
     course_service: CourseService = Depends(get_course_service),
 ):
@@ -49,12 +58,15 @@ async def get_course(
         return course
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching course: {str(e)}")
+    except Exception:
+        logger.exception("Failed to fetch course %s", course_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch course")
 
 
 @router.get("/lessons/{lesson_id}", response_model=Lesson)
+@limiter.limit(QUESTIONS_RATE_LIMIT)
 async def get_lesson(
+    request: Request,
     lesson_id: str,
     course_service: CourseService = Depends(get_course_service),
 ):
@@ -65,12 +77,15 @@ async def get_lesson(
         return lesson
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching lesson: {str(e)}")
+    except Exception:
+        logger.exception("Failed to fetch lesson %s", lesson_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch lesson")
 
 
 @router.get("/lessons/{lesson_id}/adjacent")
+@limiter.limit(QUESTIONS_RATE_LIMIT)
 async def get_adjacent_lessons(
+    request: Request,
     lesson_id: str,
     course_service: CourseService = Depends(get_course_service),
 ):
@@ -103,5 +118,8 @@ async def get_adjacent_lessons(
         }
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to resolve adjacent lessons for %s", lesson_id)
+        raise HTTPException(
+            status_code=500, detail="Failed to resolve adjacent lessons"
+        )

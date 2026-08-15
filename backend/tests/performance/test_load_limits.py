@@ -20,6 +20,8 @@ from app.main import app
 def mock_auth(user_id: str = "test-id", username: str = "testuser"):
     """Override auth dependencies for testing (run + coach endpoints)."""
     from app.api.auth_deps import get_current_user, require_premium
+    from app.api.coach import get_coaching_provider
+    from tests.fixtures.mock_coaching_provider import MockCoachingProvider
 
     async def override_get_current_user():
         from app.models.auth_schemas import UserResponse
@@ -35,11 +37,13 @@ def mock_auth(user_id: str = "test-id", username: str = "testuser"):
 
     app.dependency_overrides[get_current_user] = override_get_current_user
     app.dependency_overrides[require_premium] = override_get_current_user
+    app.dependency_overrides[get_coaching_provider] = MockCoachingProvider
     try:
         yield
     finally:
         app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(require_premium, None)
+        app.dependency_overrides.pop(get_coaching_provider, None)
 
 
 class TestLoadLimits:
@@ -200,7 +204,7 @@ print(fibonacci(20))
             "language": "python",
             "code": fibonacci_code,
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         start_time = time.time()
@@ -224,7 +228,7 @@ print(len(large_list))
             "language": "python",
             "code": memory_code,
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         start_time = time.time()
@@ -258,7 +262,7 @@ while True:
             "language": "python",
             "code": infinite_loop_code,
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         start_time = time.time()
