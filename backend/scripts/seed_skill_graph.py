@@ -38,8 +38,23 @@ def _get_database_url() -> str:
     return url
 
 
+def _create_engine():
+    """Engine honoring DATABASE_SEARCH_PATH (same convention as the app).
+
+    Isolated-schema environments (tests, staging previews) set
+    DATABASE_SEARCH_PATH; production Supabase leaves it unset and defaults
+    to the public schema.
+    """
+
+    search_path = os.getenv("DATABASE_SEARCH_PATH")
+    kwargs = {}
+    if search_path:
+        kwargs["connect_args"] = {"server_settings": {"search_path": search_path}}
+    return create_async_engine(_get_database_url(), poolclass=NullPool, **kwargs)
+
+
 async def seed() -> int:
-    engine = create_async_engine(_get_database_url(), poolclass=NullPool)
+    engine = _create_engine()
     async_session = async_sessionmaker(engine, expire_on_commit=False)
     total = 0
     async with async_session() as session:

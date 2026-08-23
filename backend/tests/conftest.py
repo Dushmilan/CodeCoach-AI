@@ -173,7 +173,37 @@ def _test_db_url() -> str:
 
 _TEST_QUESTIONS = [
     {
-        "id": "test-two-sum",
+        "id": "contains-duplicate",
+        "title": "Contains Duplicate",
+        "difficulty": "easy",
+        "category": "arrays",
+        "company_tags": ["Amazon"],
+        "description": (
+            "Given an integer array nums, return true if any value appears "
+            "at least twice in the array."
+        ),
+        "starter": {
+            "python": "def contains_duplicate(nums):\n    pass",
+            "javascript": "function containsDuplicate(nums) {}",
+            "java": "class Solution { public boolean containsDuplicate(int[] nums) { return false; } }",
+        },
+        "examples": [{"input": "[1,2,3,1]", "output": "true"}],
+        "test_cases": [
+            {"input": "[1,2,3,1]", "expected_output": "true", "hidden": False},
+            {"input": "[1,2,3,4]", "expected_output": "false", "hidden": False},
+        ],
+        "hints": ["Compare the set size to the array length."],
+        "solution": (
+            "def contains_duplicate(nums):\n"
+            "    return len(set(nums)) != len(nums)"
+        ),
+        "time_complexity": "O(n)",
+        "space_complexity": "O(n)",
+        "constraints": ["1 <= nums.length <= 10^5"],
+        "is_interactive": False,
+    },
+    {
+        "id": "two-sum",
         "title": "Two Sum",
         "difficulty": "easy",
         "category": "arrays",
@@ -218,7 +248,7 @@ _TEST_QUESTIONS = [
         "is_interactive": False,
     },
     {
-        "id": "test-reverse-string",
+        "id": "reverse-string",
         "title": "Reverse String",
         "difficulty": "easy",
         "category": "strings",
@@ -251,7 +281,7 @@ _TEST_QUESTIONS = [
         "is_interactive": False,
     },
     {
-        "id": "test-max-subarray",
+        "id": "maximum-product-subarray",
         "title": "Maximum Subarray",
         "difficulty": "medium",
         "category": "dynamic-programming",
@@ -284,7 +314,7 @@ _TEST_QUESTIONS = [
         "is_interactive": False,
     },
     {
-        "id": "test-merge-intervals",
+        "id": "merge-intervals",
         "title": "Merge Intervals",
         "difficulty": "hard",
         "category": "arrays",
@@ -348,14 +378,22 @@ async def _seed_questions() -> int:
     async with async_session() as session:
         from sqlalchemy import select
 
-        existing = (await session.execute(select(QuestionORM.id))).scalars().all()
-        if not existing:
+        # Idempotent PER-QUESTION upsert (not all-or-nothing): other test
+        # files may leave orphan question rows behind, and an "only if table
+        # empty" guard made the fixture bank order-dependent (latent flake
+        # surfaced by the rescue-queue tests, Aug 23).
+        existing = set(
+            (await session.execute(select(QuestionORM.id))).scalars().all()
+        )
+        if len(existing) < len(_TEST_QUESTIONS):
             from app.models.schemas import Question
 
             for item in _TEST_QUESTIONS:
                 try:
                     q = Question(**item)
                 except Exception:
+                    continue
+                if q.id in existing:
                     continue
                 session.add(
                     QuestionORM(
