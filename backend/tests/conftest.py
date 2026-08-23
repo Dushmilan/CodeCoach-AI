@@ -194,8 +194,7 @@ _TEST_QUESTIONS = [
         ],
         "hints": ["Compare the set size to the array length."],
         "solution": (
-            "def contains_duplicate(nums):\n"
-            "    return len(set(nums)) != len(nums)"
+            "def contains_duplicate(nums):\n    return len(set(nums)) != len(nums)"
         ),
         "time_complexity": "O(n)",
         "space_complexity": "O(n)",
@@ -382,9 +381,7 @@ async def _seed_questions() -> int:
         # files may leave orphan question rows behind, and an "only if table
         # empty" guard made the fixture bank order-dependent (latent flake
         # surfaced by the rescue-queue tests, Aug 23).
-        existing = set(
-            (await session.execute(select(QuestionORM.id))).scalars().all()
-        )
+        existing = set((await session.execute(select(QuestionORM.id))).scalars().all())
         if len(existing) < len(_TEST_QUESTIONS):
             from app.models.schemas import Question
 
