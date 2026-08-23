@@ -273,8 +273,6 @@ _QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     # --- Strings (bank-specific themed questions) ------------------------------------
     "happy-number": [("two-pointers", 0.6), ("hash-maps", 0.4)],
     "longest-common-prefix": [("strings", 0.8), ("arrays", 0.2)],
-    "test-q-1": [("strings", 0.7), ("two-pointers", 0.3)],
-    "f7e2d4a1-3b5c-4d6e-8f9a-0b1c2d3e4f5a": [("two-pointers", 0.8), ("strings", 0.2)],
     "c9d1a3f2-5b6e-4a7f-8c0d-1e2f3a4b5c6d": [
         ("strings", 0.8),
         ("programming-fundamentals", 0.2),
