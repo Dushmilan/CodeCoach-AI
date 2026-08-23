@@ -56,6 +56,17 @@ class SqlQuestionRepository(QuestionRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
+    async def count_by_difficulty(self) -> Dict[str, int]:
+        """Single GROUP BY aggregate — never materializes question rows."""
+        stmt = select(QuestionORM.difficulty, func.count()).group_by(
+            QuestionORM.difficulty
+        )
+        result = await self.session.execute(stmt)
+        counts = {"easy": 0, "medium": 0, "hard": 0}
+        for difficulty_value, n in result.all():
+            counts[difficulty_value] = int(n)
+        return counts
+
     async def get_by_id(self, question_id: str) -> Optional[Question]:
         result = await self.session.execute(
             select(QuestionORM).where(QuestionORM.id == question_id)

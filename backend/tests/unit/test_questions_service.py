@@ -28,6 +28,9 @@ def mock_repo():
     repo.search_summaries = AsyncMock(return_value=[])
     repo.save_validation_status = AsyncMock()
     repo.count = AsyncMock(return_value=0)
+    repo.count_by_difficulty = AsyncMock(
+        return_value={"easy": 0, "medium": 0, "hard": 0}
+    )
     return repo
 
 
@@ -153,13 +156,17 @@ class TestQuestionBankStats:
 
     @pytest.mark.asyncio
     async def test_difficulty_counts(self, mock_repo, sample_questions):
-        mock_repo.get_all = AsyncMock(return_value=sample_questions)
+        # M-04: counts come from the SQL GROUP BY aggregate, not get_all().
+        mock_repo.count_by_difficulty = AsyncMock(
+            return_value={"easy": 1, "medium": 1, "hard": 0}
+        )
         bank = make_bank(mock_repo)
 
         stats = await bank.stats()
         assert stats.difficulty_counts["easy"] == 1
         assert stats.difficulty_counts["medium"] == 1
         assert stats.difficulty_counts["hard"] == 0
+        mock_repo.count_by_difficulty.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_category_counts(self, mock_repo, sample_questions):

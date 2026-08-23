@@ -259,3 +259,38 @@ class TestSqlQuestionRepository:
     async def test_validation_statuses_empty(self, repo):
         statuses = await repo.get_validation_statuses()
         assert statuses == {}
+
+
+class TestDifficultyCountsNoMaterialization:
+    """M-04: stats counts must be answered by SQL aggregates, never by
+    materializing every question row through get_all()."""
+
+    @pytest.mark.asyncio
+    async def test_difficulty_counts_use_grouped_query(self, repo, test_db):
+        from sqlalchemy import text
+
+        from app.services.question_bank import QuestionBank
+
+        class NoMaterializeRepo(type(repo)):
+            async def get_all(self, *args, **kwargs):
+                raise AssertionError(
+                    "difficulty stats must not call get_all(); use a SQL GROUP BY count"
+                )
+
+        await test_db.execute(
+            text(
+                "INSERT INTO questions "
+                "(id, title, difficulty, category, company_tags, description, "
+                " starter_code, examples, test_cases, constraints, hints, is_interactive) "
+                "VALUES ('m04-e', 'E', 'easy', 'arrays', '[]', 'd', '{}', '[]', '[]', '[]', '[]', 0), "
+                "('m04-e2', 'E2', 'easy', 'arrays', '[]', 'd', '{}', '[]', '[]', '[]', '[]', 0), "
+                "('m04-h', 'H', 'hard', 'dp', '[]', 'd', '{}', '[]', '[]', '[]', '[]', 0)"
+            )
+        )
+        await test_db.commit()
+
+        spy_repo = NoMaterializeRepo(test_db)
+        service = QuestionBank(repository=spy_repo)
+        counts = await service._compute_difficulty_counts()
+
+        assert counts == {"easy": 2, "medium": 0, "hard": 1}

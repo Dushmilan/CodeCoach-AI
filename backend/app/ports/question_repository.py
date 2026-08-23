@@ -15,6 +15,18 @@ class QuestionRepository(ABC):
     ) -> int:
         return len(await self.get_all(difficulty=difficulty, category=category))
 
+    async def count_by_difficulty(self) -> Dict[str, int]:
+        """Per-difficulty question counts (stats).
+
+        Default materializes rows for adapter simplicity; SQL adapters
+        override this with a GROUP BY aggregate.
+        """
+        questions = await self.get_all()
+        counts = {"easy": 0, "medium": 0, "hard": 0}
+        for q in questions:
+            counts[q.difficulty.value] += 1
+        return counts
+
     @abstractmethod
     async def get_by_id(self, question_id: str) -> Optional[Question]: ...
 
