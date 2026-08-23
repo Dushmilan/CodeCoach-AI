@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthProvider, useAuth } from "./AuthProvider";
 import { authService } from "@/features/auth/auth.service";
+import { setAccessToken } from "@/lib/auth-session";
 
 function TestComponent() {
   const { user, token, isAuthenticated, isLoading, login, register, logout } =
@@ -28,7 +29,13 @@ function TestComponent() {
   );
 }
 
-const storage = new Map<string, string>();
+const userFixture = (username: string) => ({
+  id: "1",
+  username,
+  email: `${username}@t.com`,
+  created_at: "2024-01-01",
+  is_active: true,
+});
 
 function renderWithProvider() {
   return render(
@@ -40,45 +47,37 @@ function renderWithProvider() {
 
 describe("AuthProvider", () => {
   beforeEach(() => {
-    storage.clear();
-    vi.stubGlobal("localStorage", {
-      getItem: (key: string) => storage.get(key) ?? null,
-      setItem: (key: string, value: string) => storage.set(key, value),
-      removeItem: (key: string) => storage.delete(key),
-      clear: () => storage.clear(),
-    });
     vi.restoreAllMocks();
+    setAccessToken(null);
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    setAccessToken(null);
   });
 
-  it("shows loading state while restoring token", () => {
-    storage.set("auth_token", JSON.stringify("stored_jwt"));
-    vi.spyOn(authService, "getMe").mockImplementation(
+  it("shows loading state while restoring session via refresh cookie", () => {
+    vi.spyOn(authService, "refresh").mockImplementation(
       () => new Promise(() => {}),
     );
     renderWithProvider();
     expect(screen.getByText("Loading...")).toBeDefined();
   });
 
-  it("shows logged out when no token in storage", async () => {
-    vi.spyOn(authService, "getMe").mockRejectedValue(new Error("No token"));
+  it("shows logged out when no refresh cookie session exists", async () => {
+    vi.spyOn(authService, "refresh").mockRejectedValue(new Error("No session"));
     renderWithProvider();
     await waitFor(() => {
       expect(screen.getByTestId("auth-status").textContent).toBe("Logged out");
     });
   });
 
-  it("restores session when valid token in storage", async () => {
-    localStorage.setItem("auth_token", JSON.stringify("valid_jwt"));
-    vi.spyOn(authService, "getMe").mockResolvedValue({
-      id: "1",
-      username: "testuser",
-      email: "t@t.com",
-      created_at: "2024-01-01",
-      is_active: true,
+  it("restores session by exchanging the httpOnly refresh cookie", async () => {
+    vi.spyOn(authService, "refresh").mockResolvedValue({
+      access_token: "fresh_access",
+      token_type: "bearer",
+      expires_in: 1800,
+      user: userFixture("testuser"),
     });
 
     renderWithProvider();
@@ -86,35 +85,17 @@ describe("AuthProvider", () => {
       expect(screen.getByTestId("auth-status").textContent).toBe("Logged in");
       expect(screen.getByTestId("username").textContent).toBe("testuser");
     });
-  });
-
-  it("clears token when getMe fails", async () => {
-    localStorage.setItem("auth_token", JSON.stringify("expired_jwt"));
-    vi.spyOn(authService, "getMe").mockRejectedValue(
-      new Error("Token expired"),
-    );
-
-    renderWithProvider();
-    await waitFor(() => {
-      expect(screen.getByTestId("auth-status").textContent).toBe("Logged out");
-    });
+    // Access token is in memory only — never written to localStorage.
     expect(localStorage.getItem("auth_token")).toBeNull();
   });
 
-  it("login sets user and token", async () => {
-    vi.spyOn(authService, "getMe").mockRejectedValue(new Error("No token"));
+  it("login sets user + in-memory token without touching localStorage", async () => {
+    vi.spyOn(authService, "refresh").mockRejectedValue(new Error("No session"));
     vi.spyOn(authService, "login").mockResolvedValue({
       access_token: "new_jwt",
-      refresh_token: "new_refresh",
       token_type: "bearer",
-      expires_in: 86400,
-      user: {
-        id: "2",
-        username: "newuser",
-        email: "n@t.com",
-        created_at: "2024-01-01",
-        is_active: true,
-      },
+      expires_in: 1800,
+      user: userFixture("newuser"),
     });
 
     renderWithProvider();
@@ -129,26 +110,18 @@ describe("AuthProvider", () => {
       expect(screen.getByTestId("username").textContent).toBe("newuser");
       expect(screen.getByTestId("token-present").textContent).toBe("yes");
     });
-    expect(localStorage.getItem("auth_token")).toBe(JSON.stringify("new_jwt"));
-    expect(localStorage.getItem("auth_refresh_token")).toBe(
-      JSON.stringify("new_refresh"),
-    );
+    // SEC-2: no token persistence in localStorage.
+    expect(localStorage.getItem("auth_token")).toBeNull();
+    expect(localStorage.getItem("auth_refresh_token")).toBeNull();
   });
 
-  it("register stores refresh token", async () => {
-    vi.spyOn(authService, "getMe").mockRejectedValue(new Error("No token"));
+  it("register sets user and does not persist refresh token to localStorage", async () => {
+    vi.spyOn(authService, "refresh").mockRejectedValue(new Error("No session"));
     vi.spyOn(authService, "login").mockResolvedValue({
       access_token: "reg_jwt",
-      refresh_token: "reg_refresh",
       token_type: "bearer",
-      expires_in: 86400,
-      user: {
-        id: "3",
-        username: "reguser",
-        email: "r@t.com",
-        created_at: "2024-01-01",
-        is_active: true,
-      },
+      expires_in: 1800,
+      user: userFixture("reguser"),
     });
 
     renderWithProvider();
@@ -161,21 +134,19 @@ describe("AuthProvider", () => {
     await waitFor(() => {
       expect(screen.getByTestId("auth-status").textContent).toBe("Logged in");
     });
-    expect(localStorage.getItem("auth_refresh_token")).toBe(
-      JSON.stringify("reg_refresh"),
-    );
+    expect(localStorage.getItem("auth_refresh_token")).toBeNull();
   });
 
-  it("logout clears both access and refresh tokens", async () => {
-    localStorage.setItem("auth_token", JSON.stringify("valid_jwt"));
-    localStorage.setItem("auth_refresh_token", JSON.stringify("valid_refresh"));
-    vi.spyOn(authService, "getMe").mockResolvedValue({
-      id: "1",
-      username: "testuser",
-      email: "t@t.com",
-      created_at: "2024-01-01",
-      is_active: true,
+  it("logout calls the backend and clears state", async () => {
+    vi.spyOn(authService, "refresh").mockResolvedValue({
+      access_token: "valid_jwt",
+      token_type: "bearer",
+      expires_in: 1800,
+      user: userFixture("testuser"),
     });
+    const logoutSpy = vi
+      .spyOn(authService, "logout")
+      .mockResolvedValue(undefined);
 
     renderWithProvider();
     await waitFor(() => {
@@ -187,7 +158,7 @@ describe("AuthProvider", () => {
     await waitFor(() => {
       expect(screen.getByTestId("auth-status").textContent).toBe("Logged out");
     });
+    expect(logoutSpy).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem("auth_token")).toBeNull();
-    expect(localStorage.getItem("auth_refresh_token")).toBeNull();
   });
 });

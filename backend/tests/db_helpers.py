@@ -1,9 +1,8 @@
-"""Dialect-aware DB helpers for tests.
+"""PostgreSQL/Supabase DB helpers for tests.
 
-The app now runs on both MySQL (local) and PostgreSQL/Supabase (primary).
 Several tests promote users / truncate tables by connecting to the DB
-directly. These helpers adapt to whichever DATABASE_URL is configured so
-those tests work unchanged on either dialect.
+directly. These helpers target the configured PostgreSQL/Supabase
+DATABASE_URL.
 """
 
 import os

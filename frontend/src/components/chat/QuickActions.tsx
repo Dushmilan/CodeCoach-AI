@@ -1,30 +1,28 @@
-"use client";
+'use client';
 
-import { AlertTriangle, BookOpen, Clock, Zap } from "lucide-react";
+import { AlertTriangle, BookOpen, Clock, Zap } from 'lucide-react';
+import { CoachingMode } from '@/features/coaching/coaching.types';
 
 export interface QuickAction {
   id: string;
   label: string;
   icon: React.ElementType;
-  mode: string;
+  mode: CoachingMode;
 }
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  { id: "hint", label: "Hint", icon: Zap, mode: "hint" },
-  { id: "review", label: "Review", icon: Clock, mode: "review" },
-  { id: "explain", label: "Explain", icon: BookOpen, mode: "explain" },
-  { id: "debug", label: "Debug", icon: AlertTriangle, mode: "debug" },
+  { id: 'hint', label: 'Hint', icon: Zap, mode: 'hint' },
+  { id: 'review', label: 'Review', icon: Clock, mode: 'review' },
+  { id: 'explain', label: 'Explain', icon: BookOpen, mode: 'explain' },
+  { id: 'debug', label: 'Debug', icon: AlertTriangle, mode: 'debug' },
 ];
 
 interface QuickActionsProps {
-  onActionClick: (mode: string) => void;
+  onActionClick: (mode: CoachingMode) => void;
   disabled?: boolean;
 }
 
-export function QuickActions({
-  onActionClick,
-  disabled = false,
-}: QuickActionsProps) {
+export function QuickActions({ onActionClick, disabled = false }: QuickActionsProps) {
   return (
     <div className="flex flex-wrap gap-1.5 mb-2">
       {QUICK_ACTIONS.map((action) => (

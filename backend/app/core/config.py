@@ -9,10 +9,9 @@ class Settings(BaseSettings):
     # Environment (fail-closed: unset = production for security gates)
     ENVIRONMENT: str = "production"
 
-    # Database (Supabase/PostgreSQL is the primary database)
-    DATABASE_URL: str = (
-        "postgresql://codecoach:codecoach@host.docker.internal:5432/codecoach"
-    )
+    # Database (Supabase/PostgreSQL is the ONLY database). No default — an
+    # unconfigured deployment must fail loudly rather than hit a local DB.
+    DATABASE_URL: str = ""
     # Optional Postgres schema used for tests (Supabase has one database).
     DATABASE_SEARCH_PATH: Optional[str] = None
 
@@ -50,7 +49,23 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
-    def _normalize_postgres_driver(self):
+    def _require_supabase_only_database(self):
+        # Supabase/PostgreSQL is the only allowed database. Anything else (or a
+        # missing value) is a misconfiguration and must fail loudly at startup
+        # instead of silently falling back to a legacy driver (MySQL/SQLite/etc).
+        if not self.DATABASE_URL:
+            raise ValueError(
+                "DATABASE_URL is required (Supabase/PostgreSQL connection string)"
+            )
+        supported = self.DATABASE_URL.startswith(
+            "postgresql:"
+        ) or self.DATABASE_URL.startswith("postgresql+")
+        if not supported:
+            raise ValueError(
+                "DATABASE_URL must point at Supabase/PostgreSQL "
+                "(postgresql:// or postgresql+...://); "
+                "got an unsupported scheme"
+            )
         # Supabase/pooler URLs use the bare `postgresql://` scheme, which
         # SQLAlchemy maps to psycopg2 by default. The app is async, so force
         # the asyncpg driver.

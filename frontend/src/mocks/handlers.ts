@@ -21,6 +21,7 @@ export const handlers = [
       access_token: "test-token",
       expires_in: 86400,
       user: { id: "1", username: "testuser", email: "test@test.com" },
+      csrf_token: "mocked-csrf-token",
     });
   }),
   http.post("/api/auth/register", () => {
@@ -28,7 +29,19 @@ export const handlers = [
       access_token: "test-token",
       expires_in: 86400,
       user: { id: "1", username: "newuser", email: "new@test.com" },
+      csrf_token: "mocked-csrf-token",
     });
+  }),
+  http.post("/api/auth/refresh", () => {
+    return HttpResponse.json({
+      access_token: "refreshed-token",
+      expires_in: 1800,
+      user: { id: "1", username: "testuser", email: "test@test.com" },
+      csrf_token: "mocked-csrf-token",
+    });
+  }),
+  http.post("/api/auth/logout", () => {
+    return new HttpResponse(null, { status: 204 });
   }),
   http.get("/api/auth/me", () => {
     return HttpResponse.json({
@@ -84,7 +97,10 @@ export const handlers = [
   http.get("/api/skills/me/recommended-questions", ({ request }) => {
     const auth = request.headers.get("Authorization");
     if (!auth) {
-      return HttpResponse.json({ detail: "Not authenticated" }, { status: 401 });
+      return HttpResponse.json(
+        { detail: "Not authenticated" },
+        { status: 401 },
+      );
     }
     return HttpResponse.json([]);
   }),

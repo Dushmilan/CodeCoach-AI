@@ -14,8 +14,9 @@ RUN pnpm install
 # Copy source code
 COPY . .
 
-# Create .env file
-RUN echo "NEXT_PUBLIC_API_URL=http://host.docker.internal:8000" > .env
+# NOTE: browser-reachable API URLs are provided at runtime via docker-compose
+# (NEXT_PUBLIC_API_URL=http://localhost:8000). Do NOT bake a host URL into the
+# image; it cannot be overridden and breaks when the host port changes.
 
 # Expose port
 EXPOSE 3000

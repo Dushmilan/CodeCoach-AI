@@ -4,14 +4,12 @@ Runs against the isolated per-suite schema. These tests are purely sync
 (alembic.command drives its own event loop), which is why they live outside
 pytest-asyncio's auto loop management.
 
-MySQL's `DESCRIBE` can transiently return 1684 ("table skipped, DDL in flight")
-right after back-to-back create/drop of the same table name, so migration ops
-are wrapped in a bounded retry — the same resilience pattern recommended for
-CI migration jobs.
+Back-to-back create/drop of the same table can transiently fail on the
+pooler backed by Supabase, so migration ops are wrapped in a bounded retry —
+the same resilience pattern recommended for CI migration jobs.
 """
 
 import time
-import urllib.parse
 from typing import Callable, List, Tuple
 
 from alembic import command
@@ -19,7 +17,7 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, text
 
-from tests.migrations.conftest import BACKEND_DIR, _is_postgres
+from tests.migrations.conftest import BACKEND_DIR
 
 _RETRIES = 4
 _BACKOFF_S = 0.5
@@ -46,11 +44,7 @@ def _is_transient_db_race(exc: Exception) -> bool:
 
 
 def _sync_engine(url: str):
-    if _is_postgres(url):
-        return create_engine(
-            url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
-        )
-    return create_engine(url.replace("mysql+aiomysql://", "mysql+pymysql://"))
+    return create_engine(url.replace("postgresql+asyncpg://", "postgresql+psycopg://"))
 
 
 def _current_version(url: str) -> str:
@@ -223,26 +217,114 @@ def test_alembic_version_table_required(
     alembic_config: Config, migration_url: str
 ) -> None:
     _retry(lambda: command.upgrade(alembic_config, "head"), "upgrade head")
-    if _is_postgres(migration_url):
+    with _sync_engine(migration_url).connect() as conn:
+        row = conn.execute(
+            text(
+                "SELECT COUNT(*) FROM information_schema.tables "
+                "WHERE table_schema = current_schema() "
+                "AND table_name = 'alembic_version'"
+            )
+        ).scalar_one()
+    assert row == 1
+
+
+def test_repair_migration_recreates_missing_request_tracking(
+    alembic_config: Config, migration_url: str
+) -> None:
+    """Simulate live-DB drift — migration a1b2c3d4e5f6 stamped but never
+    executed, so `rate_limit_events` and `user_daily_usage.request_count` are
+    missing — and verify the guarded repair migration restores both."""
+    # Normalize state regardless of prior tests in the session, then stop at
+    # the pre-repair head (old chain head).
+    _retry(lambda: command.downgrade(alembic_config, "base"), "downgrade to base")
+    _retry(
+        lambda: command.upgrade(alembic_config, "5bb567dd8649"),
+        "upgrade to pre-repair head 5bb567dd8649",
+    )
+    assert _current_version(migration_url) == "5bb567dd8649"
+
+    # Simulate the drift: objects absent while the revision is stamped.
+    with _sync_engine(migration_url).connect() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS rate_limit_events CASCADE"))
+        conn.execute(
+            text("ALTER TABLE user_daily_usage DROP COLUMN IF EXISTS request_count")
+        )
+        conn.commit()
+
+    # The repair migration (new head) must recreate the missing objects.
+    _retry(
+        lambda: command.upgrade(alembic_config, "head"),
+        "upgrade head (repair migration)",
+    )
+
+    with _sync_engine(migration_url).connect() as conn:
+        table_ok = conn.execute(
+            text("SELECT to_regclass('public.rate_limit_events') IS NOT NULL")
+        ).scalar_one()
+        col_ok = conn.execute(
+            text(
+                "SELECT COUNT(*) FROM information_schema.columns "
+                "WHERE table_schema = 'public' "
+                "AND table_name = 'user_daily_usage' "
+                "AND column_name = 'request_count'"
+            )
+        ).scalar_one()
+    assert table_ok, "rate_limit_events was not recreated by the repair migration"
+    assert col_ok, (
+        "public.user_daily_usage.request_count was not recreated by the repair "
+        "migration (the guard must scope to 'public', not any schema)"
+    )
+
+
+def test_ensure_public_request_count_migration_repairs_public_only(
+    alembic_config: Config, migration_url: str
+) -> None:
+    """A stray schema carrying `user_daily_usage.request_count` must not fool
+    the ensure-public migration: `public` gets the column regardless (this is
+    the exact live-DB condition the first repair migration missed)."""
+    # Step back below the ensure-public migration so it runs again.
+    _retry(
+        lambda: command.downgrade(alembic_config, "d9e1f2a3b4c5"),
+        "downgrade to d9e1f2a3b4c5",
+    )
+
+    # Simulate the drift: public column missing + a stray schema has it.
+    with _sync_engine(migration_url).connect() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE public.user_daily_usage "
+                "DROP COLUMN IF EXISTS request_count"
+            )
+        )
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS stray_test"))
+        conn.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS stray_test.user_daily_usage "
+                "(id text, request_count integer)"
+            )
+        )
+        conn.commit()
+
+    _retry(
+        lambda: command.upgrade(alembic_config, "head"),
+        "upgrade head (ensure-public migration)",
+    )
+
+    try:
         with _sync_engine(migration_url).connect() as conn:
-            row = conn.execute(
+            col = conn.execute(
                 text(
-                    "SELECT COUNT(*) FROM information_schema.tables "
-                    "WHERE table_schema = current_schema() "
-                    "AND table_name = 'alembic_version'"
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                    "WHERE table_schema = 'public' "
+                    "AND table_name = 'user_daily_usage' "
+                    "AND column_name = 'request_count'"
                 )
             ).scalar_one()
-    else:
+        assert col == 1, (
+            "ensure-public migration did not add request_count to public "
+            "when a stray schema already had it"
+        )
+    finally:
         with _sync_engine(migration_url).connect() as conn:
-            row = conn.execute(
-                text(
-                    "SELECT COUNT(*) FROM information_schema.tables "
-                    "WHERE table_schema = :schema AND table_name = 'alembic_version'"
-                ),
-                {
-                    "schema": urllib.parse.urlparse(
-                        migration_url.replace("mysql+aiomysql://", "mysql://")
-                    ).path.lstrip("/")
-                },
-            ).scalar_one()
-    assert row == 1
+            conn.execute(text("DROP SCHEMA IF EXISTS stray_test CASCADE"))
+            conn.commit()

@@ -75,7 +75,13 @@ const COMPONENTS: Components = {
     </td>
   ),
   a: ({ href, children }) => {
-    if (!href || !/^(https?:|mailto:|\/|#)/i.test(href)) {
+    // Block protocol-relative (//host) URLs: their scheme is unknown at render
+    // time, so treating them as internal leaks referrers and opens redirects.
+    if (
+      !href ||
+      href.startsWith("//") ||
+      !/^(https?:|mailto:|\/|#)/i.test(href)
+    ) {
       return <span className="text-foreground/80">{children}</span>;
     }
     const external = href.startsWith("http");

@@ -55,7 +55,7 @@ def _is_external(ip: str) -> bool:
 
 
 def _aware(dt: datetime) -> datetime:
-    """Return a timezone-aware datetime (MySQL rows come back naive)."""
+    """Return a timezone-aware datetime (defensive for naive inputs)."""
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt

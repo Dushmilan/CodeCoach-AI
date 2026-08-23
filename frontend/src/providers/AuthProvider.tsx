@@ -10,6 +10,7 @@ import {
 } from "react";
 import { User, AuthState } from "@/types";
 import { authService } from "@/features/auth/auth.service";
+import { setAccessToken, setCsrfToken } from "@/lib/auth-session";
 import { showToast } from "@/components/ui/Toast";
 
 interface AuthContextType extends AuthState {
@@ -25,40 +26,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function getStoredToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("auth_token");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function getStoredRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("auth_refresh_token");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function setStoredTokens(token: string | null, refreshToken: string | null) {
-  if (typeof window === "undefined") return;
-  if (token) {
-    localStorage.setItem("auth_token", JSON.stringify(token));
-  } else {
-    localStorage.removeItem("auth_token");
-  }
-  if (refreshToken) {
-    localStorage.setItem("auth_refresh_token", JSON.stringify(refreshToken));
-  } else {
-    localStorage.removeItem("auth_refresh_token");
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -68,41 +35,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isHydrated: false,
   });
 
-  const setAuth = useCallback(
-    (user: User | null, token: string | null, refreshToken?: string | null) => {
-      setState({
-        user,
-        token,
-        isLoading: false,
-        isAuthenticated: !!user && !!token,
-        isHydrated: true,
-      });
-      setStoredTokens(token, refreshToken ?? null);
-    },
-    [],
-  );
+  const setAuth = useCallback((user: User | null, token: string | null) => {
+    setAccessToken(token);
+    setState({
+      user,
+      token,
+      isLoading: false,
+      isAuthenticated: !!user && !!token,
+      isHydrated: true,
+    });
+  }, []);
 
   useEffect(() => {
-    const storedToken = getStoredToken();
-    const storedRefreshToken = getStoredRefreshToken();
-    if (!storedToken) {
-      setState((prev) => ({ ...prev, isLoading: false, isHydrated: true }));
-      return;
-    }
-
+    // SEC-2: no tokens in localStorage. The refresh token is an httpOnly
+    // cookie; exchanging it for a fresh access token restores the session.
     authService
-      .getMe(storedToken)
-      .then((user) => {
+      .refresh()
+      .then((response) => {
+        setAccessToken(response.access_token);
+        setCsrfToken(response.csrf_token ?? null);
         setState({
-          user,
-          token: storedToken,
+          user: response.user,
+          token: response.access_token,
           isLoading: false,
           isAuthenticated: true,
           isHydrated: true,
         });
       })
       .catch(() => {
-        setStoredTokens(null, null);
+        setAccessToken(null);
+        setCsrfToken(null);
         setState({
           user: null,
           token: null,
@@ -116,11 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (username: string, password: string) => {
       const response = await authService.login({ username, password });
-      setAuth(
-        response.user,
-        response.access_token,
-        response.refresh_token ?? null,
-      );
+      setCsrfToken(response.csrf_token ?? null);
+      setAuth(response.user, response.access_token);
       showToast("Signed in successfully", "success");
     },
     [setAuth],
@@ -133,11 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
       });
-      setAuth(
-        response.user,
-        response.access_token,
-        response.refresh_token ?? null,
-      );
+      setCsrfToken(response.csrf_token ?? null);
+      setAuth(response.user, response.access_token);
       showToast("Account created successfully", "success");
     },
     [setAuth],
@@ -148,18 +104,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authService.loginWithSupabase({
         access_token: accessToken,
       });
-      setAuth(
-        response.user,
-        response.access_token,
-        response.refresh_token ?? null,
-      );
+      setCsrfToken(response.csrf_token ?? null);
+      setAuth(response.user, response.access_token);
     },
     [setAuth],
   );
 
   const logout = useCallback(() => {
-    setAuth(null, null, null);
-    showToast("Signed out", "info");
+    // Best-effort: clear the httpOnly refresh cookie server-side first.
+    authService
+      .logout()
+      .catch(() => {
+        // Even if the network call fails, local state must clear.
+      })
+      .finally(() => {
+        setCsrfToken(null);
+        setAuth(null, null);
+        showToast("Signed out", "info");
+      });
   }, [setAuth]);
 
   return (

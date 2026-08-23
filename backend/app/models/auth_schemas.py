@@ -32,10 +32,23 @@ class TokenResponse(BaseModel):
     refresh_token: Optional[str] = Field(
         None, description="Long-lived refresh token for silent re-authentication"
     )
+    csrf_token: Optional[str] = Field(
+        None,
+        description=(
+            "Double-submit CSRF token; echo it as the X-CSRF-Token header on "
+            "cookie-authenticated mutating requests (refresh/logout)."
+        ),
+    )
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str = Field(..., description="Refresh token issued at login")
+    refresh_token: Optional[str] = Field(
+        None,
+        description=(
+            "Refresh token issued at login. Optional: when an httpOnly "
+            "refresh_token cookie is present it is used instead."
+        ),
+    )
 
 
 class TokenData(BaseModel):

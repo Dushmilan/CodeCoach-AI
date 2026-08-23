@@ -9,9 +9,17 @@ from app.ports.code_executor import ExecutionResult
 
 class TestPistonServiceInit:
     def test_default_base_url(self):
-        with patch.dict("os.environ", {}, clear=True):
+        # ENVIRONMENT=testing: loopback Piston is legitimate in dev/test.
+        with patch.dict("os.environ", {"ENVIRONMENT": "testing"}, clear=True):
             service = PistonService()
             assert service.base_url == "http://localhost:2000/api/v2"
+
+    def test_default_base_url_rejected_in_production(self):
+        # Fail-closed: unset ENVIRONMENT means production; loopback is an
+        # SSRF target there and must be rejected at construction time.
+        with patch.dict("os.environ", {}, clear=True):
+            with pytest.raises(ValueError):
+                PistonService()
 
     def test_custom_base_url(self):
         with patch.dict(

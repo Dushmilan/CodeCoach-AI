@@ -6,6 +6,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/learn/MarkdownRenderer';
 import { cn } from '@/lib/utils';
 import { ChatMessage, Language, LessonSummary } from '@/types';
+import { CoachingMode } from '@/features/coaching/coaching.types';
 import { AICoachPane } from './AICoachPane';
 import { AIPanelDrawer } from './AIPanelDrawer';
 import { PanelResizer } from './PanelResizer';
@@ -25,7 +26,7 @@ interface TheoryLessonLayoutProps {
   selectedQuestion: string;
   currentCode: string;
   language: Language;
-  onSendMessage: (message: string, mode: string) => void;
+  onSendMessage: (message: string, mode: CoachingMode) => void;
 }
 
 export function TheoryLessonLayout({

@@ -10,7 +10,7 @@ Usage:
     python scripts/sync_local_to_db.py [--url DATABASE_URL]
 
 Defaults to DATABASE_URL from the environment (PostgreSQL/Supabase, or local
-MySQL if configured). Safe to re-run.
+when a legacy source is configured). Safe to re-run.
 """
 
 import argparse
@@ -54,7 +54,10 @@ def _strip_pgbouncer(url: str) -> str:
 def _get_database_url() -> str:
     url = _strip_pgbouncer(os.getenv("DATABASE_URL"))
     if not url:
-        url = "postgresql://codecoach:codecoach@host.docker.internal:5432/codecoach"
+        raise SystemExit(
+            "ERROR: DATABASE_URL is required (Supabase/PostgreSQL connection "
+            "string); no local fallback is allowed."
+        )
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url

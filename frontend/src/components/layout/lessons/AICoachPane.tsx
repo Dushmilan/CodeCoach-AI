@@ -1,9 +1,10 @@
 import { AIChatPanelContainer } from '@/components/layout/elements';
 import { ChatMessage, Language } from '@/types';
+import { CoachingMode } from '@/features/coaching/coaching.types';
 
 interface AICoachPaneProps {
   messages: ChatMessage[];
-  onSendMessage: (message: string, mode: string) => void;
+  onSendMessage: (message: string, mode: CoachingMode) => void;
   onClose: () => void;
   isTyping: boolean;
   selectedQuestion: string;

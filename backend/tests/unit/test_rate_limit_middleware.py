@@ -1,41 +1,30 @@
-import os
-from importlib import reload
+from app.middleware.rate_limit import (
+    COACH_RATE_LIMIT,
+    RUN_RATE_LIMIT,
+    QUESTIONS_RATE_LIMIT,
+    limiter,
+)
 
 
 class TestRateLimitConfig:
     def test_limiter_exists(self):
-        from app.middleware.rate_limit import limiter
-
         assert limiter is not None
 
-    def test_coach_rate_limit_default(self):
-        os.environ.pop("COACH_RATE_LIMIT", None)
-        import app.middleware.rate_limit as rl
+    def test_coach_rate_limit_default(self, monkeypatch):
+        monkeypatch.delenv("COACH_RATE_LIMIT", raising=False)
+        assert COACH_RATE_LIMIT() == "10/minute"
 
-        reload(rl)
-        assert rl.COACH_RATE_LIMIT() == "10/minute"
+    def test_run_rate_limit_default(self, monkeypatch):
+        monkeypatch.delenv("RUN_RATE_LIMIT", raising=False)
+        assert RUN_RATE_LIMIT() == "30/minute"
 
-    def test_run_rate_limit_default(self):
-        os.environ.pop("RUN_RATE_LIMIT", None)
-        import app.middleware.rate_limit as rl
+    def test_questions_rate_limit_default(self, monkeypatch):
+        monkeypatch.delenv("QUESTIONS_RATE_LIMIT", raising=False)
+        assert QUESTIONS_RATE_LIMIT() == "100/minute"
 
-        reload(rl)
-        assert rl.RUN_RATE_LIMIT() == "30/minute"
-
-    def test_questions_rate_limit_default(self):
-        os.environ.pop("QUESTIONS_RATE_LIMIT", None)
-        import app.middleware.rate_limit as rl
-
-        reload(rl)
-        assert rl.QUESTIONS_RATE_LIMIT() == "100/minute"
-
-    def test_coach_rate_limit_from_env(self):
-        os.environ["COACH_RATE_LIMIT"] = "50/minute"
-        import app.middleware.rate_limit as rl
-
-        reload(rl)
-        assert rl.COACH_RATE_LIMIT() == "50/minute"
-        os.environ.pop("COACH_RATE_LIMIT", None)
+    def test_coach_rate_limit_from_env(self, monkeypatch):
+        monkeypatch.setenv("COACH_RATE_LIMIT", "50/minute")
+        assert COACH_RATE_LIMIT() == "50/minute"
 
     def test_limiter_registered_on_app(self):
         from app.main import app

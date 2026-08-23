@@ -8,6 +8,13 @@ from app.models.auth_schemas import TokenResponse, UserResponse
 
 
 @pytest.fixture
+def test_client() -> TestClient:
+    """Fresh client per test: cookie state must never leak across tests."""
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture
 def mock_auth_service():
     from app.api.auth_deps import get_auth_service
 
@@ -255,7 +262,11 @@ class TestAuthRefresh:
         assert response.status_code == 200
         data = response.json()
         assert data["access_token"] == "new_access_abc"
-        assert data["refresh_token"] == "new_refresh_xyz"
+        # Refresh token moved to the httpOnly cookie (SEC-2): not in the body.
+        assert data["refresh_token"] is None
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "new_refresh_xyz" in set_cookie
+        assert "HttpOnly" in set_cookie
 
     def test_refresh_rejects_invalid_token(
         self, test_client: TestClient, mock_auth_service
@@ -272,8 +283,10 @@ class TestAuthRefresh:
         assert "Invalid or expired refresh token" in response.json()["detail"]
 
     def test_refresh_without_token(self, test_client: TestClient):
+        # Body is optional (SEC-2: the httpOnly cookie carries the token); no
+        # cookie and no body means no session -> 401.
         response = test_client.post("/api/auth/refresh", json={})
-        assert response.status_code == 422
+        assert response.status_code == 401
 
 
 class TestAuthErrorHandling:

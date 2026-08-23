@@ -5,10 +5,12 @@ result formatting, and static validation.
 """
 
 import dataclasses
+import ipaddress
 import json
 import logging
 import os
 from typing import List, Optional
+from urllib.parse import urlsplit
 
 import httpx
 from fastapi import HTTPException
@@ -23,6 +25,64 @@ from app.services.redis_service import RedisCache, _content_hash
 logger = logging.getLogger(__name__)
 
 
+# ── Piston URL validation (SSRF guard) ───────────────────────────────────
+
+
+def validate_piston_url(url: str, environment: Optional[str] = None) -> str:
+    """Validate a Piston base URL, rejecting SSRF-vulnerable targets.
+
+    Fail-closed rules:
+    - scheme must be http or https (no file/gopher/ftp/…)
+    - a host is required
+    - link-local / metadata addresses (169.254.0.0/16, e.g. the cloud
+      metadata endpoint) are never legitimate Piston endpoints — rejected in
+      every environment
+    - in production, loopback (localhost/127.0.0.1/::1), private ranges and
+      hosts outside ``PISTON_ALLOWED_HOSTS`` are rejected; outside production
+      loopback is allowed for local dev Piston containers
+
+    Returns the URL unchanged when valid, else raises ValueError.
+    """
+    env = environment or os.getenv("ENVIRONMENT", "production")
+
+    parsed = urlsplit(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Piston URL scheme must be http(s), got {parsed.scheme!r}")
+    host = (parsed.hostname or "").strip("[]").lower()
+    if not host:
+        raise ValueError("Piston URL must include a host")
+
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None  # hostname, checked against the allowlist below
+
+    # Link-local/metadata addresses are never valid Piston endpoints.
+    if ip is not None and ip.is_link_local:
+        raise ValueError(
+            f"Piston URL host {host!r} is link-local/metadata — SSRF guard"
+        )
+
+    if env == "production":
+        if ip is not None and (ip.is_loopback or ip.is_private or ip.is_multicast):
+            raise ValueError(
+                f"Piston URL host {host!r} is a loopback/private address — SSRF guard"
+            )
+        if ip is None and host in ("localhost", "localhost.localdomain"):
+            raise ValueError(f"Piston URL host {host!r} is loopback — SSRF guard")
+        allowed = {
+            h.strip().lower()
+            for h in os.getenv("PISTON_ALLOWED_HOSTS", "piston").split(",")
+            if h.strip()
+        }
+        if ip is None and host not in allowed:
+            raise ValueError(
+                f"Piston URL host {host!r} not in PISTON_ALLOWED_HOSTS — SSRF guard"
+            )
+
+    return url
+
+
 # ── Piston Service ─────────────────────────────────────────────────────
 
 
@@ -35,7 +95,8 @@ class PistonService(CodeExecutor):
     }
 
     def __init__(self, cache: Optional[RedisCache] = None):
-        self.base_url = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
+        raw_url = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
+        self.base_url = validate_piston_url(raw_url)
         self.timeout = 30.0
         self.formatter = ExecutionResultFormatter()
         self.validator = StaticCodeValidator()

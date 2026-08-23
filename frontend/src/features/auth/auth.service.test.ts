@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { AuthService } from "./auth.service";
 import { HttpClient } from "@/lib/http-client";
 
@@ -128,10 +128,9 @@ describe("AuthService", () => {
   });
 
   describe("refresh", () => {
-    it("calls POST /api/auth/refresh with refresh token", async () => {
+    it("calls POST /api/auth/refresh with no body (cookie-based)", async () => {
       vi.mocked(http.post).mockResolvedValue({
         access_token: "new_jwt",
-        refresh_token: "rotated_refresh",
         token_type: "bearer",
         expires_in: 1800,
         user: {
@@ -143,13 +142,20 @@ describe("AuthService", () => {
         },
       });
 
-      const result = await service.refresh("refresh_token_123");
+      const result = await service.refresh();
 
-      expect(http.post).toHaveBeenCalledWith("/api/auth/refresh", {
-        refresh_token: "refresh_token_123",
+      expect(http.post).toHaveBeenCalledWith("/api/auth/refresh", undefined, {
+        skipAuthRefresh: true,
       });
       expect(result.access_token).toBe("new_jwt");
-      expect(result.refresh_token).toBe("rotated_refresh");
+    });
+
+    it("calls POST /api/auth/logout to clear the refresh cookie", async () => {
+      vi.mocked(http.post).mockResolvedValue(undefined);
+
+      await service.logout();
+
+      expect(http.post).toHaveBeenCalledWith("/api/auth/logout");
     });
   });
 
@@ -169,5 +175,72 @@ describe("AuthService", () => {
         headers: { Authorization: "Bearer my_token" },
       });
     });
+  });
+});
+
+describe("signInWithGoogle", () => {
+  const mockSignInWithOAuth = vi.fn();
+  const mockCreateBrowserClient = vi.fn();
+
+  beforeEach(() => {
+    vi.resetModules();
+    mockSignInWithOAuth.mockReset();
+    mockCreateBrowserClient.mockReset();
+    vi.stubGlobal("window", { location: { origin: "http://localhost:3000" } });
+
+    vi.doMock("@supabase/ssr", () => ({
+      createBrowserClient: (...args: unknown[]) => {
+        mockCreateBrowserClient(...args);
+        return {
+          auth: { signInWithOAuth: mockSignInWithOAuth },
+        };
+      },
+    }));
+
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://test.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "sb_publishable_test");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("redirects to Supabase Google OAuth with the callback URL", async () => {
+    mockSignInWithOAuth.mockResolvedValue({ error: null });
+
+    const { signInWithGoogle } = await import("./auth.service");
+
+    await signInWithGoogle();
+
+    expect(mockCreateBrowserClient).toHaveBeenCalledWith(
+      "https://test.supabase.co",
+      "sb_publishable_test",
+    );
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: { redirectTo: "http://localhost:3000/auth/callback" },
+    });
+  });
+
+  it("throws when the redirect_to fails", async () => {
+    mockSignInWithOAuth.mockResolvedValue({
+      error: new Error("provider not enabled"),
+    });
+
+    const { signInWithGoogle } = await import("./auth.service");
+
+    await expect(signInWithGoogle()).rejects.toThrow("provider not enabled");
+  });
+
+  it("throws a clear error when Supabase env vars are missing", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
+
+    const { signInWithGoogle } = await import("./auth.service");
+
+    await expect(signInWithGoogle()).rejects.toThrow(
+      "Supabase is not configured",
+    );
   });
 });

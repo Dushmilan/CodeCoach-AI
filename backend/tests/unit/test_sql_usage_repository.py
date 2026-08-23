@@ -1,4 +1,4 @@
-"""Unit tests for SqlUsageRepository — MySQL-backed usage persistence."""
+"""Unit tests for SqlUsageRepository — PostgreSQL-backed usage persistence."""
 
 from datetime import date, datetime, timezone
 

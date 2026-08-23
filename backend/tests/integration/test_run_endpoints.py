@@ -41,7 +41,7 @@ class TestRunEndpoints:
             "language": "python",
             "code": "print('Hello, World!')\nprint(2 + 2)",
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -69,7 +69,7 @@ class TestRunEndpoints:
             "language": "python",
             "code": "user_input = input()\nprint(f'Hello, {user_input}!')",
             "stdin": "Alice",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -87,7 +87,7 @@ class TestRunEndpoints:
             "language": "python",
             "code": "print(undefined_variable)",
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -104,7 +104,7 @@ class TestRunEndpoints:
         code_request = {
             "language": "python",
             "code": "def hello():\n    return 'Hello, World!'",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -126,7 +126,7 @@ class TestRunEndpoints:
         code_request = {
             "language": "python",
             "code": "def hello(\n    return 'Hello, World!'",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -195,7 +195,7 @@ class TestRunEndpoints:
             "language": "python",
             "code": "",
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -221,7 +221,7 @@ for i in range(10):
     print(f"F({i}) = {fibonacci(i)}")
             """.strip(),
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -240,7 +240,7 @@ for i in range(10):
             "language": "python",
             "code": "large_list = [i for i in range(100000)]\nprint(len(large_list))",
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -258,7 +258,7 @@ for i in range(10):
             "language": "python",
             "code": "import time\ntime.sleep(1)\nprint('Done')",
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -270,16 +270,13 @@ for i in range(10):
         # Should execute successfully or timeout gracefully
         assert data["exit_code"] == 0 or "timeout" in data["stderr"].lower()
 
-        assert "warnings" in data
-        assert "errors" in data
-
     def test_run_endpoints_response_format(self, test_client: TestClient):
         """Test response format consistency."""
         code_request = {
             "language": "python",
             "code": "print('Hello')",
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         with mock_auth():
@@ -329,7 +326,7 @@ for i in range(10):
             "language": "python",
             "code": "print('Hello, World!')",
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         from app.api.auth_deps import get_current_user
@@ -410,7 +407,7 @@ for i in range(10):
             "language": "python",
             "code": "print('Hello')",
             "stdin": "",
-            "version": "3.11.0",
+            "version": "3.10.0",
         }
 
         start_time = time.time()

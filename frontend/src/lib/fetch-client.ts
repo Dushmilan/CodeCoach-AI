@@ -1,48 +1,17 @@
 import { HttpClient, HttpMethod, HttpRequestOptions } from "./http-client";
+import { getAccessToken, setAccessToken, getCsrfToken } from "./auth-session";
 
 declare const process: { env: { NEXT_PUBLIC_API_URL?: string } };
 
 const DEFAULT_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("auth_token");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("auth_refresh_token");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function setAuthTokens(accessToken: string | null, refreshToken: string | null) {
-  if (typeof window === "undefined") return;
-  if (accessToken) {
-    localStorage.setItem("auth_token", JSON.stringify(accessToken));
-  } else {
-    localStorage.removeItem("auth_token");
-  }
-  if (refreshToken) {
-    localStorage.setItem("auth_refresh_token", JSON.stringify(refreshToken));
-  } else {
-    localStorage.removeItem("auth_refresh_token");
-  }
-}
-
-interface RefreshPayload {
-  access_token: string;
-  refresh_token?: string | null;
-}
+const MUTATING_METHODS: ReadonlySet<HttpMethod> = new Set<HttpMethod>([
+  "POST",
+  "PUT",
+  "DELETE",
+  "PATCH",
+]);
 
 export class FetchClient implements HttpClient {
   private baseUrl: string;
@@ -54,7 +23,7 @@ export class FetchClient implements HttpClient {
     getToken?: () => string | null,
   ) {
     this.baseUrl = baseUrl;
-    this.getToken = getToken ?? getAuthToken;
+    this.getToken = getToken ?? getAccessToken;
   }
 
   async get<T>(path: string, options?: HttpRequestOptions): Promise<T> {
@@ -82,28 +51,28 @@ export class FetchClient implements HttpClient {
   }
 
   private async refreshAccessToken(): Promise<boolean> {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) return false;
-
+    // SEC-2: refresh token lives in an httpOnly cookie; the browser sends it
+    // automatically. The refresh endpoint is CSRF-exempt by design (see
+    // backend auth.py), so no X-CSRF-Token header is required here.
     if (!this.refreshInFlight) {
       this.refreshInFlight = (async () => {
         try {
           const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken }),
+            credentials: "include",
           });
           if (!response.ok) {
-            setAuthTokens(null, null);
+            setAccessToken(null);
             return false;
           }
-          const data = (await response.json()) as RefreshPayload;
-          setAuthTokens(
-            data.access_token,
-            data.refresh_token ?? refreshToken,
-          );
+          const data = (await response.json()) as {
+            access_token: string;
+          };
+          setAccessToken(data.access_token);
           return true;
         } catch {
+          setAccessToken(null);
           return false;
         } finally {
           this.refreshInFlight = null;
@@ -130,9 +99,11 @@ export class FetchClient implements HttpClient {
 
     try {
       const token = this.getToken();
+      const csrfToken = MUTATING_METHODS.has(method) ? getCsrfToken() : null;
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
         ...options?.headers,
       };
 
@@ -142,6 +113,7 @@ export class FetchClient implements HttpClient {
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal,
         cache: options?.cache,
+        credentials: "include",
       });
 
       clearTimeout(timeoutId);

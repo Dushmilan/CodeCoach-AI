@@ -9,10 +9,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://codecoach:codecoach@host.docker.internal:5432/codecoach}
+      - DATABASE_URL=${DATABASE_URL}
       - PISTON_API_URL=http://piston:2000/api/v2
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
@@ -31,7 +31,7 @@ services:
     networks:
       - codecoach-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/').status == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import urllib.request, json, sys; d=json.load(urllib.request.urlopen('http://127.0.0.1:8000/health/')); sys.exit(0 if d['dependencies']['questions_db'] == 'ok' else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -42,8 +42,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
+        - API_URL=${API_URL:-http://backend:8000}
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
         - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
     container_name: codecoach-frontend
     restart: unless-stopped
     ports:

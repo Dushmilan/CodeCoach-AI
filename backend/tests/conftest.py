@@ -2,17 +2,15 @@
 Test configuration and fixtures for CodeCoach AI API testing.
 """
 
+import asyncio
 import os
+import urllib.parse
 
 # Set safe defaults BEFORE app.main is imported so that Settings() does not
 # fail-fast at collection time (ENVIRONMENT unset = production = requires a
 # JWT secret). Individual tests override via monkeypatch/test_env_vars.
 os.environ.setdefault("ENVIRONMENT", "testing")
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only-32chars!!")
-
-import re  # noqa: E402
-import urllib.parse  # noqa: E402
-import asyncio  # noqa: E402
 
 _TEST_DB = "codecoach_test"
 
@@ -22,10 +20,6 @@ _TEST_DB = "codecoach_test"
 _xdist_worker = os.environ.get("PYTEST_XDIST_WORKER")
 if _xdist_worker:
     _TEST_DB = f"{_TEST_DB}_{_xdist_worker}"
-
-
-def _is_mysql_url(url: str) -> bool:
-    return url.startswith("mysql+aiomysql://") or url.startswith("mysql://")
 
 
 def _strip_pgbouncer(url: str) -> str:
@@ -49,79 +43,35 @@ def _strip_pgbouncer(url: str) -> str:
 def _ensure_test_database() -> str:
     """Route tests to a dedicated `codecoach_test` schema.
 
-    MySQL: creates the `codecoach_test` database next to the app database.
-    PostgreSQL/Supabase: uses a dedicated `codecoach_test` schema on the same
-    server (Supabase exposes a single database, so schema isolation is used).
+    Supabase exposes a single database, so isolation is a `codecoach_test`
+    schema on the same server (set via `DATABASE_SEARCH_PATH`).
 
     Runs at import time so Settings() picks it up before app.main is loaded.
     """
-    from urllib.parse import urlparse
-
-    import pymysql
     from dotenv import load_dotenv, find_dotenv
+
+    from tests.db_guard import assert_test_db_allowed
 
     load_dotenv(find_dotenv())
 
     base_url = os.environ.get(
         "DATABASE_URL",
-        "mysql+aiomysql://codecoach:codecoach@127.0.0.1:3306/codecoach",
+        "postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach",
     )
-    # When running on the host (not inside Docker), reach MySQL via localhost.
-    base_url = base_url.replace("host.docker.internal", "127.0.0.1")
-    if not _is_mysql_url(base_url):
-        return _ensure_postgres_test_schema(base_url)
-
-    match = re.match(r"^(mysql\+aiomysql://[^/]+)/(?:[^?]*)(\?.*)?$", base_url)
-    if not match:
-        raise RuntimeError(f"Unsupported DATABASE_URL for tests: {base_url}")
-    test_url = f"{match.group(1)}/{_TEST_DB}{match.group(2) or ''}"
-    os.environ["DATABASE_URL"] = test_url
-
-    parsed = urlparse(test_url.replace("mysql+aiomysql://", "mysql://"))
-    conn = pymysql.connect(
-        host=parsed.hostname,
-        port=parsed.port or 3306,
-        user=urllib.parse.unquote(parsed.username or ""),
-        password=urllib.parse.unquote(parsed.password or ""),
+    # Never run the suite against the production pooler unless explicitly
+    # overridden — the suite drops/recreates an isolated schema and runs DDL.
+    assert_test_db_allowed(
+        base_url,
+        allow_production=os.environ.get("ALLOW_PRODUCTION_TEST_DB"),
     )
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"CREATE DATABASE IF NOT EXISTS {_TEST_DB} "
-                "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-            )
-            cur.execute(f"USE {_TEST_DB}")
-            cur.execute("SET FOREIGN_KEY_CHECKS=0")
-            for table in (
-                "rate_limit_events",
-                "course_progress",
-                "lessons",
-                "modules",
-                "courses",
-                "questions",
-                "user_daily_usage",
-                "user_usage_events",
-                "users",
-                "feature_flags",
-                "audit_logs",
-                "generation_jobs",
-            ):
-                cur.execute(f"DROP TABLE IF EXISTS {table}")
-            cur.execute("SET FOREIGN_KEY_CHECKS=1")
-        conn.commit()
-    finally:
-        conn.close()
-
-    # Create schema so API tests (ASGITransport does not run lifespan) see tables.
-    _create_schema_sync(test_url)
-    return test_url
+    return _ensure_postgres_test_schema(base_url)
 
 
 def _ensure_postgres_test_schema(base_url: str) -> str:
     """Point DATABASE_URL at a dedicated `codecoach_test` schema.
 
-    The Prisma schema and app metadata are recreated on that schema, and
-    `search_path` is set via the connection so every app query targets it.
+    The ORM metadata is recreated on that schema, and `search_path` is set via
+    the connection so every app query targets it.
     """
     import asyncpg
 
@@ -175,31 +125,6 @@ def _ensure_postgres_test_schema(base_url: str) -> str:
     return base_url
 
 
-def _create_schema_sync(test_url: str) -> None:
-    """Create the app schema from metadata (used by the MySQL path)."""
-    import time as _time
-
-    from sqlalchemy import create_engine, text
-    from app.models.orm import Base
-
-    sync_url = test_url.replace("mysql+aiomysql://", "mysql+pymysql://")
-    for _attempt in range(1, 6):
-        engine = create_engine(sync_url)
-        try:
-            with engine.connect() as conn:
-                conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
-                Base.metadata.drop_all(conn)
-                conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
-            Base.metadata.create_all(engine)
-            engine.dispose()
-            break
-        except Exception:  # noqa: BLE001 - transient 1684/1824 DDL race
-            engine.dispose()
-            if _attempt == 5:
-                raise
-            _time.sleep(0.5 * _attempt)
-
-
 _ensure_test_database()
 
 import pytest  # noqa: E402
@@ -224,17 +149,18 @@ def test_client() -> Generator:
 
 def _test_engine_kwargs() -> dict:
     """Shared engine kwargs: force asyncpg driver + test search_path."""
-    kwargs = {}
     db_url = os.environ["DATABASE_URL"]
     if db_url.startswith("postgresql://"):
-        kwargs["connect_args"] = {
-            "server_settings": {"search_path": os.environ["DATABASE_SEARCH_PATH"]},
-            # Supabase poolers reuse prepared-statement names across
-            # connections; disable asyncpg's statement cache so DDL / DML does
-            # not hit DuplicatePreparedStatementError.
-            "statement_cache_size": 0,
+        return {
+            "connect_args": {
+                "server_settings": {"search_path": os.environ["DATABASE_SEARCH_PATH"]},
+                # Supabase poolers reuse prepared-statement names across
+                # connections; disable asyncpg's statement cache so DDL / DML does
+                # not hit DuplicatePreparedStatementError.
+                "statement_cache_size": 0,
+            }
         }
-    return kwargs
+    return {}
 
 
 def _test_db_url() -> str:
@@ -495,7 +421,7 @@ async def test_db():
     """Provide an isolated DB-backed session for SQL repository tests.
 
     Cleans all tables before each test so tests do not interfere with each
-    other or with the running application's database. Works on both MySQL and
+    other or with the running application's database. Works on
     PostgreSQL/Supabase (search_path points at the `codecoach_test` schema).
     """
     from sqlalchemy import text
@@ -761,3 +687,15 @@ def temp_questions_file():
 
     # Cleanup
     os.unlink(temp_path)
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter_state():
+    """Give every test a clean slowapi rate-limit slate.
+
+    slowapi's in-memory storage is process-global; without a reset, per-IP
+    counters leak across tests and make later tests fail spuriously once the
+    limit window is exhausted (e.g. question reads at 100/minute).
+    """
+    yield
+    app.state.limiter.reset()
