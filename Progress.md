@@ -98,6 +98,10 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
 
 ## Recent Changes
 
+- **Live DB migration `f2a3b4c5d6e7` applied (Aug 23):** Supabase TEST project resumed;
+  `alembic current` = `f2a3b4c5d6e7` (head), `rescue_queue` + indexes verified on live,
+  `/health/` reports `questions_db: ok`.
+
 - **F2 — Durable rescue re-surface queue (Aug 23, branch `feat/rescue-resurface-queue`):**
   new `rescue_queue` table (migration `f2a3b4c5d6e7`, partial unique index enforces one open
   row per user+question), `RescueRepository` port + SQL impl, `RescueService` rules engine

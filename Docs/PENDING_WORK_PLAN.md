@@ -48,8 +48,8 @@ remaining product, quality, testing, and ops backlog.
 > - Repeat abandonment schedules `max(existing_due + 1 day, next 09:00)` — never in the past.
 > - Client sends `tz_offset_minutes` east-positive (`-getTimezoneOffset()`); due date is
 >   tomorrow 09:00 in the client's own morning.
-> - ⚠ Live-DB step pending: the TEST Supabase project was PAUSED at implementation time;
->   once restored run `alembic upgrade head` to apply `f2a3b4c5d6e7` (idempotent).
+> - ✅ Live DB updated (Aug 23): after the Supabase TEST project resume, `alembic upgrade head`
+>   applied `f2a3b4c5d6e7`; verified table + partial unique index + both FKs on live, `alembic current` = head.
 
 **Goal / user value**
 The workspace already captures "abandoned problems" client-side
