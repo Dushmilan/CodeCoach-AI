@@ -3,6 +3,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useRescueContract } from "./use-rescue-contract.hook";
 import { tierThresholds } from "./rescue.config";
 import { SubmitResponse } from "@/features/code-execution/code-execution.types";
+import { rescueService } from "./rescue.service";
+
+vi.mock("./rescue.service", () => ({
+  rescueService: {
+    getDue: vi.fn().mockResolvedValue({ items: [], total: 0 }),
+    abandon: vi.fn().mockResolvedValue(null),
+    complete: vi.fn().mockResolvedValue(null),
+    dismiss: vi.fn().mockResolvedValue(null),
+  },
+}));
 
 const testCases = [
   { input: "1", expected_output: "2", description: "Sample A" },
@@ -236,5 +246,50 @@ describe("useRescueContract", () => {
       localStorage.getItem("rescue_abandoned_problems") || "[]",
     );
     expect(stored).toHaveLength(0);
+  });
+
+  it("notifies the durable rescue queue when abandoning", async () => {
+    const { result } = renderHook(() => useRescueContract(baseOptions));
+    act(() => {
+      vi.advanceTimersByTime(tierThresholds.t1);
+    });
+    await act(async () => {
+      result.current.abandon();
+    });
+    expect(rescueService.abandon).toHaveBeenCalledWith(
+      "q1",
+      expect.any(Number),
+    );
+  });
+
+  it("closes the durable queue item when the problem is solved", async () => {
+    const { result, rerender } = renderHook(
+      ({ opts }) => useRescueContract(opts),
+      { initialProps: { opts: baseOptions } },
+    );
+
+    rerender({
+      opts: { ...baseOptions, lastSubmitResult: makeSubmit(2, 2) },
+    });
+
+    await act(async () => {});
+    expect(rescueService.complete).toHaveBeenCalledWith("q1");
+  });
+
+  it("keeps the local fallback capture even when the durable API fails", async () => {
+    vi.mocked(rescueService.abandon).mockRejectedValueOnce(
+      new Error("network down"),
+    );
+    const { result } = renderHook(() => useRescueContract(baseOptions));
+    act(() => {
+      vi.advanceTimersByTime(tierThresholds.t1);
+    });
+    await act(async () => {
+      result.current.abandon();
+    });
+    const stored = JSON.parse(
+      localStorage.getItem("rescue_abandoned_problems") || "[]",
+    );
+    expect(stored).toHaveLength(1);
   });
 });

@@ -328,3 +328,88 @@ def test_ensure_public_request_count_migration_repairs_public_only(
         with _sync_engine(migration_url).connect() as conn:
             conn.execute(text("DROP SCHEMA IF EXISTS stray_test CASCADE"))
             conn.commit()
+
+
+EXPECTED_RESCUE_QUEUE_COLUMNS = {
+    "id",
+    "user_id",
+    "question_id",
+    "status",
+    "first_abandoned_at",
+    "due_at",
+    "resurface_count",
+    "last_intervention_at",
+    "created_at",
+    "updated_at",
+}
+
+
+def test_rescue_queue_migration_roundtrip(
+    alembic_config: Config, migration_url: str
+) -> None:
+    """F2 (durable rescue re-surface queue): `rescue_queue` exists at head
+    with its columns and the one-open-row-per-(user,question) partial unique
+    index, and is dropped by its downgrade. The Alembic graph applies to the
+    `public` schema of the test database (see tests/migrations/conftest.py),
+    so probes are scoped to `public` — other schemas may legitimately hold
+    same-named tables from app-level suites."""
+    # Start from the pre-F2 head regardless of prior tests in the session.
+    _retry(lambda: command.downgrade(alembic_config, "base"), "downgrade to base")
+    _retry(
+        lambda: command.upgrade(alembic_config, "e1f2a3b4c5d6"),
+        "upgrade to pre-F2 head e1f2a3b4c5d6",
+    )
+
+    def _table_exists() -> bool:
+        with _sync_engine(migration_url).connect() as conn:
+            return bool(
+                conn.execute(
+                    text(
+                        "SELECT COUNT(*) FROM information_schema.tables "
+                        "WHERE table_schema = 'public' "
+                        "AND table_name = 'rescue_queue'"
+                    )
+                ).scalar_one()
+            )
+
+    assert not _table_exists(), (
+        "rescue_queue must not exist below the rescue-queue migration"
+    )
+
+    _retry(lambda: command.upgrade(alembic_config, "head"), "upgrade head")
+
+    with _sync_engine(migration_url).connect() as conn:
+        columns = {
+            row[0]
+            for row in conn.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = 'public' "
+                    "AND table_name = 'rescue_queue'"
+                )
+            ).fetchall()
+        }
+        indexes = {
+            row[0]
+            for row in conn.execute(
+                text(
+                    "SELECT indexname FROM pg_indexes "
+                    "WHERE schemaname = 'public' "
+                    "AND tablename = 'rescue_queue'"
+                )
+            ).fetchall()
+        }
+    missing = EXPECTED_RESCUE_QUEUE_COLUMNS - columns
+    assert not missing, f"rescue_queue missing columns: {sorted(missing)}"
+    assert "uq_rescue_queue_open_user_question" in indexes, (
+        "rescue_queue is missing the partial unique index that enforces "
+        "one open row per (user_id, question_id)"
+    )
+    assert "ix_rescue_queue_user_status_due" in indexes, (
+        "rescue_queue is missing the due-queue query index (user_id, status, due_at)"
+    )
+
+    _retry(lambda: command.downgrade(alembic_config, "-1"), "downgrade -1")
+    assert not _table_exists(), "rescue_queue downgrade did not drop the table"
+
+    _retry(lambda: command.upgrade(alembic_config, "head"), "restore head")

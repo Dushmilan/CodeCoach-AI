@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import ProblemsPage from './page';
 import type { QuestionSummary } from '@/types';
 
@@ -29,6 +29,32 @@ vi.mock('@/components/header/Header', () => ({
 
 vi.mock('@/features/skill-graph/RecommendedQuestions', () => ({
   RecommendedQuestions: () => <div data-testid="recommended-questions" />,
+}));
+
+const state = vi.hoisted(() => ({
+  dueItems: [] as Array<{
+    id: string;
+    user_id: string;
+    question_id: string;
+    status: 'abandoned' | 'completed' | 'dismissed';
+    first_abandoned_at: string;
+    due_at: string;
+    resurface_count: number;
+    last_intervention_at: string | null;
+    created_at: string;
+    updated_at: string;
+  }>,
+}));
+
+vi.mock('@/features/rescue/rescue.service', () => ({
+  rescueService: {
+    getDue: vi.fn().mockImplementation(() =>
+      Promise.resolve({ items: state.dueItems, total: state.dueItems.length }),
+    ),
+    abandon: vi.fn().mockResolvedValue(null),
+    complete: vi.fn().mockResolvedValue(null),
+    dismiss: vi.fn().mockResolvedValue(null),
+  },
 }));
 
 vi.mock('@/hooks', () => ({
@@ -169,6 +195,34 @@ describe('ProblemsPage', () => {
     fireEvent.click(clearAll);
     expect(queryInDesktopTable('Two Sum')).toBeTruthy();
     expect(queryInDesktopTable('Valid Parentheses')).toBeTruthy();
+  });
+
+  it('surfaces the durable rescue due queue with resolved titles', async () => {
+    state.dueItems = [
+      {
+        id: 'row-1',
+        user_id: 'u1',
+        question_id: '1',
+        status: 'abandoned' as const,
+        first_abandoned_at: '2026-08-23T12:00:00Z',
+        due_at: '2026-08-24T09:00:00Z',
+        resurface_count: 1,
+        last_intervention_at: null,
+        created_at: '2026-08-23T12:00:00Z',
+        updated_at: '2026-08-23T12:00:00Z',
+      },
+    ];
+    render(<ProblemsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Back tomorrow')).toBeInTheDocument();
+    });
+    // Title resolved through the page's question inventory (id '1').
+    expect(screen.getByRole('link', { name: 'Two Sum' })).toHaveAttribute(
+      'href',
+      '/problems/1',
+    );
+    state.dueItems = [];
   });
 
   it('shows an empty state when no questions match', () => {

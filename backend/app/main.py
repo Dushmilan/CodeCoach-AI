@@ -42,6 +42,7 @@ from app.api import (  # noqa: E402
     daily_limits,
     skills,
     submissions,
+    rescue,
 )
 from app.core.config import get_settings, is_production  # noqa: E402
 from app.middleware.rate_limit import (  # noqa: E402
@@ -197,6 +198,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(daily_limits.router, prefix="/api/usage", tags=["usage"])
 app.include_router(skills.router, prefix="/api/skills", tags=["skills"])
 app.include_router(submissions.router, prefix="/api/submissions", tags=["submissions"])
+app.include_router(rescue.router, prefix="/api/rescue", tags=["rescue"])
 
 
 @app.get("/")

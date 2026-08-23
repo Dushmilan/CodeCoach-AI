@@ -153,14 +153,15 @@ a contract:
 Why it's out-of-the-box + sticky: it's a UX personality giant can't copy, great
 for the beginner segment, low churn = compounding retention.
 
-### Status: 🟢 Mostly built — re-surface loop missing
+### Status: 🟢 Mostly built — re-surface loop landed (Aug 23, 2026)
 
 **Detailed explanation:** The intervention half is implemented: `RescueIntervention` /
 `ProblemFlowMap` / `SolutionFlowMap` components, `use-rescue-contract` hook,
 backend flow-map API (`GET /questions/{id}/flow-map`, regenerate), and diagnosis
 with AI fallback to a deterministic outline. The "every abandoned problem
-resurfaces tomorrow as a tiny step" half is **not** — it requires persisting
-abandoned sessions (#1's data layer) and a re-surface queue.
+resurfaces tomorrow as a tiny step" half is now **built**: a durable server-side
+queue (`rescue_queue` table + `/api/rescue/*`) schedules tomorrow-09:00
+resurfacing, survives reloads, and honors dismissals permanently.
 
 ### Progress
 
@@ -168,8 +169,8 @@ abandoned sessions (#1's data layer) and a re-surface queue.
 - [x] `RescueIntervention` + `ProblemFlowMap` / `SolutionFlowMap` components
 - [x] Flow-map API: lazy fetch-or-generate + regenerate, 503 fallback to deterministic outline
 - [x] Submission diagnosis service (AI diagnosis, blueprint labels)
-- [ ] Capture abandoned problems (persistence needed)
-- [ ] Re-surface queue: tomorrow's tiny step for every abandoned problem
+- [x] Capture abandoned problems (durable: `POST /api/rescue/{id}/abandon`; localStorage kept as offline fallback)
+- [x] Re-surface queue: tomorrow's tiny step for every abandoned problem (`GET /api/rescue/due`, "Back tomorrow" section on `/problems`)
 - [ ] Time-based stuck escalation (X min → scaffold, Y min → re-plan)
 
 ### Next steps

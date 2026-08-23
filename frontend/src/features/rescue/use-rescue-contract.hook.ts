@@ -9,6 +9,7 @@ import {
   removeAbandonedProblem,
   saveAbandonedProblem,
 } from "./rescue.storage";
+import { rescueService } from "./rescue.service";
 
 interface UseRescueContractOptions {
   questionId: string;
@@ -86,6 +87,8 @@ export function useRescueContract({
     if (solved && !prevSolvedRef.current) {
       setTier("none");
       removeAbandonedProblem(questionIdRef.current);
+      // Close the durable queue row too (best-effort, offline-safe).
+      rescueService.complete(questionIdRef.current).catch(() => {});
     }
     prevSolvedRef.current = solved;
   }, [lastSubmitResult, questionId, setTier]);
@@ -178,7 +181,12 @@ export function useRescueContract({
 
   const abandon = useCallback(() => {
     if (solvedRef.current) return;
-    saveAbandonedProblem(buildAbandonedProblem());
+    const problem = buildAbandonedProblem();
+    // Local capture is the offline fallback; the durable queue resurfaces it.
+    saveAbandonedProblem(problem);
+    rescueService
+      .abandon(problem.questionId, -new Date().getTimezoneOffset())
+      .catch(() => {});
   }, [buildAbandonedProblem]);
 
   return {
