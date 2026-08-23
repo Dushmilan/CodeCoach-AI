@@ -2,6 +2,7 @@
 
 import { Header } from '@/components/header/Header';
 import { RecommendedQuestions } from '@/features/skill-graph/RecommendedQuestions';
+import { RescueDueQueue } from '@/features/rescue/RescueDueQueue';
 import { useQuestion } from '@/features/question/question.hook';
 import { QuestionSortKey } from '@/features/question/question.types';
 import { useLocalStorage } from '@/hooks';
@@ -65,6 +66,11 @@ export default function ProblemsPage() {
     allQuestions.forEach((q) => (q.company_tags ?? []).forEach((c) => set.add(c)));
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [allQuestions]);
+
+  const resolveQuestionTitle = useCallback(
+    (questionId: string) => allQuestions.find((q) => q.id === questionId)?.title,
+    [allQuestions],
+  );
 
   const getStatus = useCallback(
     (q: QuestionSummary): QuestionStatus => {
@@ -176,6 +182,7 @@ export default function ProblemsPage() {
       <Header />
       <main className="max-w-5xl mx-auto px-6 pt-20 pb-32">
         <RecommendedQuestions />
+        <RescueDueQueue resolveTitle={resolveQuestionTitle} />
         <div className="flex flex-col rounded-[2rem] bg-white/[0.03] ring-1 ring-white/5 p-1.5">
           <div className="flex flex-col rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] overflow-hidden">
             {/* ── Page header ─────────────────────────────────────── */}

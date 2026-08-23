@@ -30,7 +30,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | Solution Animations   | ✅     | Generate → validate → compile → play; canonical-solution pipeline                                                                                  |
 | Skill Graph           | ✅     | Learning events → mastery per skill; statuses new/learning/developing/strong/needs_review; decay + prerequisites. Tables applied to the live DB    |
 | Practice Next         | ✅     | Recommended-questions API + UI queue on `/problems` (21 of 109 questions mapped)                                                                   |
-| Rescue Contract       | ✅     | Checkpoints, RescueIntervention, ProblemFlowMap / SolutionFlowMap                                                                                  |
+| Rescue Contract       | ✅     | Checkpoints, RescueIntervention, ProblemFlowMap / SolutionFlowMap; durable re-surface queue live (Aug 23): `rescue_queue`, `/api/rescue/*`, "Back tomorrow" on `/problems` |
 | Auth                  | ✅     | Email/password (JWT + bcrypt), refresh tokens, Supabase OAuth (Google) — "Continue with Google" button on `/login`                                 |
 | Usage Metering        | ✅     | Daily input/output token caps, `X-Usage-*` headers, Redis-backed limits                                                                            |
 | Plans & Gates         | ✅     | Per-user plan, **quota-gated** coaching (free 20 req/day, paid 500), usage bar, upgrade modal                                                      |
@@ -45,7 +45,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | ---------------------- | ------ | ------------------------------------------------ | --------------------------------------------- |
 | Curriculum breadth     | 🟡     | Schema supports C/Java/ML/Prompt-Engineering     | C + Java content not committed                |
 | Question bank volume   | 🟡     | 109 seeded in DB (33 Easy / 50 Medium / 26 Hard) | Skill-graph mapping covers 21 of 109          |
-| Rescue re-surface loop | 🟡     | Intervention + flow maps built                   | "Abandoned problem resurfaces tomorrow" queue |
+| ~~Rescue re-surface loop~~ | ✅ DONE (Aug 23) | Durable queue: `rescue_queue` + `/api/rescue/due` + "Back tomorrow" UI; dismissals permanent | Time-based stuck escalation (X min → scaffold) still open under Ideas #4 |
 | Attempt-journey replay | 🟡     | Per-solve flow maps                              | Persistent attempt history + animated replay  |
 | Interview theater      | 🟡     | SSE streaming + editor change events             | Session/event engine + interviewer UI         |
 
@@ -95,6 +95,15 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | E2E (Playwright)                 | 15 specs | ✅ Passing |
 
 See [backend/tests/README.md](./backend/tests/README.md) for how to run each tier.
+
+## Recent Changes
+
+- **F2 — Durable rescue re-surface queue (Aug 23, branch `feat/rescue-resurface-queue`):**
+  new `rescue_queue` table (migration `f2a3b4c5d6e7`, partial unique index enforces one open
+  row per user+question), `RescueRepository` port + SQL impl, `RescueService` rules engine
+  (tomorrow-09:00 resurfacing in the client's timezone, repeat-abandon pushes a day out,
+  dismissals permanent), `/api/rescue/{due,abandon,complete,dismiss}` endpoints, and the
+  "Back tomorrow" due queue on `/problems`. 36 new backend tests + 16 new frontend tests.
 
 ## Recent Fixes
 
