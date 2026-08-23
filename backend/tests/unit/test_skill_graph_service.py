@@ -94,7 +94,7 @@ class TestSqlSkillGraphRepository:
     @pytest.mark.asyncio
     async def test_event_round_trip(self, seeded_db):
         repo = SqlSkillGraphRepository(seeded_db)
-        evt = _pass("u-skill", "test-two-sum")
+        evt = _pass("u-skill", "two-sum")
         await repo.save_event(evt)
         assert await repo.event_exists(evt.id)
         events = await repo.get_user_events("u-skill")
@@ -114,7 +114,7 @@ class TestSqlSkillGraphRepository:
             confidence=0.4,
             evidence_count=3,
             recent_error_count=1,
-            distinct_question_ids=["test-two-sum", "test-max-subarray"],
+            distinct_question_ids=["two-sum", "test-max-subarray"],
         )
         await repo.save_state(state)
         states = await repo.get_states("u-skill")
@@ -122,12 +122,12 @@ class TestSqlSkillGraphRepository:
         fetched = states["arrays"]
         assert fetched.mastery_score == 0.5
         assert fetched.confidence == 0.4
-        assert fetched.distinct_question_ids == ["test-two-sum", "test-max-subarray"]
+        assert fetched.distinct_question_ids == ["two-sum", "test-max-subarray"]
 
     @pytest.mark.asyncio
     async def test_delete_user_history(self, seeded_db):
         repo = SqlSkillGraphRepository(seeded_db)
-        await repo.save_event(_pass("u-skill", "test-two-sum"))
+        await repo.save_event(_pass("u-skill", "two-sum"))
         from app.models.skill_graph_schemas import UserSkillState
 
         await repo.save_state(
@@ -140,7 +140,7 @@ class TestSqlSkillGraphRepository:
     @pytest.mark.asyncio
     async def test_user_isolation(self, seeded_db):
         repo = SqlSkillGraphRepository(seeded_db)
-        await repo.save_event(_pass("u-skill", "test-two-sum"))
+        await repo.save_event(_pass("u-skill", "two-sum"))
         assert await repo.get_user_events("u-other") == []
 
 
@@ -166,7 +166,7 @@ class TestSkillGraphServiceSql:
         await repo.session.commit()
 
         result = await skill_service.ingest_events(
-            [_pass("u-skill", "test-two-sum", seq=1)]
+            [_pass("u-skill", "two-sum", seq=1)]
         )
         assert result.accepted == 1
 
@@ -182,14 +182,14 @@ class TestSkillGraphServiceSql:
         repo.session.add(
             QuestionSkillORM(
                 id="test-two-sum:hash-maps",
-                question_id="test-two-sum",
+                question_id="two-sum",
                 skill_slug="hash-maps",
                 weight=0.6,
             )
         )
         await repo.session.commit()
 
-        evt = _pass("u-skill", "test-two-sum", seq=2)
+        evt = _pass("u-skill", "two-sum", seq=2)
         await skill_service.ingest_events([evt, evt])
         states = await repo.get_states("u-skill")
         assert states["hash-maps"].evidence_count == 1
@@ -211,7 +211,7 @@ class TestSkillGraphServiceSql:
                 )
         await repo.session.commit()
 
-        for seq, q in enumerate(["test-two-sum", "test-reverse-string"]):
+        for seq, q in enumerate(["two-sum", "test-reverse-string"]):
             await skill_service.ingest_events([_pass("u-skill", q, seq=seq)])
 
         graph = await skill_service.get_graph("u-skill")
@@ -244,7 +244,7 @@ class TestSkillGraphServiceSql:
                 )
         await repo.session.commit()
 
-        await skill_service.ingest_events([_pass("u-skill", "test-two-sum", seq=1)])
+        await skill_service.ingest_events([_pass("u-skill", "two-sum", seq=1)])
         graph = await skill_service.get_graph("u-skill")
         hash_maps = next(s for s in graph.skills if s.skill_slug == "hash-maps")
         # 0.3 mastery (1 distinct question, independent pass) must read as

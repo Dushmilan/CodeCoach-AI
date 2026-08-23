@@ -44,7 +44,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | Feature                | Status | What exists                                      | What's missing                                |
 | ---------------------- | ------ | ------------------------------------------------ | --------------------------------------------- |
 | Curriculum breadth     | 🟡     | Schema supports C/Java/ML/Prompt-Engineering     | C + Java content not committed                |
-| Question bank volume   | 🟡     | 109 seeded in DB (33 Easy / 50 Medium / 26 Hard) | Skill-graph mapping covers 21 of 109          |
+| Question bank volume   | 🟡     | 109 seeded in DB (33 Easy / 50 Medium / 26 Hard) | ~~Skill-graph covers 21~~ → **109/109 (F3)**  |
 | ~~Rescue re-surface loop~~ | ✅ DONE (Aug 23) | Durable queue: `rescue_queue` + `/api/rescue/due` + "Back tomorrow" UI; dismissals permanent | Time-based stuck escalation (X min → scaffold) still open under Ideas #4 |
 | Attempt-journey replay | 🟡     | Per-solve flow maps                              | Persistent attempt history + animated replay  |
 | Interview theater      | 🟡     | SSE streaming + editor change events             | Session/event engine + interviewer UI         |
@@ -96,6 +96,14 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 
 See [backend/tests/README.md](./backend/tests/README.md) for how to run each tier.
 
+- **F3 — Skill-graph full mapping (Aug 23, branch `feat/skill-graph-full-mapping`):**
+  taxonomy grown 17→22 skills (+stacks-queues, heaps, backtracking, bit-manipulation,
+  greedy); all 109 live questions mapped (was 21); 4 dead test-only mapping ids removed;
+  6 pre-existing weight bugs fixed (summed to 0.9). Coverage locked by a live-inventory
+  snapshot fixture + unit tests. Seed script now honors DATABASE_SEARCH_PATH; conftest
+  question seeding made per-id idempotent (fixes latent order-dependent flake).
+  Live reseeded: 212 rows, recommendations verified non-empty.
+
 ## Recent Changes
 
 - **Live DB migration `f2a3b4c5d6e7` applied (Aug 23):** Supabase TEST project resumed;
@@ -124,8 +132,9 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
 
 ## Known Issues
 
-- Skill taxonomy maps 21 of the 109 live questions (4 more mapping ids are
-  test-only and not present in the DB); the rest have no recommendations.
+- ~~Skill taxonomy maps 21 of the 109 live questions~~ — **RESOLVED (Aug 23):**
+  F3 mapped all 109 (212 `question_skills` rows live, 0 dead ids, 0 unmapped);
+  coverage now guarded by `tests/unit/test_skill_taxonomy.py` + snapshot fixture.
 - C/Java curricula planned but not yet committed
 - ~~Live DB migration pending~~ — **DONE (Aug 15):** live Supabase is at head
   `e1f2a3b4c5d6`; verified `rate_limit_events`, `user_daily_usage.request_count`,

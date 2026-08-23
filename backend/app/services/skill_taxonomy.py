@@ -44,10 +44,28 @@ SKILLS: List[Skill] = [
         prerequisite_ids=["two-pointers", "hash-maps"],
     ),
     Skill(
+        slug="stacks-queues",
+        name="Stacks & Queues",
+        description="LIFO/FIFO structure patterns, monotonic stacks, deques.",
+        prerequisite_ids=["arrays"],
+    ),
+    Skill(
+        slug="heaps",
+        name="Heaps & Priority Queues",
+        description="Top-k selection, scheduling, streaming order statistics.",
+        prerequisite_ids=["arrays"],
+    ),
+    Skill(
         slug="recursion",
         name="Recursion",
         description="Base case, recursive step, call-stack reasoning.",
         prerequisite_ids=["arrays"],
+    ),
+    Skill(
+        slug="backtracking",
+        name="Backtracking",
+        description="Systematic choice exploration with undo on dead ends.",
+        prerequisite_ids=["recursion"],
     ),
     Skill(
         slug="sorting",
@@ -86,6 +104,18 @@ SKILLS: List[Skill] = [
         prerequisite_ids=["recursion"],
     ),
     Skill(
+        slug="greedy",
+        name="Greedy",
+        description="Locally optimal choices proven globally safe.",
+        prerequisite_ids=["arrays"],
+    ),
+    Skill(
+        slug="bit-manipulation",
+        name="Bit Manipulation",
+        description="XOR tricks, masks, two's-complement arithmetic.",
+        prerequisite_ids=["programming-fundamentals"],
+    ),
+    Skill(
         slug="debugging",
         name="Debugging",
         description="Reading error output, isolating failure, reproducing bugs.",
@@ -111,181 +141,184 @@ SKILLS: List[Skill] = [
     ),
 ]
 
-# Question -> skills mapping with weights. Keys are question IDs from the
+# Question -> [(skill_slug, weight), ...]. Keys are question IDs from the
 # production question bank (seeded into Supabase); these drive skill
-# attribution when a user solves a question.
-QUESTION_SKILLS: Dict[str, List[QuestionSkill]] = {
-    "two-sum": [
-        QuestionSkill(question_id="two-sum", skill_slug="arrays", weight=0.4),
-        QuestionSkill(question_id="two-sum", skill_slug="hash-maps", weight=0.6),
-    ],
-    "contains-duplicate": [
-        QuestionSkill(
-            question_id="contains-duplicate", skill_slug="hash-maps", weight=0.7
-        ),
-        QuestionSkill(
-            question_id="contains-duplicate", skill_slug="arrays", weight=0.3
-        ),
-    ],
-    "group-anagrams": [
-        QuestionSkill(question_id="group-anagrams", skill_slug="hash-maps", weight=0.7),
-        QuestionSkill(question_id="group-anagrams", skill_slug="strings", weight=0.3),
-    ],
-    "valid-anagram": [
-        QuestionSkill(question_id="valid-anagram", skill_slug="hash-maps", weight=0.6),
-        QuestionSkill(question_id="valid-anagram", skill_slug="strings", weight=0.4),
-    ],
-    "reverse-string": [
-        QuestionSkill(question_id="reverse-string", skill_slug="strings", weight=0.5),
-        QuestionSkill(
-            question_id="reverse-string", skill_slug="two-pointers", weight=0.5
-        ),
-    ],
-    "valid-palindrome": [
-        QuestionSkill(
-            question_id="valid-palindrome", skill_slug="two-pointers", weight=0.7
-        ),
-        QuestionSkill(question_id="valid-palindrome", skill_slug="strings", weight=0.3),
-    ],
-    "two-sum-ii-input-array-is-sorted": [
-        QuestionSkill(
-            question_id="two-sum-ii-input-array-is-sorted",
-            skill_slug="two-pointers",
-            weight=0.6,
-        ),
-        QuestionSkill(
-            question_id="two-sum-ii-input-array-is-sorted",
-            skill_slug="arrays",
-            weight=0.4,
-        ),
-    ],
-    "best-time-to-buy-and-sell-stock": [
-        QuestionSkill(
-            question_id="best-time-to-buy-and-sell-stock",
-            skill_slug="sliding-window",
-            weight=0.6,
-        ),
-        QuestionSkill(
-            question_id="best-time-to-buy-and-sell-stock",
-            skill_slug="arrays",
-            weight=0.4,
-        ),
-    ],
+# attribution when a user solves a question. Weights per question sum to 1.
+#
+# Coverage contract: every live question id MUST appear here and every key
+# MUST exist in the bank - enforced by tests/unit/test_skill_taxonomy.py
+# against tests/fixtures/live_question_ids.json.
+_QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
+    # --- Arrays & Hashing -------------------------------------------------
+    "two-sum": [("arrays", 0.4), ("hash-maps", 0.6)],
+    "contains-duplicate": [("hash-maps", 0.7), ("arrays", 0.3)],
+    "group-anagrams": [("hash-maps", 0.7), ("strings", 0.3)],
+    "valid-anagram": [("hash-maps", 0.6), ("strings", 0.4)],
+    "ransom-note": [("hash-maps", 0.8), ("strings", 0.2)],
+    "majority-element": [("hash-maps", 0.7), ("arrays", 0.3)],
+    "contiguous-array": [("hash-maps", 0.8), ("arrays", 0.2)],
+    "subarray-sum-equals-k": [("hash-maps", 0.8), ("arrays", 0.2)],
+    "longest-consecutive-sequence": [("hash-maps", 0.7), ("arrays", 0.3)],
+    "find-all-duplicates-in-an-array": [("arrays", 0.6), ("hash-maps", 0.4)],
+    "first-missing-positive": [("arrays", 0.7), ("hash-maps", 0.3)],
+    "product-of-array-except-self": [("arrays", 0.8), ("time-complexity", 0.2)],
+    "missing-number": [("arrays", 0.6), ("bit-manipulation", 0.4)],
+    "merge-intervals": [("sorting", 0.5), ("arrays", 0.5)],
+    "non-overlapping-intervals": [("greedy", 0.7), ("sorting", 0.3)],
+    # --- Two Pointers -----------------------------------------------------
+    "reverse-string": [("strings", 0.5), ("two-pointers", 0.5)],
+    "valid-palindrome": [("two-pointers", 0.7), ("strings", 0.3)],
+    "two-sum-ii-input-array-is-sorted": [("two-pointers", 0.6), ("arrays", 0.4)],
+    "three-sum": [("two-pointers", 0.7), ("arrays", 0.3)],
+    "three-sum-closest": [("two-pointers", 0.7), ("arrays", 0.3)],
+    "container-with-most-water": [("two-pointers", 0.8), ("greedy", 0.2)],
+    "move-zeroes": [("two-pointers", 0.7), ("arrays", 0.3)],
+    "is-subsequence": [("two-pointers", 0.8), ("strings", 0.2)],
+    "partition-labels": [("two-pointers", 0.6), ("greedy", 0.4)],
+    "rotate-image": [("two-pointers", 0.7), ("arrays", 0.3)],
+    "trapping-rain-water": [("two-pointers", 0.7), ("stacks-queues", 0.3)],
+    # --- Sliding Window ---------------------------------------------------
+    "best-time-to-buy-and-sell-stock": [("sliding-window", 0.6), ("arrays", 0.4)],
     "longest-substring-without-repeating-characters": [
-        QuestionSkill(
-            question_id="longest-substring-without-repeating-characters",
-            skill_slug="sliding-window",
-            weight=0.8,
-        ),
-        QuestionSkill(
-            question_id="longest-substring-without-repeating-characters",
-            skill_slug="strings",
-            weight=0.2,
-        ),
+        ("sliding-window", 0.8),
+        ("strings", 0.2),
     ],
-    "climbing-stairs": [
-        QuestionSkill(
-            question_id="climbing-stairs", skill_slug="dynamic-programming", weight=0.8
-        ),
-        QuestionSkill(
-            question_id="climbing-stairs", skill_slug="recursion", weight=0.2
-        ),
+    "longest-repeating-character-replacement": [
+        ("sliding-window", 0.9),
+        ("hash-maps", 0.1),
     ],
-    "coin-change": [
-        QuestionSkill(
-            question_id="coin-change", skill_slug="dynamic-programming", weight=0.9
-        ),
+    "minimum-window-substring": [("sliding-window", 0.7), ("hash-maps", 0.3)],
+    "permutation-in-string": [("sliding-window", 0.7), ("hash-maps", 0.3)],
+    "sliding-window-maximum": [("sliding-window", 0.6), ("stacks-queues", 0.4)],
+    # --- Stacks & Queues --------------------------------------------------
+    "valid-parentheses": [("stacks-queues", 0.8), ("time-complexity", 0.2)],
+    "evaluate-reverse-polish-notation": [
+        ("stacks-queues", 0.9),
+        ("programming-fundamentals", 0.1),
     ],
-    "house-robber": [
-        QuestionSkill(
-            question_id="house-robber", skill_slug="dynamic-programming", weight=0.9
-        ),
+    "min-stack": [("stacks-queues", 0.8), ("arrays", 0.2)],
+    "daily-temperatures": [("stacks-queues", 0.8), ("arrays", 0.2)],
+    "car-fleet": [("stacks-queues", 0.6), ("sorting", 0.4)],
+    "largest-rectangle-in-histogram": [("stacks-queues", 0.8), ("two-pointers", 0.2)],
+    "longest-valid-parentheses": [("stacks-queues", 0.7), ("dynamic-programming", 0.3)],
+    # --- Heaps & Priority Queues -------------------------------------------
+    "top-k-frequent-elements": [("heaps", 0.7), ("hash-maps", 0.3)],
+    "k-closest-points-to-origin": [("heaps", 0.7), ("sorting", 0.3)],
+    "kth-largest-element-in-an-array": [("heaps", 0.7), ("sorting", 0.3)],
+    "task-scheduler": [("heaps", 0.6), ("greedy", 0.4)],
+    "hand-of-straights": [("heaps", 0.6), ("hash-maps", 0.4)],
+    "merge-k-sorted-lists": [("heaps", 0.6), ("linked-lists", 0.4)],
+    # --- Binary Search ------------------------------------------------------
+    "binary-search": [("searching", 1.0)],
+    "search-insert-position": [("searching", 0.8), ("arrays", 0.2)],
+    "find-first-and-last-position-in-sorted-array": [
+        ("searching", 0.8),
+        ("arrays", 0.2),
     ],
-    "merge-intervals": [
-        QuestionSkill(question_id="merge-intervals", skill_slug="sorting", weight=0.5),
-        QuestionSkill(question_id="merge-intervals", skill_slug="arrays", weight=0.5),
+    "find-minimum-in-rotated-sorted-array": [("searching", 0.9), ("arrays", 0.1)],
+    "search-in-rotated-sorted-array": [("searching", 0.8), ("two-pointers", 0.2)],
+    "koko-eating-bananas": [("searching", 0.8), ("greedy", 0.2)],
+    "median-of-two-sorted-arrays": [("searching", 0.8), ("two-pointers", 0.2)],
+    # --- Linked Lists -------------------------------------------------------
+    "reverse-linked-list": [("linked-lists", 1.0)],
+    "linked-list-cycle": [("linked-lists", 1.0)],
+    "merge-two-sorted-lists": [("linked-lists", 0.8), ("two-pointers", 0.2)],
+    "add-two-numbers": [("linked-lists", 0.8), ("programming-fundamentals", 0.2)],
+    "remove-nth-node-from-end-of-list": [("linked-lists", 0.8), ("two-pointers", 0.2)],
+    "reorder-list": [("linked-lists", 0.7), ("two-pointers", 0.3)],
+    # --- Trees ---------------------------------------------------------------
+    "invert-binary-tree": [("trees", 0.8), ("recursion", 0.2)],
+    "maximum-depth-of-binary-tree": [("trees", 0.8), ("recursion", 0.2)],
+    "same-tree": [("trees", 0.8), ("recursion", 0.2)],
+    "balanced-binary-tree": [("trees", 0.8), ("recursion", 0.2)],
+    "binary-tree-level-order-traversal": [("trees", 0.8), ("graphs", 0.2)],
+    "validate-binary-search-tree": [("trees", 0.8), ("recursion", 0.2)],
+    "kth-smallest-element-in-a-bst": [("trees", 0.8), ("searching", 0.2)],
+    "lowest-common-ancestor-of-a-binary-tree": [("trees", 0.8), ("recursion", 0.2)],
+    "binary-tree-maximum-path-sum": [("trees", 0.8), ("dynamic-programming", 0.2)],
+    # --- Graphs ----------------------------------------------------------------
+    "number-of-islands": [("graphs", 1.0)],
+    "clone-graph": [("graphs", 0.8), ("hash-maps", 0.2)],
+    "course-schedule": [("graphs", 0.8), ("recursion", 0.2)],
+    "course-schedule-ii": [("graphs", 0.8), ("sorting", 0.2)],
+    "word-ladder": [("graphs", 0.7), ("searching", 0.3)],
+    "word-search": [("backtracking", 0.8), ("graphs", 0.2)],
+    "e42b2609-8b2c-49a0-9fa3-b7145df07bc3": [("graphs", 0.6), ("heaps", 0.4)],
+    # --- Dynamic Programming -----------------------------------------------------
+    "climbing-stairs": [("dynamic-programming", 0.8), ("recursion", 0.2)],
+    "coin-change": [("dynamic-programming", 1.0)],
+    "house-robber": [("dynamic-programming", 1.0)],
+    "word-break": [("dynamic-programming", 0.8), ("strings", 0.2)],
+    "edit-distance": [("dynamic-programming", 0.8), ("strings", 0.2)],
+    "decode-ways": [("dynamic-programming", 0.8), ("strings", 0.2)],
+    "longest-increasing-subsequence": [("dynamic-programming", 0.9), ("arrays", 0.1)],
+    "burst-balloons": [("dynamic-programming", 0.9), ("arrays", 0.1)],
+    "maximum-product-subarray": [("dynamic-programming", 0.7), ("arrays", 0.3)],
+    # --- Backtracking --------------------------------------------------------------
+    "permutations": [("backtracking", 0.9), ("recursion", 0.1)],
+    "subsets": [("backtracking", 0.9), ("recursion", 0.1)],
+    "combination-sum": [("backtracking", 0.8), ("recursion", 0.2)],
+    "generate-parentheses": [("backtracking", 0.7), ("stacks-queues", 0.3)],
+    # --- Greedy ----------------------------------------------------------------------
+    "jump-game": [("greedy", 0.8), ("arrays", 0.2)],
+    "jump-game-ii": [("greedy", 0.9), ("arrays", 0.1)],
+    "gas-station": [("greedy", 0.8), ("arrays", 0.2)],
+    "next-permutation": [("greedy", 0.7), ("two-pointers", 0.3)],
+    # --- Bit Manipulation ---------------------------------------------------------
+    "single-number": [("bit-manipulation", 0.9), ("arrays", 0.1)],
+    "number-of-1-bits": [("bit-manipulation", 0.9), ("programming-fundamentals", 0.1)],
+    "power-of-two": [("bit-manipulation", 0.8), ("programming-fundamentals", 0.2)],
+    "reverse-integer": [("bit-manipulation", 0.6), ("programming-fundamentals", 0.4)],
+    "find-the-duplicate-number": [("two-pointers", 0.7), ("bit-manipulation", 0.3)],
+    # --- Strings (bank-specific themed questions) ------------------------------------
+    "happy-number": [("two-pointers", 0.6), ("hash-maps", 0.4)],
+    "longest-common-prefix": [("strings", 0.8), ("arrays", 0.2)],
+    "test-q-1": [("strings", 0.7), ("two-pointers", 0.3)],
+    "f7e2d4a1-3b5c-4d6e-8f9a-0b1c2d3e4f5a": [("two-pointers", 0.8), ("strings", 0.2)],
+    "c9d1a3f2-5b6e-4a7f-8c0d-1e2f3a4b5c6d": [
+        ("strings", 0.8),
+        ("programming-fundamentals", 0.2),
     ],
-    "binary-search": [
-        QuestionSkill(question_id="binary-search", skill_slug="searching", weight=0.9),
+    "7b9d2c1a-3e4f-5a6b-7c8d-9e0f1a2b3c4d": [("hash-maps", 0.8), ("strings", 0.2)],
+    "5d8c4a1f-2b3e-4f6a-8c9d-0e1f2a3b4c5d": [
+        ("strings", 0.7),
+        ("programming-fundamentals", 0.3),
     ],
-    "search-insert-position": [
-        QuestionSkill(
-            question_id="search-insert-position", skill_slug="searching", weight=0.8
-        ),
-        QuestionSkill(
-            question_id="search-insert-position", skill_slug="arrays", weight=0.2
-        ),
+    "2b6e5f1a-4c7d-4a8e-9b0c-1d2e3f4a5b6c": [
+        ("strings", 0.8),
+        ("programming-fundamentals", 0.2),
     ],
-    "reverse-linked-list": [
-        QuestionSkill(
-            question_id="reverse-linked-list", skill_slug="linked-lists", weight=0.9
-        ),
+    "6d7e8f9a-0b1c-4d2e-3f4a-5b6c7d8e9f0a": [("strings", 0.7), ("two-pointers", 0.3)],
+    "1f3e5d7c-9b8a-4c6d-0e2f-4a5b6c7d8e9f": [
+        ("dynamic-programming", 0.8),
+        ("strings", 0.2),
     ],
-    "linked-list-cycle": [
-        QuestionSkill(
-            question_id="linked-list-cycle", skill_slug="linked-lists", weight=0.9
-        ),
+    "8c3d2e4f-6a5b-4f7c-9d0e-1a2b3c4d5e6f": [
+        ("dynamic-programming", 0.8),
+        ("strings", 0.2),
     ],
-    "invert-binary-tree": [
-        QuestionSkill(question_id="invert-binary-tree", skill_slug="trees", weight=0.8),
-        QuestionSkill(
-            question_id="invert-binary-tree", skill_slug="recursion", weight=0.2
-        ),
+    "9e4f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b": [
+        ("dynamic-programming", 0.8),
+        ("strings", 0.2),
     ],
-    "maximum-depth-of-binary-tree": [
-        QuestionSkill(
-            question_id="maximum-depth-of-binary-tree", skill_slug="trees", weight=0.8
-        ),
-        QuestionSkill(
-            question_id="maximum-depth-of-binary-tree",
-            skill_slug="recursion",
-            weight=0.2,
-        ),
-    ],
-    "number-of-islands": [
-        QuestionSkill(question_id="number-of-islands", skill_slug="graphs", weight=0.9),
-    ],
-    "valid-parentheses": [
-        QuestionSkill(question_id="valid-parentheses", skill_slug="arrays", weight=0.2),
-        QuestionSkill(
-            question_id="valid-parentheses", skill_slug="debugging", weight=0.3
-        ),
-        QuestionSkill(
-            question_id="valid-parentheses", skill_slug="time-complexity", weight=0.2
-        ),
-        QuestionSkill(
-            question_id="valid-parentheses", skill_slug="testing", weight=0.3
-        ),
-    ],
-    "test-two-sum": [
-        QuestionSkill(question_id="test-two-sum", skill_slug="arrays", weight=0.4),
-        QuestionSkill(question_id="test-two-sum", skill_slug="hash-maps", weight=0.6),
-    ],
-    "test-reverse-string": [
-        QuestionSkill(
-            question_id="test-reverse-string", skill_slug="strings", weight=0.5
-        ),
-        QuestionSkill(
-            question_id="test-reverse-string", skill_slug="two-pointers", weight=0.5
-        ),
-    ],
-    "test-max-subarray": [
-        QuestionSkill(
-            question_id="test-max-subarray",
-            skill_slug="dynamic-programming",
-            weight=0.7,
-        ),
-        QuestionSkill(question_id="test-max-subarray", skill_slug="arrays", weight=0.3),
-    ],
-    "test-merge-intervals": [
-        QuestionSkill(
-            question_id="test-merge-intervals", skill_slug="arrays", weight=0.6
-        ),
-        QuestionSkill(
-            question_id="test-merge-intervals", skill_slug="sorting", weight=0.4
-        ),
+    "4a3f7c1e-5d6b-4e8f-9a0c-2b3d4e5f6a7b": [
+        ("dynamic-programming", 0.7),
+        ("strings", 0.3),
     ],
 }
+
+
+def _build_question_skills() -> Dict[str, List[QuestionSkill]]:
+    return {
+        question_id: [
+            QuestionSkill(question_id=question_id, skill_slug=slug, weight=weight)
+            for slug, weight in mappings
+        ]
+        for question_id, mappings in _QUESTION_SKILL_WEIGHTS.items()
+    }
+
+
+QUESTION_SKILLS: Dict[str, List[QuestionSkill]] = _build_question_skills()
 
 # Deterministic evidence constants used by the rules engine. These are tuned
 # initial values; calibration happens in simulation, never via ML.

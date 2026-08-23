@@ -44,7 +44,7 @@ class TestDuplicateEvents:
         import asyncio
 
         service = _seeded_service()
-        evt = pass_evt(0, "u", "test-two-sum")
+        evt = pass_evt(0, "u", "two-sum")
 
         r1 = asyncio.run(service.ingest_events([evt, evt, evt]))
         states = asyncio.run(service.repository.get_states("u"))
@@ -56,7 +56,7 @@ class TestDuplicateEvents:
         import asyncio
 
         service = _seeded_service()
-        evt = pass_evt(0, "u", "test-two-sum")
+        evt = pass_evt(0, "u", "two-sum")
 
         asyncio.run(service.ingest_events([evt]))
         states_a = asyncio.run(service.repository.get_states("u"))
@@ -143,7 +143,7 @@ class TestInvalidScores:
                     "u",
                     LearningEventType.SUBMISSION_FAILED,
                     seq=i,
-                    question="test-two-sum",
+                    question="two-sum",
                 )
             )
         asyncio.run(service.ingest_events(events))
@@ -179,7 +179,7 @@ class TestDeletedHistory:
         import asyncio
 
         service = _seeded_service()
-        asyncio.run(service.ingest_events([pass_evt(0, "u", "test-two-sum")]))
+        asyncio.run(service.ingest_events([pass_evt(0, "u", "two-sum")]))
         asyncio.run(service.delete_history("u"))
 
         states = asyncio.run(service.repository.get_states("u"))
@@ -192,8 +192,8 @@ class TestDeletedHistory:
         import asyncio
 
         service = _seeded_service()
-        asyncio.run(service.ingest_events([pass_evt(0, "alice", "test-two-sum")]))
-        asyncio.run(service.ingest_events([pass_evt(0, "bob", "test-two-sum")]))
+        asyncio.run(service.ingest_events([pass_evt(0, "alice", "two-sum")]))
+        asyncio.run(service.ingest_events([pass_evt(0, "bob", "two-sum")]))
         asyncio.run(service.delete_history("alice"))
 
         states_bob = asyncio.run(service.repository.get_states("bob"))
@@ -207,8 +207,8 @@ class TestTimezoneBoundary:
 
         service = _seeded_service()
         events = [
-            pass_evt(0, "u", "test-two-sum"),
-            pass_evt(1, "u", "test-two-sum"),
+            pass_evt(0, "u", "two-sum"),
+            pass_evt(1, "u", "two-sum"),
         ]
         asyncio.run(service.ingest_events(events))
         graph = asyncio.run(service.get_graph("u"))
@@ -255,10 +255,10 @@ class TestMalformedDiagnosis:
                 "u",
                 LearningEventType.DIAGNOSIS_CREATED,
                 seq=0,
-                question="test-two-sum",
+                question="two-sum",
                 meta={"skills": ["arrays", "not-a-skill"], "passed": "maybe"},
             ),
-            pass_evt(1, "u", "test-two-sum"),
+            pass_evt(1, "u", "two-sum"),
         ]
         result = asyncio.run(service.ingest_events(events))
         assert result.accepted == 2
@@ -273,13 +273,13 @@ class TestPartialFailurePersistence:
         service = _seeded_service()
         events = [
             _evt(
-                "u", LearningEventType.SUBMISSION_PASSED, seq=0, question="test-two-sum"
+                "u", LearningEventType.SUBMISSION_PASSED, seq=0, question="two-sum"
             ),
             _evt(
                 "u2",
                 LearningEventType.SUBMISSION_PASSED,
                 seq=1,
-                question="test-two-sum",
+                question="two-sum",
             ),
         ]
         # Second event belongs to a different user and must be rejected when
@@ -297,7 +297,7 @@ class TestConcurrentEvents:
         # Sequential simulation of concurrent interleaving: alternating users.
         for i in range(6):
             user = "u" if i % 2 == 0 else "u2"
-            asyncio.run(service.ingest_events([pass_evt(i, user, "test-two-sum")]))
+            asyncio.run(service.ingest_events([pass_evt(i, user, "two-sum")]))
 
         states = asyncio.run(service.repository.get_states("u"))
         assert states["hash-maps"].evidence_count == 3

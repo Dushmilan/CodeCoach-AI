@@ -46,7 +46,7 @@ class TestSkillGraphAPI:
             "id": "api-event-1",
             "user_id": "nobody",  # server normalizes to the caller
             "event_type": "submission_passed",
-            "question_id": "test-two-sum",
+            "question_id": "two-sum",
             "metadata": {},
             "occurred_at": "2026-08-01T09:00:00Z",
         }
@@ -68,7 +68,7 @@ class TestSkillGraphAPI:
             "id": "api-event-foreign",
             "user_id": "somebody-else",
             "event_type": "submission_passed",
-            "question_id": "test-two-sum",
+            "question_id": "two-sum",
             "metadata": {},
             "occurred_at": "2026-08-01T09:00:00Z",
         }
@@ -87,7 +87,7 @@ class TestSkillGraphAPI:
             "id": "api-event-del",
             "user_id": "nobody",
             "event_type": "submission_passed",
-            "question_id": "test-two-sum",
+            "question_id": "two-sum",
             "metadata": {},
             "occurred_at": "2026-08-01T09:00:00Z",
         }
@@ -122,7 +122,7 @@ class TestSkillGraphAPI:
                 "id": f"api-rq-{i}",
                 "user_id": "nobody",
                 "event_type": "submission_passed",
-                "question_id": "test-two-sum",
+                "question_id": "two-sum",
                 "metadata": {},
                 "occurred_at": "2026-08-01T09:00:00Z",
             }
@@ -132,12 +132,32 @@ class TestSkillGraphAPI:
         assert res.status_code == 200
         assert res.json()["accepted"] == 2
 
+        # Seed question_skills via the REAL idempotent seed path so this guard
+        # breaks if the seed pipeline or taxonomy coverage regresses.
+        import asyncio
+
+        from scripts.seed_skill_graph import seed
+
+        asyncio.run(seed())
+
         res = test_client.get(
             "/api/skills/me/recommended-questions?limit=5", headers=headers
         )
         assert res.status_code == 200
         data = res.json()
         assert isinstance(data, list)
+        # F3 regression guard: solving a fully-mapped bank question MUST yield
+        # at least one recommendation (empty output means the mapping or seed
+        # pipeline broke).
+        assert len(data) >= 1, (
+            "expected non-empty recommendations after solving a mapped "
+            "question - check QUESTION_SKILLS coverage and question_skills seed"
+        )
+        exercised_skills = {"hash-maps", "arrays"}
+        assert any(item["skill_slug"] in exercised_skills for item in data), (
+            f"recommendations should target the exercised skills "
+            f"{exercised_skills}, got {[i['skill_slug'] for i in data]}"
+        )
         # The suggested question for the exercised skill must resolve to a real
         # question object (id + title present) when one exists in the bank.
         for item in data:

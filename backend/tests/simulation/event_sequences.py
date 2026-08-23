@@ -17,11 +17,13 @@ from app.models.skill_graph_schemas import (
     LearningEventType,
 )
 
-# Question IDs known to the seeded bank + their mapped skills.
-Q_TWO_SUM = "test-two-sum"  # arrays 0.4, hash-maps 0.6
-Q_REVERSE = "test-reverse-string"  # strings 0.5, two-pointers 0.5
-Q_MAX_SUB = "test-max-subarray"  # dp 0.7, arrays 0.3
-Q_MERGE = "test-merge-intervals"  # arrays 0.6, sorting 0.4
+# Question IDs from the live seeded bank + their mapped skills.
+# (F3 removed the old test-* taxonomy entries; simulations now exercise real
+# bank questions so every mapping resolves.)
+Q_TWO_SUM = "two-sum"  # arrays 0.4, hash-maps 0.6
+Q_REVERSE = "reverse-string"  # strings 0.5, two-pointers 0.5
+Q_MAX_SUB = "maximum-product-subarray"  # dp 0.7, arrays 0.3
+Q_MERGE = "merge-intervals"  # sorting 0.5, arrays 0.5
 
 T0 = datetime(2026, 8, 1, 9, 0, tzinfo=timezone.utc)
 
