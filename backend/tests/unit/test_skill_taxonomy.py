@@ -14,9 +14,7 @@ import pytest
 
 from app.services.skill_taxonomy import QUESTION_SKILLS, SKILLS
 
-FIXTURE = (
-    Path(__file__).resolve().parent.parent / "fixtures" / "live_question_ids.json"
-)
+FIXTURE = Path(__file__).resolve().parent.parent / "fixtures" / "live_question_ids.json"
 
 
 @pytest.fixture(scope="module")
@@ -34,11 +32,7 @@ def _all_mappings():
 class TestTaxonomyIntegrity:
     def test_every_mapped_skill_slug_exists(self):
         known = {s.slug for s in SKILLS}
-        bad = {
-            m.skill_slug
-            for _, m in _all_mappings()
-            if m.skill_slug not in known
-        }
+        bad = {m.skill_slug for _, m in _all_mappings() if m.skill_slug not in known}
         assert not bad, f"mappings reference unknown skills: {sorted(bad)}"
 
     def test_prerequisites_exist(self):
@@ -91,9 +85,7 @@ class TestTaxonomyIntegrity:
 
 
 class TestFullCoverage:
-    def test_every_mapping_resolves_to_a_live_question(
-        self, live_question_ids
-    ):
+    def test_every_mapping_resolves_to_a_live_question(self, live_question_ids):
         live = set(live_question_ids)
         dead = sorted(set(QUESTION_SKILLS.keys()) - live)
         assert not dead, (
@@ -102,9 +94,7 @@ class TestFullCoverage:
             f"{dead}"
         )
 
-    def test_every_live_question_has_at_least_one_skill(
-        self, live_question_ids
-    ):
+    def test_every_live_question_has_at_least_one_skill(self, live_question_ids):
         unmapped = [q for q in live_question_ids if q not in QUESTION_SKILLS]
         assert not unmapped, (
             f"{len(unmapped)} live questions have NO skill mapping and are "

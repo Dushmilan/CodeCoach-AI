@@ -165,9 +165,7 @@ class TestSkillGraphServiceSql:
                 )
         await repo.session.commit()
 
-        result = await skill_service.ingest_events(
-            [_pass("u-skill", "two-sum", seq=1)]
-        )
+        result = await skill_service.ingest_events([_pass("u-skill", "two-sum", seq=1)])
         assert result.accepted == 1
 
         states = await repo.get_states("u-skill")

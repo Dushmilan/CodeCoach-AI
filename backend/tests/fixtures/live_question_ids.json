@@ -1,6 +1,6 @@
 {
   "_comment": "Live question inventory snapshot (Supabase public.questions, Aug 23 2026). Guards skill-taxonomy coverage: every id here MUST have >=1 QUESTION_SKILLS mapping, and every QUESTION_SKILLS key MUST exist here. Regenerate after adding questions to the bank.",
-  "count": 109,
+  "count": 107,
   "question_ids": [
     "1f3e5d7c-9b8a-4c6d-0e2f-4a5b6c7d8e9f",
     "2b6e5f1a-4c7d-4a8e-9b0c-1d2e3f4a5b6c",
@@ -33,7 +33,6 @@
     "e42b2609-8b2c-49a0-9fa3-b7145df07bc3",
     "edit-distance",
     "evaluate-reverse-polish-notation",
-    "f7e2d4a1-3b5c-4d6e-8f9a-0b1c2d3e4f5a",
     "find-all-duplicates-in-an-array",
     "find-first-and-last-position-in-sorted-array",
     "find-minimum-in-rotated-sorted-array",
@@ -97,7 +96,6 @@
     "subarray-sum-equals-k",
     "subsets",
     "task-scheduler",
-    "test-q-1",
     "three-sum",
     "three-sum-closest",
     "top-k-frequent-elements",

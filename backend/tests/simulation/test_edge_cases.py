@@ -272,9 +272,7 @@ class TestPartialFailurePersistence:
 
         service = _seeded_service()
         events = [
-            _evt(
-                "u", LearningEventType.SUBMISSION_PASSED, seq=0, question="two-sum"
-            ),
+            _evt("u", LearningEventType.SUBMISSION_PASSED, seq=0, question="two-sum"),
             _evt(
                 "u2",
                 LearningEventType.SUBMISSION_PASSED,
