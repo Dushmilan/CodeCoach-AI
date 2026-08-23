@@ -183,11 +183,7 @@ class QuestionBank:
         return await self._repo.count()
 
     async def _compute_difficulty_counts(self) -> Dict[str, int]:
-        questions = await self._repo.get_all()
-        counts = {"easy": 0, "medium": 0, "hard": 0}
-        for q in questions:
-            counts[q.difficulty.value] += 1
-        return counts
+        return await self._repo.count_by_difficulty()
 
     async def _compute_category_counts(self) -> Dict[str, int]:
         questions = await self._repo.get_all()
