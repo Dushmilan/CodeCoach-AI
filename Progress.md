@@ -43,7 +43,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 
 | Feature                | Status | What exists                                      | What's missing                                |
 | ---------------------- | ------ | ------------------------------------------------ | --------------------------------------------- |
-| Curriculum breadth     | 🟡     | Schema supports C/Java/ML/Prompt-Engineering     | C + Java content not committed                |
+| Curriculum breadth     | ✅ C+Java live | **C Programming & Java Programming committed (F5)** | ML/PromptEng/R/JS courses exist in DB from earlier syncs; source JSON parked |
 | Question bank volume   | 🟡     | 109 seeded in DB (33 Easy / 50 Medium / 26 Hard) | ~~Skill-graph covers 21~~ → **109/109 (F3)**  |
 | ~~Rescue re-surface loop~~ | ✅ DONE (Aug 23) | Durable queue: `rescue_queue` + `/api/rescue/due` + "Back tomorrow" UI; dismissals permanent | Time-based stuck escalation (X min → scaffold) still open under Ideas #4 |
 | Attempt-journey replay | 🟡     | Per-solve flow maps                              | Persistent attempt history + animated replay  |
@@ -53,8 +53,8 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 
 | Item                       | Status | Notes                      |
 | -------------------------- | ------ | -------------------------- |
-| C curriculum               | 🔴     | 15–20 lessons              |
-| Java curriculum            | 🔴     | 15–20 lessons              |
+| ~~C curriculum~~           | ✅ DONE (Aug 23) | 5 modules / 35 lessons     |
+| ~~Java curriculum~~        | ✅ DONE (Aug 23) | 5 modules / 35 lessons     |
 | DBMS / SQL module          | 🔴     | Phase 3                    |
 | OOP & Design Patterns      | 🔴     | Phase 3                    |
 | Web Dev (React, Node)      | 🔴     | Phase 3                    |
@@ -103,6 +103,17 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
   snapshot fixture + unit tests. Seed script now honors DATABASE_SEARCH_PATH; conftest
   question seeding made per-id idempotent (fixes latent order-dependent flake).
   Live reseeded: 212 rows, recommendations verified non-empty.
+
+- **F5 — C & Java curricula shipped (Aug 23, branch `feat/f5-c-java-curricula`):**
+  content recovered from the parked `feat/groq-usage-metering` branch and landed as
+  committed source-of-truth JSON (`backend/data/courses/{c,java}/`): 2×5 modules,
+  2×35 lessons (20 theory + 15 exercises each). Every exercise's reference solution
+  authored and verified against local Piston — 30/30 test cases passing
+  (`scripts/verify_course_exercises.py`, permanent regression tool). One authored
+  starter bug found+fixed via that gate (calculator div-by-zero now prints `Error`
+  with an INT_MIN sentinel contract). Synced to live: both courses serve 5 modules /
+  35 lessons through `/api/courses`. Frontend language config already supported
+  c/java. Content guard unit tests pin lesson counts, types, runnable exercises.
 
 ## Recent Changes
 
