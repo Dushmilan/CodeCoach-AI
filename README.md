@@ -1,10 +1,16 @@
 # CodeCoach AI
 
-**A private, AI-powered coding practice platform for university students.**
+> **A private, AI-powered coding practice platform for university students.**
+> DSA practice, language curricula, and real-time AI coaching — all on a single Supabase/PostgreSQL database.
 
-Practice DSA problems and learn programming languages with structured lessons
-and real-time AI coaching. This is a closed, proprietary project — the source
-is private and not distributed, and there is no public contribution workflow.
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](./frontend/package.json)
+[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](./backend/requirements.txt)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](./frontend)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi)](./backend)
+[![Docker](https://img.shields.io/badge/docker-compose-ready-2496ED?logo=docker&logoColor=white)](./docker-compose.yml)
+[![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
+
+Private, proprietary project — no public fork/PR intake. See [AGENTS.md](./AGENTS.md) for production-first engineering rules.
 
 ---
 
@@ -13,137 +19,111 @@ is private and not distributed, and there is no public contribution workflow.
 - [What is CodeCoach AI?](#what-is-codecoach-ai)
 - [Who is it for?](#who-is-it-for)
 - [Features](#features)
-- [Roadmap](#roadmap)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Data Model](#data-model)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
-- [Project Structure](#project-structure)
+- [API Reference](#api-reference)
 - [Testing](#testing)
 - [Development](#development)
+- [Project Structure](#project-structure)
+- [Deployment](#deployment)
+- [Security](#security)
+- [Roadmap](#roadmap)
 - [Known Gaps](#known-gaps)
+- [License](#license)
 
 ---
 
 ## What is CodeCoach AI?
 
-CodeCoach AI is an AI-assisted coding practice platform for university students.
-It combines:
+CodeCoach AI is an AI-assisted coding practice platform for university students. It combines:
 
-- **DSA practice** — a question bank of 109 problems (33 Easy / 50 Medium /
-  26 Hard) seeded in Supabase across ~19 categories (Arrays & Hashing, Two
-  Pointers, Sliding Window, Trees & Recursion, Dynamic Programming, Graphs,
-  Linked Lists, Binary Search, and more) with Python, JavaScript, and Java
-  starter code.
-- **Language curriculum** — a Python Fundamentals course (5 modules, 36 lessons)
-  mixing theory with interleaved coding exercises in `/learn`. The data model
-  supports arbitrary languages (C, Java, and more are planned).
-- **AI coaching** — hints, code reviews, explanations, debugging help, and
-  code animations powered by Groq (six modes: hint, review, explain, debug,
-  freeform, animate).
-- **Submit & grade** — code runs against visible and hidden test cases in an
-  isolated Piston container with pass/fail results.
-- **Skill graph** — learning events are turned into per-skill mastery estimates
-  and a "Practice Next" recommendation queue, so the platform learns which
-  skills each student needs to work on.
+- **DSA practice** — 109 problems (33 Easy / 50 Medium / 26 Hard) across ~19 categories (Arrays & Hashing, Two Pointers, Sliding Window, Trees & Recursion, Dynamic Programming, Graphs, Linked Lists, Binary Search, …) with Python, JavaScript, and Java starter code, seeded in Supabase.
+- **Language curriculum** — Python Fundamentals (5 modules, 36 lessons: 21 theory + 15 exercises) plus C Programming and Java Programming (5 modules, 35 lessons each: 20 theory + 15 exercises). All content is served from `/learn`; the data model supports arbitrary languages.
+- **AI coaching** — hint, review, explain, debug, freeform, and animate (six modes) via Groq, with SSE streaming and structured JSON responses.
+- **Submit & grade** — isolated Piston execution against visible + hidden test cases, with pass/fail reporting.
+- **Skill graph** — learning events → per-skill mastery (new/learning/developing/strong/needs_review), decay, prerequisites, and a deterministic **Practice Next** recommendation queue.
+- **Mistake-memory** — every graded submit is persisted (`submissions`), turned into an error graph and an SM-2 spaced-repetition rotation over the learner's own past bugs; a forgetting-curve **Memory Graph** powers the student `/dashboard`.
 
-AI coaching runs on the platform's own Groq key with per-user daily token
-limits, so students never supply their own API keys or subscriptions.
+Coaching runs on a platform-owned Groq key with per-user daily token caps — students never supply their own API keys.
 
 ## Who is it for?
 
-| Audience                   | Need                                                          |
-| -------------------------- | ------------------------------------------------------------- |
-| **Struggling CS students** | Hand-holding through basics, structured learning              |
-| **Interview grinders**     | Coached practice across 100+ target problems                  |
-| **Non-CS majors**          | Learn programming from scratch                                |
-| **Professors**             | A curriculum-aligned tool they can recommend to their classes |
+| Audience | Need |
+|---|---|
+| **Struggling CS students** | Hand-holding through basics, structured learning |
+| **Interview grinders** | Coached practice across 100+ target problems |
+| **Non-CS majors** | Learn programming from scratch |
+| **Professors** | Curriculum-aligned tool to recommend to a whole class |
 
 ## Features
 
-Documented features are marked with their actual state so the docs never drift
-ahead of the code.
+State is kept in sync with code (see [Progress.md](./Progress.md) and [Ideas.md](./Ideas.md)).
 
 ### Built
 
-| Feature                   | Description                                                                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI Coaching**           | 6 modes (hint, review, explain, debug, freeform, animate) via Groq — structured JSON responses + SSE streaming (`POST /coach`, `POST /coach/stream`)                         |
-| **Code Execution**        | Piston container — Python, JavaScript, Java with smart code wrapping for test-harness generation (`GET/POST /run`, `/run/validate`, `/run/languages`)                        |
-| **Submit & Grade**        | Run code against visible + hidden test cases, pass/fail reporting (`POST /submit`)                                                                                           |
-| **Question Bank**         | DSA questions with CRUD, search, and filtering by difficulty/category (admin + public `/questions`)                                                                          |
-| **Question Validation**   | Validation use cases — structure, test cases, starter code, solution, time limits, function signature, output format (`/question-validation`)                                |
-| **Curriculum**            | Python Fundamentals — 5 modules, 36 lessons (21 theory + 15 exercises); `/learn` dashboard, module tree, lesson viewer, adjacent-lesson navigation                           |
-| **Lesson-aware Coaching** | AI coaching that injects lesson context into each prompt; theory and exercise lesson layouts                                                                                 |
-| **Solution Animations**   | Generate, validate, compile, and play structured step-by-step code animations (animate coaching mode, canonical-solution pipeline, `AnimationPlayer`)                        |
-| **Skill Graph**           | Learning events (runs, submissions, hints, reveals, diagnosis, review) → per-skill mastery + status (new/learning/developing/strong/needs_review), trends, decay, and graphs |
-| **Practice Next**         | Deterministic "recommended questions" API respecting skill prerequisites; surfaced as a "Practice Next" queue on the problems page                                           |
-| **Rescue Contract**       | Stuck-student intervention: checkpoints, `RescueIntervention`, problem/solution flow maps, diagnosis with deterministic fallback                                             |
-| **Auth**                  | JWT email/password registration + login (bcrypt, refresh tokens) + Supabase OAuth (Google)                                                                                   |
-| **Usage Metering**        | Per-user daily input/output token caps on coach endpoints surfaced via `X-Usage-*` headers; Redis-backed request/rate-limit tracking                                         |
-| **Plans & Gates**         | Per-user plan field and premium gating (`PremiumGate`, `UpgradeModal`, usage bar)                                                                                            |
-| **Admin Panel**           | Dashboard, users, questions, curriculum CRUD, question validation, usage analytics, rate-limit analytics, abuse reports                                                      |
-| **Workspace UX**          | Monaco editor, dark/light theme, resizable panels, sidebar navigation, onboarding tour, toasts, hydration guard                                                              |
-| **Infrastructure**        | Docker Compose (backend, frontend, redis, piston), Alembic migrations, Supabase as the single database, Cloudflare Workers (OpenNext) build                                  |
+| Feature | Description |
+|---|---|
+| **AI Coaching** | 6 modes (hint, review, explain, debug, freeform, animate) via Groq — structured JSON + SSE streaming (`POST /api/coach`, `POST /api/coach/stream`) |
+| **Code Execution** | Piston container — Python, JavaScript, Java; smart code wrapping for stdin→call→stdout harness (`GET/POST /api/run`, `/api/run/validate`, `/api/run/languages`) |
+| **Submit & Grade** | `POST /api/submit` and `POST /api/run` (optional `question_id` crash capture); visible + hidden cases, `POST /api/submissions/me` history |
+| **Question Bank** | DSA questions with CRUD, search, filtering by difficulty/category/company tags (`/api/questions`) |
+| **Question Validation** | 7 use-cases — structure, test cases, starter code, solution, time limits, function signature, output format (`/api/question-validation`) |
+| **Curriculum** | Python Fundamentals, C Programming, Java Programming — `/learn` dashboard, module tree, lesson viewer, adjacent-lesson navigation, progress tracking |
+| **Lesson-aware Coaching** | Lesson context injected into every AI prompt; theory vs exercise layouts |
+| **Solution Animations** | Generate → validate → compile → play structured step animations (animate mode, canonical-solution pipeline, `AnimationPlayer`, Motion Canvas `viewer.html` on `:9000`) |
+| **Skill Graph** | Learning events (run, submit, hint, diagnosis, review) → mastery/status, trends, decay, prerequisite-aware graphs (tables `skills`, `question_skills`, `learning_events`, `user_skill_states`) |
+| **Practice Next** | `GET /api/skills/recommendations` deterministic queue respecting prerequisites; surfaced on `/problems` |
+| **Rescue Contract** | Never-alone intervention: `useRescueContract` T1(4m)→T2(+5m AI hint)→T3(+5m re-plan), `RescueIntervention` + `ProblemFlowMap`/`SolutionFlowMap`, diagnosis with deterministic fallback, durable `rescue_queue` + `/api/rescue/*` re-surface (`Back tomorrow` on `/problems`) |
+| **Attempt History** | `submissions` table (attempt_index, error_signature) — foundation for Ideas #1, #3, #5 |
+| **Error Graph** | `GET /api/mistakes/graph` — per-user mistake graph derived from attempt history (signatures, occurrences, affected questions, first/last seen, resolution) |
+| **Spaced Repetition** | SM-2 rotation over own bugs (`review_cards`, `/api/reviews/due`, `POST /api/reviews/{id}/grade`); `run` and `submit` observe failures/passes best-effort |
+| **Memory Graph** | Forgetting-curve dashboard — `GET /api/memory/graph` aggregates `review_cards` + `submissions` by `category` into per-topic `TopicMemory` (dueCount, avgInterval, daysSinceLastTouch, energyCostMinutes); `MemoryGraph.tsx` + student `/dashboard` |
+| **Auth** | JWT email/password (bcrypt, refresh tokens) + Supabase OAuth (Google) — `Continue with Google` |
+| **Usage Metering** | Per-user daily input/output token caps, `X-Usage-*` headers, Redis-backed limits |
+| **Plans & Gates** | Per-user plan field and quota-gated coaching (free 20 req/day, paid 500), usage bar, `UpgradeModal` |
+| **Admin Panel** | Dashboard, users, questions, curriculum, validation, usage/rate-limit analytics, abuse reports; Header shows Dashboard + Admin links (role-gated) |
+| **Workspace UX** | Monaco editor, dark/light theme, resizable panels, onboarding tour, toasts, hydration guard, `/dashboard` memory-first entry |
+| **Infrastructure** | Docker Compose (backend, frontend, redis, piston), Alembic, Supabase as the single DB, Cloudflare Workers (OpenNext) build |
 
 ### Partial / foundation
 
-| Feature                    | What exists                                                               | What's missing                                     |
-| -------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------- |
-| **Curriculum breadth**     | Python Fundamentals shipped; schema supports C/Java/ML/Prompt-Engineering | C and Java content not yet committed               |
-| **Question bank volume**   | 109 questions seeded (33 Easy / 50 Medium / 26 Hard)                      | Skill-graph mapping covers 21 of 109 questions     |
-| **Rescue re-surface loop** | Intervention + flow maps built                                            | "abandoned problem resurfaces tomorrow" queue      |
-| **Attempt-history replay** | Per-solve flow maps                                                       | Persistent full attempt journeys + animated replay |
-| **Interview theater**      | SSE streaming foundation + editor change events                           | Session/event engine + interviewer UI              |
+| Feature | What exists | What's missing |
+|---|---|---|
+| **Curriculum breadth** | Python, C, Java live (F5) | DBMS/SQL, OOP, Web Dev, MCQ — Phase 3 |
+| **Attempt-journey replay** | Per-solve flow maps | Persistent full-journey animated replay (needs #1 history — now available, renderer pending) |
+| **Interview theater** | SSE streaming + editor change events | Session/event engine + interviewer UI (Ideas #6) |
+| **Classroom / Segment moat** | Courses + progress tracking | Professor/class dashboard, roster model (Idea #2) |
 
 ### Planned
 
-| Phase                    | Scope                                                                                                                                             |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 1 — DSA**        | Question target met (109 in DB: 33 Easy / 50 Medium / 26 Hard); expand skill-graph coverage across all questions, onboarding polish, empty states |
-| **Phase 2 — Curriculum** | C and Java curricula (15–20 lessons each), context-aware coaching per lesson                                                                      |
-| **Phase 3 — Expand**     | DBMS/SQL module, OOP/Design Patterns, Web Dev, theory/MCQ question type, classroom dashboard                                                      |
-| **Backlog**              | See [Ideas.md](./Ideas.md) for the product backlog and roadmap                                                                                    |
-
-## Roadmap
-
-```
-Phase 1 ─── DSA Practice (current focus)
-├── 109 / 100 coding questions ─── 33 Easy / 50 Medium / 26 Hard
-├── Practice Next / skill-graph recommendations (shipped)
-└── Polish (onboarding, empty states, error handling)
-
-Phase 2 ─── Programming Language Curriculum
-├── Python Fundamentals ─── 5 modules, 36 lessons (shipped)
-├── C curriculum ─── 15-20 lessons (planned)
-├── Java curriculum ─── 15-20 lessons (planned)
-└── Context-aware AI coaching per lesson
-
-Phase 3 ─── Future Modules
-├── DBMS / SQL
-├── OOP & Design Patterns
-├── Web Development (React, Node)
-├── Theory / MCQ question type
-└── Classroom dashboard
-```
+| Phase | Scope |
+|---|---|
+| **Phase 1 — DSA** | Onboarding polish, empty states, memory-first home polish (Idea #3 slice) |
+| **Phase 2 — Curriculum** | Context-aware coaching per lesson; ML/PromptEng/R/JS source JSON parked |
+| **Phase 3 — Expand** | DBMS/SQL, OOP/Design Patterns, Web Dev, theory/MCQ type, classroom dashboard |
+| **Backlog** | See [Ideas.md](./Ideas.md) — 9 numbered ideas + honourable mentions |
 
 ## Tech Stack
 
-| Layer              | Technology                                                                                                                 |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**        | Python 3.11+, FastAPI, Pydantic v2, Uvicorn                                                                                |
-| **Frontend**       | Next.js 14 (App Router), React 18, TypeScript                                                                              |
-| **Editor**         | Monaco Editor (`@monaco-editor/react`)                                                                                     |
-| **Styling**        | Tailwind CSS 3, `tailwind-merge`, `clsx`                                                                                   |
-| **Code Execution** | Piston (self-hosted Docker container)                                                                                      |
-| **AI Coach**       | Groq (LLaMA 3.3 70B versatile / LLaMA 3.1 8B instant) via `api.groq.com/openai/v1`, with animation-specific model override |
-| **Database**       | Supabase PostgreSQL (async SQLAlchemy) — the **only** database                                                             |
-| **Cache / Limits** | Redis (7-alpine) for request/rate-limit usage tracking                                                                     |
-| **Auth**           | JWT (python-jose), bcrypt, Supabase OAuth (Google)                                                                         |
-| **Migrations**     | Alembic (`backend/alembic/`)                                                                                               |
-| **Testing**        | pytest (backend), Vitest + Testing Library + MSW (frontend), Playwright (E2E)                                              |
-| **Deploy**         | Docker Compose + Cloudflare Workers (OpenNext) build                                                                       |
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.11+, FastAPI 0.110+, Pydantic v2, Uvicorn |
+| **Frontend** | Next.js 14 (App Router), React 18, TypeScript 5 |
+| **Editor** | Monaco Editor (`@monaco-editor/react`) |
+| **Styling** | Tailwind CSS 3, `tailwind-merge`, `clsx`, shadcn/ui |
+| **Animation** | Motion Canvas (Vite viewer on `:9000`) + `AnimationPlayer` |
+| **Code Execution** | Piston (self-hosted Docker, `PistonService` adapter) |
+| **AI Coach** | Groq (`llama-3.3-70b-versatile` / `llama-3.1-8b-instant`, animate override) via `api.groq.com/openai/v1` |
+| **Database** | Supabase PostgreSQL (async SQLAlchemy) — **the only database** |
+| **Cache / Limits** | Redis 7-alpine |
+| **Auth** | JWT (python-jose), bcrypt, Supabase OAuth (Google) |
+| **Migrations** | Alembic (`backend/alembic/`) |
+| **Testing** | pytest (backend), Vitest + Testing Library + MSW (frontend), Playwright (E2E) |
+| **Deploy** | Docker Compose + Cloudflare Workers (OpenNext) |
+| **Observability** | Structured logs, `/health` dependency checks, `X-Usage-*` headers |
 
 ## Architecture
 
@@ -151,88 +131,86 @@ Phase 3 ─── Future Modules
 
 ```
 backend/app/
-  ports/            Abstract interfaces (ABCs) — repositories, code executor, coaching provider
-  adapters/         Concrete implementations (code_wrappers, coaching_prompts, response parser, formatter)
-  use_cases/        Single-responsibility validation logic (question validation)
-  services/         Business logic wrapping ports (Groq, Piston, skill graph, animations, usage)
-  repositories/     SQLAlchemy repositories (sql_*) — Supabase/PostgreSQL only
-  api/              Thin FastAPI route handlers
-  models/           Pydantic schemas (request/response + domain enums)
-  core/             Database engine/session, settings, security
-  middleware/       Rate limiting
-  dependencies/     FastAPI Depends() injection wiring (app/api/dependencies.py)
+  ports/          Abstract interfaces (ABCs) — repositories, code executor, coaching provider
+  adapters/       Concrete adapters (code_wrappers, coaching_prompts, response parser, formatter)
+  use_cases/      Single-responsibility validation logic (question validation)
+  services/       Business logic wrapping ports (Groq, Piston, skill_graph, sm2, memory_graph,
+                   error_graph, rescue, review, animations, usage, submissions)
+  repositories/   SQLAlchemy impls (sql_*) — Supabase/PostgreSQL only
+  api/            Thin FastAPI route handlers (auth, coach, run, submit, questions, courses,
+                   progress, skills, submissions, rescue, reviews, memory, mistakes, admin, health)
+  models/         Pydantic schemas (request/response + domain enums)
+  core/           Database engine/session (async_session_maker), settings, security (JWT/bcrypt)
+  middleware/     Rate limiting (slowapi), security headers (CSP, HSTS, X-Frame-Options)
+  dependencies/   FastAPI Depends() injection wiring (app/api/dependencies.py)
 ```
 
 **Frontend — feature-based.**
 
 ```
 frontend/src/
-  features/     {auth, coaching, code-execution, curriculum, question, skill-graph,
-                 rescue, animation, usage}/  {hook, service, types, context}
-  components/   Reusable UI (editor, chat, sidebar, header, layout, rescue, visualization, admin…)
-  lib/          HTTP client port/adapter (FetchClient)
-  hooks/        Shared hooks (useLocalStorage, useDebounce, …)
-  providers/    Theme, Auth, Toast, Usage providers
+  app/            Next.js App Router — /, /problems/[id], /learn, /dashboard, /admin, /login, /privacy …
+  features/       {auth, coaching, code-execution, question, curriculum, skill-graph,
+                   rescue, review, memory, animation, usage} → {hook, service, types, *.test.*}
+  components/     Reusable UI (editor, chat, sidebar, header, layout, rescue, visualization, admin, ui/*)
+  lib/            HTTP client port/adapter (FetchClient / HttpClient), shuffle, fetch-client
+  hooks/          Shared hooks (useLocalStorage, useDebounce, useWorkspaceMode)
+  providers/      Theme, Auth, Toast, Usage
+  e2e/            Playwright specs (auth, settings, curriculum, code-execution, animate, viewer)
 ```
 
-**Key architectural decisions**
+**Key decisions**
 
-- **Supabase/PostgreSQL is the single source of truth** — questions, courses,
-  modules, lessons, users, progress, usage, and skill-graph state all live in
-  PostgreSQL; the application never reads content from the filesystem at
-  runtime. See [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md).
-- **Platform-owned Groq key** — AI coaching runs on a server-side key; clients
-  never supply their own. Per-user input/output tokens are metered with daily
-  caps enforced on the coach endpoints.
-- **Deterministic skill graph** — skill mastery is derived from explicit
-  learning events via pure, unit-tested rules (`skill_graph_rules.py`), and
-  recommendations respect the skill taxonomy's prerequisites.
-- **Code wrapping** — every Piston-supported language has a `_wrap_<language>_code`
-  adapter that converts bare function definitions into a stdin → call → stdout
-  test harness. Without it, bare definitions produce no output.
-- **Dependency injection** — FastAPI `Depends()` for services, constructor
-  injection for use cases, making the backend fully testable with mocks.
+- **Supabase/PostgreSQL is the single source of truth** — questions, courses/modules/lessons, users, progress, submissions, review_cards, rescue_queue, usage, and skill-graph state all live in PostgreSQL; the app never reads content from the filesystem at runtime. See [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md).
+- **Platform-owned Groq key** — server-side key; per-user input/output tokens metered with daily caps on coach endpoints.
+- **Deterministic skill graph** — mastery derived via pure, unit-tested rules (`skill_graph_rules.py`, `sm2_rules.py`, `error_graph_rules.py`); recommendations respect taxonomy prerequisites.
+- **Code wrapping** — every Piston language has a `_wrap_<language>_code` adapter converting bare function definitions into a stdin→call→stdout harness.
+- **Dependency injection** — FastAPI `Depends()` + constructor injection for use-cases; fully mockable for tests.
+- **CSP hardening** — `default-src 'self'` with `frame-src 'self' ${NEXT_PUBLIC_ANIMATION_VIEWER_URL||http://localhost:9000}` for the viewer iframe, `worker-src blob:`, `connect-src 'self' https: wss:` (see `frontend/next.config.js` + `backend/app/middleware/security_headers.py`).
+- **Idempotent sync** — seed/sync scripts are re-runnable upserts; migrations are forward-only Alembic heads.
 
 ## Data Model
 
-| Table                                                               | Purpose                                                                                      |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `users`                                                             | Accounts (auth, roles, plans, refresh tokens)                                                |
-| `questions`                                                         | Question bank (difficulty, category, starter code, test cases…)                              |
-| `courses`                                                           | Course metadata (id, title, language, order)                                                 |
-| `modules`                                                           | Module metadata (course_id, title, order)                                                    |
-| `lessons`                                                           | Lesson content (theory/exercise, order, linked question)                                     |
-| `course_progress`                                                   | Per-user lesson/progress tracking                                                            |
-| `usage_*`                                                           | AI usage events, daily counters, rate-limit/request tracking                                 |
-| `admin_*`, `audit_logs`                                             | Admin auth/session data and audit trail                                                      |
-| `skills`, `question_skills`, `learning_events`, `user_skill_states` | Skill graph: definitions, questions↔skills mapping, per-user skill state and learning events |
+| Table | Purpose |
+|---|---|
+| `users` | Accounts (auth, roles `user`/`admin`, plans `free`/`pro`, refresh tokens, OAuth) |
+| `questions` | Bank (difficulty, category, starter_code JSON, test_cases, hints, company_tags GIN) |
+| `courses`, `modules`, `lessons` | Curriculum (language, order, theory/exercise, linked question) |
+| `course_progress` | Per-user lesson progress (continue-where-you-left-off) |
+| `submissions` | Attempt history (user_id, question_id, language, code, passed, error_signature, attempt_index, created_at) |
+| `review_cards` | SM-2 cards (user_id, question_id, error_signature unique, state active/scheduled, ease, interval_days, lapses, due_at) — `a3b4c5d6e7f8` |
+| `rescue_queue` | Abandoned-problem re-surface (user_id, question_id unique partial open, due_at 09:00, dismissed) — `f2a3b4c5d6e7` |
+| `usage_*`, `rate_limit_events`, `user_daily_usage` | AI usage events, daily counters, rate-limit tracking (Redis-backed) |
+| `skills`, `question_skills`, `learning_events`, `user_skill_states` | Skill graph (definitions, question↔skill, per-user events + mastery) — `5bb567dd8649` |
+| `admin_*`, `audit_logs` | Admin sessions + audit trail |
 
-> **Live DB note (checked Aug 14, 2026):** the `public` schema holds `users`,
-> `questions`, `courses`, `modules`, `lessons`, `course_progress`, `usage_*`,
-> admin/audit tables, and the skill-graph tables (`skills`, `question_skills`,
-> `learning_events`, `user_skill_states`) after applying
-> `5bb567dd8649_add_skill_graph_tables`. Questions, courses, modules, and
-> lessons are fully seeded (109 / 14 / 70 / 491 rows). `alembic upgrade head`
-> was run against the live DB on Aug 14, 2026.
+> **Live DB (Supabase `qazpxjpcvsjbmgbzuxxp`, TEST, Aug 24, 2026):** `alembic current` = `e1f2a3b4c5d6` (head); `public` holds 109 questions, `courses`/`modules`/`lessons` seeded (Python 5/36 + C 5/35 + Java 5/35), `review_cards`/`rescue_queue` verified, 212 `question_skills` rows (109/109 mapped, F3).
 
-Migrations live in `backend/alembic/versions/` (initial schema, admin tables,
-usage tracking, request tracking, user plan column, skill-graph tables).
-Tests use an isolated `codecoach_test` schema.
+Migrations in `backend/alembic/versions/` (initial, admin, usage, user plan, skill-graph, review_cards, rescue_queue). Tests use an isolated `codecoach_test` schema (`DATABASE_SEARCH_PATH`).
 
 ## Getting Started
+
+### Prerequisites
+
+- Docker + Docker Compose
+- Node 20+ and `pnpm` 9+ (frontend)
+- Python 3.11+ and `pip` (backend)
+- A Supabase project (PostgreSQL) and a Groq API key
 
 ### Quick start with Docker
 
 ```bash
+cp .env.example .env          # fill GROQ_API_KEY, JWT_SECRET_KEY, DATABASE_URL, Supabase keys
 docker compose up --build
 ```
 
-- **Frontend:** http://localhost:3000
+- **Frontend:** http://localhost:3000 (CSP `frame-src` allows Motion Canvas viewer on `:9000`)
 - **Backend API:** http://localhost:8000
 - **API Docs:** http://localhost:8000/docs
+- **Piston:** http://localhost:2000/api/v2/runtimes
+- **Redis:** 6379
 
-The stack provisions backend, frontend, Redis, and Piston; PostgreSQL is
-external (Supabase project or a local Postgres for development).
+The compose stack provisions `backend`, `frontend`, `redis`, `piston`; PostgreSQL is external Supabase (or the local `codecoach_test` Postgres at `127.0.0.1:5433` for tests).
 
 ### Manual backend setup
 
@@ -241,10 +219,11 @@ cd backend
 python -m venv venv
 # Windows: venv\Scripts\activate
 # macOS/Linux: source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your Groq API key and Supabase DATABASE_URL
+pip install -r requirements.txt -r tests/test_requirements.txt
+cp .env.example .env   # or rely on root .env via python-dotenv
+# Edit .env with GROQ_API_KEY and Supabase DATABASE_URL
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# or: python -m app.main
 ```
 
 ### Manual frontend setup
@@ -252,72 +231,167 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 cd frontend
 pnpm install
-cp .env.example .env.local
-pnpm dev
+cp .env.example .env.local   # set NEXT_PUBLIC_API_URL, Supabase anon keys
+pnpm dev                     # http://localhost:3000
+pnpm build && pnpm start     # production
 ```
 
 ### Piston (code execution)
 
 ```bash
 docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston
+# compose already runs piston with PISTON_DISABLE_NETWORK_ACCESS=true and PISTON_OUTPUT_MAX_SIZE=65536
 ```
 
 ### Seeding data
 
-Content lives in the database. Initial data can be bootstrapped idempotently
-from a local JSON export:
+Content lives in the database. Initial data can be bootstrapped idempotently from committed JSON:
 
 ```bash
 cd backend
-python scripts/sync_local_to_db.py            # uses DATABASE_URL from .env
+python scripts/sync_local_to_db.py                 # uses DATABASE_URL; upserts questions/courses/modules/lessons
+python scripts/seed_admin.py                       # promote auditadmin → admin
+python scripts/seed_skill_graph.py                 # rescues skill graph after mapping changes
+DATABASE_URL=postgresql://... python scripts/verify_course_exercises.py  # 30/30 Piston checks for C/Java
 ```
 
-See [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md)
-for the data model, seed scripts, and test-schema behavior.
+See [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md) for source-of-truth, seed scripts, and test-schema behavior.
 
 ## Environment Variables
 
-> **IMP:** The currently configured Supabase project is the **TEST** database and
-> the Google OAuth is **TEST OAuth** — a production database is NOT configured
-> yet. See [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md) for the full
-> test-environment wiring (project ref, key model, OAuth URLs, verification).
+> **Current TEST wiring is Supabase `qazpxjpcvsjbmgbzuxxp` (TEST DB + TEST OAuth). Production is NOT configured.** See [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md).
 
-### Backend (`.env`)
+### Backend (`.env` / process env — `backend/app/core/config.py`)
 
 ```
+# Required
 GROQ_API_KEY=your_groq_api_key_here
-JWT_SECRET_KEY=your_jwt_secret_key
+JWT_SECRET_KEY=your_jwt_secret_key                 # ≥32 chars, not committed
 DATABASE_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:6543/postgres?pgbouncer=true
-# Session-mode pooler (migrations / tooling):
+# Session-mode pooler for migrations/tooling (optional, used by alembic/scripts):
 # DIRECT_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:5432/postgres
-# Optional Groq model overrides (defaults shown)
+
+# Optional Groq model overrides (defaults)
 # GROQ_MODEL_EASY=llama-3.1-8b-instant
 # GROQ_MODEL_STREAM=llama-3.1-8b-instant
 # GROQ_MODEL_ANIMATE=llama-3.3-70b-versatile
 DAILY_TOKEN_INPUT_CAP=250000
 DAILY_TOKEN_OUTPUT_CAP=125000
 USER_RATE_LIMIT_PER_MINUTE=60
-SUPABASE_URL=https://your-project-id.supabase.co        # OAuth (Google)
-SUPABASE_ANON_KEY=sb_publishable_...                    # publishable key (public)
-PISTON_API_URL=http://localhost:2000/api/v2             # optional — local Piston
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_...              # publishable key (public)
+PISTON_API_URL=http://localhost:2000/api/v2        # Docker compose sets http://piston:2000/api/v2
+REDIS_URL=redis://redis:6379/0
+ENVIRONMENT=production                             # or testing / development
 ```
 
-> Supabase replaced the legacy `anon`/`service_role` JWT keys with
-> `sb_publishable_...` (public, client-side) and `sb_secret_...` (server-only).
-> Find them in the dashboard under **Settings → API Keys**.
+> Supabase now issues `sb_publishable_...` (public) and `sb_secret_...` (server-only) instead of legacy `anon`/`service_role` JWTs. Dashboard → **Settings → API Keys**.
 
-### Frontend (`.env.local` / Docker build args)
+### Frontend (`.env.local` / Docker build args — `frontend/next.config.js`)
 
 ```
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8000         # browser-reachable API base (empty → same-origin /api rewrite)
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+NEXT_PUBLIC_ANIMATION_VIEWER_URL=http://localhost:9000  # CSP frame-src + viewer iframe (Vite :9000 in E2E)
+API_URL=http://backend:8000                        # server-side rewrite target (Docker network)
 ```
 
-`NEXT_PUBLIC_*` values are **inlined at build time** — in Docker they must be
-passed as build args (the frontend `Dockerfile` declares them, and
-`docker-compose.yml` wires them from the root `.env`). A frontend rebuild is
-required after changing them.
+`NEXT_PUBLIC_*` is **inlined at build time** — the frontend `Dockerfile` declares them and `docker-compose.yml` wires them from the root `.env`. Rebuild is required after changes: `docker compose up -d --build frontend`.
+
+## API Reference
+
+Interactive docs at `/docs` (Swagger) and `/redoc`. Selected routes:
+
+| Area | Method & Path | Auth | Notes |
+|---|---|---|---|
+| **Health** | `GET /health`, `GET /health/` | — | Dependency checks (`questions_db`, `piston`, `redis`) |
+| **Auth** | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh` | — / Bearer | JWT + Supabase OAuth callback |
+| **Questions** | `GET /api/questions`, `GET /api/questions/{id}`, `GET /api/questions/search?q=` | — | Trailing slash handled (`/api/questions` + `/api/questions/`) |
+| **Run** | `POST /api/run` (+ `question_id` optional crash capture) | Optional | Piston; validation `POST /api/run/validate` |
+| **Submit** | `POST /api/submit` | Bearer | Grades + best-effort submission + SM-2 observe |
+| **Submissions** | `GET /api/submissions/me` | Bearer | Own attempt history |
+| **Coach** | `POST /api/coach`, `POST /api/coach/stream` (SSE) | Bearer | 6 modes, per-user daily caps, `X-Usage-*` headers |
+| **Skills** | `GET /api/skills/graph`, `GET /api/skills/recommendations` | Bearer | Mastery + Practice Next |
+| **Mistakes** | `GET /api/mistakes/graph` | Bearer | Error graph from attempt history |
+| **Reviews** | `GET /api/reviews/due`, `POST /api/reviews/{id}/grade` | Bearer | SM-2 queue |
+| **Memory** | `GET /api/memory/graph` | Bearer | Forgetting-curve topics (Idea #3) |
+| **Rescue** | `GET /api/rescue/due`, `POST /api/rescue/{id}/abandon|complete|dismiss` | Bearer | Re-surface queue |
+| **Courses** | `GET /api/courses`, `GET /api/courses/{id}`, lessons, progress | Bearer | Curriculum + `/api/progress` |
+| **Admin** | `GET /api/admin/*` (stats, users, questions, courses, usage, validation) | Admin | Role-gated `admin`/`super_admin` |
+| **Debug** | `GET /debug/*` | — | Dev-only diagnostics |
+
+Error semantics: `HTTPException` → 4xx client, unexpected → 5xx via global handler; rate-limit 429 via `slowapi`/`rescue`/`usage` middleware.
+
+## Testing
+
+### Backend (pytest — `backend/tests/README.md`)
+
+```bash
+cd backend
+pip install -r requirements.txt -r tests/test_requirements.txt
+DATABASE_URL=postgresql://codecoach:codecoach@127.0.0.1:5433/codecoach_test \
+  python -m pytest tests/unit/            # 53 files (incl. memory_graph)
+python -m pytest tests/integration/       # 23 files (needs isolated Postgres schema)
+python -m pytest tests/contract/          # 2 files (OpenAPI response contracts)
+python -m pytest tests/security/          # 7 files
+python -m pytest tests/performance/       # 4 files
+python -m pytest tests/migrations/        # 5 files
+python -m pytest tests/simulation/        # 8 files (skill-graph)
+python -m pytest                          # all tiers; coverage via qa/enforce_coverage_budget.py
+ruff check . && ruff format . --check     # lint gate
+```
+
+Tests use an isolated `codecoach_test` schema (`DATABASE_SEARCH_PATH`); never touch production. Flaky tests are quarantined via `tests/enforce_flaky_quarantine.py`.
+
+### Frontend (Vitest)
+
+```bash
+cd frontend
+pnpm install
+pnpm test:run                    # 76 files (Vitest + Testing Library + MSW)
+pnpm lint                        # ESLint (0 warnings)
+pnpm typecheck                   # tsc --noEmit (0 errors)
+```
+
+### E2E (Playwright)
+
+```bash
+cd frontend
+pnpm exec playwright install --with-deps
+# needs backend :8000 + frontend :3000 + Motion Canvas viewer :9000
+npx playwright test --project=chromium   # 15 specs (51 chromium; viewer specs need :9000)
+# config: playwright.config.ts — warmup 180s, expect 10s, url http://localhost:3000,
+# webServer backend :8000 + vite :9000 (viewer.html)
+```
+
+Quality gates (CI): `ruff` + `ruff format` + `pytest` tiers + `pnpm lint/typecheck/test:run` + `playwright` + `qa/enforce_coverage_budget.py`.
+
+## Development
+
+This is a private, closed project — no external maintainers or MIT-style licensing.
+
+**Standard workflow (AGENTS.md):** `inspect → plan → failing test → implement → verify → production-readiness review`.
+
+1. **Branch** off `main` (`feat/*`, `fix/*`). Keep PRs small and reviewable.
+2. **TDD** — red → green → refactor. No source change without a failing test. Bugs get a regression test first.
+3. **Graphify-first exploration** — `graphify query "<question>"` / `path` / `explain` before grep/read when `graphify-out/graph.json` exists; run `graphify update .` after code changes.
+4. **Production-first** — preserve API contracts, validate at boundaries, no secrets in logs, degrade gracefully, add observability for behavioral changes.
+5. **Supabase-only DB** — no SQLite/MySQL/local Postgres for runtime; only `postgresql://` / `postgresql+asyncpg://` against Supabase (or the isolated `codecoach_test` schema for tests).
+6. **Layering** — `api → services → ports → sql_*` repositories; DI via `app/api/dependencies.py`; Pydantic at boundaries; async engine (`async_session_maker`).
+7. **Quality gates** before commit: `ruff check + format --check`, `pnpm lint`, `pnpm typecheck`, relevant `pytest`/`vitest`/`playwright` tiers, and coverage budget.
+8. **Docker rebuild** after any `frontend/` or `backend/` source change:
+
+   ```bash
+   docker compose up -d --build frontend   # frontend change
+   docker compose up -d --build backend    # backend change
+   docker compose up -d --build            # both
+   ```
+
+9. **Caveman-review** before every commit: capture `git diff --staged`, load the `caveman-review` skill, fix all `bug:`/`risk:`/`nit:` findings, re-stage, re-verify, then commit.
+
+See [AGENTS.md](./AGENTS.md) for the full mandatory rules and [Progress.md](./Progress.md) for recent changes.
 
 ## Project Structure
 
@@ -325,95 +399,93 @@ required after changing them.
 CodeCoach-AI/
 ├── backend/
 │   ├── app/
-│   │   ├── api/               # auth, coach, run, submit, questions, question_validation,
-│   │   │                      #   courses, progress, skills, daily_limits, admin, health, debug
-│   │   ├── adapters/          # code_wrappers/, coaching_prompts/, response parser, formatter
-│   │   ├── use_cases/         # Question validation use cases
-│   │   ├── services/          # Groq, Piston, skill graph, animations, usage, course, question…
-│   │   ├── repositories/      # sql_* repositories (Supabase/PostgreSQL only)
+│   │   ├── api/               # coach, run, submit, submissions, questions, skills, mistakes,
+│   │   │                      # reviews, memory, rescue, courses, progress, admin, auth, health, debug
+│   │   ├── adapters/          # code_wrappers, coaching_prompts, response parser, formatter
+│   │   ├── use_cases/         # question validation (structure, test_cases, starter_code, solution, time, signature, output_format)
+│   │   ├── services/          # groq, piston, skill_graph, sm2, memory_graph, error_graph,
+│   │   │                      # rescue, review, animations, usage, submissions, course, question …
+│   │   ├── repositories/      # sql_* (Supabase/PostgreSQL only)
 │   │   ├── ports/             # Abstract interfaces (ABCs)
-│   │   ├── models/            # Pydantic schemas + domain enums
-│   │   ├── core/              # Database engine/session, settings, security
-│   │   ├── middleware/        # Rate limiting
-│   │   └── dependencies/      # FastAPI Depends() injection (app/api/dependencies.py)
-│   ├── alembic/               # Database migrations (Supabase/PostgreSQL)
-│   ├── scripts/               # seed_admin, seed_skill_graph, verify_skill_graph,
-│   │                          #   sync_database, sync_local_to_db, animate_coverage
-│   ├── tests/                 # unit, integration, contract, security, performance,
-│   │                          #   simulation, migrations
+│   │   ├── models/            # Pydantic schemas + domain enums (Question, ReviewCard, TopicMemory, RescueItem …)
+│   │   ├── core/              # database (async engine), config (get_settings), security (JWT/bcrypt)
+│   │   ├── middleware/        # rate_limit (slowapi), security_headers (CSP)
+│   │   └── dependencies/      # FastAPI Depends() wiring (app/api/dependencies.py)
+│   ├── alembic/               # migrations (initial, admin, usage, skill-graph, review_cards, rescue_queue)
+│   ├── scripts/               # sync_local_to_db, seed_admin, seed_skill_graph, verify_course_exercises, animate_coverage
+│   ├── tests/                 # unit, integration, contract, security, performance, simulation, migrations
 │   └── docs/                  # CURRICULUM_DEPLOYMENT.md
 ├── frontend/
 │   └── src/
-│       ├── app/               # pages (home, problems, learn, privacy, login/register, admin…)
-│       ├── components/        # editor, chat, sidebar, header, layout, rescue, visualization, admin, ui
-│       ├── features/          # {auth, coaching, code-execution, curriculum, question,
-│       │                      #   skill-graph, rescue, animation, usage} → {hook, service, types}
-│       ├── lib/               # HTTP client port/adapter
-│       ├── hooks/             # Shared hooks
-│       └── providers/         # Theme, Auth, Toast, Usage providers
-│   └── e2e/                   # Playwright specs
-├── graphify-out/              # Code knowledge graph artifacts
-├── docker-compose.yml         # backend, frontend, redis, piston
-└── Makefile
+│       ├── app/               # /, /problems, /problems/[id], /learn, /dashboard, /admin, /login, /privacy …
+│       ├── features/          # auth, coaching, code-execution, question, curriculum, skill-graph,
+│       │                      # rescue, review, memory, animation, usage → {hook, service, types, *.test.*}
+│       ├── components/        # editor (Monaco), chat, sidebar, header, layout, rescue, visualization, admin, ui/*
+│       ├── lib/               # http-client (FetchClient), fetch-client, shuffle, utils
+│       ├── hooks/             # useLocalStorage, useDebounce, useWorkspaceMode …
+│       ├── providers/         # Theme, Auth, Toast, Usage
+│       └── e2e/               # Playwright specs (auth, settings, curriculum, code-execution, animate, viewer)
+├── motion-canvas-lab/         # Motion Canvas project (viewer.html, scenes, viewer-player) — Vite on :9000 for E2E
+├── graphify-out/              # Code knowledge graph artifacts (graph.json, GRAPH_REPORT.md, wiki/)
+├── docker-compose.yml         # backend, frontend, redis, piston (Supabase external)
+├── docker-compose.dev.yml     # dev override
+└── Makefile                   # test, lint, graphify shortcuts
 ```
 
-## Testing
+## Deployment
 
-### Backend (pytest)
+- **Docker Compose (production):** `docker compose up -d --build` builds `pip install` / `npm run build` into images. No volume mounts; `PistonService` + `Redis` + `Supabase` wired via env.
+- **Cloudflare Workers (frontend):** OpenNext build — `NEXT_PUBLIC_*` must be set as build args, not runtime env.
+- **Supabase migrations:** `alembic upgrade head` against the pooler (handles `pgbouncer=true` stripping, `%`-escaping, `asyncpg` statement-cache off). Verified Aug 24: `e1f2a3b4c5d6` on TEST.
+- **Health:** `GET /health` checks `questions_db`, `piston`, `redis`; Docker `HEALTHCHECK` gates `backend`.
 
-```bash
-cd backend
-python -m pytest tests/unit/           # 53 unit test files
-python -m pytest tests/integration/    # 23 integration test files
-python -m pytest tests/security/       # 7 security test files
-python -m pytest tests/performance/    # 4 performance test files
-python -m pytest tests/contract/       # 2 OpenAPI contract test files
-python -m pytest tests/simulation/     # 8 skill-graph simulation test files
-python -m pytest tests/migrations/     # 5 migration test files
-python -m pytest                        # All tiers
+## Security
+
+- Input validated at API boundaries (Pydantic); auth via JWT + bcrypt + Supabase OAuth; role-gated admin routes.
+- Rate limiting via `slowapi` (coach/run/submit/rescue per-user) + `UsageService` token caps; 429 → `Retry-After` + `X-Usage-*`.
+- Security headers: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, and CSP (`default-src 'self'` + `frame-src` viewer allowlist, `worker-src blob:` for Monaco).
+- Secrets only from `.env` / env — never committed or logged; least privilege on all auth/authz paths.
+- See `backend/tests/security/` for 7 committed security suites (auth, execution, rate-limit, etc.).
+
+## Roadmap
+
+```
+Phase 1 ─── DSA Practice (current focus)
+├── 109 / 100 questions ─── 33 Easy / 50 Medium / 26 Hard (109/109 skill-mapped, F3)
+├── Practice Next / skill-graph recommendations (shipped)
+├── Mistake-memory (submissions + error graph + SM-2 + Memory Graph /dashboard) (F6 + Idea #3)
+├── Rescue contract — durable queue + T1→T2→T3 escalation (Idea #4, Aug 24)
+└── Polish (onboarding, empty states, memory-first home slice)
+
+Phase 2 ─── Programming Language Curriculum
+├── Python Fundamentals ─── 5 modules, 36 lessons (shipped)
+├── C Programming ─── 5 modules, 35 lessons (F5, shipped)
+├── Java Programming ─── 5 modules, 35 lessons (F5, shipped)
+└── Context-aware AI coaching per lesson
+
+Phase 3 ─── Future Modules
+├── DBMS / SQL
+├── OOP & Design Patterns
+├── Web Development (React, Node)
+├── Theory / MCQ question type
+└── Classroom dashboard (Idea #2)
 ```
 
-Integration, contract, and migration tests require `DATABASE_URL` pointed at
-an isolated Postgres schema (see [backend/tests/README.md](./backend/tests/README.md)).
-
-### Frontend (Vitest)
-
-```bash
-cd frontend
-pnpm test:run                   # Single run (72 unit/component test files)
-pnpm lint                       # ESLint
-pnpm typecheck                  # TypeScript check (tsc --noEmit)
-```
-
-### E2E (Playwright)
-
-```bash
-cd frontend
-npx playwright test             # 15 specs; requires a running dev + backend stack
-```
-
-## Development
-
-This is a private, closed project. There is no public contribution workflow:
-no fork/PR intake, no external maintainers, and no MIT-style licensing.
-
-Internal development process (see [AGENTS.md](./AGENTS.md) for the full rules):
-
-1. Work on a feature branch off `main`.
-2. Follow TDD — write a failing test first, then implement, then refactor.
-3. Run lint + typecheck + the full test tiers before merging.
-4. Rebuild the affected Docker image (`docker compose up -d --build <service>`)
-   after any backend/frontend source change.
-5. Keep the code knowledge graph current (`graphify update .`) and reference it
-   with `graphify query` during exploration.
-6. Preserve the API contracts and error semantics; breaking changes need
-   migration and rollout planning.
+Detailed per-idea status (9 ideas + honourable mentions) lives in [Ideas.md](./Ideas.md) — Ideas #3 and #4 landed Aug 24.
 
 ## Known Gaps
 
-- Skill-graph mapping covers 21 of the 109 live questions; the rest have no
-  taxonomy mapping for recommendations.
-- C and Java curricula are supported by the schema but not yet committed.
-- No persistent attempt-history/replay or abandoned-problem re-surface queue yet
-  (see [Ideas.md](./Ideas.md)).
-- Students have no `/dashboard` memory-first route yet.
+- No full attempt-journey animated replay yet (per-solve flow maps exist; now unblocked by attempt history + memory graph).
+- No interview-theater session engine / interviewer UI (Idea #6 — streaming foundation exists).
+- No classroom/professor dashboard or roster model (Idea #2 — segment moat).
+- `Ideas.md` backlog (honourable mentions: adversarial twin, takeover, talk-it-out, voice mentor, …) not yet promoted.
+
+## License
+
+Proprietary — closed source. No public distribution, forking, or external contribution. Internal use only for the CodeCoach AI team and its university partners.
+
+## Support
+
+- **Docs:** [Progress.md](./Progress.md) (living status), [Ideas.md](./Ideas.md) (backlog), [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md), [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md).
+- **Issues:** internal tracker only (no public GitHub Issues intake).
+- **Contact:** See `.env.example` / `Docs/TEST_ENVIRONMENT.md` for TEST project refs; ask a maintainer for production credentials.
