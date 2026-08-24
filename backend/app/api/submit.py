@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.models.schemas import SubmitRequest, SubmitResponse, SubmitResult
 from app.models.submission_schemas import SubmissionIn
@@ -5,10 +7,12 @@ from app.models.auth_schemas import UserResponse
 from app.ports.code_executor import CodeExecutor, TestCaseResult
 from app.ports.question_repository import QuestionRepository
 from app.ports.submission_repository import SubmissionRepository
+from app.services.review_service import ReviewService
 from app.api.auth_deps import get_current_user
 from app.api.dependencies import (
     get_executor,
     get_question_repo,
+    get_review_service,
     get_submission_repo,
 )
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
@@ -36,6 +40,7 @@ async def submit_code(
     repository: QuestionRepository = Depends(get_question_repo),
     executor: CodeExecutor = Depends(get_executor),
     submissions: SubmissionRepository = Depends(get_submission_repo),
+    reviews: ReviewService = Depends(get_review_service),
     current_user: UserResponse = Depends(get_current_user),
 ):
     question = await repository.get_by_id(submit_request.question_id)
@@ -83,6 +88,20 @@ async def submit_code(
         )
     except Exception:  # noqa: BLE001
         logger.warning("Failed to persist submission", exc_info=True)
+
+    # Mistake-memory observation (Ideas #1): failures open/refresh review
+    # cards; passes promote conquered bugs into the SM-2 rotation.
+    # Best-effort, same contract as the submission persist above.
+    try:
+        await reviews.observe_submission(
+            user_id=current_user.id,
+            question_id=submit_request.question_id,
+            passed=passed,
+            error_signature=_error_signature(results),
+            now=datetime.now(timezone.utc),
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning("Failed to record mistake-memory observation", exc_info=True)
 
     return SubmitResponse(
         passed=passed,

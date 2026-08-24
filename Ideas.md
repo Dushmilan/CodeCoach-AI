@@ -36,7 +36,7 @@ Why it's leverage: every session compounds switching cost. Five years of a
 user's mistake-history is a moat nobody can walk into. This is the thing you
 gather user data for.
 
-### Status: 🔴 Not started
+### Status: 🟡 Phase 2 built (error graph + SM-2 reviews)
 
 **Detailed explanation:** The core product promise is that every run/submit/diagnosis
 a user makes is persisted per-user. From that history we derive (a) an error graph
@@ -54,17 +54,17 @@ error log. Without this data layer, ideas #3 and #5 are also blocked.
 - [ ] Add a `submissions` schema (user_id, question_id, code, language, passed, error signature, attempt index, created_at)
 - [ ] Wire submission capture into `submit.py` / `run.py` (and diagnosis)
 - [ ] Supabase repository implementation behind a `ports/` interface (match the `sql_*` pattern)
-- [ ] Derive per-user error graph from attempt history
-- [ ] Spaced-repetition scheduler producing review sessions from own past bugs
+- [x] Derive per-user error graph from attempt history (`GET /api/mistakes/graph`)
+- [x] Spaced-repetition scheduler producing review sessions from own past bugs (SM-2, `/api/reviews/*`)
 - [ ] Learning-analytics signals ("recursion plateau detected")
 - [ ] Backfill/adopt for existing questions where feasible
 
 ### Next steps
 
-1. Design the attempt-history schema (Supabase/PostgreSQL, matching the existing `sql_*` repository pattern)
-2. Capture on every Piston run and AI diagnosis
-3. Build the error-graph derivation
-4. Build the spaced-repetition review endpoint
+1. ~~Design the attempt-history schema~~ — DONE (`submissions`)
+2. Capture on every Piston run and AI diagnosis (run.py / diagnosis capture still open)
+3. ~~Build the error-graph derivation~~ — DONE (Aug 24)
+4. ~~Build the spaced-repetition review endpoint~~ — DONE (Aug 24); frontend review UI is the follow-up
 
 ---
 

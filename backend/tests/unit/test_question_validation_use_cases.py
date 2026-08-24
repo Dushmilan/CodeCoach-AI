@@ -897,3 +897,61 @@ class TestQuestionValidationAPI:
         data = response.json()
         assert "results" in data
         assert len(data["results"]) == 2
+
+
+class TestExecutorFailureHandling:
+    """Executor outages must degrade to WARNING/INFO issues, never crash.
+
+    Regression guards for the ``except Exception`` paths in the Piston-backed
+    use cases. These branches previously received coverage only when the real
+    Piston endpoint happened to be unreachable in the environment, which made
+    the coverage-budget gate depend on infrastructure state; pin them
+    deterministically here instead.
+    """
+
+    @pytest.mark.asyncio
+    async def test_starter_code_survives_executor_crash(self, valid_question):
+        """A raising executor yields per-language WARNING issues, not a crash."""
+        from app.services.question_validator import StarterCodeValidationUseCase
+        from app.models.question_validation_schemas import ValidationSeverity
+        from app.ports.code_executor import CodeExecutor
+
+        executor = AsyncMock(spec=CodeExecutor)
+        executor.execute.side_effect = RuntimeError("piston unavailable")
+
+        use_case = StarterCodeValidationUseCase(executor=executor)
+        result = await use_case.execute(valid_question)
+
+        failures = [
+            i
+            for i in result.issues
+            if i.severity == ValidationSeverity.WARNING
+            and i.message.startswith("Failed to validate")
+            and (i.field or "").startswith("starter.")
+        ]
+        assert failures, f"expected degraded starter issues, got {result.issues}"
+        # Warnings are not errors: validation itself still 'passes'.
+        assert result.passed is True
+
+    @pytest.mark.asyncio
+    async def test_test_case_executability_survives_executor_crash(
+        self, valid_question
+    ):
+        """A raising executor yields INFO issues per test case, not a crash."""
+        from app.services.question_validator import TestCaseValidationUseCase
+        from app.models.question_validation_schemas import ValidationSeverity
+        from app.ports.code_executor import CodeExecutor
+
+        executor = AsyncMock(spec=CodeExecutor)
+        executor.execute.side_effect = RuntimeError("piston unavailable")
+
+        use_case = TestCaseValidationUseCase(executor=executor)
+        result = await use_case.execute(valid_question)
+
+        degraded = [
+            i
+            for i in result.issues
+            if i.severity == ValidationSeverity.INFO
+            and i.message.startswith("Failed to validate test case")
+        ]
+        assert degraded, f"expected degraded testcase issues, got {result.issues}"

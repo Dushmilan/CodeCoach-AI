@@ -405,3 +405,49 @@ class UserSkillStateORM(Base):
     __table_args__ = (
         Index("ix_user_skill_states_user_slug", "user_id", "skill_slug", unique=True),
     )
+
+
+class ReviewCardORM(Base):
+    """A spaced-repetition card over one recurring bug (mistake-memory #1).
+
+    Keyed by (user_id, question_id, error_signature): failing a question with
+    a stable signature opens or refreshes the card; passing the question
+    promotes it into the SM-2 review rotation. ``state`` is 'active' while
+    the bug is open and 'scheduled' once it is in rotation.
+    """
+
+    __tablename__ = "review_cards"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    question_id = Column(
+        String(64),
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    error_signature = Column(String(255), nullable=False)
+    state = Column(String(20), nullable=False)
+    ease = Column(Float, nullable=False)
+    interval_days = Column(Integer, nullable=False)
+    repetitions = Column(Integer, nullable=False)
+    lapses = Column(Integer, nullable=False)
+    due_at = Column(DateTime(timezone=True), nullable=False)
+    last_reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index(
+            "uq_review_cards_user_question_signature",
+            "user_id",
+            "question_id",
+            "error_signature",
+            unique=True,
+        ),
+        Index("ix_review_cards_user_state_due", "user_id", "state", "due_at"),
+    )

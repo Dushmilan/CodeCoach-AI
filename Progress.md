@@ -35,6 +35,8 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | Usage Metering        | ✅     | Daily input/output token caps, `X-Usage-*` headers, Redis-backed limits                                                                            |
 | Plans & Gates         | ✅     | Per-user plan, **quota-gated** coaching (free 20 req/day, paid 500), usage bar, upgrade modal                                                      |
 | Attempt History       | ✅     | `submissions` table persists every graded submit (attempt_index, error_signature) + `GET /api/submissions/me` — foundation for mistake-memory (#1) |
+| Error Graph           | ✅     | `GET /api/mistakes/graph` — per-user error graph derived from attempt history: signatures grouped with occurrences, affected questions, first/last seen, resolution state; ranked most-recurring first |
+| Spaced Repetition     | ✅     | SM-2 review rotation over own past bugs: `review_cards` table (migration `a3b4c5d6e7f8`, unique per user+question+signature), failures open/refresh cards, passes promote into rotation; `/api/reviews/due` + `POST /api/reviews/{id}/grade`; observe hook wired best-effort into `POST /api/submit` |
 | Admin Panel           | ✅     | Dashboard, users, questions, curriculum, usage analytics, abuse reports                                                                            |
 | Workspace UX          | ✅     | Monaco editor, themes, resizable panels, onboarding tour, toasts                                                                                   |
 | Infrastructure        | ✅     | Docker Compose (backend, frontend, redis, piston), Alembic, Supabase single DB, OpenNext build                                                     |
@@ -116,6 +118,17 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
   c/java. Content guard unit tests pin lesson counts, types, runnable exercises.
 
 ## Recent Changes
+
+- **F6 — Mistake-memory phase 2 (Aug 24, this branch):** error-graph derivation
+  (`error_graph_rules.py` + `ErrorGraphService`, `GET /api/mistakes/graph`) and an
+  SM-2 spaced-repetition scheduler over the user's own past bugs
+  (`sm2_rules.py`, `ReviewService`, `review_cards` migration `a3b4c5d6e7f8`,
+  `/api/reviews/due|grade`). Observe hook added to `submit.py` (best-effort,
+  same contract as submission persistence). Also hardened the coverage-budget
+  gate: the Piston-failure `except` branches in starter/testcase validators had
+  zero dedicated tests and were only covered when the real Piston endpoint was
+  unreachable — now pinned by `TestExecutorFailureHandling` so the gate no
+  longer depends on infrastructure state.
 
 - **Live DB migration `f2a3b4c5d6e7` applied (Aug 23):** Supabase TEST project resumed;
   `alembic current` = `f2a3b4c5d6e7` (head), `rescue_queue` + indexes verified on live,

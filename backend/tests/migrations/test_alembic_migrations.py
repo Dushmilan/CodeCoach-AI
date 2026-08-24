@@ -409,7 +409,13 @@ def test_rescue_queue_migration_roundtrip(
         "rescue_queue is missing the due-queue query index (user_id, status, due_at)"
     )
 
-    _retry(lambda: command.downgrade(alembic_config, "-1"), "downgrade -1")
+    # Downgrade past the rescue revision explicitly - a relative "-1" would
+    # stop at whatever revision currently sits below head and silently skip
+    # the rescue downgrade itself once newer migrations are appended.
+    _retry(
+        lambda: command.downgrade(alembic_config, "e1f2a3b4c5d6"),
+        "downgrade to pre-F2 head e1f2a3b4c5d6",
+    )
     assert not _table_exists(), "rescue_queue downgrade did not drop the table"
 
     _retry(lambda: command.upgrade(alembic_config, "head"), "restore head")
