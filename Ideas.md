@@ -119,18 +119,21 @@ Why it's a moat: nobody does this. Giants are content repositories; you'd be the
 first memory-first coding platform. It makes your mistake-data the literal
 skeleton of the product — impossible to copy without rebuilding their whole UX.
 
-### Status: 🔴 Not started
+### Status: 🟢 Mostly built — memory graph dashboard landed (Aug 24, 2026)
 
 **Detailed explanation:** The home page (and every screen) should be organized
 around _what you're about to forget_. Every card is a "days since you touched X"
-decision powered by the #1 scheduler. Fully blocked on #1's data + scheduler.
+decision powered by the #1 scheduler. Now built on the #1 SM-2 data layer:
+`MemoryGraphService` aggregates review cards + submissions by `category` into
+`GET /api/memory/graph`, and `MemoryGraph.tsx` + `/dashboard` render the per-topic
+energy-cost view ("6 days since recursion — 5-min refresher").
 
 ### Progress
 
-- [ ] Student home page as memory graph ("6 days since recursion — 5-min refresher now")
-- [ ] Per-topic last-touched + energy-cost copy ("intervene in 5 min to save 30")
-- [ ] Review queue surfaced on every screen (not a separate quiz feature)
-- [ ] Student `/dashboard` route
+- [x] Student home page as memory graph ("6 days since recursion — 5-min refresher now")
+- [x] Per-topic last-touched + energy-cost copy ("intervene in 5 min to save 30")
+- [x] Review queue surfaced on every screen (MemoryGraph + ReviewsDueQueue on `/dashboard`; ReviewsDueQueue + RescueDueQueue on `/problems`)
+- [x] Student `/dashboard` route
 
 ### Next steps
 
@@ -153,7 +156,7 @@ a contract:
 Why it's out-of-the-box + sticky: it's a UX personality giant can't copy, great
 for the beginner segment, low churn = compounding retention.
 
-### Status: 🟢 Mostly built — re-surface loop landed (Aug 23, 2026)
+### Status: ✅ Done — re-surface loop + time-based escalation landed (Aug 24, 2026)
 
 **Detailed explanation:** The intervention half is implemented: `RescueIntervention` /
 `ProblemFlowMap` / `SolutionFlowMap` components, `use-rescue-contract` hook,
@@ -171,7 +174,7 @@ resurfacing, survives reloads, and honors dismissals permanently.
 - [x] Submission diagnosis service (AI diagnosis, blueprint labels)
 - [x] Capture abandoned problems (durable: `POST /api/rescue/{id}/abandon`; localStorage kept as offline fallback)
 - [x] Re-surface queue: tomorrow's tiny step for every abandoned problem (`GET /api/rescue/due`, "Back tomorrow" section on `/problems`)
-- [ ] Time-based stuck escalation (X min → scaffold, Y min → re-plan)
+- [x] Time-based stuck escalation (X min → scaffold, Y min → re-plan) — `useRescueContract` now fires `onEscalateToT2`/`onEscalateToT3` once per tier, wired to AI coach `explain`/`review` messages + drawer open
 
 ### Next steps
 

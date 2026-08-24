@@ -292,4 +292,72 @@ describe("useRescueContract", () => {
     );
     expect(stored).toHaveLength(1);
   });
+
+  it("fires onEscalateToT2 once when escalating to T2", () => {
+    const onT2 = vi.fn();
+    const onT3 = vi.fn();
+    const { result } = renderHook(() =>
+      useRescueContract({ ...baseOptions, onEscalateToT2: onT2, onEscalateToT3: onT3 }),
+    );
+    act(() => {
+      vi.advanceTimersByTime(tierThresholds.t2);
+    });
+    expect(result.current.tier).toBe("t2");
+    expect(onT2).toHaveBeenCalledTimes(1);
+    expect(onT3).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(tierThresholds.t3 - tierThresholds.t2 + 60000);
+    });
+    expect(onT2).toHaveBeenCalledTimes(1);
+  });
+
+  it("fires onEscalateToT3 once when escalating to T3", () => {
+    const onT3 = vi.fn();
+    const { result } = renderHook(() =>
+      useRescueContract({ ...baseOptions, onEscalateToT3: onT3 }),
+    );
+    act(() => {
+      vi.advanceTimersByTime(tierThresholds.t3);
+    });
+    expect(result.current.tier).toBe("t3");
+    expect(onT3).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(60000);
+    });
+    expect(onT3).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not fire escalation callbacks when suppressed", () => {
+    const onT2 = vi.fn();
+    const onT3 = vi.fn();
+    const { result } = renderHook(() =>
+      useRescueContract({ ...baseOptions, onEscalateToT2: onT2, onEscalateToT3: onT3 }),
+    );
+    act(() => {
+      result.current.leaveMeAlone();
+    });
+    act(() => {
+      vi.advanceTimersByTime(tierThresholds.t3);
+    });
+    expect(onT2).not.toHaveBeenCalled();
+    expect(onT3).not.toHaveBeenCalled();
+  });
+
+  it("re-fires after activity resets the idle clock", () => {
+    const onT2 = vi.fn();
+    const { result } = renderHook(() =>
+      useRescueContract({ ...baseOptions, onEscalateToT2: onT2 }),
+    );
+    act(() => {
+      vi.advanceTimersByTime(tierThresholds.t2);
+    });
+    expect(onT2).toHaveBeenCalledTimes(1);
+    act(() => {
+      result.current.registerActivity();
+    });
+    act(() => {
+      vi.advanceTimersByTime(tierThresholds.t2);
+    });
+    expect(onT2).toHaveBeenCalledTimes(2);
+  });
 });

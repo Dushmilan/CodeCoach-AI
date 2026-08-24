@@ -57,6 +57,13 @@ export function Header() {
               <GraduationCap className="h-3 w-3" />
               Learn
             </Link>
+            <Link
+              href="/dashboard"
+              className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+            >
+              <LayoutDashboard className="h-3 w-3" />
+              Dashboard
+            </Link>
             {isAdmin && (
               <Link
                 href="/admin"
@@ -162,6 +169,7 @@ export function Header() {
             { href: '/', label: 'Home', delay: 'delay-100' },
             { href: '/problems', label: 'Problems', delay: 'delay-115' },
             { href: '/learn', label: 'Learn', delay: 'delay-125' },
+            { href: '/dashboard', label: 'Dashboard', delay: 'delay-130' },
             ...(isAdmin
               ? [{ href: '/admin', label: 'Admin Dashboard', delay: 'delay-135' as const }]
               : []),

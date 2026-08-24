@@ -30,13 +30,14 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | Solution Animations   | ✅     | Generate → validate → compile → play; canonical-solution pipeline                                                                                  |
 | Skill Graph           | ✅     | Learning events → mastery per skill; statuses new/learning/developing/strong/needs_review; decay + prerequisites. Tables applied to the live DB    |
 | Practice Next         | ✅     | Recommended-questions API + UI queue on `/problems` (21 of 109 questions mapped)                                                                   |
-| Rescue Contract       | ✅     | Checkpoints, RescueIntervention, ProblemFlowMap / SolutionFlowMap; durable re-surface queue live (Aug 23): `rescue_queue`, `/api/rescue/*`, "Back tomorrow" on `/problems` |
+| Rescue Contract       | ✅     | Checkpoints, RescueIntervention, ProblemFlowMap / SolutionFlowMap; durable re-surface queue live (Aug 23): `rescue_queue`, `/api/rescue/*`, "Back tomorrow" on `/problems`; time-based escalation live (Aug 24): T1(4m)→T2(+5m AI hint)→T3(+5m re-plan) via `useRescueContract` callbacks |
 | Auth                  | ✅     | Email/password (JWT + bcrypt), refresh tokens, Supabase OAuth (Google) — "Continue with Google" button on `/login`                                 |
 | Usage Metering        | ✅     | Daily input/output token caps, `X-Usage-*` headers, Redis-backed limits                                                                            |
 | Plans & Gates         | ✅     | Per-user plan, **quota-gated** coaching (free 20 req/day, paid 500), usage bar, upgrade modal                                                      |
 | Attempt History       | ✅     | `submissions` table persists every graded submit (attempt_index, error_signature) + `GET /api/submissions/me` — foundation for mistake-memory (#1) |
 | Error Graph           | ✅     | `GET /api/mistakes/graph` — per-user error graph derived from attempt history: signatures grouped with occurrences, affected questions, first/last seen, resolution state; ranked most-recurring first |
 | Spaced Repetition     | ✅     | SM-2 review rotation over own past bugs: `review_cards` table (migration `a3b4c5d6e7f8`, unique per user+question+signature), failures open/refresh cards, passes promote into rotation; `/api/reviews/due` + `POST /api/reviews/{id}/grade`; observe hook wired best-effort into `POST /api/submit` |
+| Memory Graph          | ✅     | Forgetting-curve dashboard (Idea #3): `GET /api/memory/graph` aggregates review cards + submissions by `category` into per-topic energy-cost view (`daysSinceLastTouch`, `dueCount`, `lapses`); `MemoryGraph.tsx` sorted by `energyCostMinutes`; student `/dashboard` route with MemoryGraph + RescueDueQueue + ReviewsDueQueue; Header adds Dashboard link |
 | Admin Panel           | ✅     | Dashboard, users, questions, curriculum, usage analytics, abuse reports; Header shows **Admin Dashboard** link when `user.role ∈ {admin, super_admin}` (desktop + mobile, gated on `isHydrated`) |
 | Workspace UX          | ✅     | Monaco editor, themes, resizable panels, onboarding tour, toasts                                                                                   |
 | Infrastructure        | ✅     | Docker Compose (backend, frontend, redis, piston), Alembic, Supabase single DB, OpenNext build                                                     |
@@ -47,7 +48,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | ---------------------- | ------ | ------------------------------------------------ | --------------------------------------------- |
 | Curriculum breadth     | ✅ C+Java live | **C Programming & Java Programming committed (F5)** | ML/PromptEng/R/JS courses exist in DB from earlier syncs; source JSON parked |
 | Question bank volume   | 🟡     | 109 seeded in DB (33 Easy / 50 Medium / 26 Hard) | ~~Skill-graph covers 21~~ → **109/109 (F3)**  |
-| ~~Rescue re-surface loop~~ | ✅ DONE (Aug 23) | Durable queue: `rescue_queue` + `/api/rescue/due` + "Back tomorrow" UI; dismissals permanent | Time-based stuck escalation (X min → scaffold) still open under Ideas #4 |
+| ~~Rescue re-surface loop~~ | ✅ DONE (Aug 24) | Durable queue: `rescue_queue` + `/api/rescue/due` + "Back tomorrow" UI; dismissals permanent; T1→T2→T3 escalation now wired to AI coach | Time-based escalation ✅ DONE |
 | Attempt-journey replay | 🟡     | Per-solve flow maps                              | Persistent attempt history + animated replay  |
 | Interview theater      | 🟡     | SSE streaming + editor change events             | Session/event engine + interviewer UI         |
 

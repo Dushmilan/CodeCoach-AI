@@ -21,6 +21,8 @@ interface UseRescueContractOptions {
     hidden?: boolean;
   }>;
   lastSubmitResult: SubmitResponse | null;
+  onEscalateToT2?: () => void;
+  onEscalateToT3?: () => void;
 }
 
 interface UseRescueContractReturn {
@@ -53,12 +55,18 @@ export function useRescueContract({
   questionTitle,
   testCases,
   lastSubmitResult,
+  onEscalateToT2,
+  onEscalateToT3,
 }: UseRescueContractOptions): UseRescueContractReturn {
   const lastActivityRef = useRef<number>(Date.now());
   const questionIdRef = useRef(questionId);
   const titleRef = useRef(questionTitle);
   const tierRef = useRef<RescueTier>("none");
   const solvedRef = useRef(false);
+  const onT2Ref = useRef(onEscalateToT2);
+  const onT3Ref = useRef(onEscalateToT3);
+  onT2Ref.current = onEscalateToT2;
+  onT3Ref.current = onEscalateToT3;
 
   const [tier, setTierState] = useState<RescueTier>("none");
   const [isSuppressed, setSuppressed] = useState(false);
@@ -116,12 +124,23 @@ export function useRescueContract({
       }
 
       const idleMs = Date.now() - lastActivityRef.current;
+      let next: RescueTier | null = null;
       if (idleMs >= tierThresholds.t3) {
-        setTier("t3");
+        next = "t3";
       } else if (idleMs >= tierThresholds.t2) {
-        setTier("t2");
+        next = "t2";
       } else if (idleMs >= tierThresholds.t1) {
-        setTier("t1");
+        next = "t1";
+      }
+      if (next && next !== tierRef.current) {
+        const prev = tierRef.current;
+        setTier(next);
+        if (next === "t2" && prev !== "t2") {
+          onT2Ref.current?.();
+        }
+        if (next === "t3" && prev !== "t3") {
+          onT3Ref.current?.();
+        }
       }
     }, RESCUE_CONFIG.checkIntervalMs);
     return () => window.clearInterval(interval);

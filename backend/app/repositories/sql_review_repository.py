@@ -95,6 +95,14 @@ class SqlReviewRepository(ReviewRepository):
         )
         return [self._orm_to_schema(o) for o in result.scalars().all()]
 
+    async def list_for_user(self, user_id: str) -> Sequence[ReviewCard]:
+        result = await self.session.execute(
+            select(ReviewCardORM)
+            .where(ReviewCardORM.user_id == user_id)
+            .order_by(ReviewCardORM.due_at.asc())
+        )
+        return [self._orm_to_schema(o) for o in result.scalars().all()]
+
     async def save(self, card: ReviewCard) -> ReviewCard:
         """Atomic upsert on the natural key (race-safe under concurrency).
 

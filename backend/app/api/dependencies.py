@@ -31,6 +31,7 @@ from app.services.usage_service import UsageService
 from app.services.rescue_service import RescueService
 from app.services.review_service import ReviewService
 from app.services.error_graph_service import ErrorGraphService
+from app.services.memory_graph_service import MemoryGraphService
 from app.ports.code_executor import CodeExecutor
 from app.services.piston_service import PistonService
 from app.services.question_bank import QuestionBank
@@ -115,6 +116,18 @@ def get_error_graph_service(
     submissions: SubmissionRepository = Depends(get_submission_repo),
 ) -> ErrorGraphService:
     return ErrorGraphService(repo=submissions)
+
+
+def get_memory_graph_service(
+    review_repo: ReviewRepository = Depends(get_review_repo),
+    question_repo: QuestionRepository = Depends(get_question_repo),
+    submission_repo: SubmissionRepository = Depends(get_submission_repo),
+) -> MemoryGraphService:
+    return MemoryGraphService(
+        review_repo=review_repo,
+        question_repo=question_repo,
+        submission_repo=submission_repo,
+    )
 
 
 async def get_admin_repo(
