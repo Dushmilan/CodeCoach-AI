@@ -318,6 +318,9 @@ def _build_question_skills() -> Dict[str, List[QuestionSkill]]:
 
 QUESTION_SKILLS: Dict[str, List[QuestionSkill]] = _build_question_skills()
 
+# Alias for analytics plateau rule (plan expects QUESTION_SKILL_MAP) — keeps 109/109 contract.
+QUESTION_SKILL_MAP: Dict[str, List[Tuple[str, float]]] = _QUESTION_SKILL_WEIGHTS
+
 # Deterministic evidence constants used by the rules engine. These are tuned
 # initial values; calibration happens in simulation, never via ML.
 EVIDENCE = {
