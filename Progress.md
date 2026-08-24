@@ -1,6 +1,6 @@
 # Progress — CodeCoach AI
 
-> Last updated: August 15, 2026 (branch `fix/production-runtime-config`)
+> Last updated: August 24, 2026 (branch `feat/admin-header-link`)
 
 This is the project's living status document. It is kept in sync with the code:
 if a section lists a feature as **Built**, that capability exists in the current
@@ -37,7 +37,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | Attempt History       | ✅     | `submissions` table persists every graded submit (attempt_index, error_signature) + `GET /api/submissions/me` — foundation for mistake-memory (#1) |
 | Error Graph           | ✅     | `GET /api/mistakes/graph` — per-user error graph derived from attempt history: signatures grouped with occurrences, affected questions, first/last seen, resolution state; ranked most-recurring first |
 | Spaced Repetition     | ✅     | SM-2 review rotation over own past bugs: `review_cards` table (migration `a3b4c5d6e7f8`, unique per user+question+signature), failures open/refresh cards, passes promote into rotation; `/api/reviews/due` + `POST /api/reviews/{id}/grade`; observe hook wired best-effort into `POST /api/submit` |
-| Admin Panel           | ✅     | Dashboard, users, questions, curriculum, usage analytics, abuse reports                                                                            |
+| Admin Panel           | ✅     | Dashboard, users, questions, curriculum, usage analytics, abuse reports; Header shows **Admin Dashboard** link when `user.role ∈ {admin, super_admin}` (desktop + mobile, gated on `isHydrated`) |
 | Workspace UX          | ✅     | Monaco editor, themes, resizable panels, onboarding tour, toasts                                                                                   |
 | Infrastructure        | ✅     | Docker Compose (backend, frontend, redis, piston), Alembic, Supabase single DB, OpenNext build                                                     |
 
@@ -93,7 +93,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 | Backend contract tests (OpenAPI) | 2 files  | ✅ Passing |
 | Backend skill-graph simulation   | 8 files  | ✅ Passing |
 | Backend migration tests          | 5 files  | ✅ Passing |
-| Frontend unit/component tests    | 72 files | ✅ Passing |
+| Frontend unit/component tests    | 76 files | ✅ Passing |
 | E2E (Playwright)                 | 15 specs | ✅ Passing |
 
 See [backend/tests/README.md](./backend/tests/README.md) for how to run each tier.
@@ -119,6 +119,7 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
 
 ## Recent Changes
 
+- **Admin Header link (Aug 24, this branch):** `Header.tsx` now shows an **Admin Dashboard** link (`/admin`, `data-testid="header-admin-link"` + mobile `header-admin-link-mobile`) when `useAuth().user.role` is `admin` or `super_admin` (gated on `isHydrated && isAuthenticated`). Desktop island nav (hidden on mobile, icon `LayoutDashboard`) + mobile overlay menu. TDD: 5 new tests in `Header.test.tsx` (admin, super_admin visible; user/unauth/unhydrated hidden) — 11/11 green, full suite 643/643.
 - **Run capture + CSP/API-base fix (Aug 24, same branch):**
   `POST /api/run/` accepts optional `question_id`; a crashed run inside a
   question workspace now records an attempt (passed=false, first-stderr-line
