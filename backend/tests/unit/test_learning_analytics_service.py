@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from app.models.submission_schemas import Submission, SubmissionIn
+from app.models.submission_schemas import Submission
 from app.services.learning_analytics_service import LearningAnalyticsService
 
 NOW = datetime(2026, 8, 24, 12, 0, tzinfo=timezone.utc)
@@ -29,7 +29,6 @@ def test_empty_history():
 
 
 def test_delegates_to_rules_and_respects_limit():
-    from app.models.submission_schemas import Submission
 
     qid = "invert-binary-tree"
     subs = [

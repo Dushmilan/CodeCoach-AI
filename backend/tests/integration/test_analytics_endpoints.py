@@ -49,7 +49,10 @@ async def _seed_user_q(test_db):
 class TestAnalyticsSignals:
     @pytest.mark.asyncio
     async def test_requires_auth(self, async_client):
-        assert (await async_client.get("/api/analytics/signals")).status_code in (401, 403)
+        assert (await async_client.get("/api/analytics/signals")).status_code in (
+            401,
+            403,
+        )
 
     @pytest.mark.asyncio
     async def test_empty_returns_empty(self, async_client, test_db):
