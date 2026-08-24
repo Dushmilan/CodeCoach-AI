@@ -44,6 +44,15 @@ class AnimationStepSpec(BaseModel):
         "relax_edge",
         "push",
         "pop",
+        "choose",
+        "backtrack",
+        "write",
+        "window",
+        "edge",
+        "dp_update",
+        "mark",
+        "read",
+        "pointer",
         "custom",
     ] = Field(..., description="Semantic action for the planner")
     # Action params — optional per action, validated by planner not schema.
@@ -63,10 +72,15 @@ class AlgorithmAnimation(BaseModel):
     visualization: Literal[
         "sorted-array",
         "bars",
+        "array",
         "graph",
         "tree",
         "stack",
         "queue",
+        "linked_list",
+        "grid",
+        "intervals",
+        "backtrack",
     ] = Field(..., description="Which visual family renders this")
     initialState: InitialState = Field(...)
     steps: List[AnimationStepSpec] = Field(..., min_length=1)
