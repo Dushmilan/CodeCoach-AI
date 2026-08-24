@@ -119,6 +119,10 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
 
 ## Recent Changes
 
+- **Live DB migration `a3b4c5d6e7f8` applied (Aug 24):** Supabase TEST project;
+  `alembic current` = head, `review_cards` + its 4 indexes verified on live
+  (natural-key unique + `(user_id, state, due_at)` queue index), 0 rows.
+
 - **F6 — Mistake-memory phase 2 (Aug 24, this branch):** error-graph derivation
   (`error_graph_rules.py` + `ErrorGraphService`, `GET /api/mistakes/graph`) and an
   SM-2 spaced-repetition scheduler over the user's own past bugs
