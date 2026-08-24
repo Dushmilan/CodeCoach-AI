@@ -36,7 +36,7 @@ Why it's leverage: every session compounds switching cost. Five years of a
 user's mistake-history is a moat nobody can walk into. This is the thing you
 gather user data for.
 
-### Status: 🟡 Phase 2 built (error graph + SM-2 reviews)
+### Status: ✅ Done — plateau signals landed (Aug 24): GET /api/analytics/signals over bounded recent submissions (1000), LearningSignals banner on /dashboard
 
 **Detailed explanation:** The core product promise is that every run/submit/diagnosis
 a user makes is persisted per-user. From that history we derive (a) an error graph
@@ -56,7 +56,7 @@ error log. Without this data layer, ideas #3 and #5 are also blocked.
 - [ ] Supabase repository implementation behind a `ports/` interface (match the `sql_*` pattern)
 - [x] Derive per-user error graph from attempt history (`GET /api/mistakes/graph`)
 - [x] Spaced-repetition scheduler producing review sessions from own past bugs (SM-2, `/api/reviews/*`)
-- [ ] Learning-analytics signals ("recursion plateau detected")
+- [x] Learning-analytics signals ("recursion plateau detected")
 - [ ] Backfill/adopt for existing questions where feasible
 
 ### Next steps
