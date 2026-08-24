@@ -11,7 +11,11 @@ const REWRITE_TARGET = process.env.API_URL || 'http://localhost:8000';
 
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    // Preserve an explicit empty value (same-origin, CSP-safe); only
+    // fall back when the variable is unset. `||` would resurrect the
+    // hardcoded URL for empty strings and get blocked by connect-src.
+    NEXT_PUBLIC_API_URL:
+      process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000',
   },
   webpack: (config) => {
     config.cache = false;

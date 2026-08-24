@@ -42,12 +42,14 @@ describe("FetchClient", () => {
   });
 
   describe("constructor", () => {
-    it("uses default base URL when none provided", () => {
+    it("defaults to same-origin when none provided (CSP-safe)", () => {
       client = new FetchClient();
       fetchSpy.mockResolvedValue(createMockResponse());
       client.get("/api/test");
+      // Same-origin keeps requests under connect-src 'self'; the Next.js
+      // rewrite proxies /api/* to the backend.
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/test",
+        "/api/test",
         expect.anything(),
       );
     });
@@ -74,7 +76,7 @@ describe("FetchClient", () => {
       const result = await client.get<{ items: number[] }>("/api/items");
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/items",
+        "/api/items",
         expect.objectContaining({ method: "GET" }),
       );
       expect(result).toEqual({ items: [1, 2] });
@@ -105,7 +107,7 @@ describe("FetchClient", () => {
       const result = await client.post<{ id: number }>("/api/items", body);
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/items",
+        "/api/items",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify(body),
@@ -166,7 +168,7 @@ describe("FetchClient", () => {
       const result = await client.put("/api/items/1", { name: "updated" });
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/items/1",
+        "/api/items/1",
         expect.objectContaining({ method: "PUT" }),
       );
       expect(result).toEqual({ updated: true });
@@ -181,7 +183,7 @@ describe("FetchClient", () => {
       await client.delete("/api/items/1");
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:8000/api/items/1",
+        "/api/items/1",
         expect.objectContaining({ method: "DELETE" }),
       );
     });
@@ -341,7 +343,7 @@ describe("FetchClient", () => {
       // credentials: "include"), access token returned in the response body.
       expect(fetchSpy).toHaveBeenNthCalledWith(
         2,
-        "http://localhost:8000/api/auth/refresh",
+        "/api/auth/refresh",
         expect.objectContaining({
           method: "POST",
           credentials: "include",
@@ -462,7 +464,7 @@ describe("FetchClient", () => {
       expect(resultA).toEqual({ a: 1 });
       expect(resultB).toEqual({ b: 2 });
       const refreshCalls = fetchSpy.mock.calls.filter(
-        ([url]) => url === "http://localhost:8000/api/auth/refresh",
+        ([url]) => url === "/api/auth/refresh",
       );
       expect(refreshCalls).toHaveLength(1);
     });

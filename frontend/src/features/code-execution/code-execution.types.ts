@@ -70,12 +70,15 @@ export interface CodeExecutionActions {
   runCode: (
     language: string,
     code: string,
+    stdin?: string,
     version?: string,
+    questionId?: string,
   ) => Promise<CodeExecutionResult>;
   validateCode: (
     language: string,
     code: string,
     testCases: TestCase[],
+    questionId?: string,
   ) => Promise<ValidationResponse>;
   submitCode: (
     questionId: string,

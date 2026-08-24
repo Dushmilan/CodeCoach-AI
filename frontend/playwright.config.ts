@@ -24,6 +24,10 @@ export default defineConfig({
       port: 3000,
       reuseExistingServer: true,
       timeout: 120000,
+      // Same-origin API base: keeps browser calls under CSP connect-src
+      // 'self' (the /api rewrite proxies to the backend). Without this a
+      // developer .env pointing at http://localhost:8000 gets blocked.
+      env: { NEXT_PUBLIC_API_URL: '' },
     },
     {
       command: 'pnpm --dir ../motion-canvas-lab dev --port 9000 --strictPort',

@@ -283,6 +283,14 @@ class CodeExecutionRequest(BaseModel):
     code: str = Field(..., description="Source code to execute")
     stdin: str = Field(default="", description="Input to provide to the program")
     version: Optional[str] = Field(None, description="Specific language version")
+    question_id: Optional[str] = Field(
+        None,
+        description=(
+            "Question context for this run. When set and the execution exits "
+            "non-zero, the crash is recorded in the attempt history and "
+            "mistake-memory (best-effort)."
+        ),
+    )
 
 
 class CodeExecutionResult(BaseModel):

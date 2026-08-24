@@ -43,7 +43,9 @@ services:
       dockerfile: Dockerfile
       args:
         - API_URL=${API_URL:-http://backend:8000}
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        # ':-' would treat an explicit empty .env value as unset and
+        # re-inline http://localhost:8000, which CSP then blocks.
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL-http://localhost:8000}
         - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
         - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-}
         - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}

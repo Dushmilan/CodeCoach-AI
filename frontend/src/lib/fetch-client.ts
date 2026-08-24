@@ -4,7 +4,10 @@ import { getAccessToken, setAccessToken, getCsrfToken } from "./auth-session";
 declare const process: { env: { NEXT_PUBLIC_API_URL?: string } };
 
 const DEFAULT_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  // Same-origin by default: browser calls stay under CSP `connect-src
+  // 'self'`, and the Next.js rewrite proxies /api/* to the backend. Deployments
+  // that need a cross-origin API set NEXT_PUBLIC_API_URL explicitly.
+  process.env.NEXT_PUBLIC_API_URL || "";
 
 const MUTATING_METHODS: ReadonlySet<HttpMethod> = new Set<HttpMethod>([
   "POST",

@@ -28,14 +28,22 @@ export function useCodeExecution(): CodeExecutionFeature {
   );
 
   const runCode = useCallback(
-    async (language: string, code: string, version?: string) => {
+    async (
+      language: string,
+      code: string,
+      stdin?: string,
+      version?: string,
+      questionId?: string,
+    ) => {
       setIsRunning(true);
       setError(null);
       try {
         const result = await codeExecutionService.runCode(
           language,
           code,
+          stdin,
           version,
+          questionId,
         );
         setOutput(result.stdout || "");
         setTestResults(null);
@@ -54,7 +62,12 @@ export function useCodeExecution(): CodeExecutionFeature {
   );
 
   const validateCode = useCallback(
-    async (language: string, code: string, testCases: TestCase[]) => {
+    async (
+      language: string,
+      code: string,
+      testCases: TestCase[],
+      questionId?: string,
+    ) => {
       setIsRunning(true);
       setError(null);
       setOutput("");
@@ -63,6 +76,7 @@ export function useCodeExecution(): CodeExecutionFeature {
           language,
           code,
           testCases,
+          questionId,
         );
         setLastResult(result);
 

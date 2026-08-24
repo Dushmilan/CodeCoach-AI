@@ -16,12 +16,15 @@ export class CodeExecutionService {
     code: string,
     stdin?: string,
     version?: string,
+    questionId?: string,
   ): Promise<CodeExecutionResult> {
     return this.http.post<CodeExecutionResult>("/api/run/", {
       language,
       code,
       stdin: stdin || "",
       version,
+      // Question context enables mistake-memory capture of crashed runs.
+      question_id: questionId,
     });
   }
 
@@ -36,7 +39,13 @@ export class CodeExecutionService {
 
     for (const tc of testCases) {
       try {
-        const execResult = await this.runCode(language, code, tc.input);
+        const execResult = await this.runCode(
+          language,
+          code,
+          tc.input,
+          undefined,
+          questionId,
+        );
         const actual = (execResult.stdout || "").trim();
         const expected = tc.expected_output.trim();
         const isPassed = compareJson(actual, expected);

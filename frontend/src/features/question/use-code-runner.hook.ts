@@ -81,7 +81,7 @@ export function useCodeRunner({
         if (fullQuestion.is_interactive && stdin) {
           await validateCode(language, currentCode, [
             { input: stdin, expected_output: "..." },
-          ]);
+          ], fullQuestion.id);
         } else {
           const visibleTestCases = fullQuestion.test_cases
             .filter((tc) => !tc.hidden)

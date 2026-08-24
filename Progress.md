@@ -119,6 +119,19 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
 
 ## Recent Changes
 
+- **Run capture + CSP/API-base fix (Aug 24, same branch):**
+  `POST /api/run/` accepts optional `question_id`; a crashed run inside a
+  question workspace now records an attempt (passed=false, first-stderr-line
+  signature) and opens/refreshes a mistake-memory card - best-effort, no
+  question context means no capture (scratch runs stay out of the graph).
+  Frontend wires question context through the interactive-run branch only
+  (one click = one execution; multi-tc validate loops rely on graded submit).
+  Also fixed a latent stdin/version arg-swap in `useCodeExecution.runCode`
+  and the real bug behind locally-red E2E auth specs: next.config's
+  `|| 'http://localhost:8000'` resurrected a cross-origin API base that CSP
+  `connect-src 'self'` blocks. API base is now empty-by-default (same-origin
+  via the /api rewrite), with env override preserved (`??`). Admin/superadmin
+  seeded into TEST DB via scripts/seed_admin.py - admin-flow E2E is 5/5 green.
 - **Live DB migration `a3b4c5d6e7f8` applied (Aug 24):** Supabase TEST project;
   `alembic current` = head, `review_cards` + its 4 indexes verified on live
   (natural-key unique + `(user_id, state, due_at)` queue index), 0 rows.
@@ -160,6 +173,13 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
 
 ## Known Issues
 
+- E2E suite (Playwright) has pre-existing spec fragility exposed by the API-base
+  fix: several selectors are ambiguous under the app header (e.g.
+  `getByRole('button', { name: 'Sign in', exact: true })` matches both the
+  header link-button and the form submit) and some `/learn` + animate-viewer
+  specs time out at 30s when run after the motion-canvas webServer cold-starts.
+  Chromium project: 27 passed / ~6 flaky-failing locally; needs a dedicated
+  selector-scoping + webServer-warmup pass. Unrelated to F6 features.
 - ~~Skill taxonomy maps 21 of the 109 live questions~~ — **RESOLVED (Aug 23):**
   F3 mapped all 109 (212 `question_skills` rows live, 0 dead ids, 0 unmapped);
   coverage now guarded by `tests/unit/test_skill_taxonomy.py` + snapshot fixture.

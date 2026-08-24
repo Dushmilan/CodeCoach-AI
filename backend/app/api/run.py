@@ -1,10 +1,15 @@
 from dataclasses import asdict
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.models.schemas import CodeExecutionRequest, CodeExecutionResult, Language
+from app.models.auth_schemas import UserResponse
+from app.models.submission_schemas import SubmissionIn
 from app.ports.code_executor import CodeExecutor
 from app.api.auth_deps import get_current_user
-from app.api.dependencies import get_executor
+from app.api.dependencies import get_executor, get_review_service, get_submission_repo
+from app.ports.submission_repository import SubmissionRepository
+from app.services.review_service import ReviewService
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
 import logging
 
@@ -13,12 +18,28 @@ logger = logging.getLogger(__name__)
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
+def _crash_signature(stderr: str) -> str | None:
+    """Derive a mistake-memory signature from a crashed run's stderr.
+
+    The first non-empty line, whitespace-stripped and capped at 255 chars,
+    keeps cardinality manageable while staying human-recognisable.
+    """
+    for line in stderr.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped[:255]
+    return None
+
+
 @router.post("/", response_model=CodeExecutionResult)
 @limiter.limit(RUN_RATE_LIMIT)
 async def execute_code(
     request: Request,
     execution_request: CodeExecutionRequest,
     executor: CodeExecutor = Depends(get_executor),
+    submissions: SubmissionRepository = Depends(get_submission_repo),
+    reviews: ReviewService = Depends(get_review_service),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """
     Execute code using Piston API.
@@ -32,6 +53,39 @@ async def execute_code(
             stdin=execution_request.stdin,
             version=execution_request.version,
         )
+
+        # Mistake-memory capture (Ideas #1): a crashed free-run inside a
+        # question workspace is an attempt. Best-effort, mirroring submit.py.
+        if (
+            execution_request.question_id
+            and result.exit_code != 0
+            and current_user is not None
+        ):
+            try:
+                signature = _crash_signature(result.stderr or "")
+                await submissions.add(
+                    user_id=current_user.id,
+                    submission=SubmissionIn(
+                        question_id=execution_request.question_id,
+                        code=execution_request.code,
+                        language=execution_request.language.value,
+                        passed=False,
+                        error_signature=signature,
+                    ),
+                )
+                await reviews.observe_submission(
+                    user_id=current_user.id,
+                    question_id=execution_request.question_id,
+                    passed=False,
+                    error_signature=signature,
+                    now=datetime.now(timezone.utc),
+                )
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "Failed to record crashed run for question %s",
+                    execution_request.question_id,
+                    exc_info=True,
+                )
 
         return CodeExecutionResult(**asdict(result))
 
