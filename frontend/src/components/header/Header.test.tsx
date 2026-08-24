@@ -86,4 +86,67 @@ describe('Header', () => {
     render(<Header />);
     expect(await screen.findByText('Dark Mode')).toBeInTheDocument();
   });
+
+  describe('admin dashboard link', () => {
+    it('shows admin dashboard link for admin user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '1', username: 'admin', email: 'a@a.com', created_at: '', is_active: true, role: 'admin' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.getByTestId('header-admin-link')).toBeInTheDocument();
+      expect(screen.getByTestId('header-admin-link')).toHaveAttribute('href', '/admin');
+    });
+
+    it('shows admin dashboard link for super_admin user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '1', username: 'super', email: 's@a.com', created_at: '', is_active: true, role: 'super_admin' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.getByTestId('header-admin-link')).toBeInTheDocument();
+    });
+
+    it('does not show admin link for regular user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '2', username: 'bob', email: 'b@a.com', created_at: '', is_active: true, role: 'user' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.queryByTestId('header-admin-link')).not.toBeInTheDocument();
+    });
+
+    it('does not show admin link when not authenticated', () => {
+      mockUseAuth.mockReturnValue({
+        user: null,
+        isAuthenticated: false,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.queryByTestId('header-admin-link')).not.toBeInTheDocument();
+    });
+
+    it('does not show admin link when not hydrated', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '1', username: 'admin', email: 'a@a.com', created_at: '', is_active: true, role: 'admin' },
+        isAuthenticated: true,
+        isHydrated: false,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.queryByTestId('header-admin-link')).not.toBeInTheDocument();
+    });
+  });
 });

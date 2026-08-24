@@ -3,7 +3,7 @@
 import { SettingsModal } from '@/components/settings/SettingsModal';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers';
-import { Code, GraduationCap, Moon, Settings, Sun, User, X } from 'lucide-react';
+import { Code, GraduationCap, LayoutDashboard, Moon, Settings, Sun, User, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import * as React from 'react';
@@ -21,7 +21,8 @@ export function Header() {
   const [showSettings, setShowSettings] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // ... (lines 33-40)
+  const isAdmin =
+    isHydrated && isAuthenticated && !!user?.role && ['admin', 'super_admin'].includes(user.role);
 
   return (
     <>
@@ -56,6 +57,23 @@ export function Header() {
               <GraduationCap className="h-3 w-3" />
               Learn
             </Link>
+            <Link
+              href="/dashboard"
+              className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+            >
+              <LayoutDashboard className="h-3 w-3" />
+              Dashboard
+            </Link>
+            {isAdmin && (
+              <Link
+                href="/admin"
+                data-testid="header-admin-link"
+                className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+              >
+                <LayoutDashboard className="h-3 w-3" />
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-0.5 ml-2">
@@ -151,11 +169,16 @@ export function Header() {
             { href: '/', label: 'Home', delay: 'delay-100' },
             { href: '/problems', label: 'Problems', delay: 'delay-115' },
             { href: '/learn', label: 'Learn', delay: 'delay-125' },
+            { href: '/dashboard', label: 'Dashboard', delay: 'delay-130' },
+            ...(isAdmin
+              ? [{ href: '/admin', label: 'Admin Dashboard', delay: 'delay-135' as const }]
+              : []),
           ].map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
+              data-testid={link.href === '/admin' ? 'header-admin-link-mobile' : undefined}
               className={cn(
                 'text-4xl font-light tracking-tight text-white/80 hover:text-white transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                 menuOpen ? `translate-y-0 opacity-100 ${link.delay}` : 'translate-y-12 opacity-0',

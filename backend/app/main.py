@@ -45,6 +45,7 @@ from app.api import (  # noqa: E402
     rescue,
     mistakes,
     reviews,
+    memory,
 )
 from app.core.config import get_settings, is_production  # noqa: E402
 from app.middleware.rate_limit import (  # noqa: E402
@@ -203,6 +204,7 @@ app.include_router(submissions.router, prefix="/api/submissions", tags=["submiss
 app.include_router(rescue.router, prefix="/api/rescue", tags=["rescue"])
 app.include_router(mistakes.router, prefix="/api/mistakes", tags=["mistakes"])
 app.include_router(reviews.router, prefix="/api/reviews", tags=["reviews"])
+app.include_router(memory.router, prefix="/api/memory", tags=["memory"])
 
 
 @app.get("/")

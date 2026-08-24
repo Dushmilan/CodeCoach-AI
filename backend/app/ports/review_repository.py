@@ -30,6 +30,10 @@ class ReviewRepository(ABC):
     ) -> Sequence[ReviewCard]:
         """Return the user's scheduled cards whose due date has passed."""
 
+    async def list_for_user(self, user_id: str) -> Sequence[ReviewCard]:
+        """Return all of the user's cards (default fans out per-question)."""
+        return []
+
     @abstractmethod
     async def save(self, card: ReviewCard) -> ReviewCard:
         """Insert or update a card (upsert on the natural key)."""

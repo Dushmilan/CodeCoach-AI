@@ -13,6 +13,7 @@ import { CoachingMode } from '@/features/coaching/coaching.types';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
 import { useRescueContract } from '@/features/rescue/use-rescue-contract.hook';
+import { buildRescueCheckpoints } from '@/features/rescue/rescue.checkpoints';
 import { Language, Question } from '@/types';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -62,14 +63,8 @@ export default function ProblemWorkspacePage() {
   } = useCodeRunner({ fullQuestion, language, currentCode });
 
   const { messages, isTyping, sendMessage } = useCoaching();
-
-  const rescue = useRescueContract({
-    questionId,
-    questionTitle: fullQuestion?.title ?? '',
-    testCases: fullQuestion?.test_cases ?? [],
-    lastSubmitResult,
-  });
-  const { registerActivity: rescueActivity } = rescue;
+  const { ref: workspaceRef, mode } = useWorkspaceMode();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (
@@ -88,6 +83,62 @@ export default function ProblemWorkspacePage() {
     fullQuestion?.starter && typeof fullQuestion.starter === 'object'
       ? fullQuestion.starter[language as keyof typeof fullQuestion.starter] || ''
       : '';
+
+  const handleEscalateToT2 = useCallback(() => {
+    if (!fullQuestion) return;
+    const checkpoints = buildRescueCheckpoints(
+      fullQuestion.test_cases ?? [],
+      lastSubmitResult,
+    );
+    const current = checkpoints.find((c) => c.state === 'current');
+    const hintMsg = current
+      ? `I'm stuck on "${current.label}"${current.detail ? ` — ${current.detail}` : ''}. Can you give me a targeted hint?`
+      : "I'm stuck on the failing test — can you give me a targeted hint?";
+    void sendMessage(
+      hintMsg,
+      'explain' as CoachingMode,
+      fullQuestion.title,
+      currentCode,
+      language,
+      undefined,
+      fullQuestion.difficulty,
+      starterCode,
+    );
+    if (mode !== 'wide') setDrawerOpen(true);
+  }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode]);
+
+  const handleEscalateToT3 = useCallback(() => {
+    if (!fullQuestion) return;
+    const checkpoints = buildRescueCheckpoints(
+      fullQuestion.test_cases ?? [],
+      lastSubmitResult,
+    );
+    const current = checkpoints.find((c) => c.state === 'current');
+    const replanMsg = current
+      ? `I've been stuck on "${current.label}" for a while. Can you re-plan my path with a smaller next step?`
+      : "I've been stuck for a while. Can you re-plan my path with a smaller next step?";
+    void sendMessage(
+      replanMsg,
+      'review' as CoachingMode,
+      fullQuestion.title,
+      currentCode,
+      language,
+      undefined,
+      fullQuestion.difficulty,
+      starterCode,
+    );
+    if (mode !== 'wide') setDrawerOpen(true);
+  }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode]);
+
+  const rescue = useRescueContract({
+    questionId,
+    questionTitle: fullQuestion?.title ?? '',
+    testCases: fullQuestion?.test_cases ?? [],
+    lastSubmitResult,
+    onEscalateToT2: handleEscalateToT2,
+    onEscalateToT3: handleEscalateToT3,
+  });
+  const { registerActivity: rescueActivity } = rescue;
 
   const handleSendMessage = useCallback(
     async (message: string, mode: CoachingMode) => {
@@ -135,9 +186,6 @@ export default function ProblemWorkspacePage() {
     },
     [rescueActivity],
   );
-
-  const { ref: workspaceRef, mode } = useWorkspaceMode();
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (mode === 'wide' && drawerOpen) setDrawerOpen(false);
