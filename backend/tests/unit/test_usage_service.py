@@ -51,7 +51,7 @@ class TestUsageServiceRecord:
         await service.record(
             user_id="user-1",
             provider="groq",
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             endpoint="coach",
             input_tokens=10,
             output_tokens=20,
@@ -59,7 +59,7 @@ class TestUsageServiceRecord:
         await service.record(
             user_id="user-1",
             provider="groq",
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             endpoint="coach",
             input_tokens=5,
             output_tokens=7,

@@ -122,7 +122,7 @@ class TestSqlUsageRepository:
         await repo.add_event(
             user_id=user_id,
             provider="groq",
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             endpoint="coach",
             input_tokens=12,
             output_tokens=34,
@@ -131,7 +131,7 @@ class TestSqlUsageRepository:
         assert len(events) == 1
         event = events[0]
         assert event.provider == "groq"
-        assert event.model == "llama-3.3-70b-versatile"
+        assert event.model == "openai/gpt-oss-120b"
         assert event.endpoint == "coach"
         assert event.input_tokens == 12
         assert event.output_tokens == 34

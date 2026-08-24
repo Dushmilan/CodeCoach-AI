@@ -117,7 +117,7 @@ State is kept in sync with code (see [Progress.md](./Progress.md) and [Ideas.md]
 | **Styling** | Tailwind CSS 3, `tailwind-merge`, `clsx`, shadcn/ui |
 | **Animation** | Motion Canvas (Vite viewer on `:9000`) + `AnimationPlayer` |
 | **Code Execution** | Piston (self-hosted Docker, `PistonService` adapter) |
-| **AI Coach** | Groq (`llama-3.3-70b-versatile` / `llama-3.1-8b-instant`, animate override) via `api.groq.com/openai/v1` |
+| **AI Coach** | Groq (`openai/gpt-oss-120b` / `openai/gpt-oss-20b`, animate override) via `api.groq.com/openai/v1` |
 | **Database** | Supabase PostgreSQL (async SQLAlchemy) — **the only database** |
 | **Cache / Limits** | Redis 7-alpine |
 | **Auth** | JWT (python-jose), bcrypt, Supabase OAuth (Google) |
@@ -273,9 +273,11 @@ DATABASE_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:6543/postg
 # DIRECT_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:5432/postgres
 
 # Optional Groq model overrides (defaults)
-# GROQ_MODEL_EASY=llama-3.1-8b-instant
-# GROQ_MODEL_STREAM=llama-3.1-8b-instant
-# GROQ_MODEL_ANIMATE=llama-3.3-70b-versatile
+# GROQ_MODEL_EASY=openai/gpt-oss-20b
+# GROQ_MODEL_MEDIUM=openai/gpt-oss-120b
+# GROQ_MODEL_HARD=openai/gpt-oss-120b
+# GROQ_MODEL_STREAM=openai/gpt-oss-20b
+# GROQ_MODEL_ANIMATE=openai/gpt-oss-120b
 DAILY_TOKEN_INPUT_CAP=250000
 DAILY_TOKEN_OUTPUT_CAP=125000
 USER_RATE_LIMIT_PER_MINUTE=60
