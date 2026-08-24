@@ -106,7 +106,9 @@ class MemoryGraphService:
         total_cards = len(all_cards)
         oldest_due = None
         if total_due:
-            due_cards = [c for c in all_cards if c.state == "scheduled" and c.due_at <= now]
+            due_cards = [
+                c for c in all_cards if c.state == "scheduled" and c.due_at <= now
+            ]
             if due_cards:
                 oldest = min(c.due_at for c in due_cards)
                 oldest_due = max(0, (now - oldest).days)

@@ -80,10 +80,18 @@ class FakeReviewRepo:
         return None
 
     async def list_for_question(self, user_id, question_id):
-        return [r for r in self.rows if r.user_id == user_id and r.question_id == question_id]
+        return [
+            r
+            for r in self.rows
+            if r.user_id == user_id and r.question_id == question_id
+        ]
 
     async def list_due(self, *, user_id, now, limit=20):
-        due = [r for r in self.rows if r.user_id == user_id and r.state == "scheduled" and r.due_at <= now]
+        due = [
+            r
+            for r in self.rows
+            if r.user_id == user_id and r.state == "scheduled" and r.due_at <= now
+        ]
         due.sort(key=lambda r: r.due_at)
         return due[:limit]
 
@@ -133,7 +141,13 @@ class FakeSubmissionRepo:
         return [s for s in self.subs if s.user_id == user_id][:limit]
 
     async def count_attempts(self, user_id, question_id):
-        return len([s for s in self.subs if s.user_id == user_id and s.question_id == question_id])
+        return len(
+            [
+                s
+                for s in self.subs
+                if s.user_id == user_id and s.question_id == question_id
+            ]
+        )
 
 
 def _sub(qid, created_at):
@@ -171,8 +185,22 @@ class TestMemoryGraph:
         from app.services.memory_graph_service import MemoryGraphService
 
         cards = [
-            _card(card_id="c1", question_id="q1", state="scheduled", due_at=NOW - timedelta(hours=1), interval_days=6, lapses=0),
-            _card(card_id="c2", question_id="q1", state="scheduled", due_at=NOW + timedelta(days=5), interval_days=6, lapses=0),
+            _card(
+                card_id="c1",
+                question_id="q1",
+                state="scheduled",
+                due_at=NOW - timedelta(hours=1),
+                interval_days=6,
+                lapses=0,
+            ),
+            _card(
+                card_id="c2",
+                question_id="q1",
+                state="scheduled",
+                due_at=NOW + timedelta(days=5),
+                interval_days=6,
+                lapses=0,
+            ),
         ]
         svc = MemoryGraphService(
             review_repo=FakeReviewRepo(cards),
@@ -192,8 +220,20 @@ class TestMemoryGraph:
         from app.services.memory_graph_service import MemoryGraphService
 
         cards = [
-            _card(card_id="c-arrays", question_id="q1", interval_days=1, lapses=0, due_at=NOW - timedelta(days=1)),
-            _card(card_id="c-dp", question_id="q2", interval_days=6, lapses=2, due_at=NOW - timedelta(days=1)),
+            _card(
+                card_id="c-arrays",
+                question_id="q1",
+                interval_days=1,
+                lapses=0,
+                due_at=NOW - timedelta(days=1),
+            ),
+            _card(
+                card_id="c-dp",
+                question_id="q2",
+                interval_days=6,
+                lapses=2,
+                due_at=NOW - timedelta(days=1),
+            ),
         ]
         svc = MemoryGraphService(
             review_repo=FakeReviewRepo(cards),

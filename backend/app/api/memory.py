@@ -23,7 +23,9 @@ async def get_memory_graph(
 ) -> MemoryGraphResponse:
     """Return the user's forgetting-curve memory graph."""
     try:
-        return await service.graph(user_id=current_user.id, now=datetime.now(timezone.utc))
+        return await service.graph(
+            user_id=current_user.id, now=datetime.now(timezone.utc)
+        )
     except Exception:
         logger.exception("Failed to build memory graph for user %s", current_user.id)
         raise HTTPException(status_code=500, detail="Failed to build memory graph")

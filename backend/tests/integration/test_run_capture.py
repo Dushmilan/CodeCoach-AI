@@ -69,7 +69,8 @@ def crashing_executor():
     class MockExec:
         async def execute(self, language, code, stdin="", version=None):
             return ExecutionResult(
-                stdout="", stderr="ZeroDivisionError: division by zero",
+                stdout="",
+                stderr="ZeroDivisionError: division by zero",
                 exit_code=1,
             )
 
@@ -134,16 +135,12 @@ async def test_crashed_run_with_question_persists_attempt_and_card(
     assert sub[0] is False
     assert sub[1] == "ZeroDivisionError: division by zero"
 
-    card = (
-        await test_db.execute(text("SELECT state FROM review_cards"))
-    ).fetchone()
+    card = (await test_db.execute(text("SELECT state FROM review_cards"))).fetchone()
     assert card is not None and card[0] == "active"
 
 
 @pytest.mark.asyncio
-async def test_successful_run_captures_nothing(
-    async_client, test_db, healthy_executor
-):
+async def test_successful_run_captures_nothing(async_client, test_db, healthy_executor):
     await _seed_user_and_question(test_db)
     _override_executor(healthy_executor)
     try:
