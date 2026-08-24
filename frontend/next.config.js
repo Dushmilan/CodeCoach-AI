@@ -45,6 +45,9 @@ const nextConfig = {
           // CSP: keep Next.js + Monaco working ('unsafe-inline'/'unsafe-eval'
           // are required by hydration scripts and the editor) while blocking
           // the obvious XSS sinks (object-src, frame-ancestors, base-uri).
+          // frame-src allows the Motion Canvas animation viewer (separate Vite
+          // dev server on :9000 in E2E, or NEXT_PUBLIC_ANIMATION_VIEWER_URL in
+          // prod) to load in an in-app iframe (see AnimateLauncher).
           {
             key: 'Content-Security-Policy',
             value: [
@@ -55,6 +58,7 @@ const nextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https: wss: ws:",
               "worker-src 'self' blob:",
+              `frame-src 'self' ${process.env.NEXT_PUBLIC_ANIMATION_VIEWER_URL || 'http://localhost:9000'}`,
               "object-src 'none'",
               "base-uri 'self'",
               "frame-ancestors 'none'",

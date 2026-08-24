@@ -8,8 +8,7 @@ test.describe('Curriculum Flow', () => {
 
   test('learn page loads with heading', async ({ page }) => {
     await page.goto('/learn');
-    await page.waitForLoadState('networkidle');
-    await expect(page.getByText('Learning Paths')).toBeVisible();
+    await expect(page.getByText('Learning Paths')).toBeVisible({ timeout: 15000 });
   });
 
   test('header has learn link on all pages', async ({ page }) => {
@@ -21,7 +20,6 @@ test.describe('Curriculum Flow', () => {
 
   test('course detail page shows not found for non-existent course', async ({ page }) => {
     await page.goto('/learn/nonexistent-course');
-    await page.waitForLoadState('networkidle');
-    await expect(page.getByText('not found')).toBeVisible();
+    await expect(page.getByText('not found')).toBeVisible({ timeout: 15000 });
   });
 });

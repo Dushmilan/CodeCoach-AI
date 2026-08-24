@@ -13,7 +13,7 @@ test.describe('Auth Login-Logout Flow', () => {
     await page.waitForLoadState('domcontentloaded');
     await expect(page.getByLabel(/username/i)).toBeVisible();
     await expect(page.getByLabel(/password/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /sign in|signin/i })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: /sign in/i })).toBeVisible();
   });
 
   test('register with invalid data shows error', async ({ page }) => {
@@ -36,7 +36,6 @@ test.describe('Auth Login-Logout Flow', () => {
 
   test('protected route redirects to login', async ({ page }) => {
     await page.goto('/learn');
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.getByText('Learning Paths')).toBeVisible({ timeout: 15000 });
   });
 });

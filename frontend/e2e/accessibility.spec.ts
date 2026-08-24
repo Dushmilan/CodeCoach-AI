@@ -10,7 +10,7 @@ test.describe("Accessibility", () => {
 
   test("learn page has accessible navigation", async ({ page }) => {
     await page.goto("/learn");
-    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("Learning Paths")).toBeVisible({ timeout: 15000 });
     const navLinks = page.locator("header").getByRole("link");
     const count = await navLinks.count();
     expect(count).toBeGreaterThan(0);

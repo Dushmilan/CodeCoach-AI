@@ -12,7 +12,7 @@ test.describe('Auth Flow', () => {
     await page.goto('/login');
     await expect(page.getByLabel(/username/i)).toBeVisible();
     await expect(page.getByLabel(/password/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
   });
 
   test('register page has all fields', async ({ page }) => {
@@ -35,7 +35,6 @@ test.describe('Auth Flow', () => {
 
   test('learn page shows curriculum when logged out', async ({ page }) => {
     await page.goto('/learn');
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.getByText('Learning Paths')).toBeVisible({ timeout: 15000 });
   });
 });

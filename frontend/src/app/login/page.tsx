@@ -141,7 +141,7 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading} data-testid="login-submit">
                   {isLoading ? 'Signing in...' : 'Sign in'}
                 </Button>
               </form>

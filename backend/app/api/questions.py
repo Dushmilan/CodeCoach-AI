@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("", response_model=QuestionsListResponse)
 @router.get("/", response_model=QuestionsListResponse)
 @limiter.limit(QUESTIONS_RATE_LIMIT)
 async def get_questions(

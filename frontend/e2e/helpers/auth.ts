@@ -5,9 +5,8 @@ export async function loginAs(page: Page, username: string, password: string) {
   await page.waitForLoadState('domcontentloaded');
   await page.getByLabel(/username/i).fill(username);
   await page.getByLabel(/password/i).fill(password);
-  await page.getByRole('button', { name: /sign in|signin/i }).click();
-  await page.waitForLoadState('networkidle');
-  await expect(page).toHaveURL('/');
+  await page.getByRole('main').getByRole('button', { name: /sign in/i }).click();
+  await expect(page).toHaveURL('/', { timeout: 15000 });
 }
 
 export async function dismissOnboarding(page: Page) {

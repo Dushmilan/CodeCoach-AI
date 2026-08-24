@@ -66,8 +66,8 @@ export function Header() {
                   {user?.username}
                 </span>
               ) : (
-                <Link href="/login">
-                  <button className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+                <Link href="/login" data-testid="header-signin-link">
+                  <button data-testid="header-signin" className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
                     Sign in
                   </button>
                 </Link>

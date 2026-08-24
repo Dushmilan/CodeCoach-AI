@@ -12,6 +12,7 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
+  expect: { timeout: 10000 },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
@@ -21,9 +22,9 @@ export default defineConfig({
   webServer: [
     {
       command: 'pnpm dev',
-      port: 3000,
+      url: 'http://localhost:3000',
       reuseExistingServer: true,
-      timeout: 120000,
+      timeout: 180000,
       // Same-origin API base: keeps browser calls under CSP connect-src
       // 'self' (the /api rewrite proxies to the backend). Without this a
       // developer .env pointing at http://localhost:8000 gets blocked.
@@ -33,7 +34,7 @@ export default defineConfig({
       command: 'pnpm --dir ../motion-canvas-lab dev --port 9000 --strictPort',
       url: 'http://localhost:9000/viewer.html',
       reuseExistingServer: true,
-      timeout: 120000,
+      timeout: 180000,
     },
   ],
 });

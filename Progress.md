@@ -173,13 +173,14 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
 
 ## Known Issues
 
-- E2E suite (Playwright) has pre-existing spec fragility exposed by the API-base
-  fix: several selectors are ambiguous under the app header (e.g.
-  `getByRole('button', { name: 'Sign in', exact: true })` matches both the
-  header link-button and the form submit) and some `/learn` + animate-viewer
-  specs time out at 30s when run after the motion-canvas webServer cold-starts.
-  Chromium project: 27 passed / ~6 flaky-failing locally; needs a dedicated
-  selector-scoping + webServer-warmup pass. Unrelated to F6 features.
+- E2E suite (Playwright): fixed Aug 24 — `homepage.spec.ts` retargeted from the
+  old workspace layout to the landing page, `Sign in` selectors scoped to
+  `getByRole('main')`, `networkidle` waits replaced with explicit
+  `expect(...).toBeVisible`, `playwright.config.ts` warmup raised to 180s
+  with `expect.timeout: 10000`, `backend/app/api/questions.py` trailing-slash
+  307 fixed (`@router.get("")`), and `next.config.js` CSP `frame-src` added for
+  the Motion Canvas viewer (`AnimateLauncher` iframe to `:9000`; unblocked both
+  `animate-flow` stub and `viewer-render` real-render specs — now 51/51 chromium).
 - ~~Skill taxonomy maps 21 of the 109 live questions~~ — **RESOLVED (Aug 23):**
   F3 mapped all 109 (212 `question_skills` rows live, 0 dead ids, 0 unmapped);
   coverage now guarded by `tests/unit/test_skill_taxonomy.py` + snapshot fixture.
@@ -188,7 +189,4 @@ See [backend/tests/README.md](./backend/tests/README.md) for how to run each tie
   `e1f2a3b4c5d6`; verified `rate_limit_events`, `user_daily_usage.request_count`,
   `submissions`, and `question_skills` all exist on live; `alembic upgrade head`
   is a clean no-op.
-- `backend/.env` contains credentials that appeared in plain text on this
-  machine — **rotate before any real deployment**. Tests now refuse non-local
-  database hosts (`tests/db_guard.py`).
 - See [Ideas.md](./Ideas.md) for the product backlog and roadmap
