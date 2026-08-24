@@ -81,6 +81,7 @@ State is kept in sync with code (see [Progress.md](./Progress.md) and [Ideas.md]
 | **Error Graph** | `GET /api/mistakes/graph` — per-user mistake graph derived from attempt history (signatures, occurrences, affected questions, first/last seen, resolution) |
 | **Spaced Repetition** | SM-2 rotation over own bugs (`review_cards`, `/api/reviews/due`, `POST /api/reviews/{id}/grade`); `run` and `submit` observe failures/passes best-effort |
 | **Memory Graph** | Forgetting-curve dashboard — `GET /api/memory/graph` aggregates `review_cards` + `submissions` by `category` into per-topic `TopicMemory` (dueCount, avgInterval, daysSinceLastTouch, energyCostMinutes); `MemoryGraph.tsx` + student `/dashboard` |
+| **Learning Analytics** | Plateau signals — `GET /api/analytics/signals` derives `AnalyticsSignal` (type `plateau`, skill, `evidence{failures,passes,window_days}`) from bounded recent `submissions` (1000, 7-day window); `LearningSignals.tsx` banner on `/dashboard` |
 | **Auth** | JWT email/password (bcrypt, refresh tokens) + Supabase OAuth (Google) — `Continue with Google` |
 | **Usage Metering** | Per-user daily input/output token caps, `X-Usage-*` headers, Redis-backed limits |
 | **Plans & Gates** | Per-user plan field and quota-gated coaching (free 20 req/day, paid 500), usage bar, `UpgradeModal` |
@@ -135,11 +136,11 @@ backend/app/
   adapters/       Concrete adapters (code_wrappers, coaching_prompts, response parser, formatter)
   use_cases/      Single-responsibility validation logic (question validation)
   services/       Business logic wrapping ports (Groq, Piston, skill_graph, sm2, memory_graph,
-                   error_graph, rescue, review, animations, usage, submissions)
+                   error_graph, learning_analytics, rescue, review, animations, usage, submissions)
   repositories/   SQLAlchemy impls (sql_*) — Supabase/PostgreSQL only
   api/            Thin FastAPI route handlers (auth, coach, run, submit, questions, courses,
-                   progress, skills, submissions, rescue, reviews, memory, mistakes, admin, health)
-  models/         Pydantic schemas (request/response + domain enums)
+                   progress, skills, submissions, rescue, reviews, memory, mistakes, analytics, admin, health)
+  models/         Pydantic schemas (request/response + domain enums — TopicMemory, AnalyticsSignal, …)
   core/           Database engine/session (async_session_maker), settings, security (JWT/bcrypt)
   middleware/     Rate limiting (slowapi), security headers (CSP, HSTS, X-Frame-Options)
   dependencies/   FastAPI Depends() injection wiring (app/api/dependencies.py)
@@ -151,7 +152,7 @@ backend/app/
 frontend/src/
   app/            Next.js App Router — /, /problems/[id], /learn, /dashboard, /admin, /login, /privacy …
   features/       {auth, coaching, code-execution, question, curriculum, skill-graph,
-                   rescue, review, memory, animation, usage} → {hook, service, types, *.test.*}
+                   rescue, review, memory, analytics, animation, usage} → {hook, service, types, *.test.*}
   components/     Reusable UI (editor, chat, sidebar, header, layout, rescue, visualization, admin, ui/*)
   lib/            HTTP client port/adapter (FetchClient / HttpClient), shuffle, fetch-client
   hooks/          Shared hooks (useLocalStorage, useDebounce, useWorkspaceMode)
@@ -163,7 +164,7 @@ frontend/src/
 
 - **Supabase/PostgreSQL is the single source of truth** — questions, courses/modules/lessons, users, progress, submissions, review_cards, rescue_queue, usage, and skill-graph state all live in PostgreSQL; the app never reads content from the filesystem at runtime. See [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md).
 - **Platform-owned Groq key** — server-side key; per-user input/output tokens metered with daily caps on coach endpoints.
-- **Deterministic skill graph** — mastery derived via pure, unit-tested rules (`skill_graph_rules.py`, `sm2_rules.py`, `error_graph_rules.py`); recommendations respect taxonomy prerequisites.
+- **Deterministic skill graph & learning analytics** — mastery + plateau signals derived via pure, unit-tested rules (`skill_graph_rules.py`, `sm2_rules.py`, `error_graph_rules.py`, `learning_analytics_rules.py`); recommendations respect taxonomy prerequisites; analytics is bounded (1000 recent submissions, 7-day window) and fail-safe (500 → empty list).
 - **Code wrapping** — every Piston language has a `_wrap_<language>_code` adapter converting bare function definitions into a stdin→call→stdout harness.
 - **Dependency injection** — FastAPI `Depends()` + constructor injection for use-cases; fully mockable for tests.
 - **CSP hardening** — `default-src 'self'` with `frame-src 'self' ${NEXT_PUBLIC_ANIMATION_VIEWER_URL||http://localhost:9000}` for the viewer iframe, `worker-src blob:`, `connect-src 'self' https: wss:` (see `frontend/next.config.js` + `backend/app/middleware/security_headers.py`).
@@ -317,6 +318,7 @@ Interactive docs at `/docs` (Swagger) and `/redoc`. Selected routes:
 | **Mistakes** | `GET /api/mistakes/graph` | Bearer | Error graph from attempt history |
 | **Reviews** | `GET /api/reviews/due`, `POST /api/reviews/{id}/grade` | Bearer | SM-2 queue |
 | **Memory** | `GET /api/memory/graph` | Bearer | Forgetting-curve topics (Idea #3) |
+| **Analytics** | `GET /api/analytics/signals` | Bearer | Plateau signals (recursion plateau etc., 7d window) |
 | **Rescue** | `GET /api/rescue/due`, `POST /api/rescue/{id}/abandon|complete|dismiss` | Bearer | Re-surface queue |
 | **Courses** | `GET /api/courses`, `GET /api/courses/{id}`, lessons, progress | Bearer | Curriculum + `/api/progress` |
 | **Admin** | `GET /api/admin/*` (stats, users, questions, courses, usage, validation) | Admin | Role-gated `admin`/`super_admin` |
@@ -453,7 +455,7 @@ CodeCoach-AI/
 Phase 1 ─── DSA Practice (current focus)
 ├── 109 / 100 questions ─── 33 Easy / 50 Medium / 26 Hard (109/109 skill-mapped, F3)
 ├── Practice Next / skill-graph recommendations (shipped)
-├── Mistake-memory (submissions + error graph + SM-2 + Memory Graph /dashboard) (F6 + Idea #3)
+├── Mistake-memory (submissions + error graph + SM-2 + Memory Graph /dashboard + Learning Analytics signals) (F6 + Idea #3 + Idea #1 residual Aug 24)
 ├── Rescue contract — durable queue + T1→T2→T3 escalation (Idea #4, Aug 24)
 └── Polish (onboarding, empty states, memory-first home slice)
 
@@ -471,7 +473,7 @@ Phase 3 ─── Future Modules
 └── Classroom dashboard (Idea #2)
 ```
 
-Detailed per-idea status (9 ideas + honourable mentions) lives in [Ideas.md](./Ideas.md) — Ideas #3 and #4 landed Aug 24.
+Detailed per-idea status (9 ideas + honourable mentions) lives in [Ideas.md](./Ideas.md) — Ideas #1 (residual plateau signals), #3 and #4 landed Aug 24.
 
 ## Known Gaps
 
