@@ -20,6 +20,7 @@ from app.models.question_validation_schemas import (
 )
 
 from app.use_cases.question_validation import (
+    AnimationValidationUseCase,
     BaseValidationUseCase,
     StructureValidationUseCase,
     TestCaseValidationUseCase,
@@ -65,6 +66,9 @@ class QuestionValidatorService:
             ),
             ValidationUseCase.OUTPUT_FORMAT: OutputFormatValidationUseCase(
                 config=self.config.output_format
+            ),
+            ValidationUseCase.ANIMATION: AnimationValidationUseCase(
+                executor=self.executor
             ),
         }
 
@@ -131,6 +135,7 @@ class QuestionValidatorService:
             ValidationUseCase.TEST_CASES,
             ValidationUseCase.STARTER_CODE,
             ValidationUseCase.SOLUTION,
+            ValidationUseCase.ANIMATION,
         ]
 
     async def quick_validate(self, question: Question) -> QuestionValidationResult:

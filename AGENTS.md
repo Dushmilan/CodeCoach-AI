@@ -50,6 +50,26 @@ first. The only way code enters this repo is red → green → refactor.
   the TDD loop applies to **all** source changes (backend, frontend, scripts,
   configs that affect behavior).
 
+## MANDATORY: Animation Loop — Every Question Must Be Visualizable
+
+**Hard rule — Do NOT skip.** Every question added to the bank must go through
+the **algorithm-to-animation loop** and cannot be shipped without a proven
+visualization. No question lands in Supabase without passing the loop.
+
+```
+Problem → Solution Repository / Groq (optimal solution, algorithm, complexity, explanation)
+        → Animation Specification (AlgorithmAnimation IR: algorithm, visualization, initialState, steps, complexity)
+        → Scene Planner (semantic → cinematic beats: highlight, discard, camera focus)
+        → Visual Design System (Array/Pointer/Graph/Stack + motion + typography + camera)
+        → Renderer (Motion Canvas → Interactive + Video)
+        → AnimationValidator (validated AnimationScript)
+```
+
+- **Gate:** `ValidationUseCase.ANIMATION` (`backend/app/use_cases/question_validation/animation.py`) runs `SolutionAnimationService.build_animation(question) → trace → planner → validator` for the question's `examples[0].input`. It is **not skippable** — `skip_use_cases` must not contain `ANIMATION` except for local offline tests without Piston. CI fails the question if `ANIMATION` errors.
+- **Required:** `examples[0].input` must be present and traceable; the algorithm must resolve via `reference_solutions.py` (`resolve_algorithm`); the family must be compilable (`array/backtrack/stack/linked_list/tree/graph/grid/intervals`) via `scene_planner.py` + `AnimationValidator`.
+- **Student code is separate:** animation never reads `student code` — it always visualizes the **optimal solution**. `ANIMATION` validates the optimal path, not the submission.
+- **Where enforced:** `QuestionValidatorService.get_use_case_order()` includes `ANIMATION` last; `POST /api/questions` (admin) and `scripts/sync_local_to_db.py` must call `full_validate` and reject on `ANIMATION` error. Add new questions only with a green `ANIMATION` beat count (`animation.steps >=3`).
+
 ## MANDATORY: Supabase Is the Only Database
 
 **Hard rule — Do NOT skip.** Supabase (managed PostgreSQL) is the ONLY database

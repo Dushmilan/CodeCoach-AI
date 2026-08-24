@@ -102,7 +102,7 @@ class TestQuestionValidatorService:
 
         order = service.get_use_case_order()
         assert order[0] == ValidationUseCase.STRUCTURE
-        assert order[-1] == ValidationUseCase.SOLUTION
+        assert order[-1] == ValidationUseCase.ANIMATION
 
     @pytest.mark.asyncio
     async def test_get_validation_summary(self, valid_question, mock_executor):
