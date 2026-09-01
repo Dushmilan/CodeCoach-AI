@@ -12,6 +12,7 @@ export interface CoachingRequest {
   lesson_context?: string;
   chat_history?: { role: string; content: string }[];
   initial_code?: string;
+  question_id?: string;
 }
 
 export interface CoachingResponse {
@@ -32,6 +33,7 @@ export class CoachingService {
     lessonContext?: string,
     chatHistory?: { role: string; content: string }[],
     initialCode?: string,
+    questionId?: string,
   ): Promise<CoachingResponse> {
     const body: CoachingRequest = {
       problem,
@@ -49,6 +51,9 @@ export class CoachingService {
     }
     if (initialCode !== undefined) {
       body.initial_code = initialCode;
+    }
+    if (questionId) {
+      body.question_id = questionId;
     }
     const data = await this.http.post<{
       response: string;

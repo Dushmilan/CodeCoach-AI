@@ -24,7 +24,12 @@ from app.services.usage_service import UsageService, check_caps, usage_headers
 from app.services.solution_animation_service import SolutionAnimationService
 from app.api.auth_deps import get_current_user
 from app.api.daily_limits import enforce_daily_request_cap
-from app.api.dependencies import get_redis_cache, get_usage_service, get_executor
+from app.api.dependencies import (
+    get_redis_cache,
+    get_usage_service,
+    get_executor,
+    get_workspace_service,
+)
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
 
@@ -97,6 +102,7 @@ async def get_coaching(
     _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
     _daily_guard: None = Depends(enforce_daily_request_cap),
+    workspace_svc=Depends(get_workspace_service),
 ):
     """
     Get AI coaching response for coding problems.
@@ -145,6 +151,25 @@ async def get_coaching(
 
         response.headers.update(getattr(request.state, "usage_headers", {}))
         response.headers.update(getattr(request.state, "daily_limit_headers", {}))
+
+        # Best-effort chat persistence to Redis (per-question history, 7d TTL).
+        try:
+            qid = getattr(coaching_request, "question_id", None)
+            if qid and workspace_svc:
+                await workspace_svc.append_chat(
+                    user.id,
+                    qid,
+                    [
+                        {"role": "user", "content": coaching_request.message or ""},
+                        {
+                            "role": "assistant",
+                            "content": raw_response,
+                            "structured": structured_data,
+                        },
+                    ],
+                )
+        except Exception:  # noqa: BLE001
+            logger.debug("workspace chat append failed", exc_info=True)
 
         return CoachingResponse(
             response=raw_response,

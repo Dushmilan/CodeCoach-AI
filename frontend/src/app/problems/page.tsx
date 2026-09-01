@@ -23,7 +23,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { workspaceService } from '@/features/workspace/workspace.service';
+import { AuthContext } from '@/providers/AuthProvider';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 const difficultyStyles: Record<string, string> = {
@@ -45,6 +47,9 @@ export default function ProblemsPage() {
   const router = useRouter();
   const { allQuestions, loadQuestions, isLoading, error } = useQuestion();
   const [progress] = useLocalStorage<Record<string, 'attempted' | 'solved'>>('user_progress', {});
+  const auth = useContext(AuthContext);
+  const isAuthenticated = auth?.isAuthenticated ?? false;
+  const [lastVisited, setLastVisited] = useState<{ question_id: string; language: string | null } | null>(null);
 
   const [search, setSearch] = useState('');
   const [difficulty, setDifficulty] = useState<string>('all');
@@ -56,6 +61,13 @@ export default function ProblemsPage() {
   useEffect(() => {
     loadQuestions();
   }, [loadQuestions]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    workspaceService.getLastVisited().then((data) => {
+      if (data?.question_id) setLastVisited(data);
+    }).catch(() => {});
+  }, [isAuthenticated]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -183,6 +195,12 @@ export default function ProblemsPage() {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <Header />
       <main className="max-w-5xl mx-auto px-6 pt-20 pb-32">
+        {lastVisited && (
+          <div className="mb-4 flex items-center justify-between px-4 py-3 rounded-2xl bg-primary/10 ring-1 ring-primary/20">
+            <span className="text-xs text-primary/90">Continue where you left off: <span className="font-medium">{resolveQuestionTitle(lastVisited.question_id) || lastVisited.question_id}</span></span>
+            <button onClick={() => router.push(`/problems/${lastVisited.question_id}`)} className="text-xs px-3 py-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">Resume</button>
+          </div>
+        )}
         <RecommendedQuestions />
         <RescueDueQueue resolveTitle={resolveQuestionTitle} />
         <ReviewsDueQueue resolveTitle={resolveQuestionTitle} />

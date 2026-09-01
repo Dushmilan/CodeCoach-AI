@@ -16,6 +16,7 @@ export interface CoachingRequest {
   mode: CoachingMode;
   difficulty?: string;
   initial_code?: string;
+  question_id?: string;
 }
 
 export interface CoachingResponse {
@@ -40,10 +41,12 @@ export interface CoachingActions {
     lessonContext?: string,
     difficulty?: string,
     initialCode?: string,
+    questionId?: string,
   ) => Promise<void>;
   clearMessages: () => void;
   clearError: () => void;
   clearLimitReached: () => void;
+  hydrateMessages?: (msgs: ChatMessage[]) => void;
 }
 
 export type CoachingFeature = CoachingState & CoachingActions;

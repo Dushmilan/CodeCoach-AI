@@ -71,6 +71,11 @@ class CoachingRequest(BaseModel):
         max_length=50000,
         description="Starter code the user began with, used to detect edits for animation",
     )
+    question_id: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Question id for workspace chat persistence (optional, no breaking change)",
+    )
 
 
 class SceneShape(BaseModel):
