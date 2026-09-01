@@ -37,8 +37,13 @@ export default function LoginPage() {
 
       setIsLoading(true);
       try {
-        await login(username, password);
-        router.push('/');
+        const response = await login(username, password);
+        const role = response.user?.role;
+        if (role && ['admin', 'super_admin'].includes(role)) {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Login failed');
       } finally {

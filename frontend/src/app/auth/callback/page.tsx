@@ -30,8 +30,13 @@ export default function AuthCallbackPage() {
         if (sessionError) throw sessionError;
         if (!session?.access_token) throw new Error("No session returned");
 
-        await loginWithSupabase(session.access_token);
-        router.push("/");
+        const response = await loginWithSupabase(session.access_token);
+        const role = response.user?.role;
+        if (role && ["admin", "super_admin"].includes(role)) {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Authentication failed");
         setTimeout(() => router.push("/login"), 3000);
