@@ -47,6 +47,7 @@ from app.api import (  # noqa: E402
     reviews,
     memory,
     analytics,
+    workspace,
 )
 from app.core.config import get_settings, is_production  # noqa: E402
 from app.middleware.rate_limit import (  # noqa: E402
@@ -207,6 +208,7 @@ app.include_router(mistakes.router, prefix="/api/mistakes", tags=["mistakes"])
 app.include_router(reviews.router, prefix="/api/reviews", tags=["reviews"])
 app.include_router(memory.router, prefix="/api/memory", tags=["memory"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(workspace.router, prefix="/api/workspace", tags=["workspace"])
 
 
 @app.get("/")

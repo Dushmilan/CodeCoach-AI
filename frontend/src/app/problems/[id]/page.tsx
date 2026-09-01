@@ -9,6 +9,7 @@ import { RescueIntervention } from '@/components/rescue/RescueIntervention';
 import { QuestionDescriptionPanel } from '@/components/sidebar/QuestionDescriptionPanel';
 import { ResizablePanelGroup } from '@/components/ui/ResizablePanelGroup';
 import { useCoaching } from '@/features/coaching/coaching.hook';
+import { useWorkspace } from '@/features/workspace/use-workspace.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
@@ -62,7 +63,7 @@ export default function ProblemWorkspacePage() {
     isAuthenticated,
   } = useCodeRunner({ fullQuestion, language, currentCode });
 
-  const { messages, isTyping, sendMessage } = useCoaching();
+  const { messages, isTyping, sendMessage, hydrateMessages } = useCoaching() as ReturnType<typeof useCoaching> & { hydrateMessages: (msgs: import('@/types').ChatMessage[]) => void };
   const { ref: workspaceRef, mode } = useWorkspaceMode();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -84,6 +85,24 @@ export default function ProblemWorkspacePage() {
       ? fullQuestion.starter[language as keyof typeof fullQuestion.starter] || ''
       : '';
 
+  const { deleteDraft } = useWorkspace({
+    questionId: questionId || null,
+    language,
+    currentCode,
+    setCurrentCode,
+    onHydrateChat: (msgs) => {
+      // Convert persisted messages to ChatMessage
+      const hydrated = msgs.map((m) => ({
+        id: `${Date.now()}-${Math.random()}`,
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        structured: (m as unknown as { structured?: import('@/types').StructuredCoachingResponse }).structured ?? null,
+        timestamp: new Date((m as unknown as { timestamp: string }).timestamp),
+      }));
+      if (hydrated.length) hydrateMessages(hydrated as import('@/types').ChatMessage[]);
+    },
+  });
+
   const handleEscalateToT2 = useCallback(() => {
     if (!fullQuestion) return;
     const checkpoints = buildRescueCheckpoints(
@@ -104,9 +123,10 @@ export default function ProblemWorkspacePage() {
       fullQuestion.difficulty,
       starterCode,
       'questions',
+      questionId,
     );
     if (mode !== 'wide') setDrawerOpen(true);
-  }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode]);
+  }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode, questionId]);
 
   const handleEscalateToT3 = useCallback(() => {
     if (!fullQuestion) return;
@@ -128,9 +148,10 @@ export default function ProblemWorkspacePage() {
       fullQuestion.difficulty,
       starterCode,
       'questions',
+      questionId,
     );
     if (mode !== 'wide') setDrawerOpen(true);
-  }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode]);
+  }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode, questionId]);
 
   const rescue = useRescueContract({
     questionId,
@@ -156,9 +177,10 @@ export default function ProblemWorkspacePage() {
         undefined,
         starterCode,
         'questions',
+        questionId,
       );
     },
-    [fullQuestion, currentCode, language, sendMessage, rescueActivity, starterCode],
+    [fullQuestion, currentCode, language, sendMessage, rescueActivity, starterCode, questionId],
   );
 
   const handleRunCodeRescue = useCallback(
@@ -181,6 +203,12 @@ export default function ProblemWorkspacePage() {
     },
     [rescueActivity],
   );
+
+  const handleResetCode = useCallback(() => {
+    rescueActivity();
+    setCurrentCode(starterCode);
+    void deleteDraft();
+  }, [rescueActivity, starterCode, deleteDraft]);
 
   const handleLanguageChangeRescue = useCallback(
     (lang: Language) => {
@@ -284,6 +312,7 @@ export default function ProblemWorkspacePage() {
           testResults={testResults}
           isInteractive={fullQuestion.is_interactive || false}
           onCodeChange={handleCodeChangeRescue}
+          onResetCode={handleResetCode}
           onLanguageChange={handleLanguageChangeRescue}
           onRunCode={handleRunCodeRescue}
           onSubmitCode={handleSubmitCodeRescue}
