@@ -34,8 +34,11 @@ from app.services.error_graph_service import ErrorGraphService
 from app.services.learning_analytics_service import LearningAnalyticsService
 from app.services.memory_graph_service import MemoryGraphService
 from app.ports.code_executor import CodeExecutor
+from app.ports.skill_graph_repository import SkillGraphRepository
+from app.repositories.sql_skill_graph_repository import SqlSkillGraphRepository
 from app.services.piston_service import PistonService
 from app.services.question_bank import QuestionBank
+from app.services.skill_graph_service import SkillGraphService
 
 
 async def get_redis_cache(
@@ -182,3 +185,15 @@ async def get_question_bank(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ) -> QuestionBank:
     return QuestionBank(repository=question_repo, cache=cache)
+
+
+async def get_skill_graph_repo(
+    db: AsyncSession = Depends(get_db),
+) -> AsyncGenerator[SkillGraphRepository, None]:
+    yield SqlSkillGraphRepository(db)
+
+
+def get_skill_graph_service(
+    repo: SkillGraphRepository = Depends(get_skill_graph_repo),
+) -> SkillGraphService:
+    return SkillGraphService(repository=repo)

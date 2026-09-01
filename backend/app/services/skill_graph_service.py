@@ -7,13 +7,16 @@ from app.models.schemas import Question
 from app.models.skill_graph_schemas import (
     EventIngestResult,
     LearningEvent,
+    LearningEventType,
     QuestionSkill,
     Recommendation,
     RecommendedQuestion,
     Skill,
     SkillGraphEdge,
     SkillGraphResponse,
+    SkillStatus,
     SkillSummary,
+    Trend,
     UserSkillState,
 )
 from app.ports.skill_graph_repository import SkillGraphRepository
@@ -111,7 +114,10 @@ class SkillGraphService:
         return result
 
     async def get_graph(
-        self, user_id: str, now: Optional[datetime] = None
+        self,
+        user_id: str,
+        now: Optional[datetime] = None,
+        include_boilerplate: bool = False,
     ) -> SkillGraphResponse:
         now = now or datetime.now(timezone.utc)
         skills_by_slug, _ = await self._load_taxonomy()
@@ -121,6 +127,22 @@ class SkillGraphService:
         for slug, skill in skills_by_slug.items():
             state = states.get(slug)
             if state is None:
+                if not include_boilerplate:
+                    continue
+                summaries.append(
+                    SkillSummary(
+                        skill_slug=slug,
+                        name=skill.name,
+                        mastery_score=0.0,
+                        confidence=0.0,
+                        status=SkillStatus.NEW,
+                        trend=Trend.STABLE,
+                        evidence_count=0,
+                        recent_error_count=0,
+                        last_seen_at=None,
+                        last_reviewed_at=None,
+                    )
+                )
                 continue
             decayed = decay_state(state, now)
             summaries.append(
@@ -140,7 +162,11 @@ class SkillGraphService:
                     last_reviewed_at=decayed.last_reviewed_at,
                 )
             )
-        summaries.sort(key=lambda s: s.mastery_score, reverse=True)
+        # Keep deterministic order: boilerplate sorts by name, active by mastery
+        if include_boilerplate and not states:
+            summaries.sort(key=lambda s: s.name)
+        else:
+            summaries.sort(key=lambda s: s.mastery_score, reverse=True)
 
         edges = [
             SkillGraphEdge(source=prereq, target=slug, relation="prerequisite")
@@ -205,6 +231,63 @@ class SkillGraphService:
                 )
             )
         return results
+
+    @staticmethod
+    def _event_from_submission(submission) -> LearningEvent:
+        """Map a Submission row to a deterministic LearningEvent.
+
+        Uses a stable id ``sub:{submission.id}`` so repeated syncs and the
+        live submit path remain idempotent via ``event_exists``. Passed ->
+        SUBMISSION_PASSED, failed -> SUBMISSION_FAILED.
+        """
+        # Lazy import to avoid circular dep at module load
+        event_type = (
+            LearningEventType.SUBMISSION_PASSED
+            if getattr(submission, "passed", False)
+            else LearningEventType.SUBMISSION_FAILED
+        )
+        metadata: dict = {}
+        sig = getattr(submission, "error_signature", None)
+        if sig:
+            metadata["error_signature"] = sig
+        occurred = getattr(submission, "created_at", None) or datetime.now(timezone.utc)
+        return LearningEvent(
+            id=f"sub:{submission.id}",
+            user_id=submission.user_id,
+            event_type=event_type,
+            question_id=submission.question_id,
+            metadata=metadata,
+            occurred_at=occurred,
+        )
+
+    async def sync_from_submissions(
+        self, user_id: str, submissions: List[object]
+    ) -> EventIngestResult:
+        """Backfill skill graph from historic submissions (DB query).
+
+        Queries the *already persisted* ``submissions`` table (passed/failed) and
+        synthesizes ``LearningEvent``s. Idempotent: existing ``sub:{id}`` ids
+        are counted as ``duplicate``. Scoped to ``user_id``; foreign rows are
+        ``invalid``.
+        """
+        # Sort chronologically so mastery builds deterministically
+        try:
+            ordered = sorted(
+                submissions,
+                key=lambda s: getattr(
+                    s, "created_at", datetime.min.replace(tzinfo=timezone.utc)
+                ),
+            )
+        except Exception:
+            ordered = list(submissions)
+        events: List[LearningEvent] = []
+        for sub in ordered:
+            if getattr(sub, "user_id", None) != user_id:
+                continue
+            events.append(self._event_from_submission(sub))
+        if not events:
+            return EventIngestResult()
+        return await self.ingest_events(events, user_id=user_id)
 
     async def delete_history(self, user_id: str) -> None:
         await self.repository.delete_user_history(user_id)

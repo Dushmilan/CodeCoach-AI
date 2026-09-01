@@ -13,9 +13,12 @@ from app.api.dependencies import (
     get_executor,
     get_question_repo,
     get_review_service,
+    get_skill_graph_service,
     get_submission_repo,
 )
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
+from app.models.skill_graph_schemas import LearningEvent, LearningEventType
+from app.services.skill_graph_service import SkillGraphService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,6 +44,7 @@ async def submit_code(
     executor: CodeExecutor = Depends(get_executor),
     submissions: SubmissionRepository = Depends(get_submission_repo),
     reviews: ReviewService = Depends(get_review_service),
+    skill_service: SkillGraphService = Depends(get_skill_graph_service),
     current_user: UserResponse = Depends(get_current_user),
 ):
     question = await repository.get_by_id(submit_request.question_id)
@@ -75,8 +79,9 @@ async def submit_code(
 
     # Persist the graded attempt for the mistake-memory data layer. Best-effort:
     # a failed write must not 500 the graded result, but it IS logged.
+    persisted = None
     try:
-        await submissions.add(
+        persisted = await submissions.add(
             user_id=current_user.id,
             submission=SubmissionIn(
                 question_id=submit_request.question_id,
@@ -102,6 +107,32 @@ async def submit_code(
         )
     except Exception:  # noqa: BLE001
         logger.warning("Failed to record mistake-memory observation", exc_info=True)
+
+    # Skill-graph emission: keep the Personal Skill Graph in sync with
+    # already-persisted submissions (DB query backfill + live writes). Uses a
+    # deterministic event id ``sub:{submission.id}`` so repeated syncs and
+    # this live path remain idempotent via ``event_exists``. Best-effort.
+    if persisted is not None:
+        try:
+            event = LearningEvent(
+                id=f"sub:{persisted.id}",
+                user_id=current_user.id,
+                event_type=LearningEventType.SUBMISSION_PASSED
+                if passed
+                else LearningEventType.SUBMISSION_FAILED,
+                question_id=submit_request.question_id,
+                metadata={"error_signature": _error_signature(results)}
+                if not passed and _error_signature(results)
+                else {},
+                occurred_at=persisted.created_at or datetime.now(timezone.utc),
+            )
+            await skill_service.ingest_events([event], user_id=current_user.id)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "Failed to emit skill-graph event for %s",
+                submit_request.question_id,
+                exc_info=True,
+            )
 
     return SubmitResponse(
         passed=passed,

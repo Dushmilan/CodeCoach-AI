@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
-from typing import AsyncGenerator, List, Optional
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import List, Optional
 
 from app.api.auth_deps import get_current_user
-from app.api.dependencies import get_question_bank
-from app.core.database import get_db
+from app.api.dependencies import (
+    get_question_bank,
+    get_skill_graph_service,
+    get_submission_repo,
+)
+
 from app.models.auth_schemas import UserResponse
 from app.models.schemas import Question
 from app.models.skill_graph_schemas import (
@@ -15,35 +17,49 @@ from app.models.skill_graph_schemas import (
     RecommendedQuestion,
     SkillGraphResponse,
 )
-from app.ports.skill_graph_repository import SkillGraphRepository
-from app.repositories.sql_skill_graph_repository import SqlSkillGraphRepository
+from app.ports.submission_repository import SubmissionRepository
 from app.services.question_bank import QuestionBank
 from app.services.skill_graph_service import SkillGraphService
 
 router = APIRouter()
 
 
-async def get_skill_graph_repo(
-    db: AsyncSession = Depends(get_db),
-) -> AsyncGenerator[SkillGraphRepository, None]:
-    yield SqlSkillGraphRepository(db)
-
-
-def get_skill_graph_service(
-    repo: SkillGraphRepository = Depends(get_skill_graph_repo),
-) -> SkillGraphService:
-    return SkillGraphService(repository=repo)
-
-
 @router.get("/me/skills", response_model=SkillGraphResponse)
 async def get_my_skills(
+    include_boilerplate: bool = Query(
+        False,
+        description="Include boilerplate skills for new users (all taxonomy with 0 mastery)",
+    ),
     current_user: UserResponse = Depends(get_current_user),
     service: SkillGraphService = Depends(get_skill_graph_service),
 ):
     try:
-        return await service.get_graph(current_user.id)
+        return await service.get_graph(
+            current_user.id, include_boilerplate=include_boilerplate
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching skills: {e}")
+
+
+@router.post("/me/sync", response_model=EventIngestResult)
+async def sync_my_skills_from_submissions(
+    current_user: UserResponse = Depends(get_current_user),
+    service: SkillGraphService = Depends(get_skill_graph_service),
+    submissions: SubmissionRepository = Depends(get_submission_repo),
+):
+    """Backfill skill graph from already-completed submissions (DB query).
+
+    Idempotent: re-running never duplicates. Scoped to the authenticated user.
+    Queries ``submissions`` where the user already solved questions and
+    synthesizes ``SUBMISSION_PASSED`` / ``SUBMISSION_FAILED`` learning events.
+    """
+    try:
+        # Pull up to 1000 most recent attempts — enough to rebuild the graph
+        # without blocking the hot path. History beyond this is decayed anyway.
+        items = await submissions.list_by_user(current_user.id, limit=1000)
+        return await service.sync_from_submissions(current_user.id, list(items))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error syncing skills: {e}")
 
 
 @router.get("/me/recommendations", response_model=List[Recommendation])
