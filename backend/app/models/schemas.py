@@ -81,6 +81,11 @@ class CoachingRequest(BaseModel):
             "'learn' is the graph-free curriculum companion."
         ),
     )
+    question_id: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Question id for workspace chat persistence (optional, no breaking change)",
+    )
 
     @model_validator(mode="after")
     def require_lesson_context_for_learn(self):
