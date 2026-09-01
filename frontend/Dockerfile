@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 FROM node:20-alpine
 
 WORKDIR /app
@@ -5,8 +6,8 @@ WORKDIR /app
 # Copy package files
 COPY package.json ./
 
-# Install dependencies using npm
-RUN npm install
+# Install dependencies using npm with BuildKit cache (saves data on rebuilds)
+RUN --mount=type=cache,target=/root/.npm npm install
 
 # Copy source
 COPY . .

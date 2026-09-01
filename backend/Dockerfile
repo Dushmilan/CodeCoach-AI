@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 FROM python:3.11-alpine
 
 WORKDIR /app
@@ -6,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache gcc musl-dev linux-headers wget openssl-dev libffi-dev
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 
 COPY . .
 
