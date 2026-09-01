@@ -7,7 +7,7 @@ from app.api.auth_deps import get_current_user
 from app.api.dependencies import get_course_repo, get_progress_repo
 from app.models.auth_schemas import UserResponse
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def get_course_service(
@@ -18,6 +18,7 @@ def get_course_service(
 
 
 @router.get("/")
+@router.get("")
 async def get_all_progress(
     current_user: UserResponse = Depends(get_current_user),
     course_service: CourseService = Depends(get_course_service),

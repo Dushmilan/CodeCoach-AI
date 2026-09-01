@@ -13,10 +13,10 @@ vi.mock("@/features/question/question.hook", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 describe("StudentDashboardPage polish", () => {
-  it("renders memory-first heading and dashboard queues", () => {
+  it("renders memory-first heading and dashboard queues", async () => {
     render(<StudentDashboardPage />);
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByTestId("memory-graph")).toBeInTheDocument();
+    expect(await screen.findByTestId("memory-graph")).toBeInTheDocument();
   });
 
   it("shows Replay tour button", () => {

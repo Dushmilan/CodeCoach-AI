@@ -14,7 +14,7 @@ from app.middleware.rate_limit import limiter, QUESTIONS_RATE_LIMIT
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def get_course_service(
@@ -28,6 +28,7 @@ def get_course_service(
 
 
 @router.get("/")
+@router.get("")
 @limiter.limit(QUESTIONS_RATE_LIMIT)
 async def list_courses(
     request: Request,

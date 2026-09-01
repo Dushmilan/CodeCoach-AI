@@ -1,16 +1,46 @@
 "use client";
 
 import { Header } from "@/components/header/Header";
-import LearningSignals from "@/features/analytics/LearningSignals";
-import { MemoryGraph } from "@/features/memory/MemoryGraph";
-import { RescueDueQueue } from "@/features/rescue/RescueDueQueue";
-import { ReviewsDueQueue } from "@/features/review/ReviewsDueQueue";
-import { SkillGraph } from "@/features/skill-graph/SkillGraph";
 import { useQuestion } from "@/features/question/question.hook";
 import { resetOnboardingTour } from "@/components/onboarding/OnboardingTour";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RotateCcw, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+const SkillGraph = dynamic(
+  () => import("@/features/skill-graph/SkillGraph").then((m) => m.SkillGraph),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-32 w-full rounded-xl" />,
+  },
+);
+const LearningSignals = dynamic(() => import("@/features/analytics/LearningSignals"), {
+  ssr: false,
+  loading: () => <Skeleton className="h-24 w-full rounded-xl" />,
+});
+const MemoryGraph = dynamic(
+  () => import("@/features/memory/MemoryGraph").then((m) => m.MemoryGraph),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-48 w-full rounded-xl" />,
+  },
+);
+const RescueDueQueue = dynamic(
+  () => import("@/features/rescue/RescueDueQueue").then((m) => m.RescueDueQueue),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-20 w-full rounded-xl" />,
+  },
+);
+const ReviewsDueQueue = dynamic(
+  () => import("@/features/review/ReviewsDueQueue").then((m) => m.ReviewsDueQueue),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-20 w-full rounded-xl" />,
+  },
+);
 
 export default function StudentDashboardPage() {
   const { allQuestions, loadQuestions } = useQuestion();
