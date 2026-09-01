@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Brain, AlertCircle } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { memoryService, MemoryGraphResponse, TopicMemoryItem } from "./memory.service";
 
 function energyCopy(topic: TopicMemoryItem): string {
@@ -17,9 +21,19 @@ function energyCopy(topic: TopicMemoryItem): string {
 export function MemoryGraph() {
   const [data, setData] = useState<MemoryGraphResponse | null>(null);
   const [error, setError] = useState(false);
+  const router = useRouter();
+
+  const fetchGraph = useCallback(() => {
+    setError(false);
+    memoryService
+      .getGraph()
+      .then((res) => setData(res))
+      .catch(() => setError(true));
+  }, []);
 
   useEffect(() => {
     let alive = true;
+    setError(false);
     memoryService
       .getGraph()
       .then((res) => {
@@ -39,7 +53,13 @@ export function MemoryGraph() {
         <h2 id="memory-graph-heading" className="text-lg font-semibold mb-1">
           Your memory graph
         </h2>
-        <p className="text-sm text-muted-foreground">Nothing to review — keep solving to build your memory graph.</p>
+        <EmptyState
+          icon={AlertCircle}
+          title="Couldn’t load your memory graph"
+          description="Check your connection and try again."
+          actionLabel="Retry"
+          onAction={fetchGraph}
+        />
       </section>
     );
   }
@@ -50,7 +70,17 @@ export function MemoryGraph() {
         <h2 id="memory-graph-heading" className="text-lg font-semibold mb-1">
           Your memory graph
         </h2>
-        <p className="text-sm text-muted-foreground">Loading your memory graph…</p>
+        <div data-testid="memory-graph-loading" className="space-y-2" aria-busy="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-md border px-4 py-3 flex items-center justify-between gap-4">
+              <div className="flex-1 space-y-2">
+                <Skeleton width={120} height={14} />
+                <Skeleton width={200} height={12} />
+              </div>
+              <Skeleton width={60} height={28} className="rounded-md" />
+            </div>
+          ))}
+        </div>
       </section>
     );
   }
@@ -61,7 +91,13 @@ export function MemoryGraph() {
         <h2 id="memory-graph-heading" className="text-lg font-semibold mb-1">
           Your memory graph
         </h2>
-        <p className="text-sm text-muted-foreground">Nothing to review — keep solving to build your memory graph.</p>
+        <EmptyState
+          icon={Brain}
+          title="No memory yet"
+          description="Solve a few problems to build your forgetting curve — your review queue will live here."
+          actionLabel="Browse problems"
+          onAction={() => router.push("/problems")}
+        />
       </section>
     );
   }

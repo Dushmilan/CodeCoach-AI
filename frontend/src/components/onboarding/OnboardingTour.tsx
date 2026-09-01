@@ -2,8 +2,18 @@
 
 import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks';
-import { ChevronLeft, ChevronRight, Code, Lightbulb, MessageSquare, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Brain, Code, LifeBuoy, Lightbulb, MessageSquare, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+export const ONBOARDING_STORAGE_KEY = 'onboarding-done';
+
+export function resetOnboardingTour() {
+  try {
+    window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 const STEPS = [
   {
@@ -11,6 +21,12 @@ const STEPS = [
     description:
       'Practice coding interview questions with instant feedback, AI coaching, and progress tracking.',
     icon: Lightbulb,
+  },
+  {
+    title: 'Dashboard & Memory Graph',
+    description:
+      'Your forgetting curve lives on the dashboard — what to refresh before you forget, resurfacing your own past bugs.',
+    icon: Brain,
   },
   {
     title: 'Question Browser',
@@ -24,10 +40,16 @@ const STEPS = [
       'Get 24/7 AI-powered help. Ask for hints, code reviews, explanations, or debugging assistance. The AI understands your code context.',
     icon: MessageSquare,
   },
+  {
+    title: 'Never-Alone Rescue',
+    description:
+      'Stuck for 4 minutes? AI nudges you. Abandon a problem and it resurfaces tomorrow as a tiny step — you are never alone with failure.',
+    icon: LifeBuoy,
+  },
 ];
 
 export function OnboardingTour() {
-  const [showTour, setShowTour] = useLocalStorage('onboarding-done', false);
+  const [showTour, setShowTour] = useLocalStorage(ONBOARDING_STORAGE_KEY, false);
   const [step, setStep] = useState(0);
   const [mounted, setMounted] = useState(false);
 

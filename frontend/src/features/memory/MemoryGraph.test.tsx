@@ -8,6 +8,10 @@ vi.mock("./memory.service", () => ({
   },
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 import { memoryService } from "./memory.service";
 
 const mockedGetGraph = vi.mocked(memoryService.getGraph);
@@ -87,14 +91,37 @@ describe("MemoryGraph", () => {
     render(<MemoryGraph />);
 
     await waitFor(() => expect(mockedGetGraph).toHaveBeenCalled());
-    expect(screen.getByText(/nothing to review/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no memory yet/i)).toBeInTheDocument();
   });
 
   it("renders nothing when API fails", async () => {
     mockedGetGraph.mockRejectedValue(new Error("offline"));
-    const { container } = render(<MemoryGraph />);
+    render(<MemoryGraph />);
     await waitFor(() => expect(mockedGetGraph).toHaveBeenCalled());
-    // Component degrades to empty/message, not crash
-    expect(container.textContent).toMatch(/nothing to review|failed/i);
+    expect(await screen.findByText(/couldn.t load/i)).toBeInTheDocument();
+  });
+
+  it("shows skeleton while loading", async () => {
+    let resolve!: (v: unknown) => void;
+    mockedGetGraph.mockReturnValue(new Promise((r) => (resolve = r)) as never);
+    render(<MemoryGraph />);
+    expect(screen.getByTestId("memory-graph-loading")).toBeInTheDocument();
+    resolve({ topics: [], totalDue: 0, totalCards: 0, oldestDueDays: null });
+    await waitFor(() => expect(mockedGetGraph).toHaveBeenCalled());
+  });
+
+  it("renders EmptyState with Browse action when no topics", async () => {
+    mockedGetGraph.mockResolvedValue({ topics: [], totalDue: 0, totalCards: 0, oldestDueDays: null });
+    render(<MemoryGraph />);
+    await waitFor(() => expect(mockedGetGraph).toHaveBeenCalled());
+    expect(await screen.findByText(/no memory yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /browse problems/i })).toBeInTheDocument();
+  });
+
+  it("renders retry action when API fails", async () => {
+    mockedGetGraph.mockRejectedValue(new Error("offline"));
+    render(<MemoryGraph />);
+    await waitFor(() => expect(mockedGetGraph).toHaveBeenCalled());
+    expect(await screen.findByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
 });
