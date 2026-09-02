@@ -6,6 +6,24 @@ import { CourseSummary, CourseDetail, LessonSummary } from "@/types";
 
 const api = new FetchClient();
 
+async function fetchWithRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const isTimeout =
+        err instanceof Error &&
+        (err.message.includes("timeout") || (err as unknown as { status?: number }).status === 408);
+      if (!isTimeout || i === retries) throw err;
+      // backoff 400ms * (i+1)
+      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 export function useCurriculum() {
   const [courses, setCourses] = useState<CourseSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,7 +33,10 @@ export function useCurriculum() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await api.get<{ courses: CourseSummary[] }>("/api/courses/");
+      const data = await fetchWithRetry(
+        () => api.get<{ courses: CourseSummary[] }>("/api/courses/", { timeout: 15000 }),
+        2,
+      );
       setCourses(data.courses);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load courses");
@@ -44,7 +65,10 @@ export function useCourse(courseId: string) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await api.get<CourseDetail>(`/api/courses/${courseId}`);
+      const data = await fetchWithRetry(
+        () => api.get<CourseDetail>(`/api/courses/${courseId}`, { timeout: 15000 }),
+        2,
+      );
       setCourse(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load course");
@@ -73,8 +97,9 @@ export function useLesson(lessonId: string) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await api.get<LessonSummary>(
-        `/api/courses/lessons/${lessonId}`,
+      const data = await fetchWithRetry(
+        () => api.get<LessonSummary>(`/api/courses/lessons/${lessonId}`, { timeout: 15000 }),
+        2,
       );
       setLesson(data);
     } catch (err) {

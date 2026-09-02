@@ -27,6 +27,7 @@ def get_course_service(
     )
 
 
+@router.get("")
 @router.get("/")
 @limiter.limit(QUESTIONS_RATE_LIMIT)
 async def list_courses(

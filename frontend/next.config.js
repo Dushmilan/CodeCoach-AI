@@ -10,6 +10,7 @@
 const REWRITE_TARGET = process.env.API_URL || 'http://localhost:8000';
 
 const nextConfig = {
+  skipTrailingSlashRedirect: true,
   env: {
     // Preserve an explicit empty value (same-origin, CSP-safe); only
     // fall back when the variable is unset. `||` would resurrect the

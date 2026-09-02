@@ -25,7 +25,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { workspaceService } from '@/features/workspace/workspace.service';
 import { AuthContext } from '@/providers/AuthProvider';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 const difficultyStyles: Record<string, string> = {
@@ -57,6 +57,8 @@ export default function ProblemsPage() {
   const [company, setCompany] = useState<string>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<QuestionSortKey>('daily');
+  const [visibleCount, setVisibleCount] = useState(20);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadQuestions();
@@ -167,6 +169,34 @@ export default function ProblemsPage() {
     setStatus('all');
     setSort('daily');
   }, []);
+
+  // Reset visible count when filters change — start from top
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [search, difficulty, category, company, status, sort]);
+
+  const hasMore = filtered.length > visibleCount;
+  const displayed = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
+  );
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((c) => Math.min(c + 20, filtered.length));
+  }, [filtered.length]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: '400px', threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
 
   const handleSelect = useCallback(
     (q: QuestionSummary) => {
@@ -398,7 +428,7 @@ export default function ProblemsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((q) => {
+                      {displayed.map((q) => {
                         const s = progress[q.id];
                         return (
                           <tr
@@ -465,7 +495,7 @@ export default function ProblemsPage() {
 
                 {/* ── Mobile cards ───────────────────────────────── */}
                 <div className="md:hidden divide-y divide-white/[0.03]">
-                  {filtered.map((q) => {
+                  {displayed.map((q) => {
                     const s = progress[q.id];
                     return (
                       <button
@@ -518,6 +548,15 @@ export default function ProblemsPage() {
                     );
                   })}
                 </div>
+                {hasMore && (
+                  <div
+                    ref={sentinelRef}
+                    className="flex items-center justify-center py-4 text-[11px] text-muted-foreground/40"
+                  >
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Loading more...
+                  </div>
+                )}
               </>
             )}
 
@@ -525,8 +564,9 @@ export default function ProblemsPage() {
               <div className="px-6 py-3 border-t border-white/5 text-[10px] text-muted-foreground/40 flex items-center justify-between gap-2 flex-wrap">
                 <span>
                   {hasActiveFilters
-                    ? `Showing ${filtered.length} of ${allQuestions.length} questions`
-                    : `${filtered.length} questions available`}
+                    ? `Showing ${displayed.length} of ${filtered.length} (filtered from ${allQuestions.length})`
+                    : `Showing ${displayed.length} of ${filtered.length} questions`}
+                  {hasMore ? ' — scroll for more' : ''}
                 </span>
                 <span>Click any problem to start coding</span>
               </div>

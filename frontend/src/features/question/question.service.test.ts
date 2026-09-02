@@ -21,12 +21,12 @@ describe('QuestionService', () => {
   });
 
   describe('getQuestions', () => {
-    it('calls GET /api/questions with no-store cache', async () => {
-      vi.mocked(http.get).mockResolvedValue({ questions: [] });
+    it('calls GET /api/questions paginated with no-store cache', async () => {
+      vi.mocked(http.get).mockResolvedValue({ questions: [], total: 0, page: 1, per_page: 100 });
 
       await service.getQuestions();
 
-      expect(http.get).toHaveBeenCalledWith('/api/questions', {
+      expect(http.get).toHaveBeenCalledWith('/api/questions?page=1&per_page=100', {
         cache: 'no-store',
       });
     });
@@ -48,7 +48,7 @@ describe('QuestionService', () => {
           company_tags: [],
         },
       ];
-      vi.mocked(http.get).mockResolvedValue({ questions: mockQuestions });
+      vi.mocked(http.get).mockResolvedValue({ questions: mockQuestions, total: 2, page: 1, per_page: 100 });
 
       const result = await service.getQuestions();
 
@@ -57,8 +57,29 @@ describe('QuestionService', () => {
       expect(result[1].title).toBe('Add Two Numbers');
     });
 
+    it('fetches next page when total exceeds per_page', async () => {
+      const page1 = Array.from({ length: 100 }, (_, i) => ({
+        id: String(i),
+        title: `Q${i}`,
+        difficulty: 'easy' as const,
+        category: 'arrays',
+        company_tags: [],
+      }));
+      const page2 = [
+        { id: '100', title: 'Q100', difficulty: 'easy' as const, category: 'arrays', company_tags: [] },
+      ];
+      vi.mocked(http.get)
+        .mockResolvedValueOnce({ questions: page1, total: 101, page: 1, per_page: 100 })
+        .mockResolvedValueOnce({ questions: page2, total: 101, page: 2, per_page: 100 });
+
+      const result = await service.getQuestions();
+
+      expect(result).toHaveLength(101);
+      expect(http.get).toHaveBeenCalledTimes(2);
+    });
+
     it('returns empty array when response has no questions field', async () => {
-      vi.mocked(http.get).mockResolvedValue({});
+      vi.mocked(http.get).mockResolvedValue({ total: 0, page: 1, per_page: 100 });
 
       const result = await service.getQuestions();
 
@@ -66,7 +87,7 @@ describe('QuestionService', () => {
     });
 
     it('returns empty array when questions is null', async () => {
-      vi.mocked(http.get).mockResolvedValue({ questions: null });
+      vi.mocked(http.get).mockResolvedValue({ questions: null, total: 0, page: 1, per_page: 100 });
 
       const result = await service.getQuestions();
 

@@ -4,7 +4,7 @@ from pydantic import model_validator
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore")
 
     # Environment (fail-closed: unset = production for security gates)
     ENVIRONMENT: str = "production"

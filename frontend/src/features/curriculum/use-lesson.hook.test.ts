@@ -30,7 +30,7 @@ describe("useLesson", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.lesson).toEqual(lessonData);
-    expect(mockGet).toHaveBeenCalledWith("/api/courses/lessons/1");
+    expect(mockGet).toHaveBeenCalledWith("/api/courses/lessons/1", { timeout: 15000 });
   });
 
   it("sets error when fetch fails", async () => {

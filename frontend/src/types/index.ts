@@ -226,6 +226,30 @@ export interface CourseProgress {
   last_accessed_at: string;
 }
 
+export interface SkillSummary {
+  skill_slug: string;
+  name: string;
+  mastery_score: number;
+  confidence: number;
+  status: "new" | "learning" | "developing" | "strong" | "needs_review";
+  trend: "improving" | "declining" | "stable";
+  evidence_count: number;
+  recent_error_count: number;
+  last_seen_at: string | null;
+  last_reviewed_at: string | null;
+}
+
+export interface SkillGraphEdge {
+  source: string;
+  target: string;
+  relation: string;
+}
+
+export interface SkillGraphResponse {
+  skills: SkillSummary[];
+  edges: SkillGraphEdge[];
+}
+
 export interface User {
   id: string;
   username: string;

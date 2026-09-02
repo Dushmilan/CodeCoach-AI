@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { SkillGraphInline } from '@/features/skill-graph/SkillGraphInline';
 import { FileText, LogOut, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
@@ -68,6 +69,8 @@ export function SettingsModal({
                 </div>
               </div>
             </div>
+
+            <SkillGraphInline isAuthenticated={isAuthenticated} />
 
             <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-4">
               <div className="flex items-center justify-between gap-3">

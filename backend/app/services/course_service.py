@@ -1,10 +1,16 @@
+import time
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from app.models.course_schemas import Course, CourseProgress, CourseSummary, Lesson
 from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
 from app.services.redis_service import RedisCache
+
+# In-memory TTL cache for anonymous course list (Supabase pooler ~1.5s per query; intermittent timeout on cold pool)
+# Keyed by None (anonymous) — user-specific progress bypasses cache
+_course_list_cache: Dict[str, Tuple[float, List[CourseSummary]]] = {}
+_COURSE_LIST_TTL = 30.0
 
 
 class CourseService:
@@ -19,6 +25,12 @@ class CourseService:
         self.cache = cache
 
     async def list_courses(self, user_id: Optional[str] = None) -> List[CourseSummary]:
+        # Anonymous list is same for everyone — cache to avoid repeated Supabase roundtrips and intermittent 408 on cold pool
+        if not user_id:
+            cached = _course_list_cache.get("anonymous")
+            if cached and (time.time() - cached[0] < _COURSE_LIST_TTL):
+                return cached[1]
+
         courses = await self.course_repo.get_all_courses()
         courses.sort(key=lambda c: c.order)
 
@@ -60,6 +72,8 @@ class CourseService:
                     progress=progress,
                 )
             )
+        if not user_id:
+            _course_list_cache["anonymous"] = (time.time(), summaries)
         return summaries
 
     async def get_course(self, course_id: str) -> Optional[Course]:
@@ -79,9 +93,24 @@ class CourseService:
         modules.sort(key=lambda m: m.order)
         result = course.model_dump()
         result["modules"] = []
+        # Batch fetch lesson outlines (titles only) in single query — avoids N+1 roundtrips to Supabase pooler (~1-2s each)
+        module_ids = [m.id for m in modules]
+        all_lessons = []
+        if hasattr(self.course_repo, "get_lesson_summaries_by_module_ids"):
+            all_lessons = await self.course_repo.get_lesson_summaries_by_module_ids(
+                module_ids
+            )  # type: ignore
+        else:
+            # Fallback for in-memory test repos
+            for mid in module_ids:
+                all_lessons.extend(await self.course_repo.get_lessons_by_module(mid))
+        # Group by module_id preserving order
+        lessons_by_module: dict[str, list] = {mid: [] for mid in module_ids}
+        for le in all_lessons:
+            lessons_by_module.setdefault(le.module_id, []).append(le)
         for mod in modules:
             mod_dict = mod.model_dump()
-            lessons = await self.course_repo.get_lessons_by_module(mod.id)
+            lessons = lessons_by_module.get(mod.id, [])
             lessons.sort(key=lambda le: le.order)
             mod_dict["lessons"] = [le.model_dump() for le in lessons]
             result["modules"].append(mod_dict)
