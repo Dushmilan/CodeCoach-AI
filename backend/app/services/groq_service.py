@@ -28,11 +28,11 @@ class GroqService(CoachingProvider):
 
     BASE_URL = "https://api.groq.com/openai/v1"
     DEFAULT_MODELS = {
-        "easy": "llama-3.1-8b-instant",
-        "medium": "llama-3.3-70b-versatile",
-        "hard": "llama-3.3-70b-versatile",
-        "stream": "llama-3.1-8b-instant",
-        "animate": "llama-3.3-70b-versatile",
+        "easy": "openai/gpt-oss-20b",
+        "medium": "openai/gpt-oss-120b",
+        "hard": "openai/gpt-oss-120b",
+        "stream": "openai/gpt-oss-20b",
+        "animate": "openai/gpt-oss-120b",
     }
 
     def __init__(

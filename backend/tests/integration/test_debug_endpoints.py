@@ -25,7 +25,7 @@ class TestDebugGroqStatus:
     def test_groq_status_valid(self, test_client: TestClient, test_env_vars):
         body = {
             "object": "list",
-            "data": [{"id": "llama-3.3-70b-versatile", "active": True}],
+            "data": [{"id": "openai/gpt-oss-120b", "active": True}],
         }
         with _mock_httpx_get(200, body) as _:
             os.environ["GROQ_API_KEY"] = "gsk_" + "x" * 40
@@ -36,7 +36,7 @@ class TestDebugGroqStatus:
             assert data["valid"] is True
             assert data["api_key_present"] is True
             assert data["api_key_format_valid"] is True
-            assert "llama-3.3-70b-versatile" in data["models"]
+            assert "openai/gpt-oss-120b" in data["models"]
 
     def test_groq_status_missing_key(self, test_client: TestClient, test_env_vars):
         if "GROQ_API_KEY" in os.environ:

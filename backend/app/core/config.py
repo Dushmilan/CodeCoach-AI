@@ -20,11 +20,11 @@ class Settings(BaseSettings):
 
     # Groq (primary AI provider for coaching)
     GROQ_API_KEY: Optional[str] = None
-    GROQ_MODEL_EASY: str = "llama-3.1-8b-instant"
-    GROQ_MODEL_MEDIUM: str = "llama-3.3-70b-versatile"
-    GROQ_MODEL_HARD: str = "llama-3.3-70b-versatile"
-    GROQ_MODEL_STREAM: str = "llama-3.1-8b-instant"
-    GROQ_MODEL_ANIMATE: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL_EASY: str = "openai/gpt-oss-20b"
+    GROQ_MODEL_MEDIUM: str = "openai/gpt-oss-120b"
+    GROQ_MODEL_HARD: str = "openai/gpt-oss-120b"
+    GROQ_MODEL_STREAM: str = "openai/gpt-oss-20b"
+    GROQ_MODEL_ANIMATE: str = "openai/gpt-oss-120b"
 
     # Per-user token metering (daily caps)
     DAILY_TOKEN_INPUT_CAP: int = 250_000

@@ -140,11 +140,11 @@ class TestGroqServiceInit:
             from app.services.groq_service import GroqService
 
             service = GroqService()
-            assert service.models["easy"] == "llama-3.1-8b-instant"
-            assert service.models["medium"] == "llama-3.3-70b-versatile"
-            assert service.models["hard"] == "llama-3.3-70b-versatile"
-            assert service.models["stream"] == "llama-3.1-8b-instant"
-            assert service.models["animate"] == "llama-3.3-70b-versatile"
+            assert service.models["easy"] == "openai/gpt-oss-20b"
+            assert service.models["medium"] == "openai/gpt-oss-120b"
+            assert service.models["hard"] == "openai/gpt-oss-120b"
+            assert service.models["stream"] == "openai/gpt-oss-20b"
+            assert service.models["animate"] == "openai/gpt-oss-120b"
 
     def test_model_map_env_overrides(self):
         with patch.dict(
@@ -161,7 +161,7 @@ class TestGroqServiceInit:
             service = GroqService()
             assert service.models["easy"] == "custom-easy"
             assert service.models["medium"] == "custom-medium"
-            assert service.models["hard"] == "llama-3.3-70b-versatile"
+            assert service.models["hard"] == "openai/gpt-oss-120b"
             assert service.models["animate"] == "custom-animate"
 
 
@@ -211,7 +211,7 @@ class TestGroqServiceStructured:
             {
                 "user_id": "user-1",
                 "provider": "groq",
-                "model": "llama-3.3-70b-versatile",
+                "model": "openai/gpt-oss-120b",
                 "endpoint": "coach",
                 "input_tokens": 12,
                 "output_tokens": 34,
@@ -243,8 +243,8 @@ class TestGroqServiceStructured:
             difficulty="easy",
         )
         call = mock_async_client.post.call_args
-        assert call.kwargs["json"]["model"] == "llama-3.1-8b-instant"
-        assert recorder.calls[0]["model"] == "llama-3.1-8b-instant"
+        assert call.kwargs["json"]["model"] == "openai/gpt-oss-20b"
+        assert recorder.calls[0]["model"] == "openai/gpt-oss-20b"
 
     @pytest.mark.asyncio
     async def test_structured_uses_hard_model(self, mock_async_client):
@@ -268,7 +268,7 @@ class TestGroqServiceStructured:
             difficulty="hard",
         )
         call = mock_async_client.post.call_args
-        assert call.kwargs["json"]["model"] == "llama-3.3-70b-versatile"
+        assert call.kwargs["json"]["model"] == "openai/gpt-oss-120b"
 
     @pytest.mark.asyncio
     async def test_structured_payload_uses_max_completion_tokens(
@@ -770,7 +770,7 @@ class TestGroqServiceStreaming:
             {
                 "user_id": "user-1",
                 "provider": "groq",
-                "model": "llama-3.1-8b-instant",
+                "model": "openai/gpt-oss-20b",
                 "endpoint": "coach_stream",
                 "input_tokens": 5,
                 "output_tokens": 7,
@@ -805,7 +805,7 @@ class TestGroqServiceStreaming:
         call = mock_instance.stream.call_args
         assert call.kwargs["json"]["stream"] is True
         assert call.kwargs["json"]["stream_options"] == {"include_usage": True}
-        assert call.kwargs["json"]["model"] == "llama-3.1-8b-instant"
+        assert call.kwargs["json"]["model"] == "openai/gpt-oss-20b"
 
     @pytest.mark.asyncio
     async def test_stream_429_maps_to_429(self):
@@ -1091,7 +1091,7 @@ class TestGroqServiceAnimateScript:
         call = mock_async_client.post.call_args
         # Animate needs a capable model regardless of problem difficulty; it
         # must never fall back to the fast 8b model.
-        assert call.kwargs["json"]["model"] == "llama-3.3-70b-versatile"
+        assert call.kwargs["json"]["model"] == "openai/gpt-oss-120b"
 
     @pytest.mark.asyncio
     async def test_animate_payload_uses_raised_max_completion_tokens(

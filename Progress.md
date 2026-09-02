@@ -73,7 +73,7 @@ codebase. Feature-by-feature status with checkboxes lives in [Ideas.md](./Ideas.
 - **Database:** Supabase PostgreSQL (async SQLAlchemy) — the **only** database; Alembic migrations
 - **Cache / Limits:** Redis for request/rate-limit usage tracking
 - **Code Execution:** Piston (self-hosted Docker container)
-- **AI:** Groq (llama-3.3-70b-versatile, llama-3.1-8b-instant; `animate` mode override) with per-user daily token metering
+- **AI:** Groq (openai/gpt-oss-120b, openai/gpt-oss-20b; `animate` mode override) with per-user daily token metering
 - **Auth:** Email/password (bcrypt + JWT) + Supabase OAuth (Google)
 - **Rate Limiting:** slowapi per-minute per-user limit (default 60/min), per-mode coach/run/submit limits
 - **Migrations:** `backend/alembic/versions/` — initial schema, admin tables, usage/request tracking, user plan column, skill-graph tables
