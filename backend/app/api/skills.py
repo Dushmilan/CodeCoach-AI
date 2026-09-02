@@ -49,13 +49,37 @@ async def _invalidate_learner_cache(user_id: str, cache: RedisCache | None) -> N
         pass
 
 
+@router.get("/boilerplate", response_model=SkillGraphResponse)
+async def get_boilerplate(
+    service: SkillGraphService = Depends(get_skill_graph_service),
+):
+    """Deterministic boilerplate graph for onboarding previews.
+
+    No auth required — returns the full taxonomy with every skill in NEW
+    state. Safe for unauthenticated onboarding tour fetches.
+    """
+    try:
+        return await service.get_boilerplate_graph()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching boilerplate: {e}")
+
+
 @router.get("/me/skills", response_model=SkillGraphResponse)
 async def get_my_skills(
+    include_boilerplate: bool = False,
     current_user: UserResponse = Depends(get_current_user),
     service: SkillGraphService = Depends(get_skill_graph_service),
 ):
+    """Personal skill graph.
+
+    When ``include_boilerplate`` is true, every taxonomy skill is returned
+    (unseen skills appear as NEW/0.0) — the onboarding and gear-modal view.
+    When false, only skills with evidence are returned (legacy compact view).
+    """
     try:
-        return await service.get_graph(current_user.id)
+        return await service.get_graph(
+            current_user.id, include_boilerplate=include_boilerplate
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching skills: {e}")
 

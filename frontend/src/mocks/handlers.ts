@@ -104,6 +104,19 @@ export const handlers = [
     }
     return HttpResponse.json([]);
   }),
+  http.get("/api/skills/boilerplate", () => {
+    return HttpResponse.json({ skills: [], edges: [] });
+  }),
+  http.get("/api/skills/me/skills", ({ request }) => {
+    const auth = request.headers.get("Authorization");
+    if (!auth) {
+      return HttpResponse.json(
+        { detail: "Not authenticated" },
+        { status: 401 },
+      );
+    }
+    return HttpResponse.json({ skills: [], edges: [] });
+  }),
   http.get("/api/courses/", () => {
     return HttpResponse.json({
       courses: [

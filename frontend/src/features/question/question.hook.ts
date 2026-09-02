@@ -25,7 +25,13 @@ interface UseQuestionReturn {
   clearError: () => void;
 }
 
-export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn {
+const PAGE_SIZE = 20;
+
+export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn & {
+  visibleCount: number;
+  hasMore: boolean;
+  loadMore: () => void;
+} {
   const { initialFilters = {} } = options;
 
   const [questions, setQuestions] = useState<QuestionSummary[]>([]);
@@ -35,6 +41,7 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFiltersState] = useState<QuestionFilters>(initialFilters);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const loadQuestions = useCallback(async () => {
     setIsLoading(true);
@@ -42,6 +49,7 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
     try {
       const data = await questionService.getQuestions();
       setQuestions(data);
+      setVisibleCount(PAGE_SIZE);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load questions';
       setError(errorMessage);
@@ -71,6 +79,11 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
 
   const setFilters = useCallback((newFilters: QuestionFilters) => {
     setFiltersState(newFilters);
+    setVisibleCount(PAGE_SIZE);
+  }, []);
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((c) => c + PAGE_SIZE);
   }, []);
 
   const clearError = useCallback(() => {
@@ -114,8 +127,14 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
     return items;
   }, [filteredQuestions, filters.sort]);
 
+  const hasMore = sortedQuestions.length > visibleCount;
+  const paginatedQuestions = useMemo(
+    () => sortedQuestions.slice(0, visibleCount),
+    [sortedQuestions, visibleCount],
+  );
+
   return {
-    questions: sortedQuestions,
+    questions: paginatedQuestions,
     allQuestions: questions,
     selectedQuestion,
     fullQuestion,
@@ -127,5 +146,8 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
     selectQuestion,
     setFilters,
     clearError,
+    visibleCount,
+    hasMore,
+    loadMore,
   };
 }

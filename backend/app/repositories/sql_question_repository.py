@@ -95,6 +95,76 @@ class SqlQuestionRepository(QuestionRepository):
         result = await self.session.execute(stmt)
         return [self._orm_to_model(q) for q in result.scalars().all()]
 
+    async def get_summaries(
+        self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None
+    ):
+        """Optimized: fetch only summary columns (no starter/test_cases). Heavy fields would bloat payload & roundtrip."""
+        from app.models.schemas import QuestionSummary
+
+        stmt = select(
+            QuestionORM.id,
+            QuestionORM.title,
+            QuestionORM.difficulty,
+            QuestionORM.category,
+            QuestionORM.company_tags,
+        )
+        if difficulty:
+            stmt = stmt.where(QuestionORM.difficulty == difficulty.value)
+        if category:
+            stmt = stmt.where(QuestionORM.category.ilike(category))
+        stmt = stmt.order_by(QuestionORM.title)
+        result = await self.session.execute(stmt)
+        return [
+            QuestionSummary(
+                id=row[0],
+                title=row[1],
+                difficulty=Difficulty(row[2]),
+                category=row[3],
+                company_tags=row[4] or [],
+                solved=False,
+            )
+            for row in result.all()
+        ]
+
+    async def search_summaries(
+        self,
+        query: str,
+        difficulty: Optional[Difficulty] = None,
+        category: Optional[str] = None,
+    ):
+        from app.models.schemas import QuestionSummary
+
+        query_param = f"%{query}%"
+        stmt = select(
+            QuestionORM.id,
+            QuestionORM.title,
+            QuestionORM.difficulty,
+            QuestionORM.category,
+            QuestionORM.company_tags,
+        ).where(
+            or_(
+                QuestionORM.title.ilike(query_param),
+                QuestionORM.description.ilike(query_param),
+            )
+        )
+        if difficulty:
+            stmt = stmt.where(QuestionORM.difficulty == difficulty.value)
+        if category:
+            stmt = stmt.where(QuestionORM.category.ilike(category))
+        stmt = stmt.order_by(QuestionORM.title)
+        result = await self.session.execute(stmt)
+        return [
+            QuestionSummary(
+                id=row[0],
+                title=row[1],
+                difficulty=Difficulty(row[2]),
+                category=row[3],
+                company_tags=row[4] or [],
+                solved=False,
+            )
+            for row in result.all()
+        ]
+
     async def get_categories(self) -> List[str]:
         result = await self.session.execute(
             select(QuestionORM.category).distinct().order_by(QuestionORM.category)

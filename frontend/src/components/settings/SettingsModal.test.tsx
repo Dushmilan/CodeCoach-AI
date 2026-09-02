@@ -3,6 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsModal } from './SettingsModal';
 
+vi.mock('@/features/skill-graph/SkillGraphInline', () => ({
+  SkillGraphInline: () => <div data-testid='skill-graph-inline' />,
+}));
+
 describe('SettingsModal', () => {
   const defaultProps = {
     open: true,
