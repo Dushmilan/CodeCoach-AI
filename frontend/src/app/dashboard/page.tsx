@@ -5,6 +5,7 @@ import LearningSignals from "@/features/analytics/LearningSignals";
 import { MemoryGraph } from "@/features/memory/MemoryGraph";
 import { RescueDueQueue } from "@/features/rescue/RescueDueQueue";
 import { ReviewsDueQueue } from "@/features/review/ReviewsDueQueue";
+import { SkillGraph } from "@/features/skill-graph/SkillGraph";
 import { useQuestion } from "@/features/question/question.hook";
 import { resetOnboardingTour } from "@/components/onboarding/OnboardingTour";
 import Link from "next/link";
@@ -67,7 +68,8 @@ export default function StudentDashboardPage() {
           </div>
         </div>
         <div className="rounded-[2rem] bg-white/[0.03] ring-1 ring-white/5 p-1.5">
-          <div className="rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] p-6">
+          <div className="rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] p-6 space-y-6">
+            <SkillGraph />
             <LearningSignals />
             <MemoryGraph />
             <RescueDueQueue resolveTitle={resolveTitle} />
