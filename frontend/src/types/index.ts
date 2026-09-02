@@ -49,6 +49,7 @@ export interface Question extends QuestionSummary {
   solution: string;
   time_complexity: string;
   space_complexity: string;
+  constraints?: string[];
   is_interactive?: boolean;
 }
 

@@ -182,3 +182,31 @@ async def get_question_bank(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ) -> QuestionBank:
     return QuestionBank(repository=question_repo, cache=cache)
+
+
+async def get_skill_graph_repo_dependency(
+    db: AsyncSession = Depends(get_db),
+):
+    from app.repositories.sql_skill_graph_repository import SqlSkillGraphRepository
+
+    yield SqlSkillGraphRepository(db)
+
+
+def get_skill_graph_service_dependency(
+    repo=Depends(get_skill_graph_repo_dependency),
+):
+    from app.services.skill_graph_service import SkillGraphService
+
+    return SkillGraphService(repository=repo)
+
+
+def get_learner_context_service_dependency(
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+    skill_service=Depends(get_skill_graph_service_dependency),
+    submission_repo: SubmissionRepository = Depends(get_submission_repo),
+):
+    from app.services.learner_context_service import LearnerContextService
+
+    return LearnerContextService(
+        cache=cache, skill_service=skill_service, submission_repo=submission_repo
+    )

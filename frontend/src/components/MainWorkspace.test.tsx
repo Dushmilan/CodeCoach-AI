@@ -359,11 +359,11 @@ describe('MainWorkspace', () => {
     expect(mockSendMessage).toHaveBeenCalledWith(
       'hello',
       'freeform',
-      questions[0].title,
+      expect.stringContaining(questions[0].title),
       '',
       'python',
       undefined,
-      undefined,
+      'easy',
       '',
     );
   });
@@ -414,11 +414,11 @@ describe('MainWorkspace', () => {
     expect(mockSendMessage).toHaveBeenCalledWith(
       'hello',
       'freeform',
-      'Two Sum',
+      expect.stringContaining('Two Sum'),
       'new code',
       'python',
       undefined,
-      undefined,
+      'easy',
       'def two_sum(nums, target):\n    pass',
     );
   });

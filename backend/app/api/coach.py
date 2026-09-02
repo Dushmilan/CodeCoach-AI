@@ -24,9 +24,15 @@ from app.services.usage_service import UsageService, check_caps, usage_headers
 from app.services.solution_animation_service import SolutionAnimationService
 from app.api.auth_deps import get_current_user
 from app.api.daily_limits import enforce_daily_request_cap
-from app.api.dependencies import get_redis_cache, get_usage_service, get_executor
+from app.api.dependencies import (
+    get_learner_context_service_dependency,
+    get_redis_cache,
+    get_usage_service,
+    get_executor,
+)
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
+from app.services.learner_context_service import LearnerContextService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -97,6 +103,9 @@ async def get_coaching(
     _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
     _daily_guard: None = Depends(enforce_daily_request_cap),
+    learner_context: LearnerContextService = Depends(
+        get_learner_context_service_dependency
+    ),
 ):
     """
     Get AI coaching response for coding problems.
@@ -124,6 +133,21 @@ async def get_coaching(
             else []
         )
 
+        # Learner context (cached skill graph + recent submissions) — always-on for authed users
+        learner_ctx: dict = {"skill_block": "", "submission_block": ""}
+        try:
+            learner_ctx = await learner_context.get_context(user.id)
+            if learner_ctx.get("skill_block"):
+                logger.debug(
+                    "Coach learner skills: %s", learner_ctx["skill_block"][:200]
+                )
+            if learner_ctx.get("submission_block"):
+                logger.debug(
+                    "Coach submissions: %s", learner_ctx["submission_block"][:200]
+                )
+        except Exception as e:  # pragma: no cover - degrade open
+            logger.debug("Learner context fetch failed: %s", e)
+
         structured_data = await provider.get_structured(
             problem=coaching_request.problem,
             code=coaching_request.code,
@@ -134,6 +158,8 @@ async def get_coaching(
             lesson_context=coaching_request.lesson_context,
             chat_history=chat_history_list,
             initial_code=coaching_request.initial_code,
+            learner_context=learner_ctx.get("skill_block") or None,
+            submission_context=learner_ctx.get("submission_block") or None,
         )
 
         raw_response = _format_structured_as_text(structured_data)

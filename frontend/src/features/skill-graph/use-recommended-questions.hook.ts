@@ -63,6 +63,17 @@ export function useRecommendedQuestions(): UseRecommendedQuestionsReturn {
     }
   }, [isAuthenticated, isHydrated, loadRecommendations]);
 
+  // Silent refresh when learner context is invalidated (submit / coach personalization)
+  useEffect(() => {
+    const handler = () => {
+      void loadRecommendations();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("learner-context-invalidated", handler);
+      return () => window.removeEventListener("learner-context-invalidated", handler);
+    }
+  }, [loadRecommendations]);
+
   const refresh = useCallback(() => loadRecommendations(), [loadRecommendations]);
 
   return {
