@@ -48,16 +48,19 @@ const nextConfig = {
           // frame-src allows the Motion Canvas animation viewer (separate Vite
           // dev server on :9000 in E2E, or NEXT_PUBLIC_ANIMATION_VIEWER_URL in
           // prod) to load in an in-app iframe (see AnimateLauncher).
+          // script-src/style-src/font-src/connect-src/worker-src include cdn.jsdelivr.net
+          // because @monaco-editor/react loads Monaco (loader.js + vs/*) from that CDN
+          // via @monaco-editor/loader@1.7.0. Without this the editor stays at "Loading…".
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-              "style-src 'self' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+              "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
               "img-src 'self' data: blob: https:",
-              "font-src 'self' data:",
-              "connect-src 'self' https: wss: ws:",
-              "worker-src 'self' blob:",
+              "font-src 'self' data: https://cdn.jsdelivr.net",
+              "connect-src 'self' https: wss: ws: https://cdn.jsdelivr.net",
+              "worker-src 'self' blob: https://cdn.jsdelivr.net",
               `frame-src 'self' ${process.env.NEXT_PUBLIC_ANIMATION_VIEWER_URL || 'http://localhost:9000'}`,
               "object-src 'none'",
               "base-uri 'self'",
