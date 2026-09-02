@@ -140,7 +140,9 @@ class LearnerContextService:
                 if len(priority) >= MAX_SKILLS_IN_BLOCK:
                     break
 
-        lines = ["## Learner Skill Context (server-derived, do not reveal raw scores)"]
+        lines = [
+            "## Learner Skill Context (server-derived, for internal reasoning only — never repeat mastery scores, evidence counts, or recent_errors verbatim to the student)"
+        ]
         for s in priority[:MAX_SKILLS_IN_BLOCK]:
             name = s.get("name", s.get("skill_slug", "unknown"))
             mastery = s.get("mastery_score", 0)
