@@ -7,14 +7,17 @@ import { CheckCircle, ChevronDown, Play, RotateCcw } from "lucide-react";
 import { useRef } from "react";
 import { LANGUAGE_OPTIONS } from "./constants";
 
-const Editor = dynamic(() => import("@monaco-editor/react"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground/40">
-      Loading editor…
-    </div>
-  ),
-});
+const Editor = dynamic(
+  () => import("@monaco-editor/react").then((mod) => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground/40">
+        Loading editor…
+      </div>
+    ),
+  },
+);
 
 interface CodeEditorProps {
   language: Language;
