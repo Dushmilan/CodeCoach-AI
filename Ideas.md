@@ -2,8 +2,7 @@
 
 > Status legend: 🔴 Not started · 🟡 Partial / foundation only · 🟢 Mostly built · ✅ Done
 > Trackable with checkboxes — tick `[x]` as work lands.
-> Audit date: Aug 14, 2026. Status reflects work merged to `main` / the current
-> `feat/skill-graph-recommendations` branch. Companion status doc: [Progress.md](./Progress.md).
+> Audit date: Sep 02, 2026 (branch `feat/125-coach-skill-context-cache` — audited against code). Companion status doc: [Progress.md](./Progress.md).
 
 This is a **closed / private** product. Defensibility therefore rides on the
 product's own data and UX personality, not on an open-source community.
@@ -12,14 +11,14 @@ product's own data and UX personality, not on an open-source community.
 
 | # | Idea | Status | Key blocker |
 |---|------|--------|-------------|
-| 1 | Mistake-memory moat | 🔴 | No attempt-history persistence |
+| 1 | Mistake-memory moat | ✅ Done (+ learner-context shipped `f246c4a`) | No blocker — submissions + error graph + SM-2 + analytics + learner-context caching landed; backfill only |
 | 2 | Segment moat | 🟡 | No professor/class dashboard |
-| 3 | Forgetting-curve UI | 🔴 | Depends on #1 |
-| 4 | Never-alone rescue contract | 🟢 | Missing re-surface loop |
-| 5 | See-how-you-think replay | 🟡 | Flow-map is per-solve, not journey replay |
+| 3 | Forgetting-curve UI | ✅ Done | None — `/dashboard` memory graph live |
+| 4 | Never-alone rescue contract | ✅ Done | None — durable queue + T1→T2→T3 live; flow-map retired to animate |
+| 5 | See-how-you-think replay | 🟡 | `ProblemFlowMap` static list, not journey replay |
 | 6 | Live interviewer theater | 🔴 | Needs session/event engine |
-| 7 | Time-travel debugging | 🔴 | Needs tracing executor |
-| 8 | Reverse interview | 🔴 | Cheap — reuses coaching modes |
+| 7 | Time-travel debugging | 🟡 | `trace_instrumenter` exists for animation only; needs generic user-code tracing |
+| 8 | Reverse interview | 🔴 | Cheap — `CoachingMode.SENIOR` + prompt not yet added |
 | 9 | Honourable mentions | 🔴 | Backlog |
 
 ---
@@ -36,33 +35,33 @@ Why it's leverage: every session compounds switching cost. Five years of a
 user's mistake-history is a moat nobody can walk into. This is the thing you
 gather user data for.
 
-### Status: ✅ Done — plateau signals landed (Aug 24): GET /api/analytics/signals over bounded recent submissions (1000), LearningSignals banner on /dashboard
+### Status: ✅ Done — plus learner-context shipped (`f246c4a` Sep 02)
 
 **Detailed explanation:** The core product promise is that every run/submit/diagnosis
 a user makes is persisted per-user. From that history we derive (a) an error graph
 linking questions → failing concepts → recurring error signatures, (b) a spaced-repetition
 scheduler (SM-2/FSRS) that quizzes you on your _own_ past bugs, and (c) learning-analytics
-signals like "recursion plateau detected."
+signals like "recursion plateau detected." Now **unblocked**: `SubmissionORM` (`submissions` table, `d9e1f2a3b4c5`) is live, and `LearnerContextService` (`backend/app/services/learner_context_service.py`, `backend/app/core/cache_keys.py`) composes cached skill graph + recent attempts into coach prompts (`feat/125`).
 
-**The critical gap:** the codebase stores completed lessons (`course_progress`),
-usage events, and skill-graph learning events, but **never persists a user's actual
-code attempts**. There is no `submissions` / attempt-history table and no per-attempt
-error log. Without this data layer, ideas #3 and #5 are also blocked.
+**The critical gap (was):** the codebase stored completed lessons (`course_progress`),
+usage events, and skill-graph learning events, but never persisted actual code attempts
+— now **RESOLVED**: `submissions` + `review_cards` + `error_graph` + learner-context `f246c4a` are at head; diagnosis capture remains the only open wire (Piston `run`/`submit` already best-effort).
 
 ### Progress
 
-- [ ] Add a `submissions` schema (user_id, question_id, code, language, passed, error signature, attempt index, created_at)
-- [ ] Wire submission capture into `submit.py` / `run.py` (and diagnosis)
-- [ ] Supabase repository implementation behind a `ports/` interface (match the `sql_*` pattern)
+- [x] Add a `submissions` schema (user_id, question_id, code, language, passed, error signature, attempt index, created_at) — `SubmissionORM` `d9e1f2a3b4c5`
+- [x] Wire submission capture into `submit.py` / `run.py` (and diagnosis) — `submit.py:100` persisted + `run.py:59` `question_id` crash capture; skill-graph emission `submit.py:127` `sub:{id}`; diagnosis wire still open
+- [x] Supabase repository implementation behind a `ports/` interface (match the `sql_*` pattern) — `SqlSubmissionRepository` via `app/ports/submission_repository.py`
 - [x] Derive per-user error graph from attempt history (`GET /api/mistakes/graph`)
 - [x] Spaced-repetition scheduler producing review sessions from own past bugs (SM-2, `/api/reviews/*`)
 - [x] Learning-analytics signals ("recursion plateau detected")
+- [x] Learner-aware coaching (shipped `f246c4a`): `LearnerContextService` + `cache_keys.py` + `PromptBuilder` injection + `submit`/`skills` invalidation + `MainWorkspace` full description + `learner-context-invalidated` refresh
 - [ ] Backfill/adopt for existing questions where feasible
 
 ### Next steps
 
 1. ~~Design the attempt-history schema~~ — DONE (`submissions`)
-2. Capture on every Piston run and AI diagnosis (run.py / diagnosis capture still open)
+2. Wire diagnosis capture (last open)
 3. ~~Build the error-graph derivation~~ — DONE (Aug 24)
 4. ~~Build the spaced-repetition review endpoint~~ — DONE (Aug 24); frontend review UI is the follow-up
 
@@ -119,7 +118,7 @@ Why it's a moat: nobody does this. Giants are content repositories; you'd be the
 first memory-first coding platform. It makes your mistake-data the literal
 skeleton of the product — impossible to copy without rebuilding their whole UX.
 
-### Status: 🟢 Mostly built — memory graph dashboard landed (Aug 24, 2026)
+### Status: ✅ Done — memory graph dashboard landed (Aug 24, 2026), verified Sep 02
 
 **Detailed explanation:** The home page (and every screen) should be organized
 around _what you're about to forget_. Every card is a "days since you touched X"
@@ -137,9 +136,9 @@ energy-cost view ("6 days since recursion — 5-min refresher").
 
 ### Next steps
 
-1. Land #1's scheduler first (this is a pure UI on top)
-2. Design the memory-graph dashboard
-3. Ship one "due now" review card on the existing home page as a first slice
+1. ~~Land #1's scheduler first~~ — DONE
+2. ~~Design the memory-graph dashboard~~ — DONE
+3. ~~Ship one "due now" review card~~ — DONE (`ReviewsDueQueue`)
 
 ---
 
@@ -156,30 +155,29 @@ a contract:
 Why it's out-of-the-box + sticky: it's a UX personality giant can't copy, great
 for the beginner segment, low churn = compounding retention.
 
-### Status: ✅ Done — re-surface loop + time-based escalation landed (Aug 24, 2026)
+### Status: ✅ Done — re-surface loop + time-based escalation landed (Aug 24, 2026), verified Sep 02 — flow-map retired to animate
 
-**Detailed explanation:** The intervention half is implemented: `RescueIntervention` /
-`ProblemFlowMap` / `SolutionFlowMap` components, `use-rescue-contract` hook,
-backend flow-map API (`GET /questions/{id}/flow-map`, regenerate), and diagnosis
-with AI fallback to a deterministic outline. The "every abandoned problem
-resurfaces tomorrow as a tiny step" half is now **built**: a durable server-side
-queue (`rescue_queue` table + `/api/rescue/*`) schedules tomorrow-09:00
-resurfacing, survives reloads, and honors dismissals permanently.
+**Detailed explanation:** The intervention half is implemented: `RescueIntervention` +
+`ProblemFlowMap` (static checkpoint list, `frontend/src/components/rescue/ProblemFlowMap.tsx` via `rescue.checkpoints.ts`), `use-rescue-contract` hook
+(`frontend/src/features/rescue/use-rescue-contract.hook.ts`). The former AI `SolutionFlowMap`/`FlowMapService` (ReactFlow + `flow_map_*` `backend/` files, `GET /questions/{id}/flow-map`) was **removed** and replaced by the canonical **Animate** pipeline (`SolutionAnimationService` + `trace_instrumenter`/`trace_parser` + `AnimationScript`, `POST /api/coach/animate`). The "every abandoned problem
+resurfaces tomorrow as a tiny step" half is **built**: durable server-side queue
+(`rescue_queue` table `f2a3b4c5d6e7` + `/api/rescue/*` `rescue.py`) schedules tomorrow-09:00
+resurfacing, survives reloads, honors dismissals permanently. Diagnosis uses deterministic fallback (no backend flow-map API — checkpoints are frontend-local).
 
 ### Progress
 
 - [x] Rescue contract hook (`use-rescue-contract.hook.ts`)
-- [x] `RescueIntervention` + `ProblemFlowMap` / `SolutionFlowMap` components
-- [x] Flow-map API: lazy fetch-or-generate + regenerate, 503 fallback to deterministic outline
-- [x] Submission diagnosis service (AI diagnosis, blueprint labels)
-- [x] Capture abandoned problems (durable: `POST /api/rescue/{id}/abandon`; localStorage kept as offline fallback)
+- [x] `RescueIntervention` + `ProblemFlowMap` (checkpoint list via `rescue.checkpoints.ts`; former `SolutionFlowMap`/ReactFlow removed, now `animate` via `AnimationScript`)
+- [x] Flow-map rendering: static checkpoint list (no backend `flow-map` API; `ProblemFlowMap` is UI-only; AI flow maps replaced by `POST /api/coach/animate`)
+- [x] Submission diagnosis service (deterministic outline)
+- [x] Capture abandoned problems (durable: `POST /api/rescue/{id}/abandon`; localStorage kept as offline fallback `rescue.storage.ts`)
 - [x] Re-surface queue: tomorrow's tiny step for every abandoned problem (`GET /api/rescue/due`, "Back tomorrow" section on `/problems`)
 - [x] Time-based stuck escalation (X min → scaffold, Y min → re-plan) — `useRescueContract` now fires `onEscalateToT2`/`onEscalateToT3` once per tier, wired to AI coach `explain`/`review` messages + drawer open
 
 ### Next steps
 
-1. Persist abandoned sessions (rides #1's attempt layer)
-2. Add the daily re-surface queue endpoint + UI
+1. ~~Persist abandoned sessions~~ — DONE (rides #1 `submissions`)
+2. ~~Add the daily re-surface queue endpoint + UI~~ — DONE
 
 ---
 
@@ -194,28 +192,26 @@ Why it's a moat: it needs your full attempt-history (the data you're already
 gathering for idea #1), and it makes users look back at themselves — rare and
 addictive. Nobody else can show you your brain.
 
-### Status: 🟡 Partial — per-solve flow map only, not journey replay
+### Status: 🟡 Partial — per-solve `ProblemFlowMap` static list, not journey replay — code-audited Sep 02
 
-**Detailed explanation:** The flow-map feature (`frontend/src/features/flow-map/`,
-ReactFlow rendering, layout, status, export) shows an AI-rendered solution map
+**Detailed explanation:** The flow-map feature (`frontend/src/components/rescue/ProblemFlowMap.tsx`,
+static checkpoint list, plus `frontend/src/components/visualization/` for animations) shows a checkpoint map
 for a single solve. It is **not** a replay of the user's _attempt journey_ (every
-attempt, where they errored, how their code evolved). That replay is entirely
-dependent on #1's attempt-history persistence — the flow-map infra is the
-rendering layer we'd reuse.
+attempt, where they errored, how their code evolved). `submissions` history is now persisted (#1 done), so the data layer is unblocked — the renderer/timeline is still missing. Former AI flow-map was retired to `animate`.
 
 ### Progress
 
-- [x] Flow-map generation (lazy fetch-or-generate, regenerate)
-- [x] ReactFlow renderer + layout + status + export
-- [x] AI diagnosis of a submission
-- [ ] Persist full attempt journey per problem (needs #1)
+- [x] Flow-map checkpoint list (`ProblemFlowMap.tsx`) + rescue checkpoints (`rescue.checkpoints.ts`)
+- [x] Animation visualization infra (`AnimationPlayer.tsx`, `AnimationScriptRenderer.tsx`) for canonical solutions only
+- [x] AI diagnosis of a submission (deterministic fallback)
+- [x] Persist full attempt journey per problem — **unblocked** (`submissions` now live, needs journey query)
 - [ ] Animated replay timeline over the stored journey
 - [ ] "Where you errored / what you almost got" highlights
 
 ### Next steps
 
-1. Blocked on #1's attempt-history layer
-2. Reuse the flow-map renderer to animate the journey replay
+1. ~~Blocked on #1's attempt-history layer~~ — UNBLOCKED Sep 02
+2. Build animated replay timeline reusing `submissions` + `ProblemFlowMap` + `AnimationPlayer`
 
 ---
 
@@ -275,22 +271,18 @@ position, variables mutating, the exact frame where a value went wrong.
 Why it's a moat: genuinely modern technology, not a gamification skin — it makes
 "watch the bug happen" possible. Self-contained and demo-able with zero user data.
 
-### Status: 🔴 Not started
+### Status: 🟡 Partial — canonical tracing only (Sep 02 audit)
 
 **Detailed explanation:** Piston (`piston_service.py`) is stdout/exit-code only —
-it has **no step/trace support**. So this needs a new `tracing_executor` that
-AST-rewrites user code to inject `trace(scope)` calls (Python via `ast`, JS via
-a small transform), runs the instrumented program in the existing sandbox, and
-returns a `TraceTimeline` (line, vars, call stack, memory delta per step).
-Frontend gets a `TimelineScrubber` (play/pause, forward/back, var inspector)
-rendered over the editor, reusing flow-map ReactFlow renderers. Largest
-engineering cost of the whole doc; request-scoped, zero data needed.
+it has **no step/trace support**. Canonical-solution tracing **is** built for animations:
+`backend/app/services/trace_instrumenter.py:35` `wrap_traced_solution` injects `__trace` helper + JSON-array dump, `trace_parser.py:112` `parse_trace` normalizes `init`/`compare`/`swap`/`pointer`/`mark`/…/`return` events, `SolutionAnimationService` compiles them into `AnimationScript` for `GET /api/coach/animate`. **Missing:** generic AST-instrumented tracing of the *student's* code (Python `ast` + JS transform) producing a scrubbable `TraceTimeline` (`TraceStep`/`TraceFrame` schemas, `POST /trace`), plus `TimelineScrubber` (play/pause, var inspector) and line-highlight overlay on `CodeEditor.tsx`. Former AI flow-map is now animate.
 
 ### Progress
 
-- [ ] AST instrumentation for Python (`ast` rewrite → `trace(scope)`)
+- [x] Canonical-solution tracing for animation: `trace_instrumenter.py` (`__trace` + `_dump_trace`) + `trace_parser.py` (`TraceEvent`, `parse_trace`) + `SolutionAnimationService` (`POST /api/coach/animate` fallback)
+- [ ] AST instrumentation for student Python (`ast` rewrite → `trace(scope)`)
 - [ ] AST/transform instrumentation for JavaScript
-- [ ] `TracingExecutor` port + service running instrumented code in sandbox
+- [ ] `TracingExecutor` port + service running instrumented *student* code in sandbox
 - [ ] `TraceStep` / `TraceFrame` / `TraceTimeline` schemas + `POST /trace`
 - [ ] `TimelineScrubber` component (play/pause, scrub, var inspector)
 - [ ] Line-highlight overlay on `CodeEditor.tsx`
@@ -379,11 +371,12 @@ numbered ideas when chosen.
 
 ---
 
-## Suggested execution order
+## Suggested execution order (updated Sep 02 — code-audited)
 
-1. **#8 Reverse interview** — smallest effort, validates the persona engine
-2. **#6 Live interviewer theater** — flagship, rides existing SSE + persona engine
-3. **#1 Attempt-history + mistake memory** — unblocks #3 and #5; the compounding moat
-4. **#7 Time-travel debugging** — largest cost, self-contained
-5. **#3 / #5** — consume #1's data once it lands
-6. **#2 professor dashboard / #4 re-surface loop** — segment + retention completions
+1. **#8 Reverse interview** — smallest effort, validates the persona engine (`CoachingMode.SENIOR`, `coaching_prompts.py` junior persona, mode picker) — cheapest genuinely-new win
+2. **#6 Live interviewer theater** — flagship, rides existing SSE (`POST /coach/stream`) + persona engine from #8
+3. **#5 Attempt-journey replay** — now **unblocked** by #1 `submissions` (audited Sep 02); animate with existing `ProblemFlowMap` + `AnimationPlayer`
+4. **#7 Time-travel debugging — student-code path** — canonical trace done; add generic `TracingExecutor` + `POST /trace` + `TimelineScrubber`
+5. **#2 professor dashboard** — define `class`/`roster` model + class-level views (reads existing `course_progress`)
+6. **#1 residual** — diagnosis capture
+7. **#9 Honourable mentions** — promote after #8: adversarial twin / takeover (cheap, no data)

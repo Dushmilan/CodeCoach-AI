@@ -4,7 +4,7 @@ from typing import AsyncGenerator, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth_deps import get_current_user
-from app.api.dependencies import get_question_bank
+from app.api.dependencies import get_question_bank, get_redis_cache
 from app.core.database import get_db
 from app.models.auth_schemas import UserResponse
 from app.models.schemas import Question
@@ -17,7 +17,9 @@ from app.models.skill_graph_schemas import (
 )
 from app.ports.skill_graph_repository import SkillGraphRepository
 from app.repositories.sql_skill_graph_repository import SqlSkillGraphRepository
+from app.services.learner_context_service import LearnerContextService
 from app.services.question_bank import QuestionBank
+from app.services.redis_service import RedisCache
 from app.services.skill_graph_service import SkillGraphService
 
 router = APIRouter()
@@ -33,6 +35,18 @@ def get_skill_graph_service(
     repo: SkillGraphRepository = Depends(get_skill_graph_repo),
 ) -> SkillGraphService:
     return SkillGraphService(repository=repo)
+
+
+async def _invalidate_learner_cache(user_id: str, cache: RedisCache | None) -> None:
+    if not cache or not user_id:
+        return
+    try:
+        svc = LearnerContextService(
+            cache=cache, skill_service=None, submission_repo=None
+        )
+        await svc.invalidate(user_id)
+    except Exception:
+        pass
 
 
 @router.get("/me/skills", response_model=SkillGraphResponse)
@@ -97,6 +111,7 @@ async def ingest_events(
     events: List[LearningEvent],
     current_user: UserResponse = Depends(get_current_user),
     service: SkillGraphService = Depends(get_skill_graph_service),
+    cache: RedisCache | None = Depends(get_redis_cache),
 ):
     """Persist learning events and update the caller's skill graph.
 
@@ -107,7 +122,9 @@ async def ingest_events(
     for event in events:
         event.user_id = current_user.id
     try:
-        return await service.ingest_events(events, user_id=current_user.id)
+        result = await service.ingest_events(events, user_id=current_user.id)
+        await _invalidate_learner_cache(current_user.id, cache)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error ingesting events: {e}")
 
@@ -116,7 +133,9 @@ async def ingest_events(
 async def delete_my_history(
     current_user: UserResponse = Depends(get_current_user),
     service: SkillGraphService = Depends(get_skill_graph_service),
+    cache: RedisCache | None = Depends(get_redis_cache),
 ):
     """Delete the caller's learning history (events + skill states)."""
     await service.delete_history(current_user.id)
+    await _invalidate_learner_cache(current_user.id, cache)
     return {"status": "ok"}

@@ -359,11 +359,11 @@ describe('MainWorkspace', () => {
     expect(mockSendMessage).toHaveBeenCalledWith(
       'hello',
       'freeform',
-      questions[0].title,
+      expect.stringContaining(questions[0].title),
       '',
       'python',
       undefined,
-      undefined,
+      'easy',
       '',
     );
   });
@@ -414,11 +414,11 @@ describe('MainWorkspace', () => {
     expect(mockSendMessage).toHaveBeenCalledWith(
       'hello',
       'freeform',
-      'Two Sum',
+      expect.stringContaining('Two Sum'),
       'new code',
       'python',
       undefined,
-      undefined,
+      'easy',
       'def two_sum(nums, target):\n    pass',
     );
   });
@@ -537,5 +537,42 @@ describe('MainWorkspace', () => {
     const user = userEvent.setup();
     await user.click(screen.getByText('Select Question'));
     expect(mockSelectQuestion).toHaveBeenCalled();
+  });
+
+  it('dispatches learner-context-invalidated on submit', async () => {
+    const fullQuestion: Question = {
+      id: '1',
+      title: 'Two Sum',
+      difficulty: 'easy',
+      category: 'arrays',
+      company_tags: [],
+      description: 'test',
+      examples: [],
+      hints: [],
+      starter: { python: '', javascript: '', java: '', cpp: '', c: '', go: '', rust: '', typescript: '' },
+      solution: '',
+      time_complexity: '',
+      space_complexity: '',
+      test_cases: [],
+    };
+    mockUseQuestion.mockImplementation(() => ({
+      questions,
+      selectedQuestion: questions[0],
+      fullQuestion,
+      isLoading: false,
+      isLoadingQuestion: false,
+      error: null,
+      loadQuestions: mockLoadQuestions,
+      selectQuestion: mockSelectQuestion,
+      clearError: mockClearError,
+    }));
+    const spy = vi.spyOn(window, 'dispatchEvent');
+    act(() => {
+      render(<MainWorkspace />);
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Submit Code'));
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'learner-context-invalidated' }));
+    spy.mockRestore();
   });
 });

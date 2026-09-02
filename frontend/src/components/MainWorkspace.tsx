@@ -79,22 +79,48 @@ export function MainWorkspace() {
     handleRunCode(stdin);
   };
 
+  const handleSubmitWrapper = useCallback(async () => {
+    await handleSubmitCode();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("learner-context-invalidated"));
+    }
+  }, [handleSubmitCode]);
+
+  const buildProblemContext = useCallback(() => {
+    if (!displayQuestion) return "";
+    const base = displayQuestion.title || "";
+    if (fullQuestion) {
+      const desc = typeof fullQuestion.description === "string" ? fullQuestion.description : JSON.stringify(fullQuestion.description);
+      const examples = (fullQuestion.examples || []).map((e: any) => `Input: ${e.input} -> Output: ${e.output}`).join("\n");
+      const constraints = (fullQuestion.constraints || []).join("; ");
+      const category = fullQuestion.category || "";
+      const difficulty = fullQuestion.difficulty || "";
+      return [base, `Category: ${category}`, `Difficulty: ${difficulty}`, `Description: ${desc}`, examples ? `Examples:\n${examples}` : "", constraints ? `Constraints: ${constraints}` : ""].filter(Boolean).join("\n\n");
+    }
+    return base;
+  }, [displayQuestion, fullQuestion]);
+
   const handleSendMessage = useCallback(
     async (message: string, mode: CoachingMode) => {
       if (!displayQuestion) return;
       setIsAIChatOpen(true);
+      const problemContext = buildProblemContext();
       await sendMessage(
         message,
         mode,
-        displayQuestion.title,
+        problemContext,
         currentCode,
         language,
         undefined,
-        undefined,
+        (displayQuestion as any)?.difficulty || undefined,
         initialCode,
       );
+      // Silent Practice Next refresh is handled via learner invalidation event dispathed by backend cache; also trigger frontend refresh
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("learner-context-invalidated"));
+      }
     },
-    [displayQuestion, currentCode, language, sendMessage, initialCode],
+    [displayQuestion, currentCode, language, sendMessage, initialCode, buildProblemContext],
   );
 
   if (!isMounted || isLoading) {
@@ -128,7 +154,7 @@ export function MainWorkspace() {
               onCodeChange={setCurrentCode}
               onLanguageChange={setLanguage}
               onRunCode={handleRunCodeWrapper}
-              onSubmitCode={handleSubmitCode}
+              onSubmitCode={handleSubmitWrapper}
               isAuthenticated={isAuthenticated}
             />
           </QuestionContentSection>

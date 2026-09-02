@@ -221,4 +221,30 @@ describe('useRecommendedQuestions', () => {
       expect(mockGetRecommendedQuestions).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('learner-context-invalidated', () => {
+    it('silent refresh on window event', async () => {
+      mockGetRecommendedQuestions.mockResolvedValue([sampleRecommendation]);
+      renderHook(() => useRecommendedQuestions());
+      await waitFor(() => expect(mockGetRecommendedQuestions).toHaveBeenCalledTimes(1));
+      mockGetRecommendedQuestions.mockClear();
+      act(() => {
+        window.dispatchEvent(new Event('learner-context-invalidated'));
+      });
+      await waitFor(() => expect(mockGetRecommendedQuestions).toHaveBeenCalledTimes(1));
+    });
+
+    it('removes listener on unmount', async () => {
+      mockGetRecommendedQuestions.mockResolvedValue([sampleRecommendation]);
+      const { unmount } = renderHook(() => useRecommendedQuestions());
+      await waitFor(() => expect(mockGetRecommendedQuestions).toHaveBeenCalledTimes(1));
+      mockGetRecommendedQuestions.mockClear();
+      unmount();
+      act(() => {
+        window.dispatchEvent(new Event('learner-context-invalidated'));
+      });
+      await new Promise((r) => setTimeout(r, 50));
+      expect(mockGetRecommendedQuestions).not.toHaveBeenCalled();
+    });
+  });
 });

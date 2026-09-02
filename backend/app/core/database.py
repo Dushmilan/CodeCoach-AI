@@ -30,7 +30,9 @@ if settings.DATABASE_SEARCH_PATH:
 # Supabase poolers reuse prepared-statement names across connections; disable
 # asyncpg's statement cache so DDL / DML does not hit
 # DuplicatePreparedStatementError (mirrors tests/conftest.py).
-if not is_production() and _db_url.startswith("postgresql"):
+# Must apply in production as well — Supabase transaction pooler (pgbouncer)
+# is used in production and does not support prepared statements.
+if _db_url.startswith("postgresql"):
     _connect_args.setdefault("connect_args", {}).update(pooler_connect_args())
 
 engine: AsyncEngine = create_async_engine(

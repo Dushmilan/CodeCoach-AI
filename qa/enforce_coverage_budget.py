@@ -109,9 +109,7 @@ def resolve_floor(
             branches=min(float(target["branches"]), float(snapshot["branches"])),
         )
     else:
-        floor = Floor(
-            lines=float(target["lines"]), branches=float(target["branches"])
-        )
+        floor = Floor(lines=float(target["lines"]), branches=float(target["branches"]))
     return floor, reason
 
 
@@ -157,8 +155,10 @@ def main() -> int:
         if _normalize(key) not in {_normalize(m) for m in measurements}:
             failures.append(f"{key}: NOT MEASURED by coverage run")
 
-    print(f"[coverage-budget] enforced {len(enforced)} budgeted modules "
-          f"({len(skipped)} unmanaged/unbudgeted skipped)")
+    print(
+        f"[coverage-budget] enforced {len(enforced)} budgeted modules "
+        f"({len(skipped)} unmanaged/unbudgeted skipped)"
+    )
     if failures:
         print("[coverage-budget] FAIL — budgeted modules below regression floor:")
         for f in failures:

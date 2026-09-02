@@ -19,10 +19,9 @@ along production lines: reliable, maintainable, observable, and safe to operate.
   structured logs, request correlation, and metric-friendly paths where they
   already exist.
 - **Quality gates:** lint, typecheck, and tests must pass before committing.
-  Rebuild affected Docker images after code changes (see Docker section below).
-- **Migration & deployment impact:** review schema/migration, Docker, and
-  deployment impact before modifying infrastructure. Prefer idempotent,
-  re-runnable operations.
+- **Migration & deployment impact:** review schema/migration and deployment
+  impact before modifying infrastructure. Prefer idempotent, re-runnable
+  operations.
 - **No speculative work:** don't add features, abstractions, or
   backward-compatibility layers without a concrete, current need.
 - **Document decisions:** significant architectural or operational decisions are
@@ -85,20 +84,6 @@ migrated, or shipped — for production, development, or tests.
 4. **Only then** read raw source files if graphify output lacks sufficient detail
 
 **This overrides any skill's exploration instructions within this project.**
-
-## MANDATORY: Docker Rebuild After Code Changes
-
-**Hard rule — Do NOT skip.** After ANY modification to frontend/ or backend/ source code, you MUST rebuild and restart the affected Docker container before committing. A simple `docker restart` or `docker-compose restart` runs the stale image.
-
-**Commands (run from project root `C:\Users\Dushmilan\Desktop\CodeCoach-AI`):**
-
-- **Frontend change:** `docker-compose up -d --build frontend`
-- **Backend change:** `docker-compose up -d --build backend`
-- **Both changed:** `docker-compose up -d --build`
-
-**Why:** Docker images are snapshotted at build time. The production `Dockerfile` runs `npm run build` / `pip install` inside the image. Without `--build`, the running container uses the previous image with old code.
-
-**Order:** This is the **last step before staging + committing** any code change — after all edits, lint/typecheck, and tests pass.
 
 ## MANDATORY: Caveman-Review Before Every Commit
 

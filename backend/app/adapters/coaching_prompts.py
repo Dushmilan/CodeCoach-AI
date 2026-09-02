@@ -270,9 +270,18 @@ class PromptBuilder:
         lesson_context: Optional[str] = None,
         initial_code: Optional[str] = None,
         question: Optional[Dict[str, Any]] = None,
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Return (system_prompt, user_prompt) for the given coaching request."""
-        system = self._build_system(mode, language, structured, lesson_context)
+        system = self._build_system(
+            mode,
+            language,
+            structured,
+            lesson_context,
+            learner_context,
+            submission_context,
+        )
         user = self._build_user(
             problem,
             code,
@@ -293,6 +302,8 @@ class PromptBuilder:
         language: str,
         structured: bool,
         lesson_context: Optional[str],
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> str:
         persona = _STRUCTURED_PERSONA if structured else _PERSONA
         parts = [persona]
@@ -311,6 +322,11 @@ class PromptBuilder:
         ctx = self._lesson_context_block(lesson_context)
         if ctx:
             parts.append(ctx)
+
+        if learner_context:
+            parts.append(learner_context)
+        if submission_context:
+            parts.append(submission_context)
 
         parts.append(_GENERAL_GUIDELINES)
 

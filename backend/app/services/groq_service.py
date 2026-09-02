@@ -78,11 +78,14 @@ class GroqService(CoachingProvider):
         endpoint: str = "coach",
         initial_code: Optional[str] = None,
         question: Optional[Dict[str, Any]] = None,
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         from app.models.schemas import StructuredCoachingResponse
 
         cache_key = None
-        if self.cache and not chat_history:
+        has_personalization = bool(learner_context or submission_context)
+        if self.cache and not chat_history and not has_personalization:
             content_hash = _content_hash(
                 problem,
                 code,
@@ -92,7 +95,7 @@ class GroqService(CoachingProvider):
                 lesson_context or "",
                 initial_code or "",
                 _jsonable(question),
-                "v6",
+                "v7",
             )
             cache_key = RedisCache.key("groq", "coaching", content_hash)
             cached = await self.cache.get(cache_key)
@@ -124,6 +127,8 @@ class GroqService(CoachingProvider):
             lesson_context=lesson_context,
             initial_code=initial_code,
             question=question,
+            learner_context=learner_context,
+            submission_context=submission_context,
         )
 
         messages = [
@@ -329,6 +334,8 @@ class GroqService(CoachingProvider):
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         return await self.get_structured_coaching_response(
             problem=problem,
@@ -340,6 +347,8 @@ class GroqService(CoachingProvider):
             lesson_context=lesson_context,
             chat_history=chat_history,
             initial_code=initial_code,
+            learner_context=learner_context,
+            submission_context=submission_context,
         )
 
     async def stream(

@@ -22,6 +22,8 @@ class CoachingProvider(ABC):
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Return a structured coaching response as a dict."""
         ...

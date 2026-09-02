@@ -12,10 +12,16 @@ from app.api.auth_deps import get_current_user
 from app.api.dependencies import (
     get_executor,
     get_question_repo,
+    get_redis_cache,
     get_review_service,
+    get_skill_graph_service_dependency,
     get_submission_repo,
 )
 from app.middleware.rate_limit import limiter, RUN_RATE_LIMIT
+from app.models.skill_graph_schemas import LearningEvent, LearningEventType
+from app.services.learner_context_service import LearnerContextService
+from app.services.redis_service import RedisCache
+from app.services.skill_graph_service import SkillGraphService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,6 +38,18 @@ def _error_signature(results: list[TestCaseResult]) -> str | None:
     return None
 
 
+async def _invalidate_learner_cache(user_id: str, cache: RedisCache | None) -> None:
+    if not cache or not user_id:
+        return
+    try:
+        svc = LearnerContextService(
+            cache=cache, skill_service=None, submission_repo=None
+        )
+        await svc.invalidate(user_id)
+    except Exception:  # pragma: no cover
+        pass
+
+
 @router.post("/", response_model=SubmitResponse)
 @limiter.limit(RUN_RATE_LIMIT)
 async def submit_code(
@@ -41,6 +59,8 @@ async def submit_code(
     executor: CodeExecutor = Depends(get_executor),
     submissions: SubmissionRepository = Depends(get_submission_repo),
     reviews: ReviewService = Depends(get_review_service),
+    skill_service: SkillGraphService = Depends(get_skill_graph_service_dependency),
+    cache: RedisCache | None = Depends(get_redis_cache),
     current_user: UserResponse = Depends(get_current_user),
 ):
     question = await repository.get_by_id(submit_request.question_id)
@@ -75,8 +95,9 @@ async def submit_code(
 
     # Persist the graded attempt for the mistake-memory data layer. Best-effort:
     # a failed write must not 500 the graded result, but it IS logged.
+    persisted = None
     try:
-        await submissions.add(
+        persisted = await submissions.add(
             user_id=current_user.id,
             submission=SubmissionIn(
                 question_id=submit_request.question_id,
@@ -102,6 +123,35 @@ async def submit_code(
         )
     except Exception:  # noqa: BLE001
         logger.warning("Failed to record mistake-memory observation", exc_info=True)
+
+    # Skill-graph emission — uses persisted submission id for idempotency
+    if persisted is not None and skill_service is not None:
+        try:
+            event = LearningEvent(
+                id=f"sub:{persisted.id}",
+                user_id=current_user.id,
+                event_type=LearningEventType.SUBMISSION_PASSED
+                if passed
+                else LearningEventType.SUBMISSION_FAILED,
+                question_id=submit_request.question_id,
+                metadata={"error_signature": _error_signature(results)}
+                if not passed and _error_signature(results)
+                else {},
+                occurred_at=persisted.created_at or datetime.now(timezone.utc),
+            )
+            await skill_service.ingest_events([event], user_id=current_user.id)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "Failed to emit skill-graph event for %s",
+                submit_request.question_id,
+                exc_info=True,
+            )
+
+    # Invalidate cached learner context (skill graph + submissions + coach ctx)
+    try:
+        await _invalidate_learner_cache(current_user.id, cache)
+    except Exception:
+        pass
 
     return SubmitResponse(
         passed=passed,

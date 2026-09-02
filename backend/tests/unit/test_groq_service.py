@@ -375,7 +375,7 @@ class TestGroqServiceStructured:
         assert result["animation"]["steps"][0]["shapes"][0]["id"] == "cell_0"
 
     @pytest.mark.asyncio
-    async def test_animate_cache_key_includes_content_version_v6(
+    async def test_animate_cache_key_includes_content_version_v7(
         self, mock_async_client
     ):
         body = {
@@ -400,7 +400,7 @@ class TestGroqServiceStructured:
         )
 
         expected_hash = _content_hash(
-            "P", "c", "animate", "animate", "medium", "", "", _jsonable(None), "v6"
+            "P", "c", "animate", "animate", "medium", "", "", _jsonable(None), "v7"
         )
         assert cache.set_calls[0][0] == RedisCache.key(
             "groq", "coaching", expected_hash
