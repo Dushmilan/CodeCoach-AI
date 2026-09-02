@@ -84,8 +84,10 @@ def main() -> int:
         "exceptions": exceptions,
     }
     Path(args.out).write_text(json.dumps(out, indent=2) + "\n")
-    print(f"[snapshot] wrote {args.out} ({len(modules)} modules, "
-          f"{len(exceptions)} exceptions)")
+    print(
+        f"[snapshot] wrote {args.out} ({len(modules)} modules, "
+        f"{len(exceptions)} exceptions)"
+    )
     if not_measured:
         print(f"[snapshot] WARNING — not measured by this run: {not_measured}")
     return 0

@@ -57,10 +57,13 @@ class LearnerContextService:
 
         # 1. Try composed context cache
         if self.cache:
-            cached = await self.cache.get(coach_context_key(user_id))
-            if isinstance(cached, dict) and "skill_block" in cached:
-                logger.debug("Learner context cache hit for user %s", user_id)
-                return cached
+            try:
+                cached = await self.cache.get(coach_context_key(user_id))
+                if isinstance(cached, dict) and "skill_block" in cached:
+                    logger.debug("Learner context cache hit for user %s", user_id)
+                    return cached
+            except Exception as e:  # pragma: no cover - redis degraded
+                logger.debug("Coach context cache get failed for %s: %s", user_id, e)
 
         # 2. Miss — build from pieces (each piece may hit its own cache)
         skill_block = ""
