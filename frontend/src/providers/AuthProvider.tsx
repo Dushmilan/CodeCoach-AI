@@ -9,18 +9,18 @@ import {
   type ReactNode,
 } from "react";
 import { User, AuthState } from "@/types";
-import { authService } from "@/features/auth/auth.service";
+import { authService, type TokenResponse } from "@/features/auth/auth.service";
 import { setAccessToken, setCsrfToken } from "@/lib/auth-session";
 import { showToast } from "@/components/ui/Toast";
 
 interface AuthContextType extends AuthState {
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<TokenResponse>;
   register: (
     username: string,
     email: string,
     password: string,
-  ) => Promise<void>;
-  loginWithSupabase: (accessToken: string) => Promise<void>;
+  ) => Promise<TokenResponse>;
+  loginWithSupabase: (accessToken: string) => Promise<TokenResponse>;
   logout: () => void;
 }
 
@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCsrfToken(response.csrf_token ?? null);
       setAuth(response.user, response.access_token);
       showToast("Signed in successfully", "success");
+      return response;
     },
     [setAuth],
   );
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCsrfToken(response.csrf_token ?? null);
       setAuth(response.user, response.access_token);
       showToast("Account created successfully", "success");
+      return response;
     },
     [setAuth],
   );
@@ -106,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setCsrfToken(response.csrf_token ?? null);
       setAuth(response.user, response.access_token);
+      return response;
     },
     [setAuth],
   );

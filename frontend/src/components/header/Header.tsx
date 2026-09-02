@@ -3,7 +3,7 @@
 import { SettingsModal } from '@/components/settings/SettingsModal';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers';
-import { Code, GraduationCap, LayoutDashboard, Moon, Settings, Sun, User, X } from 'lucide-react';
+import { Code, GraduationCap, LayoutDashboard, Moon, Settings, Shield, Sun, User, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import * as React from 'react';
@@ -68,10 +68,12 @@ export function Header() {
               <Link
                 href="/admin"
                 data-testid="header-admin-link"
-                className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+                aria-label="Admin Panel"
+                title="Admin Panel"
+                className="px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 ring-1 ring-primary/20 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
               >
-                <LayoutDashboard className="h-3 w-3" />
-                Admin
+                <Shield className="h-3 w-3" />
+                Admin Panel
               </Link>
             )}
           </nav>
@@ -171,7 +173,7 @@ export function Header() {
             { href: '/learn', label: 'Learn', delay: 'delay-125' },
             { href: '/dashboard', label: 'Dashboard', delay: 'delay-130' },
             ...(isAdmin
-              ? [{ href: '/admin', label: 'Admin Dashboard', delay: 'delay-135' as const }]
+              ? [{ href: '/admin', label: 'Admin Panel', delay: 'delay-135' as const, highlight: true as const }]
               : []),
           ].map((link) => (
             <Link
@@ -180,7 +182,10 @@ export function Header() {
               onClick={() => setMenuOpen(false)}
               data-testid={link.href === '/admin' ? 'header-admin-link-mobile' : undefined}
               className={cn(
-                'text-4xl font-light tracking-tight text-white/80 hover:text-white transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                'text-4xl font-light tracking-tight transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                (link as { highlight?: boolean }).highlight
+                  ? 'text-primary hover:text-primary/80'
+                  : 'text-white/80 hover:text-white',
                 menuOpen ? `translate-y-0 opacity-100 ${link.delay}` : 'translate-y-12 opacity-0',
               )}
               style={{

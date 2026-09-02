@@ -1,6 +1,7 @@
 'use client';
 
 import { Header } from '@/components/header/Header';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { RecommendedQuestions } from '@/features/skill-graph/RecommendedQuestions';
 import { RescueDueQueue } from '@/features/rescue/RescueDueQueue';
 import { ReviewsDueQueue } from '@/features/review/ReviewsDueQueue';
@@ -345,20 +346,14 @@ export default function ProblemsPage() {
                 </div>
               </div>
             ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-center px-6">
-                <div className="h-12 w-12 rounded-2xl bg-white/[0.03] ring-1 ring-white/10 flex items-center justify-center">
-                  <Search className="h-5 w-5 text-muted-foreground/40" />
-                </div>
-                <p className="text-sm text-muted-foreground/70">No questions match your filters</p>
-                <p className="text-xs text-muted-foreground/40 max-w-sm">
-                  Try a different search term or clear some filters to see more questions.
-                </p>
-                <button
-                  onClick={resetFilters}
-                  className="mt-2 text-xs text-primary/80 hover:text-primary transition-colors"
-                >
-                  Clear all filters
-                </button>
+              <div className="py-10">
+                <EmptyState
+                  icon={Search}
+                  title="No questions match your filters"
+                  description="Try a different search term or clear some filters to see more questions."
+                  actionLabel="Clear all filters"
+                  onAction={resetFilters}
+                />
               </div>
             ) : (
               <>
