@@ -60,52 +60,54 @@ Coaching runs on a platform-owned Groq key with per-user daily token caps — st
 
 ## Features
 
-State is kept in sync with code (see [Progress.md](./Progress.md) and [Ideas.md](./Ideas.md)).
+State is kept in sync with code — audited Sep 02, 2026 on branch `feat/125-coach-skill-context-cache` (see [Progress.md](./Progress.md) and [Ideas.md](./Ideas.md)).
 
 ### Built
 
 | Feature | Description |
 |---|---|
-| **AI Coaching** | 6 modes (hint, review, explain, debug, freeform, animate) via Groq — structured JSON + SSE streaming (`POST /api/coach`, `POST /api/coach/stream`) |
+| **AI Coaching** | 6 modes (hint, review, explain, debug, freeform, animate) via Groq — structured JSON + SSE streaming (`POST /api/coach`, `POST /api/coach/stream`); lesson-aware + **learner-aware** (`feat/125` `LearnerContextService`: weakest-3 skills + last-3 attempts injected) |
 | **Code Execution** | Piston container — Python, JavaScript, Java; smart code wrapping for stdin→call→stdout harness (`GET/POST /api/run`, `/api/run/validate`, `/api/run/languages`) |
-| **Submit & Grade** | `POST /api/submit` and `POST /api/run` (optional `question_id` crash capture); visible + hidden cases, `POST /api/submissions/me` history |
-| **Question Bank** | DSA questions with CRUD, search, filtering by difficulty/category/company tags (`/api/questions`) |
-| **Question Validation** | 7 use-cases — structure, test cases, starter code, solution, time limits, function signature, output format (`/api/question-validation`) |
-| **Curriculum** | Python Fundamentals, C Programming, Java Programming — `/learn` dashboard, module tree, lesson viewer, adjacent-lesson navigation, progress tracking |
+| **Submit & Grade** | `POST /api/submit` (idempotent `LearningEvent sub:{id}` → skill graph) and `POST /api/run` (optional `question_id` crash capture); visible + hidden cases, `GET /api/submissions/me` history |
+| **Question Bank** | DSA questions with CRUD, search, filtering by difficulty/category/company tags + `/stats` aggregates (`/api/questions`) |
+| **Curriculum** | Python Fundamentals (5/36), C Programming (5/35), Java Programming (5/35) — `/learn` dashboard, module tree, lesson viewer, adjacent-lesson navigation, progress tracking |
 | **Lesson-aware Coaching** | Lesson context injected into every AI prompt; theory vs exercise layouts |
-| **Solution Animations** | Generate → validate → compile → play structured step animations (animate mode, canonical-solution pipeline, `AnimationPlayer`, Motion Canvas `viewer.html` on `:9000`) |
-| **Skill Graph** | Learning events (run, submit, hint, diagnosis, review) → mastery/status, trends, decay, prerequisite-aware graphs (tables `skills`, `question_skills`, `learning_events`, `user_skill_states`) |
-| **Practice Next** | `GET /api/skills/recommendations` deterministic queue respecting prerequisites; surfaced on `/problems` |
-| **Rescue Contract** | Never-alone intervention: `useRescueContract` T1(4m)→T2(+5m AI hint)→T3(+5m re-plan), `RescueIntervention` + `ProblemFlowMap`/`SolutionFlowMap`, diagnosis with deterministic fallback, durable `rescue_queue` + `/api/rescue/*` re-surface (`Back tomorrow` on `/problems`) |
-| **Attempt History** | `submissions` table (attempt_index, error_signature) — foundation for Ideas #1, #3, #5 |
+| **Solution Animations** | Generate → validate → compile → play structured step animations (animate mode, canonical-solution `__trace` pipeline via `trace_instrumenter`/`trace_parser`/`SolutionAnimationService`, flow-map retired; `AnimationPlayer`, Motion Canvas `viewer.html` on `:9000`) |
+| **Skill Graph** | Learning events (run, submit, hint, diagnosis, review) → mastery/status, trends, decay, prerequisite-aware graphs (tables `skills`, `question_skills`, `learning_events`, `user_skill_states`; 22 skills, 212 rows, 109/109 mapped) |
+| **Practice Next** | `GET /api/skills/me/recommended-questions` deterministic queue respecting prerequisites; `useRecommendedQuestions` on `/problems` with `learner-context-invalidated` silent refresh |
+| **Rescue Contract** | Never-alone intervention: `useRescueContract` T1(4m)→T2(+5m AI hint)→T3(+5m re-plan), `RescueIntervention` + `ProblemFlowMap` (static checkpoint list via `rescue.checkpoints.ts`, flow-map retired), durable `rescue_queue` (`f2a3b4c5d6e7`) + `/api/rescue/*` re-surface (`Back tomorrow` on `/problems`) |
+| **Attempt History** | `submissions` table (`d9e1f2a3b4c5`, attempt_index, error_signature) — every graded submit + crashed `run?question_id`; foundation for #1/#3/#5 |
 | **Error Graph** | `GET /api/mistakes/graph` — per-user mistake graph derived from attempt history (signatures, occurrences, affected questions, first/last seen, resolution) |
-| **Spaced Repetition** | SM-2 rotation over own bugs (`review_cards`, `/api/reviews/due`, `POST /api/reviews/{id}/grade`); `run` and `submit` observe failures/passes best-effort |
+| **Spaced Repetition** | SM-2 rotation over own bugs (`review_cards` `a3b4c5d6e7f8`, `/api/reviews/due`, `POST /api/reviews/{id}/grade`); `run` and `submit` observe failures/passes best-effort |
 | **Memory Graph** | Forgetting-curve dashboard — `GET /api/memory/graph` aggregates `review_cards` + `submissions` by `category` into per-topic `TopicMemory` (dueCount, avgInterval, daysSinceLastTouch, energyCostMinutes); `MemoryGraph.tsx` + student `/dashboard` |
 | **Learning Analytics** | Plateau signals — `GET /api/analytics/signals` derives `AnalyticsSignal` (type `plateau`, skill, `evidence{failures,passes,window_days}`) from bounded recent `submissions` (1000, 7-day window); `LearningSignals.tsx` banner on `/dashboard` |
 | **Auth** | JWT email/password (bcrypt, refresh tokens) + Supabase OAuth (Google) — `Continue with Google` |
 | **Usage Metering** | Per-user daily input/output token caps, `X-Usage-*` headers, Redis-backed limits |
 | **Plans & Gates** | Per-user plan field and quota-gated coaching (free 20 req/day, paid 500), usage bar, `UpgradeModal` |
 | **Admin Panel** | Dashboard, users, questions, curriculum, validation, usage/rate-limit analytics, abuse reports; Header shows Dashboard + Admin links (role-gated) |
-| **Workspace UX** | Monaco editor, dark/light theme, resizable panels, onboarding tour, toasts, hydration guard, `/dashboard` memory-first entry |
-| **Infrastructure** | Docker Compose (backend, frontend, redis, piston), Alembic, Supabase as the single DB, Cloudflare Workers (OpenNext) build |
+| **Workspace UX** | Monaco editor (CSP `worker-src blob:` fix `e51ddf4`), dark/light theme, resizable panels, onboarding tour, toasts, hydration guard, `/dashboard` memory-first entry |
+| **Infrastructure** | Docker Compose (backend, frontend, redis, piston), Alembic (head `e1f2a3b4c5d6`), Supabase as the single DB, Cloudflare Workers (OpenNext) build |
+| **Learner-aware Coaching** | `feat/125` `f246c4a`: `LearnerContextService` + `cache_keys` central TTLs + `GroqService` v7 hash + prompt injection; invalidated on `submit`/`skills` |
 
 ### Partial / foundation
 
 | Feature | What exists | What's missing |
 |---|---|---|
-| **Curriculum breadth** | Python, C, Java live (F5) | DBMS/SQL, OOP, Web Dev, MCQ — Phase 3 |
-| **Attempt-journey replay** | Per-solve flow maps | Persistent full-journey animated replay (needs #1 history — now available, renderer pending) |
-| **Interview theater** | SSE streaming + editor change events | Session/event engine + interviewer UI (Ideas #6) |
+| **Curriculum breadth** | Python, C, Java live (F5) | DBMS/SQL, OOP/Design Patterns, Web Dev, MCQ — Phase 3; `backend/data/courses` only `c/`+`java/` |
+| **Attempt-journey replay** | `ProblemFlowMap` static list + `submissions` history now persisted; animation infra for canonical solutions only | Animated replay timeline over own journey + "where you errored" highlights (Idea #5) |
+| **Interview theater** | SSE streaming + Monaco `onCodeChange` | Session/event engine + `InterviewSessionService` + `InterviewTheater` UI (Idea #6) |
+| **Time-travel debugging** | `trace_instrumenter`/`trace_parser` for `animate` only | Generic AST tracing for student code + `POST /trace` + `TimelineScrubber` (Idea #7) |
 | **Classroom / Segment moat** | Courses + progress tracking | Professor/class dashboard, roster model (Idea #2) |
 
-### Planned
+### Planned — audited Sep 02
 
 | Phase | Scope |
 |---|---|
-| **Phase 1 — DSA** | Onboarding polish, empty states, memory-first home polish (Idea #3 slice) |
-| **Phase 2 — Curriculum** | Context-aware coaching per lesson; ML/PromptEng/R/JS source JSON parked |
-| **Phase 3 — Expand** | DBMS/SQL, OOP/Design Patterns, Web Dev, theory/MCQ type, classroom dashboard |
-| **Backlog** | See [Ideas.md](./Ideas.md) — 9 numbered ideas + honourable mentions |
+| **Phase 1 — DSA** | Learner-context shipped (`feat/125`); attempt-journey replay (unblocked by `submissions`); onboarding polish |
+| **Phase 2 — Curriculum** | Context-aware coaching per lesson (now learner-aware); ML/PromptEng/R/JS source JSON parked |
+| **Phase 3 — Expand** | DBMS/SQL, OOP/Design Patterns, Web Dev, theory/MCQ type, classroom dashboard (Idea #2) |
+| **Next up** | **Idea #8 Reverse interview** (`CoachingMode.SENIOR` + junior persona) — cheapest win, validates persona engine for #6 |
+| **Backlog** | See [Ideas.md](./Ideas.md) — 9 numbered ideas + honourable mentions (Idea #7 student-code `POST /trace`, #6 `InterviewTheater`, flow-map retired) |
 
 ## Tech Stack
 
@@ -178,14 +180,14 @@ frontend/src/
 | `questions` | Bank (difficulty, category, starter_code JSON, test_cases, hints, company_tags GIN) |
 | `courses`, `modules`, `lessons` | Curriculum (language, order, theory/exercise, linked question) |
 | `course_progress` | Per-user lesson progress (continue-where-you-left-off) |
-| `submissions` | Attempt history (user_id, question_id, language, code, passed, error_signature, attempt_index, created_at) |
+| `submissions` | Attempt history (user_id, question_id, language, code, passed, error_signature, attempt_index, created_at) — `d9e1f2a3b4c5` |
 | `review_cards` | SM-2 cards (user_id, question_id, error_signature unique, state active/scheduled, ease, interval_days, lapses, due_at) — `a3b4c5d6e7f8` |
 | `rescue_queue` | Abandoned-problem re-surface (user_id, question_id unique partial open, due_at 09:00, dismissed) — `f2a3b4c5d6e7` |
 | `usage_*`, `rate_limit_events`, `user_daily_usage` | AI usage events, daily counters, rate-limit tracking (Redis-backed) |
-| `skills`, `question_skills`, `learning_events`, `user_skill_states` | Skill graph (definitions, question↔skill, per-user events + mastery) — `5bb567dd8649` |
+| `skills`, `question_skills`, `learning_events`, `user_skill_states` | Skill graph (definitions, question↔skill, per-user events + mastery) — `5bb567dd8649` (22 skills) |
 | `admin_*`, `audit_logs` | Admin sessions + audit trail |
 
-> **Live DB (Supabase `qazpxjpcvsjbmgbzuxxp`, TEST, Aug 24, 2026):** `alembic current` = `e1f2a3b4c5d6` (head); `public` holds 109 questions, `courses`/`modules`/`lessons` seeded (Python 5/36 + C 5/35 + Java 5/35), `review_cards`/`rescue_queue` verified, 212 `question_skills` rows (109/109 mapped, F3).
+> **Live DB (Supabase `qazpxjpcvsjbmgbzuxxp`, TEST, Sep 02, 2026 — audited):** `alembic current` = `e1f2a3b4c5d6` (head); `public` holds 109 questions, `courses`/`modules`/`lessons` seeded (Python 5/36 + C 5/35 + Java 5/35), `review_cards`/`rescue_queue` verified, 212 `question_skills` rows (109/109 mapped, F3). No `class`/`roster`/`trace` tables. Flow-map retired. `CoachingMode` has 6 modes (no `SENIOR`).
 
 Migrations in `backend/alembic/versions/` (initial, admin, usage, user plan, skill-graph, review_cards, rescue_queue). Tests use an isolated `codecoach_test` schema (`DATABASE_SEARCH_PATH`).
 
@@ -385,15 +387,7 @@ This is a private, closed project — no external maintainers or MIT-style licen
 5. **Supabase-only DB** — no SQLite/MySQL/local Postgres for runtime; only `postgresql://` / `postgresql+asyncpg://` against Supabase (or the isolated `codecoach_test` schema for tests).
 6. **Layering** — `api → services → ports → sql_*` repositories; DI via `app/api/dependencies.py`; Pydantic at boundaries; async engine (`async_session_maker`).
 7. **Quality gates** before commit: `ruff check + format --check`, `pnpm lint`, `pnpm typecheck`, relevant `pytest`/`vitest`/`playwright` tiers, and coverage budget.
-8. **Docker rebuild** after any `frontend/` or `backend/` source change:
-
-   ```bash
-   docker compose up -d --build frontend   # frontend change
-   docker compose up -d --build backend    # backend change
-   docker compose up -d --build            # both
-   ```
-
-9. **Caveman-review** before every commit: capture `git diff --staged`, load the `caveman-review` skill, fix all `bug:`/`risk:`/`nit:` findings, re-stage, re-verify, then commit.
+8. **Caveman-review** before every commit: capture `git diff --staged`, load the `caveman-review` skill, fix all `bug:`/`risk:`/`nit:` findings, re-stage, re-verify, then commit.
 
 See [AGENTS.md](./AGENTS.md) for the full mandatory rules and [Progress.md](./Progress.md) for recent changes.
 
@@ -451,38 +445,42 @@ CodeCoach-AI/
 - Secrets only from `.env` / env — never committed or logged; least privilege on all auth/authz paths.
 - See `backend/tests/security/` for 7 committed security suites (auth, execution, rate-limit, etc.).
 
-## Roadmap
+## Roadmap — audited Sep 02, 2026 (branch `feat/125-coach-skill-context-cache`)
 
 ```
 Phase 1 ─── DSA Practice (current focus)
-├── 109 / 100 questions ─── 33 Easy / 50 Medium / 26 Hard (109/109 skill-mapped, F3)
-├── Practice Next / skill-graph recommendations (shipped)
-├── Mistake-memory (submissions + error graph + SM-2 + Memory Graph /dashboard + Learning Analytics signals) (F6 + Idea #3 + Idea #1 residual Aug 24)
-├── Rescue contract — durable queue + T1→T2→T3 escalation (Idea #4, Aug 24)
-└── Polish (onboarding, empty states, memory-first home slice)
+├── 109 / 100 questions ─── 33 Easy / 50 Medium / 26 Hard (109/109 skill-mapped, F3, 212 rows)
+├── Practice Next / skill-graph recommendations (shipped; silent refresh on learner-context invalidation)
+├── Mistake-memory (submissions d9e1f2a3b4c5 + error graph + SM-2 a3b4c5d6e7f8 + Memory Graph /dashboard + Learning Analytics signals) (F6 + Idea #3 done Aug 24)
+├── Rescue contract — durable queue f2a3b4c5d6e7 + T1→T2→T3 escalation (Idea #4 done Aug 24, ProblemFlowMap static list; flow-map retired to animate)
+├── Learner-aware coaching (shipped Sep 02 `f246c4a`): LearnerContextService + cache_keys + prompt injection + skill emission
+└── Next: attempt-journey replay (now unblocked) + reverse interview (#8, CoachingMode.SENIOR)
 
 Phase 2 ─── Programming Language Curriculum
 ├── Python Fundamentals ─── 5 modules, 36 lessons (shipped)
 ├── C Programming ─── 5 modules, 35 lessons (F5, shipped)
 ├── Java Programming ─── 5 modules, 35 lessons (F5, shipped)
-└── Context-aware AI coaching per lesson
+└── Context-aware AI coaching per lesson (now learner-aware `feat/125`)
 
 Phase 3 ─── Future Modules
-├── DBMS / SQL
-├── OOP & Design Patterns
-├── Web Development (React, Node)
-├── Theory / MCQ question type
-└── Classroom dashboard (Idea #2)
+├── DBMS / SQL — no code
+├── OOP & Design Patterns — no code (java course has OOP lessons but no dedicated track)
+├── Web Development (React, Node) — no code
+├── Theory / MCQ question type — Question has no MCQ fields
+└── Classroom dashboard (Idea #2) — no class/roster model
+
+Backlog — Ideas #6 (InterviewTheater), #7 (student-code POST /trace + TimelineScrubber), #9 honourable mentions (adversarial twin, takeover, …)
 ```
 
-Detailed per-idea status (9 ideas + honourable mentions) lives in [Ideas.md](./Ideas.md) — Ideas #1 (residual plateau signals), #3 and #4 landed Aug 24.
+Detailed per-idea status (9 ideas + honourable mentions) lives in [Ideas.md](./Ideas.md) — audited Sep 02; #1/#3/#4 done + #5 unblocked + #8 next; flow-map retired.
 
-## Known Gaps
+## Known Gaps — code-audited Sep 02
 
-- No full attempt-journey animated replay yet (per-solve flow maps exist; now unblocked by attempt history + memory graph).
-- No interview-theater session engine / interviewer UI (Idea #6 — streaming foundation exists).
-- No classroom/professor dashboard or roster model (Idea #2 — segment moat).
-- `Ideas.md` backlog (honourable mentions: adversarial twin, takeover, talk-it-out, voice mentor, …) not yet promoted.
+- No full attempt-journey animated replay yet (`ProblemFlowMap` is static checkpoint list; `submissions` history now persisted and unblocks it, but timeline + highlights missing — Idea #5; former AI flow-map retired).
+- No interview-theater session engine / interviewer UI (`CoachingMode` has 6 modes, no `SENIOR`; no `InterviewSessionService`, no `POST /interview` — Idea #6/`#8`; streaming + Monaco foundation only).
+- No classroom/professor dashboard or roster model (`orm.py` has no `class`/`roster`/`assignment`; `data/courses` only `c/`+`java/` — Idea #2 segment moat).
+- No generic time-travel debugging for student code (`trace_instrumenter.py`/`trace_parser.py` exist for canonical `animate` only; no `POST /trace`, no `TimelineScrubber` — Idea #7).
+- `Ideas.md` backlog (adversarial twin, takeover, talk-it-out, voice mentor, …) not yet promoted — #8 is cheapest win to validate persona engine for #6.
 
 ## License
 
