@@ -1,6 +1,11 @@
 """TDD red for Scene Planner — searching (binary search) beats."""
 
-from app.models.animation_spec import AlgorithmAnimation, AnimationStepSpec, Complexity, InitialState
+from app.models.animation_spec import (
+    AlgorithmAnimation,
+    AnimationStepSpec,
+    Complexity,
+    InitialState,
+)
 from app.services.scene_planner import plan_searching, plan
 
 
