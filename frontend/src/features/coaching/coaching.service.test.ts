@@ -282,4 +282,48 @@ describe('CoachingService', () => {
       ).rejects.toThrow('Request failed: 429 Too Many Requests');
     });
   });
+
+  describe('warmContext', () => {
+    it('posts question_id to /api/coach/warm', async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        status: 'warming',
+        warmed: true,
+        ttl: 60,
+      });
+
+      const result = await service.warmContext('two-sum');
+
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/coach/warm',
+        { question_id: 'two-sum' },
+        undefined,
+      );
+      expect(result).toEqual({ status: 'warming', warmed: true, ttl: 60 });
+    });
+
+    it('forwards AbortSignal when provided', async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        status: 'warming',
+        warmed: true,
+        ttl: 60,
+      });
+      const ctrl = new AbortController();
+
+      await service.warmContext('two-sum', ctrl.signal);
+
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/coach/warm',
+        { question_id: 'two-sum' },
+        { signal: ctrl.signal },
+      );
+    });
+
+    it('degrades to error status instead of throwing', async () => {
+      vi.mocked(http.post).mockRejectedValue(new Error('429'));
+
+      const result = await service.warmContext('two-sum');
+
+      expect(result).toEqual({ status: 'error', warmed: false, ttl: 0 });
+    });
+  });
 });

@@ -21,6 +21,12 @@ export interface CoachingResponse {
   structured: StructuredCoachingResponse | null;
 }
 
+export interface WarmResponse {
+  status: string;
+  warmed: boolean;
+  ttl: number;
+}
+
 export class CoachingService {
   constructor(private http: HttpClient) {}
 
@@ -63,6 +69,21 @@ export class CoachingService {
       response: data.response,
       structured: data.structured || null,
     };
+  }
+
+  async warmContext(
+    questionId: string,
+    signal?: AbortSignal,
+  ): Promise<WarmResponse> {
+    try {
+      return await this.http.post<WarmResponse>(
+        "/api/coach/warm",
+        { question_id: questionId },
+        signal ? { signal } : undefined,
+      );
+    } catch {
+      return { status: "error", warmed: false, ttl: 0 };
+    }
   }
 }
 
