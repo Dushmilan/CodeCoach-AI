@@ -1,4 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+)
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 from typing import AsyncIterator, Optional
@@ -8,6 +15,8 @@ import logging
 import os
 import time
 
+from app.core.cache_keys import COACH_CONTEXT_TTL, coach_context_key
+from app.core.config import get_settings
 from app.models.schemas import (
     CoachingRequest,
     CoachingResponse,
@@ -15,6 +24,8 @@ from app.models.schemas import (
     Language,
     AnimateRequest,
     AnimateResponse,
+    WarmRequest,
+    WarmResponse,
 )
 from app.ports.coaching_provider import CoachingProvider
 from app.ports.code_executor import CodeExecutor
@@ -31,7 +42,7 @@ from app.api.dependencies import (
     get_executor,
 )
 from app.models.auth_schemas import UserResponse
-from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT
+from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT, COACH_WARM_RATE_LIMIT
 from app.services.learner_context_service import LearnerContextService
 
 logger = logging.getLogger(__name__)
@@ -90,6 +101,84 @@ async def enforce_user_rate_limit(
     count = await cache.incr(key, ttl=60)
     if count is not None and count > limit:
         raise HTTPException(status_code=429, detail="User request rate limit exceeded")
+
+
+async def _warm_learner_context(
+    learner_context: LearnerContextService,
+    cache: RedisCache,
+    user_id: str,
+    warming_key: str,
+    question_id: Optional[str] = None,
+) -> None:
+    """Best-effort background warm: populate coach ctx, release single-flight."""
+    start = time.monotonic()
+    try:
+        await asyncio.wait_for(learner_context.get_context(user_id), timeout=4)
+        elapsed_ms = int((time.monotonic() - start) * 1000)
+        logger.debug(
+            "coach warm done user=%s question=%s ms=%d",
+            user_id,
+            question_id or "-",
+            elapsed_ms,
+        )
+    except Exception as e:  # noqa: BLE001 - warm must never raise
+        logger.debug("coach warm failed user=%s: %s", user_id, e)
+    finally:
+        try:
+            await cache.delete(warming_key)
+        except Exception:  # noqa: BLE001 - best-effort release
+            pass
+
+
+@router.post("/warm", response_model=WarmResponse, status_code=202)
+@limiter.limit(COACH_WARM_RATE_LIMIT)
+async def warm_coaching_context(
+    request: Request,
+    background: BackgroundTasks,
+    user: UserResponse = Depends(get_current_user),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+    learner_context: LearnerContextService = Depends(
+        get_learner_context_service_dependency
+    ),
+    body: WarmRequest = WarmRequest(),
+):
+    """Warm reusable learner context when a user enters a question.
+
+    Fire-and-forget: returns 202 immediately, populates
+    ``codecoach:coach:ctx:{user}`` (+ skill/submission pieces) in the
+    background. Never returns skill data; Supabase stays source of truth.
+    """
+    _ = request
+    question_id = body.question_id if body else None
+    if not get_settings().COACH_WARM_ENABLED:
+        return WarmResponse(status="disabled", warmed=False, ttl=COACH_CONTEXT_TTL)
+    if cache is None:
+        return WarmResponse(status="disabled", warmed=False, ttl=COACH_CONTEXT_TTL)
+
+    context_key = coach_context_key(user.id)
+    try:
+        if await cache.exists(context_key):
+            return WarmResponse(
+                status="hit",
+                warmed=False,
+                ttl=await cache.ttl(context_key),
+            )
+    except Exception:  # noqa: BLE001 - degrade open
+        logger.debug("coach warm exists check failed for %s", user.id)
+
+    warming_key = RedisCache.key("warming", "coach", user.id)
+    try:
+        acquired = await cache.set_if_absent(warming_key, "1", ttl=5)
+    except Exception:  # noqa: BLE001 - degrade open
+        acquired = False
+    if not acquired:
+        return WarmResponse(status="warming", warmed=False, ttl=COACH_CONTEXT_TTL)
+
+    background.add_task(
+        _warm_learner_context, learner_context, cache, user.id, warming_key, question_id
+    )
+    logger.debug("coach warm queued user=%s question=%s", user.id, question_id or "-")
+    return WarmResponse(status="warming", warmed=True, ttl=COACH_CONTEXT_TTL)
 
 
 @router.post("/", response_model=CoachingResponse)

@@ -85,6 +85,10 @@ vi.mock('@/features/rescue/use-rescue-contract.hook', () => ({
   }),
 }));
 
+vi.mock('@/features/coaching/use-coach-warm.hook', () => ({
+  useCoachWarm: () => {},
+}));
+
 const lcpQuestion: Question = {
   id: 'lcp',
   title: 'Longest Common Prefix',

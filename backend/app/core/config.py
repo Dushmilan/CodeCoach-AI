@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Per-user request rate limit (requests per minute)
     USER_RATE_LIMIT_PER_MINUTE: int = 60
 
+    # Background coach-context warming on question enter (kill-switch)
+    COACH_WARM_ENABLED: bool = True
+
     # Abuse detection thresholds
     ABUSE_MULTI_ACCOUNT_MIN_ACCOUNTS: int = 3
     ABUSE_BURST_MIN_EVENTS: int = 20

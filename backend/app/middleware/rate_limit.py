@@ -178,6 +178,9 @@ def _rate_limit(env_key: str, default: str) -> Callable[[], str]:
 
 
 COACH_RATE_LIMIT: Callable[[], str] = _rate_limit("COACH_RATE_LIMIT", "10/minute")
+COACH_WARM_RATE_LIMIT: Callable[[], str] = _rate_limit(
+    "COACH_WARM_RATE_LIMIT", "30/minute"
+)
 RUN_RATE_LIMIT: Callable[[], str] = _rate_limit("RUN_RATE_LIMIT", "30/minute")
 QUESTIONS_RATE_LIMIT: Callable[[], str] = _rate_limit(
     "QUESTIONS_RATE_LIMIT", "100/minute"

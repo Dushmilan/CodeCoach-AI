@@ -80,6 +80,25 @@ class RedisCache:
             except Exception:
                 pass
 
+    async def set_if_absent(self, key: str, value: Any, ttl: int = 300) -> bool:
+        """Atomically set key only if absent (SET NX EX). True if acquired."""
+        client = await self._client()
+        if not client:
+            return False
+        try:
+            raw = json.dumps(value, default=str)
+            acquired = await client.set(key, raw, ex=ttl, nx=True)
+            return bool(acquired)
+        except Exception as e:
+            logger.debug("Redis set_if_absent failed for key %s: %s", key, e)
+            self.disable()
+            return False
+        finally:
+            try:
+                await client.aclose()
+            except Exception:
+                pass
+
     async def incr(self, key: str, ttl: int = 60) -> Optional[int]:
         """Atomically increment a counter, setting TTL on first increment.
 
