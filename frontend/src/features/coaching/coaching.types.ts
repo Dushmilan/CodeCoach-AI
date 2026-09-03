@@ -8,6 +8,8 @@ export type CoachingMode =
   | "freeform"
   | "animate";
 
+export type CoachingSurface = "questions" | "learn";
+
 export interface CoachingRequest {
   problem: string;
   language: string;
@@ -40,6 +42,7 @@ export interface CoachingActions {
     lessonContext?: string,
     difficulty?: string,
     initialCode?: string,
+    surface?: CoachingSurface,
   ) => Promise<void>;
   clearMessages: () => void;
   clearError: () => void;

@@ -31,10 +31,12 @@ class CapturingProvider:
         initial_code=None,
         learner_context=None,
         submission_context=None,
+        surface="questions",
         **kwargs,
     ):
         captured["learner_context"] = learner_context
         captured["submission_context"] = submission_context
+        captured["surface"] = surface
         return {
             "summary": "captured",
             "hints": [],
@@ -135,6 +137,62 @@ class TestLearnerContextFlow:
             assert captured.get("submission_context") == "sub-ctx"
         finally:
             app.dependency_overrides.pop(get_learner_context_service_dependency, None)
+
+    @pytest.mark.asyncio
+    async def test_coach_learn_surface_skips_learner_context(self, async_client):
+        """Learn surface must not fetch the skill graph and must forward surface."""
+        from app.services.learner_context_service import LearnerContextService
+
+        mock_svc = AsyncMock(spec=LearnerContextService)
+        mock_svc.get_context = AsyncMock(
+            return_value={"skill_block": "skill-ctx", "submission_block": "sub-ctx"}
+        )
+        mock_svc.invalidate = AsyncMock()
+
+        app.dependency_overrides[get_learner_context_service_dependency] = lambda: (
+            mock_svc
+        )
+        try:
+            with mock_auth():
+                resp = await async_client.post(
+                    "/api/coach/",
+                    json={
+                        "problem": "Loops",
+                        "code": "c",
+                        "language": "python",
+                        "message": "what is a loop?",
+                        "mode": "explain",
+                        "difficulty": "easy",
+                        "lesson_context": "Loops 101",
+                        "surface": "learn",
+                    },
+                )
+            assert resp.status_code == 200
+            mock_svc.get_context.assert_not_called()
+            assert captured.get("surface") == "learn"
+            assert captured.get("learner_context") in (None, "")
+            assert captured.get("submission_context") in (None, "")
+            assert resp.headers.get("X-Surface") == "learn"
+        finally:
+            app.dependency_overrides.pop(get_learner_context_service_dependency, None)
+
+    @pytest.mark.asyncio
+    async def test_coach_learn_requires_lesson_context(self, async_client):
+        """Learn surface without lesson_context must 422, never reaching the provider."""
+        with mock_auth():
+            resp = await async_client.post(
+                "/api/coach/",
+                json={
+                    "problem": "Loops",
+                    "code": "c",
+                    "language": "python",
+                    "message": "what is a loop?",
+                    "mode": "explain",
+                    "difficulty": "easy",
+                    "surface": "learn",
+                },
+            )
+        assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_coach_degraded_when_learner_context_fails(self, async_client):

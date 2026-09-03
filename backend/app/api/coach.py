@@ -133,20 +133,24 @@ async def get_coaching(
             else []
         )
 
-        # Learner context (cached skill graph + recent submissions) — always-on for authed users
+        # Learner context (cached skill graph + recent submissions) — only for
+        # the questions surface. The learn surface is graph-free by design:
+        # skipping the fetch saves Redis + DB roundtrips and prompt tokens.
+        surface = coaching_request.surface
         learner_ctx: dict = {"skill_block": "", "submission_block": ""}
-        try:
-            learner_ctx = await learner_context.get_context(user.id)
-            if learner_ctx.get("skill_block"):
-                logger.debug(
-                    "Coach learner skills: %s", learner_ctx["skill_block"][:200]
-                )
-            if learner_ctx.get("submission_block"):
-                logger.debug(
-                    "Coach submissions: %s", learner_ctx["submission_block"][:200]
-                )
-        except Exception as e:  # pragma: no cover - degrade open
-            logger.debug("Learner context fetch failed: %s", e)
+        if surface == "questions":
+            try:
+                learner_ctx = await learner_context.get_context(user.id)
+                if learner_ctx.get("skill_block"):
+                    logger.debug(
+                        "Coach learner skills: %s", learner_ctx["skill_block"][:200]
+                    )
+                if learner_ctx.get("submission_block"):
+                    logger.debug(
+                        "Coach submissions: %s", learner_ctx["submission_block"][:200]
+                    )
+            except Exception as e:  # pragma: no cover - degrade open
+                logger.debug("Learner context fetch failed: %s", e)
 
         structured_data = await provider.get_structured(
             problem=coaching_request.problem,
@@ -160,6 +164,7 @@ async def get_coaching(
             initial_code=coaching_request.initial_code,
             learner_context=learner_ctx.get("skill_block") or None,
             submission_context=learner_ctx.get("submission_block") or None,
+            surface=surface,
         )
 
         raw_response = _format_structured_as_text(structured_data)
@@ -171,6 +176,7 @@ async def get_coaching(
 
         response.headers.update(getattr(request.state, "usage_headers", {}))
         response.headers.update(getattr(request.state, "daily_limit_headers", {}))
+        response.headers["X-Surface"] = surface
 
         return CoachingResponse(
             response=raw_response,
@@ -382,6 +388,7 @@ async def get_coaching_stream(
                 lesson_context=coaching_request.lesson_context,
                 chat_history=chat_history_list,
                 initial_code=coaching_request.initial_code,
+                surface=coaching_request.surface,
             ):
                 chunk_count += 1
                 # Format as SSE

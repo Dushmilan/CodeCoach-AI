@@ -69,6 +69,7 @@ describe('CoachingService', () => {
         mode: 'hint',
         language: 'python',
         difficulty: 'medium',
+        surface: 'questions',
       });
       expect(result.response).toBe('Try using a hash map');
       expect(result.structured).toBeNull();
@@ -216,6 +217,54 @@ describe('CoachingService', () => {
           defaultArgs.mode,
         ),
       ).rejects.toThrow('Network error');
+    });
+
+    it('defaults surface to questions', async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        response: 'Ok',
+        structured: null,
+      });
+
+      await service.getCoachResponse(
+        defaultArgs.problem,
+        defaultArgs.language,
+        defaultArgs.code,
+        defaultArgs.message,
+        defaultArgs.mode,
+      );
+
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/coach/',
+        expect.objectContaining({ surface: 'questions' }),
+      );
+    });
+
+    it('forwards learn surface for curriculum chat', async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        response: 'Ok',
+        structured: null,
+      });
+
+      await service.getCoachResponse(
+        defaultArgs.problem,
+        defaultArgs.language,
+        defaultArgs.code,
+        defaultArgs.message,
+        defaultArgs.mode,
+        defaultArgs.difficulty,
+        'Loops 101',
+        undefined,
+        undefined,
+        'learn',
+      );
+
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/coach/',
+        expect.objectContaining({
+          surface: 'learn',
+          lesson_context: 'Loops 101',
+        }),
+      );
     });
 
     it('throws HttpError when server returns error', async () => {

@@ -1,6 +1,7 @@
 import { HttpClient } from "@/lib/http-client";
 import { FetchClient } from "@/lib/fetch-client";
 import { StructuredCoachingResponse } from "@/types";
+import { CoachingSurface } from "./coaching.types";
 
 export interface CoachingRequest {
   problem: string;
@@ -12,6 +13,7 @@ export interface CoachingRequest {
   lesson_context?: string;
   chat_history?: { role: string; content: string }[];
   initial_code?: string;
+  surface: CoachingSurface;
 }
 
 export interface CoachingResponse {
@@ -32,6 +34,7 @@ export class CoachingService {
     lessonContext?: string,
     chatHistory?: { role: string; content: string }[],
     initialCode?: string,
+    surface: CoachingSurface = "questions",
   ): Promise<CoachingResponse> {
     const body: CoachingRequest = {
       problem,
@@ -40,6 +43,7 @@ export class CoachingService {
       mode: mode.toLowerCase(),
       language: language.toLowerCase(),
       difficulty,
+      surface,
     };
     if (lessonContext) {
       body.lesson_context = lessonContext;

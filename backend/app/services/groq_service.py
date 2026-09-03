@@ -80,6 +80,7 @@ class GroqService(CoachingProvider):
         question: Optional[Dict[str, Any]] = None,
         learner_context: Optional[str] = None,
         submission_context: Optional[str] = None,
+        surface: str = "questions",
     ) -> Dict[str, Any]:
         from app.models.schemas import StructuredCoachingResponse
 
@@ -95,7 +96,8 @@ class GroqService(CoachingProvider):
                 lesson_context or "",
                 initial_code or "",
                 _jsonable(question),
-                "v7",
+                surface,
+                "v8",
             )
             cache_key = RedisCache.key("groq", "coaching", content_hash)
             cached = await self.cache.get(cache_key)
@@ -112,10 +114,20 @@ class GroqService(CoachingProvider):
 
         # Animate embeds full user/solution code arrays plus steps, so it always
         # uses a capable dedicated model rather than the difficulty-tied tier.
+        # The Learn companion is a curriculum guide, not an interview tutor, so
+        # it always uses the cheap tier regardless of question difficulty.
         if mode == "animate":
             model = self.models["animate"]
+        elif surface == "learn":
+            model = self.models["easy"]
         else:
             model = self.models.get(difficulty, self.models["medium"])
+
+        # Defense in depth: the Learn surface is graph-free even if a caller
+        # passes graph blocks directly.
+        if surface == "learn":
+            learner_context = None
+            submission_context = None
 
         system_prompt, user_prompt = self.prompts.build(
             mode=mode,
@@ -129,6 +141,7 @@ class GroqService(CoachingProvider):
             question=question,
             learner_context=learner_context,
             submission_context=submission_context,
+            surface=surface,
         )
 
         messages = [
@@ -212,6 +225,7 @@ class GroqService(CoachingProvider):
         chat_history: Optional[list] = None,
         endpoint: str = "coach_stream",
         initial_code: Optional[str] = None,
+        surface: str = "questions",
     ) -> AsyncIterator[str]:
         model = self.models["stream"]
 
@@ -224,6 +238,7 @@ class GroqService(CoachingProvider):
             structured=structured,
             lesson_context=lesson_context,
             initial_code=initial_code,
+            surface=surface,
         )
 
         messages = [
@@ -336,6 +351,7 @@ class GroqService(CoachingProvider):
         initial_code: Optional[str] = None,
         learner_context: Optional[str] = None,
         submission_context: Optional[str] = None,
+        surface: str = "questions",
     ) -> Dict[str, Any]:
         return await self.get_structured_coaching_response(
             problem=problem,
@@ -349,6 +365,7 @@ class GroqService(CoachingProvider):
             initial_code=initial_code,
             learner_context=learner_context,
             submission_context=submission_context,
+            surface=surface,
         )
 
     async def stream(
@@ -362,6 +379,7 @@ class GroqService(CoachingProvider):
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
+        surface: str = "questions",
     ) -> AsyncIterator[str]:
         async for chunk in self.get_coaching_response(
             problem=problem,
@@ -373,6 +391,7 @@ class GroqService(CoachingProvider):
             lesson_context=lesson_context,
             chat_history=chat_history,
             initial_code=initial_code,
+            surface=surface,
         ):
             yield chunk
 

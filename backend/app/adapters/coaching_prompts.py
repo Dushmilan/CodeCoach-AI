@@ -85,6 +85,30 @@ Animation rules:
 8. Only populate the specific field(s) needed for your single step — use null or [] for everything else to avoid overwhelming the student
 9. Always end summary with a question that drives the user to think"""
 
+_LEARN_PERSONA = """You are CodeCoach Learn Companion, a patient curriculum guide.
+
+## Your Persona
+- Warm, encouraging study companion — you teach ideas, never interview
+- Expert at explaining one concept clearly with analogies and tiny examples
+- Guide the student through the current lesson step by step
+- Provide EXACTLY ONE idea at a time — never dump the whole lesson at once
+- Always link back to the lesson objective and end with a check-for-understanding question
+
+## Hard Rules
+- DO NOT write the full exercise solution or give away the complete answer
+- DO NOT introduce concepts outside the current lesson unless the student explicitly asks
+- DO NOT reveal anything beyond the lesson scope — stay within the lesson context
+- Always end your summary with a check-for-understanding question about the lesson"""
+
+_LEARN_GUIDELINES = """
+## General Guidelines
+- Be concise but thorough — teach ONE idea at a time from the lesson
+- Always end with a check-for-understanding question tied to the lesson objective
+- Never give complete exercise solutions — guide discovery through questions
+- Use **bold** sparingly for key terms only
+- Use `backticks` for code, variables, and technical terms
+- If the user expresses frustration, encourage them and offer a smaller next step within the lesson"""
+
 _GENERAL_GUIDELINES = """
 ## General Guidelines
 - Be concise but thorough — provide ONE piece of information at a time
@@ -272,6 +296,7 @@ class PromptBuilder:
         question: Optional[Dict[str, Any]] = None,
         learner_context: Optional[str] = None,
         submission_context: Optional[str] = None,
+        surface: str = "questions",
     ) -> Tuple[str, str]:
         """Return (system_prompt, user_prompt) for the given coaching request."""
         system = self._build_system(
@@ -281,6 +306,7 @@ class PromptBuilder:
             lesson_context,
             learner_context,
             submission_context,
+            surface,
         )
         user = self._build_user(
             problem,
@@ -304,8 +330,13 @@ class PromptBuilder:
         lesson_context: Optional[str],
         learner_context: Optional[str] = None,
         submission_context: Optional[str] = None,
+        surface: str = "questions",
     ) -> str:
-        persona = _STRUCTURED_PERSONA if structured else _PERSONA
+        is_learn = surface == "learn"
+        if is_learn:
+            persona = _LEARN_PERSONA
+        else:
+            persona = _STRUCTURED_PERSONA if structured else _PERSONA
         parts = [persona]
 
         section = self._mode_section(mode, structured)
@@ -323,12 +354,16 @@ class PromptBuilder:
         if ctx:
             parts.append(ctx)
 
-        if learner_context:
-            parts.append(learner_context)
-        if submission_context:
-            parts.append(submission_context)
+        # Learn surface is graph-free: skill/submission blocks are never
+        # injected, even if a caller passes them (defense in depth — the
+        # coach route also skips the LearnerContextService fetch entirely).
+        if not is_learn:
+            if learner_context:
+                parts.append(learner_context)
+            if submission_context:
+                parts.append(submission_context)
 
-        parts.append(_GENERAL_GUIDELINES)
+        parts.append(_LEARN_GUIDELINES if is_learn else _GENERAL_GUIDELINES)
 
         if structured and mode == "animate":
             parts.append(_ANIMATE_CONTRACT)
@@ -408,6 +443,8 @@ MODE_SECTIONS = _MODE_SECTIONS
 PERSONA = _PERSONA
 STRUCTURED_PERSONA = _STRUCTURED_PERSONA
 GENERAL_GUIDELINES = _GENERAL_GUIDELINES
+LEARN_PERSONA = _LEARN_PERSONA
+LEARN_GUIDELINES = _LEARN_GUIDELINES
 
 
 def build_system_prompt(

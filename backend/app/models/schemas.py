@@ -25,6 +25,9 @@ class CoachingMode(str, Enum):
     ANIMATE = "animate"
 
 
+CoachingSurface = Literal["questions", "learn"]
+
+
 class Language(str, Enum):
     PYTHON = "python"
     JAVASCRIPT = "javascript"
@@ -71,6 +74,19 @@ class CoachingRequest(BaseModel):
         max_length=50000,
         description="Starter code the user began with, used to detect edits for animation",
     )
+    surface: CoachingSurface = Field(
+        default="questions",
+        description=(
+            "Client surface: 'questions' is the graph-aware interview tutor, "
+            "'learn' is the graph-free curriculum companion."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def require_lesson_context_for_learn(self):
+        if self.surface == "learn" and not self.lesson_context:
+            raise ValueError("lesson_context is required when surface is 'learn'")
+        return self
 
 
 class SceneShape(BaseModel):
