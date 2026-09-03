@@ -1,8 +1,15 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from app.services.course_service import CourseService
+from app.services.course_service import CourseService, _course_list_cache
 from app.models.course_schemas import Course, Module, Lesson, CourseProgress, LessonType
+
+
+@pytest.fixture(autouse=True)
+def _clear_course_cache():
+    _course_list_cache.clear()
+    yield
+    _course_list_cache.clear()
 
 
 @pytest.fixture
@@ -146,19 +153,19 @@ class TestCourseService:
     ):
         mock_course_repo.get_course_by_id = AsyncMock(return_value=sample_course)
         mock_course_repo.get_modules_by_course = AsyncMock(return_value=[sample_module])
-        mock_course_repo.get_lessons_by_module = AsyncMock(
-            return_value=[
-                Lesson(
-                    id="py-hello-world",
-                    course_id="python-fundamentals",
-                    module_id="python-intro",
-                    title="Hello, World!",
-                    type=LessonType.THEORY,
-                    content="# Hello, World!",
-                    order=1,
-                    language="python",
-                )
-            ]
+        lesson = Lesson(
+            id="py-hello-world",
+            course_id="python-fundamentals",
+            module_id="python-intro",
+            title="Hello, World!",
+            type=LessonType.THEORY,
+            content="# Hello, World!",
+            order=1,
+            language="python",
+        )
+        mock_course_repo.get_lessons_by_module = AsyncMock(return_value=[lesson])
+        mock_course_repo.get_lesson_summaries_by_module_ids = AsyncMock(
+            return_value=[lesson]
         )
 
         service = CourseService(
