@@ -99,10 +99,22 @@ SKILLS: List[Skill] = [
         prerequisite_ids=["trees"],
     ),
     Skill(
-        slug="dynamic-programming",
-        name="Dynamic Programming",
-        description="Overlapping subproblems, memoization, tabulation.",
+        slug="tries",
+        name="Tries",
+        description="Prefix trees, word search, autocomplete.",
+        prerequisite_ids=["trees"],
+    ),
+    Skill(
+        slug="dp-1d",
+        name="1-D Dynamic Programming",
+        description="Linear subproblems, memoization over indices.",
         prerequisite_ids=["recursion"],
+    ),
+    Skill(
+        slug="dp-2d",
+        name="2-D Dynamic Programming",
+        description="Grid and string-table subproblems, two-dimensional tables.",
+        prerequisite_ids=["dp-1d"],
     ),
     Skill(
         slug="greedy",
@@ -111,9 +123,21 @@ SKILLS: List[Skill] = [
         prerequisite_ids=["arrays"],
     ),
     Skill(
+        slug="intervals",
+        name="Intervals",
+        description="Merging and scheduling overlapping ranges.",
+        prerequisite_ids=["sorting"],
+    ),
+    Skill(
         slug="bit-manipulation",
         name="Bit Manipulation",
         description="XOR tricks, masks, two's-complement arithmetic.",
+        prerequisite_ids=["programming-fundamentals"],
+    ),
+    Skill(
+        slug="math-geometry",
+        name="Math & Geometry",
+        description="Arithmetic tricks, combinatorics, coordinate geometry.",
         prerequisite_ids=["programming-fundamentals"],
     ),
     Skill(
@@ -168,8 +192,8 @@ _QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     "first-missing-positive": [("arrays", 0.7), ("hash-maps", 0.3)],
     "product-of-array-except-self": [("arrays", 0.8), ("time-complexity", 0.2)],
     "missing-number": [("arrays", 0.6), ("bit-manipulation", 0.4)],
-    "merge-intervals": [("sorting", 0.5), ("arrays", 0.5)],
-    "non-overlapping-intervals": [("greedy", 0.7), ("sorting", 0.3)],
+    "merge-intervals": [("intervals", 0.5), ("arrays", 0.5)],
+    "non-overlapping-intervals": [("greedy", 0.7), ("intervals", 0.3)],
     # --- Two Pointers -----------------------------------------------------
     "reverse-string": [("strings", 0.5), ("two-pointers", 0.5)],
     "valid-palindrome": [("two-pointers", 0.7), ("strings", 0.3)],
@@ -203,9 +227,9 @@ _QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     ],
     "min-stack": [("stacks-queues", 0.8), ("arrays", 0.2)],
     "daily-temperatures": [("stacks-queues", 0.8), ("arrays", 0.2)],
-    "car-fleet": [("stacks-queues", 0.6), ("sorting", 0.4)],
+    "car-fleet": [("stacks-queues", 0.6), ("intervals", 0.4)],
     "largest-rectangle-in-histogram": [("stacks-queues", 0.8), ("two-pointers", 0.2)],
-    "longest-valid-parentheses": [("stacks-queues", 0.7), ("dynamic-programming", 0.3)],
+    "longest-valid-parentheses": [("stacks-queues", 0.7), ("dp-1d", 0.3)],
     # --- Heaps & Priority Queues -------------------------------------------
     "top-k-frequent-elements": [("heaps", 0.7), ("hash-maps", 0.3)],
     "k-closest-points-to-origin": [("heaps", 0.7), ("sorting", 0.3)],
@@ -240,7 +264,7 @@ _QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     "validate-binary-search-tree": [("trees", 0.8), ("recursion", 0.2)],
     "kth-smallest-element-in-a-bst": [("trees", 0.8), ("searching", 0.2)],
     "lowest-common-ancestor-of-a-binary-tree": [("trees", 0.8), ("recursion", 0.2)],
-    "binary-tree-maximum-path-sum": [("trees", 0.8), ("dynamic-programming", 0.2)],
+    "binary-tree-maximum-path-sum": [("trees", 0.8), ("dp-1d", 0.2)],
     # --- Graphs ----------------------------------------------------------------
     "number-of-islands": [("graphs", 1.0)],
     "clone-graph": [("graphs", 0.8), ("hash-maps", 0.2)],
@@ -249,16 +273,17 @@ _QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     "word-ladder": [("graphs", 0.7), ("searching", 0.3)],
     "word-search": [("backtracking", 0.8), ("graphs", 0.2)],
     "e42b2609-8b2c-49a0-9fa3-b7145df07bc3": [("graphs", 0.6), ("heaps", 0.4)],
-    # --- Dynamic Programming -----------------------------------------------------
-    "climbing-stairs": [("dynamic-programming", 0.8), ("recursion", 0.2)],
-    "coin-change": [("dynamic-programming", 1.0)],
-    "house-robber": [("dynamic-programming", 1.0)],
-    "word-break": [("dynamic-programming", 0.8), ("strings", 0.2)],
-    "edit-distance": [("dynamic-programming", 0.8), ("strings", 0.2)],
-    "decode-ways": [("dynamic-programming", 0.8), ("strings", 0.2)],
-    "longest-increasing-subsequence": [("dynamic-programming", 0.9), ("arrays", 0.1)],
-    "burst-balloons": [("dynamic-programming", 0.9), ("arrays", 0.1)],
-    "maximum-product-subarray": [("dynamic-programming", 0.7), ("arrays", 0.3)],
+    # --- 1-D Dynamic Programming -------------------------------------------------
+    "climbing-stairs": [("dp-1d", 0.8), ("recursion", 0.2)],
+    "coin-change": [("dp-1d", 1.0)],
+    "house-robber": [("dp-1d", 1.0)],
+    "word-break": [("dp-1d", 0.8), ("strings", 0.2)],
+    "decode-ways": [("dp-1d", 0.8), ("strings", 0.2)],
+    "longest-increasing-subsequence": [("dp-1d", 0.9), ("arrays", 0.1)],
+    "maximum-product-subarray": [("dp-1d", 0.7), ("arrays", 0.3)],
+    # --- 2-D Dynamic Programming -------------------------------------------------
+    "edit-distance": [("dp-2d", 0.8), ("strings", 0.2)],
+    "burst-balloons": [("dp-2d", 0.9), ("arrays", 0.1)],
     # --- Backtracking --------------------------------------------------------------
     "permutations": [("backtracking", 0.9), ("recursion", 0.1)],
     "subsets": [("backtracking", 0.9), ("recursion", 0.1)],
@@ -293,19 +318,19 @@ _QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     ],
     "6d7e8f9a-0b1c-4d2e-3f4a-5b6c7d8e9f0a": [("strings", 0.7), ("two-pointers", 0.3)],
     "1f3e5d7c-9b8a-4c6d-0e2f-4a5b6c7d8e9f": [
-        ("dynamic-programming", 0.8),
+        ("dp-1d", 0.8),
         ("strings", 0.2),
     ],
     "8c3d2e4f-6a5b-4f7c-9d0e-1a2b3c4d5e6f": [
-        ("dynamic-programming", 0.8),
+        ("dp-1d", 0.8),
         ("strings", 0.2),
     ],
     "9e4f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b": [
-        ("dynamic-programming", 0.8),
+        ("dp-1d", 0.8),
         ("strings", 0.2),
     ],
     "4a3f7c1e-5d6b-4e8f-9a0c-2b3d4e5f6a7b": [
-        ("dynamic-programming", 0.7),
+        ("dp-1d", 0.7),
         ("strings", 0.3),
     ],
 }
@@ -343,6 +368,33 @@ def is_roadmap_skill(slug: str) -> bool:
 
 def roadmap_skills() -> List[Skill]:
     return [s for s in SKILLS if s.kind == SkillKind.ROADMAP]
+
+
+# Explicit NeetCode-style bucket order for the roadmap UI. Dict insertion order
+# is not a contract; this tuple is.
+ROADMAP_ORDER: Tuple[str, ...] = (
+    "arrays",
+    "strings",
+    "hash-maps",
+    "two-pointers",
+    "sliding-window",
+    "stacks-queues",
+    "heaps",
+    "recursion",
+    "backtracking",
+    "sorting",
+    "searching",
+    "linked-lists",
+    "trees",
+    "tries",
+    "graphs",
+    "dp-1d",
+    "dp-2d",
+    "greedy",
+    "intervals",
+    "bit-manipulation",
+    "math-geometry",
+)
 
 
 # Alias for analytics plateau rule (plan expects QUESTION_SKILL_MAP) — keeps 109/109 contract.
