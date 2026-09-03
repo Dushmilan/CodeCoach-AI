@@ -639,40 +639,58 @@ class TestQuestionValidatorService:
         """Test that a valid question passes all validations."""
         from app.services.question_validator import QuestionValidatorService
         from app.ports.code_executor import ExecutionResult
+        import json
 
-        # Create question with valid Java method signature and executable solution
+        # Make the fixture animatable: binary-search is in the curated catalog
+        # (question_catalog.QUESTION_ALGORITHMS) and its canonical input
+        # "nums = [...], target = ..." maps to signature ["nums","target"].
+        valid_question_data["id"] = "binary-search"
+        valid_question_data["title"] = "Binary Search"
+        valid_question_data["category"] = "Binary Search"
+        valid_question_data["description"] = (
+            "Given a sorted array nums and a target value, return the index of "
+            "target using binary search or -1 if not found. This is long enough to pass."
+        )
+        valid_question_data["examples"] = [
+            {
+                "input": "nums = [2,4,7,9,13,18,21], target = 13",
+                "output": "4",
+                "explanation": "Target 13 found at index 4",
+            }
+        ]
         valid_question_data["starter"]["java"] = """
 class Solution {
-    public int[] solve(int[] nums) {
-        return nums;
+    public int binarySearch(int[] nums, int target) {
+        return 0;
     }
 }
 """
         valid_question_data["starter"]["python"] = """
 from typing import List
 
-def solve(nums: List[int]) -> List[int]:
-    return nums
+def solve(nums: List[int], target: int) -> int:
+    return 0
 
 import sys
 import json
 lines = sys.stdin.read().strip().split('\\n')
 nums = json.loads(lines[0])
-result = solve(nums)
+target = json.loads(lines[1]) if len(lines) > 1 else 0
+result = solve(nums, target)
 print(json.dumps(result))
 """
-        valid_question_data["solution"] = "return nums"
+        valid_question_data["solution"] = "binary search return mid"
         valid_question_data["test_cases"] = [
             {
-                "input": "[1,2,3]",
-                "expected_output": "[1,2,3]",
+                "input": "[2,4,7,9,13,18,21]\n13",
+                "expected_output": "4",
                 "description": "Basic test case",
                 "hidden": False,
             },
             {
-                "input": "[4,5,6]",
-                "expected_output": "[4,5,6]",
-                "description": "Another test case",
+                "input": "[1,3,5]\n2",
+                "expected_output": "-1",
+                "description": "Not found",
                 "hidden": True,
             },
         ]
@@ -680,11 +698,30 @@ print(json.dumps(result))
 
         service = QuestionValidatorService(executor=mock_piston_service)
 
-        # Mock executor to return appropriate output based on input
+        # Mock executor: animation trace for binary_search + normal test-case outputs
+        trace = json.dumps(
+            [
+                {
+                    "event": "init",
+                    "values": [2, 4, 7, 9, 13, 18, 21],
+                    "family": "array",
+                },
+                {"event": "pointer", "name": "low", "index": 0},
+                {"event": "pointer", "name": "high", "index": 6},
+                {"event": "pointer", "name": "mid", "index": 3},
+                {"event": "compare", "i": 3},
+                {"event": "mark", "i": 4, "state": "match"},
+                {"event": "return", "result": 4},
+            ]
+        )
+
         def mock_execute_side_effect(language, code, stdin="", version=None):
-            if "[4,5,6]" in stdin:
-                return ExecutionResult(stdout="[4,5,6]", exit_code=0)
-            return ExecutionResult(stdout="[1,2,3]", exit_code=0)
+            # Animation path: traced binary_search code contains the function name
+            if "binary_search" in code:
+                return ExecutionResult(stdout=trace, exit_code=0)
+            if "[1,3,5]" in stdin or "5]" in stdin:
+                return ExecutionResult(stdout="-1", exit_code=0)
+            return ExecutionResult(stdout="4", exit_code=0)
 
         mock_piston_service.execute.side_effect = mock_execute_side_effect
 
