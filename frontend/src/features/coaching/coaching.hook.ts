@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { ChatMessage } from "@/types";
 import { coachingService } from "./coaching.service";
-import { CoachingFeature, CoachingMode } from "./coaching.types";
+import { CoachingFeature, CoachingMode, CoachingSurface } from "./coaching.types";
 import { showToast } from "@/components/ui/Toast";
 import { useUsage } from "@/features/usage/usage.context";
 
@@ -38,6 +38,7 @@ export function useCoaching(): CoachingFeature {
       lessonContext?: string,
       difficulty?: string,
       initialCode?: string,
+      surface: CoachingSurface = "questions",
     ) => {
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -69,6 +70,7 @@ export function useCoaching(): CoachingFeature {
             lessonContext,
             chatHistory,
             initialCode,
+            surface,
           );
 
           const assistantMessage: ChatMessage = {

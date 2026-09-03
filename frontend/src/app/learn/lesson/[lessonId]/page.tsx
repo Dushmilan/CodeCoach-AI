@@ -110,6 +110,7 @@ export default function LessonPage() {
         lessonContext,
         linkedQuestion?.difficulty,
         resolvedStarterCode,
+        'learn',
       );
     },
     [lesson, currentCode, language, sendMessage, linkedQuestion?.difficulty, resolvedStarterCode],

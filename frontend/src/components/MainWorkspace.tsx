@@ -114,6 +114,7 @@ export function MainWorkspace() {
         undefined,
         (displayQuestion as any)?.difficulty || undefined,
         initialCode,
+        'questions',
       );
       // Silent Practice Next refresh is handled via learner invalidation event dispathed by backend cache; also trigger frontend refresh
       if (typeof window !== "undefined") {

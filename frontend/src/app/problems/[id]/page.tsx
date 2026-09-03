@@ -103,6 +103,7 @@ export default function ProblemWorkspacePage() {
       undefined,
       fullQuestion.difficulty,
       starterCode,
+      'questions',
     );
     if (mode !== 'wide') setDrawerOpen(true);
   }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode]);
@@ -126,6 +127,7 @@ export default function ProblemWorkspacePage() {
       undefined,
       fullQuestion.difficulty,
       starterCode,
+      'questions',
     );
     if (mode !== 'wide') setDrawerOpen(true);
   }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode]);
@@ -153,6 +155,7 @@ export default function ProblemWorkspacePage() {
         undefined,
         undefined,
         starterCode,
+        'questions',
       );
     },
     [fullQuestion, currentCode, language, sendMessage, rescueActivity, starterCode],

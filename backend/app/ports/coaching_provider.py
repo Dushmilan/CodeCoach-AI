@@ -24,6 +24,7 @@ class CoachingProvider(ABC):
         initial_code: Optional[str] = None,
         learner_context: Optional[str] = None,
         submission_context: Optional[str] = None,
+        surface: str = "questions",
     ) -> Dict[str, Any]:
         """Return a structured coaching response as a dict."""
         ...
@@ -40,6 +41,7 @@ class CoachingProvider(ABC):
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
+        surface: str = "questions",
     ) -> AsyncIterator[str]:
         """Yield streaming text chunks from the coaching backend."""
         ...  # pragma: no cover

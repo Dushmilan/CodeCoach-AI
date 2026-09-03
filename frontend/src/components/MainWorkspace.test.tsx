@@ -365,6 +365,7 @@ describe('MainWorkspace', () => {
       undefined,
       'easy',
       '',
+      'questions',
     );
   });
 
@@ -420,6 +421,7 @@ describe('MainWorkspace', () => {
       undefined,
       'easy',
       'def two_sum(nums, target):\n    pass',
+      'questions',
     );
   });
 
