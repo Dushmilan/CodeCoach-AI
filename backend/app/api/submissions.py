@@ -6,7 +6,7 @@ import logging
 from app.api.auth_deps import get_current_user
 from app.api.dependencies import get_submission_repo
 from app.models.auth_schemas import UserResponse
-from app.models.submission_schemas import SubmissionsListResponse
+from app.models.submission_schemas import Submission, SubmissionsListResponse
 from app.ports.submission_repository import SubmissionRepository
 
 logger = logging.getLogger(__name__)
@@ -30,3 +30,24 @@ async def get_my_submissions(
     except Exception:
         logger.exception("Failed to list submissions for user %s", current_user.id)
         raise HTTPException(status_code=500, detail="Failed to list submissions")
+
+
+@router.get("/{submission_id}", response_model=Submission)
+async def get_submission_status(
+    submission_id: str,
+    current_user: UserResponse = Depends(get_current_user),
+    submissions: SubmissionRepository = Depends(get_submission_repo),
+):
+    """Return one of the caller's submissions by id (status polling)."""
+    try:
+        item = await submissions.get(submission_id)
+    except Exception:
+        logger.exception(
+            "Failed to get submission %s for user %s",
+            submission_id,
+            current_user.id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to get submission")
+    if item is None or item.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    return item

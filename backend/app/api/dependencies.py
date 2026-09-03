@@ -171,6 +171,26 @@ async def get_course_admin_repo(
     yield SqlCourseAdminRepository(db)
 
 
+async def get_coaching_interaction_repo(
+    db: AsyncSession = Depends(get_db),
+):
+    from app.repositories.sql_coaching_interaction_repository import (
+        SqlCoachingInteractionRepository,
+    )
+
+    yield SqlCoachingInteractionRepository(db)
+
+
+async def get_execution_job_repo(
+    db: AsyncSession = Depends(get_db),
+):
+    from app.repositories.sql_execution_job_repository import (
+        SqlExecutionJobRepository,
+    )
+
+    yield SqlExecutionJobRepository(db)
+
+
 def get_executor(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ) -> CodeExecutor:

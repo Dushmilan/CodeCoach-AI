@@ -191,6 +191,9 @@ class SubmissionORM(Base):
     This is the foundation of the mistake-memory data layer: per-user error
     history, spaced-repetition reviews, and attempt-journey replay all hang
     off this table.
+
+    ``status`` tracks the adapter state machine: sent -> submitted ->
+    graded/failed. Legacy rows predate the machine and read as graded.
     """
 
     __tablename__ = "submissions"
@@ -212,6 +215,10 @@ class SubmissionORM(Base):
     passed = Column(Boolean, nullable=False, default=False)
     error_signature = Column(String(255), nullable=True)
     attempt_index = Column(Integer, nullable=False, default=0)
+    status = Column(String(20), nullable=False, server_default="graded")
+    idempotency_key = Column(String(128), nullable=True)
+    execution_job_id = Column(String(36), nullable=True, index=True)
+    request_id = Column(String(64), nullable=True)
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
@@ -222,6 +229,140 @@ class SubmissionORM(Base):
     __table_args__ = (
         Index("ix_submissions_user_question", "user_id", "question_id"),
         Index("ix_submissions_user_created", "user_id", "created_at"),
+        Index("ix_submissions_user_status_created", "user_id", "status", "created_at"),
+        Index(
+            "uq_submissions_user_idempotency",
+            "user_id",
+            "idempotency_key",
+            unique=True,
+            postgresql_where=text("idempotency_key IS NOT NULL"),
+        ),
+    )
+
+
+class CoachingInteractionORM(Base):
+    """Durable coaching intent (Groq adapter state machine).
+
+    One row per coaching request: sent before the external call, then
+    completed/failed/timeout/rate_limited after. Supabase is the source of
+    truth; Redis remains a disposable cache.
+    """
+
+    __tablename__ = "coaching_interactions"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    question_id = Column(
+        String(64),
+        ForeignKey("questions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    lesson_id = Column(
+        String(36),
+        ForeignKey("lessons.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    mode = Column(String(20), nullable=False)
+    language = Column(String(20), nullable=False)
+    problem_hash = Column(String(64), nullable=False)
+    code_hash = Column(String(64), nullable=False)
+    idempotency_key = Column(String(128), nullable=False)
+    status = Column(String(20), nullable=False, server_default="sent")
+    request_payload = Column(JSONType, default=dict, nullable=False)
+    response_payload = Column(JSONType, default=None, nullable=True)
+    error_code = Column(String(50), nullable=True)
+    error_message = Column(Text, nullable=True)
+    model = Column(String(100), nullable=True)
+    input_tokens = Column(Integer, nullable=False, default=0)
+    output_tokens = Column(Integer, nullable=False, default=0)
+    retry_count = Column(Integer, nullable=False, default=0)
+    request_id = Column(String(64), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+        nullable=False,
+    )
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index(
+            "uq_coaching_user_idempotency",
+            "user_id",
+            "idempotency_key",
+            unique=True,
+        ),
+        Index("ix_coaching_user_status_created", "user_id", "status", "created_at"),
+    )
+
+
+class ExecutionJobORM(Base):
+    """Durable execution intent (Piston adapter state machine).
+
+    One row per run/submit evaluation: sent before the external call, then
+    executed/failed/timeout/cancelled after. Linked from submissions via
+    submissions.execution_job_id (no back-reference to avoid cycles).
+    """
+
+    __tablename__ = "execution_jobs"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    question_id = Column(
+        String(64),
+        ForeignKey("questions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    language = Column(String(20), nullable=False)
+    code_hash = Column(String(64), nullable=False)
+    idempotency_key = Column(String(128), nullable=False)
+    status = Column(String(20), nullable=False, server_default="sent")
+    request_payload = Column(JSONType, default=dict, nullable=False)
+    response_payload = Column(JSONType, default=None, nullable=True)
+    test_results = Column(JSONType, default=None, nullable=True)
+    error_code = Column(String(50), nullable=True)
+    error_message = Column(Text, nullable=True)
+    execution_time_ms = Column(Integer, nullable=True)
+    retry_count = Column(Integer, nullable=False, default=0)
+    request_id = Column(String(64), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+        nullable=False,
+    )
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index(
+            "uq_execution_user_idempotency",
+            "user_id",
+            "idempotency_key",
+            unique=True,
+        ),
+        Index("ix_execution_user_status_created", "user_id", "status", "created_at"),
     )
 
 
