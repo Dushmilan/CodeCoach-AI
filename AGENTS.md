@@ -85,6 +85,63 @@ migrated, or shipped — for production, development, or tests.
 
 **This overrides any skill's exploration instructions within this project.**
 
+## MANDATORY: One Session = One Branch + One Worktree — Never Share a Worktree
+
+**Hard rule — Do NOT skip.** Parallel sessions MUST NEVER share the same working
+directory or branch. Each session gets its own branch checked out in its own
+git worktree. This is what prevents worktree conflicts and dirty-tree overwrites.
+
+**Session-start checklist (do this FIRST, before any read, plan, or edit):**
+
+1. `git worktree list` — see which directories/branches other sessions own.
+2. `git branch --show-current` + `git status --porcelain` — verify where you are.
+3. If you are on `main`, on a branch owned by another session/worktree, or on a
+   dirty tree you do not own → STOP. Create your own worktree + branch before
+   touching any file:
+   ```bash
+   git fetch origin
+   git worktree add ../CodeCoach-AI-<slug> -b <type>/<issue>-<slug> origin/main
+   cd ../CodeCoach-AI-<slug>
+   # e.g. git worktree add ../CodeCoach-AI-42-anim -b feat/42-ai-animation-viewer origin/main
+   # e.g. git worktree add ../CodeCoach-AI-101-monaco -b fix/101-monaco-render origin/main
+   ```
+4. If the branch already exists on remote (resuming work), attach instead of `-b`:
+   ```bash
+   git fetch origin
+   git worktree add ../CodeCoach-AI-<slug> <branch>
+   cd ../CodeCoach-AI-<slug>
+   ```
+   Run all further commands with the new worktree as the working directory.
+5. `git push -u origin <branch>` on first commit. Open a PR with
+   `Closes #<issue-number>` in the description.
+
+**Rules:**
+
+- Branch naming: `<type>/<issue-number>-<kebab-slug>` where `<type>` is
+  `feat|fix|chore|docs|refactor|test`. The issue number MUST be present when an
+  Issue exists. Examples: `feat/42-ai-animation-viewer`, `fix/101-monaco-render`.
+- If no Issue exists, create one first (`gh issue create`), then branch from it.
+  Trivial no-issue work is the only exception and MUST use
+  `<type>/no-issue-<slug>` and be called out in the PR.
+- Always branch worktrees from latest `origin/main` — never from a stale local
+  `main` or from another session's branch.
+- One Issue = one branch = one worktree. Do not mix unrelated Issues in the same
+  branch. If scope changes, create a new Issue + new worktree/branch.
+- No direct commits or pushes to `main` — all changes go through a branch + PR.
+- Never `git checkout` a branch that is already checked out in another worktree,
+  and never switch branches with a dirty tree — create a new worktree instead.
+- One worktree per session directory (`../CodeCoach-AI-<slug>` sibling of the
+  main checkout). Do not nest worktrees or reuse another session's directory.
+- Cleanup when merged/abandoned (from main checkout, tree must be clean/closed
+  in that worktree first):
+  ```bash
+  git worktree remove ../CodeCoach-AI-<slug>
+  git worktree prune
+  ```
+- If the agent/session was started on `main`, on the wrong branch, or in a
+  directory owned by another session, STOP and create/switch worktrees before
+  any file edits.
+
 ## MANDATORY: Caveman-Review Before Every Commit
 
 **Hard rule — Do NOT skip.** Before ANY git commit, you MUST run the caveman-review skill
