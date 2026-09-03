@@ -13,6 +13,7 @@ from .solution import SolutionValidationUseCase
 from .time_limits import TimeLimitValidationUseCase
 from .function_signature import FunctionSignatureValidationUseCase
 from .output_format import OutputFormatValidationUseCase
+from .animation import AnimationValidationUseCase
 
 __all__ = [
     "BaseValidationUseCase",
@@ -23,4 +24,5 @@ __all__ = [
     "TimeLimitValidationUseCase",
     "FunctionSignatureValidationUseCase",
     "OutputFormatValidationUseCase",
+    "AnimationValidationUseCase",
 ]

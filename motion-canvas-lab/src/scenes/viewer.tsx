@@ -342,6 +342,22 @@ function* renderGenericScene(
       total: steps.length,
       narration: step.narration || '',
     });
+    const camera: any = (step as any).camera;
+    if (camera?.action === 'focus' || camera?.action === 'panTo') {
+      const target = camera.element as string | undefined;
+      const region = camera.region as [number, number] | undefined;
+      if (target && nodes.has(target)) {
+        const node = nodes.get(target);
+        yield* view.position(Vector2.lerp(view.position(), new Vector2(-node.x(), -node.y() * 0.6), 0.6), 0.5);
+        if (camera.zoom) yield* view.scale(camera.zoom, 0.4);
+      } else if (region) {
+        yield* view.scale(camera.zoom ?? 1.15, 0.4);
+      } else if (camera.zoom) {
+        yield* view.scale(camera.zoom, 0.4);
+      }
+    } else if (camera?.action === 'reset') {
+      yield* all(view.position(Vector2.zero, 0.4), view.scale(camera.zoom ?? 1, 0.4));
+    }
     if (motion.length > 0) {
       yield* all(
         ...motion

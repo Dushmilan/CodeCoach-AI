@@ -29,6 +29,7 @@ class ValidationUseCase(str, Enum):
     TIME_LIMITS = "time_limits"
     FUNCTION_SIGNATURE = "function_signature"
     OUTPUT_FORMAT = "output_format"
+    ANIMATION = "animation"
 
     @property
     def description(self) -> str:
@@ -61,6 +62,13 @@ class ValidationUseCase(str, Enum):
             ValidationUseCase.OUTPUT_FORMAT: (
                 "Validates expected outputs have consistent formats across "
                 "all test cases."
+            ),
+            ValidationUseCase.ANIMATION: (
+                "Validates the algorithm-to-animation loop: Problem → "
+                "Optimal solution → Animation Spec → Renderer. Every question "
+                "must produce a validated cinematic animation (all 8 families) "
+                "via SolutionAnimationService + Scene Planner + AnimationValidator. "
+                "Fails the question if no trace / no mapping / not compilable."
             ),
         }.get(self, "No description available.")
 
