@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Tuple
 
-from app.models.skill_graph_schemas import QuestionSkill, Skill, SkillStatus
+from app.models.skill_graph_schemas import QuestionSkill, Skill, SkillKind, SkillStatus
 
 # Curated, deterministic skill taxonomy. Parent/child gives hierarchy;
 # prerequisite_ids define ordering that recommendations must respect.
@@ -12,6 +12,7 @@ SKILLS: List[Skill] = [
         slug="programming-fundamentals",
         name="Programming Fundamentals",
         description="Basic syntax, variables, control flow, functions.",
+        kind=SkillKind.SUPPORTING,
     ),
     Skill(
         slug="arrays",
@@ -120,24 +121,28 @@ SKILLS: List[Skill] = [
         name="Debugging",
         description="Reading error output, isolating failure, reproducing bugs.",
         prerequisite_ids=["programming-fundamentals"],
+        kind=SkillKind.SUPPORTING,
     ),
     Skill(
         slug="testing",
         name="Testing",
         description="Edge cases, unit assertions, input/output validation.",
         prerequisite_ids=["programming-fundamentals"],
+        kind=SkillKind.SUPPORTING,
     ),
     Skill(
         slug="time-complexity",
         name="Time Complexity",
         description="Big-O analysis, identifying dominant operations.",
         prerequisite_ids=["programming-fundamentals"],
+        kind=SkillKind.SUPPORTING,
     ),
     Skill(
         slug="space-complexity",
         name="Space Complexity",
         description="Auxiliary memory analysis, in-place vs. extra space.",
         prerequisite_ids=["programming-fundamentals"],
+        kind=SkillKind.SUPPORTING,
     ),
 ]
 
@@ -317,6 +322,28 @@ def _build_question_skills() -> Dict[str, List[QuestionSkill]]:
 
 
 QUESTION_SKILLS: Dict[str, List[QuestionSkill]] = _build_question_skills()
+
+# Roadmap vs supporting track (Issue #134, NeetCode conventions). Supporting
+# skills stay in the DB + event system for analytics/coaching context but are
+# excluded from roadmap ordering, progress totals, and primary recommendations.
+# Derived from Skill.kind so there is a single source of truth; no DB migration
+# needed (seed script upserts taxonomy fields, ORM rows remain kind-agnostic).
+SUPPORTING_SKILL_SLUGS: Tuple[str, ...] = tuple(
+    s.slug for s in SKILLS if s.kind == SkillKind.SUPPORTING
+)
+ROADMAP_SKILL_SLUGS: Tuple[str, ...] = tuple(
+    s.slug for s in SKILLS if s.kind == SkillKind.ROADMAP
+)
+_SUPPORTING_SLUGS: frozenset = frozenset(SUPPORTING_SKILL_SLUGS)
+
+
+def is_roadmap_skill(slug: str) -> bool:
+    return slug not in _SUPPORTING_SLUGS
+
+
+def roadmap_skills() -> List[Skill]:
+    return [s for s in SKILLS if s.kind == SkillKind.ROADMAP]
+
 
 # Alias for analytics plateau rule (plan expects QUESTION_SKILL_MAP) — keeps 109/109 contract.
 QUESTION_SKILL_MAP: Dict[str, List[Tuple[str, float]]] = _QUESTION_SKILL_WEIGHTS
