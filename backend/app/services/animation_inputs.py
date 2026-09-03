@@ -113,6 +113,10 @@ def parse_input_kwargs(
         parsed = _eval_value(stripped)
         if isinstance(parsed, dict):
             return parsed
+        if isinstance(parsed, tuple) and signature and len(parsed) == len(signature):
+            # Single-line positional values, e.g. "[2,7,11,15], 9" for
+            # ["nums", "target"] — the display shape seeds and DB examples use.
+            return dict(zip(signature, parsed))
         if signature and not isinstance(parsed, str):
             return {signature[0]: parsed}
         if signature and isinstance(parsed, str) and stripped.startswith(('"', "'")):

@@ -1,6 +1,6 @@
 """Integration tests for coach usage metering, daily caps and per-user rate limiting."""
 
-from datetime import date
+from datetime import datetime, timezone
 
 import pytest
 
@@ -90,7 +90,7 @@ class TestDailyCaps:
         repo = SqlUsageRepository(test_db)
         await repo.increment_daily(
             user_id=uid,
-            usage_date=date.today(),
+            usage_date=datetime.now(timezone.utc).date(),
             input_tokens=999_999,
             output_tokens=999_999,
         )
@@ -112,7 +112,7 @@ class TestDailyCaps:
         repo = SqlUsageRepository(test_db)
         await repo.increment_daily(
             user_id=uid,
-            usage_date=date.today(),
+            usage_date=datetime.now(timezone.utc).date(),
             input_tokens=999_999,
             output_tokens=999_999,
         )
@@ -235,7 +235,10 @@ class TestUsageHeadersReflectUsage:
 
         repo = SqlUsageRepository(test_db)
         await repo.increment_daily(
-            user_id=uid, usage_date=date.today(), input_tokens=100, output_tokens=50
+            user_id=uid,
+            usage_date=datetime.now(timezone.utc).date(),
+            input_tokens=100,
+            output_tokens=50,
         )
         await test_db.commit()
 

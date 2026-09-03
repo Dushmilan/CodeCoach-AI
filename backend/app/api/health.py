@@ -3,11 +3,13 @@ from datetime import datetime, timedelta, timezone
 import asyncio
 import logging
 import os
+from typing import Optional
 from sqlalchemy import text
 
-from app.api.dependencies import get_usage_repo
+from app.api.dependencies import get_redis_cache, get_usage_repo
 from app.core.database import async_session_maker, get_db
 from app.ports.usage_repository import UsageRepository
+from app.services.redis_service import RedisCache
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -65,9 +67,9 @@ async def health_check(request: Request):
 
 @router.get("/monitoring")
 async def monitoring_check(
-    request: Request,
     db=Depends(get_db),
     usage_repo: UsageRepository = Depends(get_usage_repo),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Deep health + abuse-posture snapshot for uptime dashboards.
 
@@ -78,7 +80,6 @@ async def monitoring_check(
     from app.services.abuse_detection import AbuseDetectionService
     from app.services.monitoring import MonitoringService
 
-    cache = getattr(request.app.state, "redis_cache", None)
     monitoring = MonitoringService(redis_cache=cache)
     since = datetime.now(timezone.utc) - timedelta(hours=24)
 

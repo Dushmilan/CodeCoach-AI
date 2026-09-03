@@ -13,6 +13,11 @@ _course_list_cache: Dict[str, Tuple[float, List[CourseSummary]]] = {}
 _COURSE_LIST_TTL = 30.0
 
 
+def invalidate_course_list_cache() -> None:
+    """Drop the anonymous course-list cache (call after admin mutations)."""
+    _course_list_cache.clear()
+
+
 class CourseService:
     def __init__(
         self,

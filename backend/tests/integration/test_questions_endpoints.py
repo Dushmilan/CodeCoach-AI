@@ -87,7 +87,7 @@ class TestQuestionsEndpoints:
         assert isinstance(data["questions"], list)
         assert len(data["questions"]) <= data["per_page"]
         assert data["page"] == 1
-        assert data["per_page"] == 100
+        assert data["per_page"] == 20
 
     def test_get_all_questions_with_pagination(self, test_client: TestClient):
         """Test getting questions with pagination."""
@@ -245,7 +245,7 @@ class TestQuestionsEndpoints:
         assert response.status_code == 200
 
         # Test maximum per_page
-        response = test_client.get("/api/questions/?per_page=100")
+        response = test_client.get("/api/questions/?per_page=200")
         assert response.status_code == 200
 
         # Test invalid per_page (too low)
@@ -253,7 +253,7 @@ class TestQuestionsEndpoints:
         assert response.status_code == 422
 
         # Test invalid per_page (too high)
-        response = test_client.get("/api/questions/?per_page=101")
+        response = test_client.get("/api/questions/?per_page=201")
         assert response.status_code == 422
 
         # Test invalid page

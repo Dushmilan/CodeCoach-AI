@@ -27,6 +27,14 @@ class TestParseInputKwargs:
     def test_bare_number_maps_to_first_signature_param(self):
         assert parse_input_kwargs("19", ["n"]) == {"n": 19}
 
+    def test_single_line_positional_values_zip_to_signature(self):
+        out = parse_input_kwargs("[2,7,11,15], 9", ["nums", "target"])
+        assert out == {"nums": [2, 7, 11, 15], "target": 9}
+
+    def test_single_line_positional_arity_mismatch_falls_back(self):
+        out = parse_input_kwargs("[2,7,11,15], 9", ["nums"])
+        assert out == {"nums": ([2, 7, 11, 15], 9)}
+
     def test_nested_brackets_are_not_split(self):
         out = parse_input_kwargs("root = [3,1,4,null,2], k = 1", ["root", "k"])
         assert out == {"root": [3, 1, 4, None, 2], "k": 1}

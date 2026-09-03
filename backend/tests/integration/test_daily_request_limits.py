@@ -4,7 +4,7 @@ Covers the 429 path, X-RateLimit-* headers, pro-tier exemption, Redis-down
 fallback and the /api/usage reporting endpoint.
 """
 
-from datetime import date
+from datetime import datetime, timezone
 
 import pytest
 
@@ -274,7 +274,7 @@ class TestUsageEndpointRedisDown:
             repo = SqlUsageRepository(test_db)
             await repo.increment_daily(
                 user_id=uid,
-                usage_date=date.today(),
+                usage_date=datetime.now(timezone.utc).date(),
                 input_tokens=0,
                 output_tokens=0,
                 request_count=2,
