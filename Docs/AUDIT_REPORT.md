@@ -11,6 +11,20 @@
 > to Markdown (`README.md`, `Progress.md`, `Ideas.md`). References to SQLite,
 > file-based storage, or side docs such as `Goal.md`/`Phase2.md` describe the
 > audit-time state and are not current.**
+>
+> **Note (Sep 04, 2026, `docs/no-issue-docs-sync`):** Still historical — the body
+> below is preserved as written. Landed since Aug 14 and NOT reflected in the
+> scored sections: durable rescue queue (F2), mistake-memory error-graph + SM-2
+> (F6), full skill mapping (F3, now 26 skills: 21 roadmap + 5 supporting after
+> `#134`/`#135`/`#138`), C/Java curricula (F5), SQL `COUNT(*)` pushdown (M-04),
+> Redis workspace persistence (`#124`), adapter-state durability (`#133`,
+> head `b4c5d6e7f8a1`), anonymous course-list cache (`#144`), learner-context
+> + coach warm + `surface` split (`#125`/`#131`/`#132`), 8-family animation
+> planner + quality gates (`#141`), non-skippable `ANIMATION` validation gate,
+> SEC-1..4 (httpOnly refresh + CSRF, in-process limiter replacing slowapi,
+> markdown sanitize, Piston SSRF guard), security headers, debug guard,
+> CI workflows, and question-delete cache invalidation (`#143`). For current
+> status see `Progress.md` / `Ideas.md` / `README.md` (audited Sep 04).
 
 ---
 
