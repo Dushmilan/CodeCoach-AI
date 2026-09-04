@@ -2,7 +2,14 @@
 """Seed the skill taxonomy + question-skill mappings into Supabase.
 
 Idempotent and re-runnable: upserts by natural key (skills.slug,
-question_skills.question_id+skill_slug) and never deletes unrelated rows.
+question_skills.question_id+skill_slug), then prunes taxonomy-unknown rows
+so past renames (e.g. #135's ``dynamic-programming`` split) self-heal
+instead of attributing events to unknown slugs. Never deletes rows outside
+the taxonomy-owned ``skills`` / ``question_skills`` tables.
+
+Deploy order: run ``alembic upgrade head`` BEFORE this seed — the taxonomy
+cleanup migration remaps user states first, otherwise this prune would
+cascade-delete them.
 
 Usage:
     DATABASE_URL=postgresql://... python scripts/seed_skill_graph.py
@@ -51,6 +58,47 @@ def _create_engine():
     if search_path:
         kwargs["connect_args"] = {"server_settings": {"search_path": search_path}}
     return create_async_engine(_get_database_url(), poolclass=NullPool, **kwargs)
+
+
+async def _prune_stale_rows(session) -> int:
+    """Delete taxonomy-unknown skills and question-skill pairs.
+
+    The seed owns the taxonomy-defined content of these tables: ``skills``
+    rows are exactly ``SKILLS``, and ``question_skills`` rows for
+    taxonomy-covered questions are exactly ``QUESTION_SKILLS`` pairs.
+    Anything else is stale (a past rename) and must go, otherwise events
+    attribute to unknown slugs. Rows for questions outside the taxonomy
+    are left alone — this seed cannot judge them.
+    """
+    pruned = 0
+    valid_slugs = {s.slug for s in SKILLS}
+    stale_skills = (
+        (
+            await session.execute(
+                select(SkillORM).where(SkillORM.slug.not_in(valid_slugs))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for row in stale_skills:
+        await session.delete(row)
+        pruned += 1
+
+    expected_pairs = {
+        (question_id, m.skill_slug)
+        for question_id, mappings in QUESTION_SKILLS.items()
+        for m in mappings
+    }
+    pairs = (await session.execute(select(QuestionSkillORM))).scalars().all()
+    for row in pairs:
+        if (
+            row.question_id in QUESTION_SKILLS
+            and (row.question_id, row.skill_slug) not in expected_pairs
+        ):
+            await session.delete(row)
+            pruned += 1
+    return pruned
 
 
 async def seed() -> int:
@@ -115,8 +163,11 @@ async def seed() -> int:
                 else:
                     existing.weight = mapping.weight
 
+        pruned = await _prune_stale_rows(session)
+
         await session.commit()
     await engine.dispose()
+    print(f"Skill graph seed pruned {pruned} stale taxonomy rows.")
     return total
 
 

@@ -36,6 +36,11 @@ class Trend(str, Enum):
     STABLE = "stable"
 
 
+class SkillKind(str, Enum):
+    ROADMAP = "roadmap"
+    SUPPORTING = "supporting"
+
+
 class Skill(BaseModel):
     slug: str = Field(..., description="Unique skill slug")
     name: str = Field(..., description="Human-readable skill name")
@@ -43,6 +48,10 @@ class Skill(BaseModel):
     parent_id: Optional[str] = Field(None, description="Parent skill slug (hierarchy)")
     prerequisite_ids: List[str] = Field(
         default_factory=list, description="Skills that must be mastered first"
+    )
+    kind: SkillKind = Field(
+        default=SkillKind.ROADMAP,
+        description="Roadmap (interview-pattern) vs supporting (cross-cutting)",
     )
 
 

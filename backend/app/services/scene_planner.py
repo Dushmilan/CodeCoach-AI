@@ -21,6 +21,56 @@ def _cell_x(index: int, n: int, cell: float = 88.0, gap: float = 12.0) -> float:
     return round(start + index * (cell + gap), 2)
 
 
+def _root_shape(sid: str, w: float = 140.0, h: float = 48.0) -> Dict[str, Any]:
+    """Container shape so the intro beat's appear target validates."""
+    return {
+        "id": sid,
+        "type": "rect",
+        "x": 0.0,
+        "y": 220.0,
+        "width": w,
+        "height": h,
+        "radius": 10,
+        "fill": tokens.PALETTE["idle_fill"],
+        "stroke": tokens.PALETTE["idle_stroke"],
+        "lineWidth": 2,
+    }
+
+
+def _item_shape(sid: str, x: float = 0.0, y: float = 0.0) -> Dict[str, Any]:
+    """Generic item shape for dynamically referenced ids (stack/tree/graph)."""
+    return {
+        "id": sid,
+        "type": "rect",
+        "x": round(x, 2),
+        "y": round(y, 2),
+        "width": 64.0,
+        "height": 44.0,
+        "radius": 8,
+        "fill": tokens.PALETTE["idle_fill"],
+        "stroke": tokens.PALETTE["idle_stroke"],
+        "lineWidth": 2,
+    }
+
+
+def _edge_shape(sid: str) -> Dict[str, Any]:
+    return {
+        "id": sid,
+        "type": "line",
+        "points": [[-60.0, 0.0], [60.0, 0.0]],
+        "stroke": tokens.PALETTE["idle_stroke"],
+        "lineWidth": 2,
+    }
+
+
+def _ensure_planner_node(
+    known: set, shapes: List[Dict[str, Any]], sid: str, pos: int
+) -> None:
+    if sid not in known:
+        shapes.append(_item_shape(sid, x=(pos % 8) * 80.0 - 280.0, y=0.0))
+        known.add(sid)
+
+
 # ── searching (binary search hero template) ──────────────────────────────────
 
 
@@ -450,39 +500,61 @@ def plan_stack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     beats: List[Dict[str, Any]] = [
         {
             "narration": f"{spec.title or spec.algorithm} — Stack"[:300],
-            "shapes": [],
+            "shapes": [_root_shape("stack_base")],
             "motion": [{"target": "stack_base", "op": "appear", "duration": 0.4}],
             "camera": {"action": "reset"},
         }
     ]
+    known = {"stack_base"}
     depth = 0
+    created: List[str] = []
     for step in spec.steps:
         m: List[Dict[str, Any]] = []
+        shapes: List[Dict[str, Any]] = []
         narr = step.label or step.action
         if step.action == "push":
             val = step.values[0] if step.values else "·"
-            m.append({"target": f"stack_{depth}", "op": "appear", "duration": 0.35})
+            sid = f"stack_{depth}"
+            if sid not in known:
+                shapes.append(_item_shape(sid, x=0.0, y=-depth * 60.0))
+                known.add(sid)
+            m.append({"target": sid, "op": "appear", "duration": 0.35})
             m.append(
                 {
-                    "target": f"stack_{depth}",
+                    "target": sid,
                     "op": "move",
                     "to": [0, -depth * 60],
                     "duration": 0.35,
                 }
             )
             narr = f"Push {val}"
+            created.append(sid)
             depth += 1
         elif step.action == "pop":
             depth = max(0, depth - 1)
-            m.append({"target": f"stack_{depth}", "op": "disappear", "duration": 0.3})
+            sid = created.pop() if created else f"stack_{depth}"
+            if sid not in known:
+                m.append(
+                    {"target": "stack_base", "op": "scale", "to": 1.0, "duration": 0.25}
+                )
+            else:
+                m.append(
+                    {
+                        "target": sid,
+                        "op": "move",
+                        "to": [0, 220.0],
+                        "duration": 0.3,
+                    }
+                )
+                m.append({"target": sid, "op": "disappear", "duration": 0.2})
             narr = f"Pop {step.values[0] if step.values else ''}".strip()
         elif step.action == "visit":
             idx = step.index or 0
             m.append(
                 {
-                    "target": f"cell_{idx}",
-                    "op": "fill",
-                    "to": tokens.PALETTE["highlight_fill"],
+                    "target": "stack_base",
+                    "op": "stroke",
+                    "to": tokens.PALETTE["accent"],
                     "duration": 0.3,
                 }
             )
@@ -491,7 +563,7 @@ def plan_stack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             m.append(
                 {"target": "stack_base", "op": "scale", "to": 1.0, "duration": 0.25}
             )
-        beats.append({"narration": narr[:300], "shapes": [], "motion": m})
+        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -590,19 +662,25 @@ def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     beats: List[Dict[str, Any]] = [
         {
             "narration": f"{spec.title or spec.algorithm} — Tree"[:300],
-            "shapes": [],
+            "shapes": [_root_shape("tree_root")],
             "motion": [{"target": "tree_root", "op": "appear", "duration": 0.4}],
             "camera": {"action": "reset"},
         }
     ]
+    known = {"tree_root"}
     for step in spec.steps:
         m: List[Dict[str, Any]] = []
+        shapes: List[Dict[str, Any]] = []
         narr = step.label or step.action
         idx = int(step.index or 0)
+        sid = f"tree_{idx}"
+        if step.action in ("visit", "choose", "backtrack") and sid not in known:
+            shapes.append(_item_shape(sid, x=(idx % 8) * 80.0 - 280.0, y=0.0))
+            known.add(sid)
         if step.action == "visit":
             m.append(
                 {
-                    "target": f"tree_{idx}",
+                    "target": sid,
                     "op": "fill",
                     "to": tokens.PALETTE["highlight_fill"],
                     "duration": 0.3,
@@ -612,7 +690,7 @@ def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
         elif step.action == "choose":
             m.append(
                 {
-                    "target": f"tree_{idx}",
+                    "target": sid,
                     "op": "stroke",
                     "to": tokens.PALETTE["accent"],
                     "duration": 0.3,
@@ -622,7 +700,7 @@ def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
         elif step.action == "backtrack":
             m.append(
                 {
-                    "target": f"tree_{idx}",
+                    "target": sid,
                     "op": "fill",
                     "to": tokens.PALETTE["dim_fill"],
                     "duration": 0.3,
@@ -633,7 +711,7 @@ def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             m.append(
                 {"target": "tree_root", "op": "scale", "to": 1.0, "duration": 0.25}
             )
-        beats.append({"narration": narr[:300], "shapes": [], "motion": m})
+        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -651,22 +729,27 @@ def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
 
 
 def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, Any]]:
+    root = f"{kind}_root"
     beats: List[Dict[str, Any]] = [
         {
             "narration": f"{spec.title or spec.algorithm} — {kind.title()}"[:300],
-            "shapes": [],
-            "motion": [{"target": f"{kind}_root", "op": "appear", "duration": 0.4}],
+            "shapes": [_root_shape(root)],
+            "motion": [{"target": root, "op": "appear", "duration": 0.4}],
             "camera": {"action": "reset"},
         }
     ]
+    known = {root}
     for step in spec.steps:
         m: List[Dict[str, Any]] = []
+        shapes: List[Dict[str, Any]] = []
         narr = step.label or step.action
         if step.action == "visit":
             idx = int(step.index or 0)
+            sid = f"node_{idx}"
+            _ensure_planner_node(known, shapes, sid, idx)
             m.append(
                 {
-                    "target": f"node_{idx}",
+                    "target": sid,
                     "op": "fill",
                     "to": tokens.PALETTE["highlight_fill"],
                     "duration": 0.3,
@@ -676,9 +759,14 @@ def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, 
         elif step.action == "edge":
             a = step.indices[0] if step.indices and len(step.indices) >= 1 else 0
             b = step.indices[1] if step.indices and len(step.indices) >= 2 else 1
+            eid = f"edge_{a}_{b}"
+            if eid not in known:
+                shapes.append(_edge_shape(eid))
+                known.add(eid)
+            _ensure_planner_node(known, shapes, f"node_{b}", b)
             m.append(
                 {
-                    "target": f"edge_{a}_{b}",
+                    "target": eid,
                     "op": "stroke",
                     "to": tokens.PALETTE["accent"],
                     "duration": 0.3,
@@ -694,20 +782,14 @@ def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, 
             )
             narr = f"Edge {a} → {b}"
         elif step.action == "relax_edge":
+            idx = int(step.indices[0]) if step.indices else 0
+            sid = f"node_{idx}"
+            _ensure_planner_node(known, shapes, sid, idx)
             narr = f"Relax {step.indices}"
-            m.append(
-                {
-                    "target": f"node_{step.indices[0] if step.indices else 0}",
-                    "op": "scale",
-                    "to": 1.05,
-                    "duration": 0.25,
-                }
-            )
+            m.append({"target": sid, "op": "scale", "to": 1.05, "duration": 0.25})
         else:
-            m.append(
-                {"target": f"{kind}_root", "op": "scale", "to": 1.0, "duration": 0.25}
-            )
-        beats.append({"narration": narr[:300], "shapes": [], "motion": m})
+            m.append({"target": root, "op": "scale", "to": 1.0, "duration": 0.25})
+        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -728,13 +810,15 @@ def plan_intervals(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     beats: List[Dict[str, Any]] = [
         {
             "narration": f"{spec.title or spec.algorithm} — Intervals"[:300],
-            "shapes": [],
+            "shapes": [_root_shape("interval_0", w=180.0)],
             "motion": [{"target": "interval_0", "op": "appear", "duration": 0.4}],
             "camera": {"action": "reset"},
         }
     ]
+    known = {"interval_0"}
     for step in spec.steps:
         m: List[Dict[str, Any]] = []
+        shapes: List[Dict[str, Any]] = []
         narr = step.label or step.action
         if step.action in ("partition", "window"):
             m.append(
@@ -748,9 +832,13 @@ def plan_intervals(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             narr = f"{step.action} {step.indices or [step.low, step.high]}"
         elif step.action == "visit":
             idx = int(step.index or 0)
+            sid = f"interval_{idx}"
+            if sid not in known:
+                shapes.append(_item_shape(sid, x=0.0, y=idx * 60.0 - 120.0))
+                known.add(sid)
             m.append(
                 {
-                    "target": f"interval_{idx}",
+                    "target": sid,
                     "op": "fill",
                     "to": tokens.PALETTE["highlight_fill"],
                     "duration": 0.3,
@@ -761,7 +849,7 @@ def plan_intervals(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             m.append(
                 {"target": "interval_0", "op": "scale", "to": 1.0, "duration": 0.25}
             )
-        beats.append({"narration": narr[:300], "shapes": [], "motion": m})
+        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -782,20 +870,30 @@ def plan_backtrack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     beats: List[Dict[str, Any]] = [
         {
             "narration": f"{spec.title or spec.algorithm} — Backtracking"[:300],
-            "shapes": [],
+            "shapes": [_root_shape("bt_root")],
             "motion": [{"target": "bt_root", "op": "appear", "duration": 0.4}],
             "camera": {"action": "reset"},
         }
     ]
+    known = {"bt_root"}
     depth = 0
+
+    def _ensure(sid: str, shapes: List[Dict[str, Any]], pos: int) -> None:
+        if sid not in known:
+            shapes.append(_item_shape(sid, x=(pos % 8) * 80.0 - 280.0, y=0.0))
+            known.add(sid)
+
     for step in spec.steps:
         m: List[Dict[str, Any]] = []
+        shapes: List[Dict[str, Any]] = []
         narr = step.label or step.action
         if step.action == "choose":
             idx = int(step.index or depth)
+            sid = f"bt_{idx}"
+            _ensure(sid, shapes, idx)
             m.append(
                 {
-                    "target": f"bt_{idx}",
+                    "target": sid,
                     "op": "fill",
                     "to": tokens.PALETTE["highlight_fill"],
                     "duration": 0.3,
@@ -803,7 +901,7 @@ def plan_backtrack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             )
             m.append(
                 {
-                    "target": f"bt_{idx}",
+                    "target": sid,
                     "op": "stroke",
                     "to": tokens.PALETTE["highlight_stroke"],
                     "duration": 0.3,
@@ -813,9 +911,11 @@ def plan_backtrack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             depth += 1
         elif step.action == "backtrack":
             idx = int(step.index or max(0, depth - 1))
+            sid = f"bt_{idx}"
+            _ensure(sid, shapes, idx)
             m.append(
                 {
-                    "target": f"bt_{idx}",
+                    "target": sid,
                     "op": "fill",
                     "to": tokens.PALETTE["dim_fill"],
                     "duration": 0.3,
@@ -825,9 +925,11 @@ def plan_backtrack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             depth = max(0, depth - 1)
         elif step.action == "visit":
             idx = int(step.index or 0)
+            sid = f"bt_{idx}"
+            _ensure(sid, shapes, idx)
             m.append(
                 {
-                    "target": f"bt_{idx}",
+                    "target": sid,
                     "op": "fill",
                     "to": tokens.PALETTE["highlight_fill"],
                     "duration": 0.3,
@@ -836,7 +938,7 @@ def plan_backtrack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             narr = f"Visit {idx}"
         else:
             m.append({"target": "bt_root", "op": "scale", "to": 1.0, "duration": 0.25})
-        beats.append({"narration": narr[:300], "shapes": [], "motion": m})
+        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],

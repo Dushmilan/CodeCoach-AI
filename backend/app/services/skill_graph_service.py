@@ -25,6 +25,7 @@ from app.services.skill_graph_rules import (
     mastery_for_status,
     recommend,
 )
+from app.services.skill_taxonomy import SUPPORTING_SKILL_SLUGS
 
 
 class SkillGraphService:
@@ -207,11 +208,38 @@ class SkillGraphService:
         ]
         return SkillGraphResponse(skills=summaries, edges=edges)
 
+    async def get_roadmap(
+        self, user_id: str, now: Optional[datetime] = None
+    ) -> SkillGraphResponse:
+        """Roadmap-track graph: supporting skills excluded from progress totals.
+
+        Full per-skill state stays available via ``get_graph`` (analytics /
+        coaching context); this view is what the NeetCode-style roadmap renders.
+        """
+        full = await self.get_graph(user_id, now=now)
+        supporting = set(SUPPORTING_SKILL_SLUGS)
+        roadmap_skills = [s for s in full.skills if s.skill_slug not in supporting]
+        roadmap_edges = [
+            e
+            for e in full.edges
+            if e.source not in supporting and e.target not in supporting
+        ]
+        return SkillGraphResponse(skills=roadmap_skills, edges=roadmap_edges)
+
     async def get_recommendations(
-        self, user_id: str, now: Optional[datetime] = None, limit: int = 5
+        self,
+        user_id: str,
+        now: Optional[datetime] = None,
+        limit: int = 5,
+        include_supporting: bool = False,
     ) -> List[Recommendation]:
         now = now or datetime.now(timezone.utc)
         skills_by_slug, question_skills_by_q = await self._load_taxonomy()
+        if not include_supporting:
+            supporting = set(SUPPORTING_SKILL_SLUGS)
+            skills_by_slug = {
+                slug: s for slug, s in skills_by_slug.items() if slug not in supporting
+            }
         states = await self.repository.get_states(user_id)
 
         skill_names = {slug: s.name for slug, s in skills_by_slug.items()}
