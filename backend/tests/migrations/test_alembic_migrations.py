@@ -44,13 +44,7 @@ def _is_transient_db_race(exc: Exception) -> bool:
 
 
 def _sync_engine(url: str):
-    import os
-
-    schema = os.environ.get("DATABASE_SEARCH_PATH", "public")
-    return create_engine(
-        url.replace("postgresql+asyncpg://", "postgresql+psycopg://"),
-        connect_args={"options": f"-csearch_path={schema}"},
-    )
+    return create_engine(url.replace("postgresql+asyncpg://", "postgresql+psycopg://"))
 
 
 def _current_version(url: str) -> str:
@@ -265,39 +259,42 @@ def test_repair_migration_recreates_missing_request_tracking(
 
     with _sync_engine(migration_url).connect() as conn:
         table_ok = conn.execute(
-            text("SELECT to_regclass('rate_limit_events') IS NOT NULL")
+            text("SELECT to_regclass('public.rate_limit_events') IS NOT NULL")
         ).scalar_one()
         col_ok = conn.execute(
             text(
                 "SELECT COUNT(*) FROM information_schema.columns "
-                "WHERE table_schema = current_schema() "
+                "WHERE table_schema = 'public' "
                 "AND table_name = 'user_daily_usage' "
                 "AND column_name = 'request_count'"
             )
         ).scalar_one()
     assert table_ok, "rate_limit_events was not recreated by the repair migration"
     assert col_ok, (
-        "user_daily_usage.request_count was not recreated by the repair "
-        "migration (the guard must scope to the migration schema, not any schema)"
+        "public.user_daily_usage.request_count was not recreated by the repair "
+        "migration (the guard must scope to 'public', not any schema)"
     )
 
 
-def test_ensure_request_count_migration_repairs_target_only(
+def test_ensure_public_request_count_migration_repairs_public_only(
     alembic_config: Config, migration_url: str
 ) -> None:
     """A stray schema carrying `user_daily_usage.request_count` must not fool
-    the ensure migration: the migration schema gets the column regardless
-    (this is the exact live-DB condition the first repair migration missed)."""
+    the ensure-public migration: `public` gets the column regardless (this is
+    the exact live-DB condition the first repair migration missed)."""
     # Step back below the ensure-public migration so it runs again.
     _retry(
         lambda: command.downgrade(alembic_config, "d9e1f2a3b4c5"),
         "downgrade to d9e1f2a3b4c5",
     )
 
-    # Simulate the drift: migration-schema column missing + a stray schema has it.
+    # Simulate the drift: public column missing + a stray schema has it.
     with _sync_engine(migration_url).connect() as conn:
         conn.execute(
-            text("ALTER TABLE user_daily_usage DROP COLUMN IF EXISTS request_count")
+            text(
+                "ALTER TABLE public.user_daily_usage "
+                "DROP COLUMN IF EXISTS request_count"
+            )
         )
         conn.execute(text("CREATE SCHEMA IF NOT EXISTS stray_test"))
         conn.execute(
@@ -318,13 +315,13 @@ def test_ensure_request_count_migration_repairs_target_only(
             col = conn.execute(
                 text(
                     "SELECT COUNT(*) FROM information_schema.columns "
-                    "WHERE table_schema = current_schema() "
+                    "WHERE table_schema = 'public' "
                     "AND table_name = 'user_daily_usage' "
                     "AND column_name = 'request_count'"
                 )
             ).scalar_one()
         assert col == 1, (
-            "ensure migration did not add request_count to the migration schema "
+            "ensure-public migration did not add request_count to public "
             "when a stray schema already had it"
         )
     finally:
@@ -353,8 +350,8 @@ def test_rescue_queue_migration_roundtrip(
     """F2 (durable rescue re-surface queue): `rescue_queue` exists at head
     with its columns and the one-open-row-per-(user,question) partial unique
     index, and is dropped by its downgrade. The Alembic graph applies to the
-    migration schema under test (see tests/migrations/conftest.py), so probes
-    are scoped to `current_schema()` — other schemas may legitimately hold
+    `public` schema of the test database (see tests/migrations/conftest.py),
+    so probes are scoped to `public` — other schemas may legitimately hold
     same-named tables from app-level suites."""
     # Start from the pre-F2 head regardless of prior tests in the session.
     _retry(lambda: command.downgrade(alembic_config, "base"), "downgrade to base")
@@ -369,7 +366,7 @@ def test_rescue_queue_migration_roundtrip(
                 conn.execute(
                     text(
                         "SELECT COUNT(*) FROM information_schema.tables "
-                        "WHERE table_schema = current_schema() "
+                        "WHERE table_schema = 'public' "
                         "AND table_name = 'rescue_queue'"
                     )
                 ).scalar_one()
@@ -387,7 +384,7 @@ def test_rescue_queue_migration_roundtrip(
             for row in conn.execute(
                 text(
                     "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_schema = current_schema() "
+                    "WHERE table_schema = 'public' "
                     "AND table_name = 'rescue_queue'"
                 )
             ).fetchall()
@@ -397,7 +394,7 @@ def test_rescue_queue_migration_roundtrip(
             for row in conn.execute(
                 text(
                     "SELECT indexname FROM pg_indexes "
-                    "WHERE schemaname = current_schema() "
+                    "WHERE schemaname = 'public' "
                     "AND tablename = 'rescue_queue'"
                 )
             ).fetchall()

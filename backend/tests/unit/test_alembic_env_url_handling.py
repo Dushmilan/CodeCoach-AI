@@ -57,18 +57,3 @@ def test_strip_pgbouncer_noop_without_param():
 
 def test_pooler_connect_args_disables_statement_cache():
     assert pooler_connect_args() == {"statement_cache_size": 0}
-
-
-def test_migration_connect_args_without_search_path():
-    from app.core.db_url import migration_connect_args
-
-    assert migration_connect_args() == {"statement_cache_size": 0}
-    assert migration_connect_args("") == {"statement_cache_size": 0}
-
-
-def test_migration_connect_args_sets_search_path():
-    from app.core.db_url import migration_connect_args
-
-    args = migration_connect_args("codecoach_test")
-    assert args["statement_cache_size"] == 0
-    assert args["server_settings"] == {"search_path": "codecoach_test"}

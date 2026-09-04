@@ -10,7 +10,7 @@ from app.models.mistake_schemas import ReviewCard
 from app.models.schemas import Question
 from app.repositories.sql_question_repository import SqlQuestionRepository
 from app.repositories.sql_review_repository import SqlReviewRepository
-from tests.fixtures.auth_helpers import register_user_id_headers
+from tests.fixtures.auth_helpers import register_user_headers
 
 NOW = datetime.now(timezone.utc)
 
@@ -53,7 +53,7 @@ def _card(
 
 @pytest.mark.asyncio
 async def test_due_empty_for_new_user(test_client: TestClient):
-    _, headers = register_user_id_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
+    _, headers = register_user_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
     res = test_client.get("/api/reviews/due", headers=headers)
     assert res.status_code == 200
     assert res.json() == {"cards": [], "total": 0}
@@ -63,7 +63,7 @@ async def test_due_empty_for_new_user(test_client: TestClient):
 async def test_due_returns_only_matured_cards(
     test_client: TestClient, test_db, sample_question_data
 ):
-    uid, headers = register_user_id_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
+    uid, headers = register_user_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
     qid = await _ensure_question(test_db, sample_question_data)
     repo = SqlReviewRepository(test_db)
     due_card = _card(uid, qid, due_in_days=-1, tag="due")
@@ -83,7 +83,7 @@ async def test_due_returns_only_matured_cards(
 async def test_grade_advances_schedule(
     test_client: TestClient, test_db, sample_question_data
 ):
-    uid, headers = register_user_id_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
+    uid, headers = register_user_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
     qid = await _ensure_question(test_db, sample_question_data)
     repo = SqlReviewRepository(test_db)
     card = _card(uid, qid, due_in_days=-1)
@@ -104,7 +104,7 @@ async def test_grade_advances_schedule(
 
 @pytest.mark.asyncio
 async def test_grade_unknown_card_returns_404(test_client: TestClient):
-    _, headers = register_user_id_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
+    _, headers = register_user_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
     res = test_client.post(
         "/api/reviews/no-such-card/grade", json={"quality": 4}, headers=headers
     )
@@ -113,7 +113,7 @@ async def test_grade_unknown_card_returns_404(test_client: TestClient):
 
 @pytest.mark.asyncio
 async def test_grade_invalid_quality_rejected(test_client: TestClient):
-    _, headers = register_user_id_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
+    _, headers = register_user_headers(test_client, f"rev-{uuid.uuid4().hex[:8]}")
     res = test_client.post(
         "/api/reviews/any-card/grade", json={"quality": 9}, headers=headers
     )

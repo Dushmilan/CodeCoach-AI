@@ -54,15 +54,3 @@ def pooler_connect_args() -> dict:
     Disabling the cache (mirrors tests/db_helpers.py and database.py).
     """
     return {"statement_cache_size": 0}
-
-
-def migration_connect_args(search_path: Optional[str] = None) -> dict:
-    """Connect args for Alembic migrations: pooler-safe plus optional schema.
-
-    ``DATABASE_SEARCH_PATH`` targets an isolated schema (local dev / tests)
-    so migrations land where the app reads instead of ``public``.
-    """
-    args = pooler_connect_args()
-    if search_path:
-        args["server_settings"] = {"search_path": search_path}
-    return args
