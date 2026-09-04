@@ -124,16 +124,25 @@ class RedisCache:
                 pass
 
     async def delete(self, pattern: str) -> int:
-        """Delete all keys matching glob pattern. Returns number deleted."""
+        """Delete all keys matching glob pattern. Returns number deleted.
+
+        Uses non-blocking SCAN (never KEYS) batched in 500-key deletes so
+        catalog invalidation stays safe as the dataset grows.
+        """
         client = await self._client()
         if not client:
             return 0
         try:
-            keys = await client.keys(pattern)
-            if keys:
-                count = await client.delete(*keys)
-                return count
-            return 0
+            removed = 0
+            batch: list = []
+            async for key in client.scan_iter(match=pattern, count=500):
+                batch.append(key)
+                if len(batch) >= 500:
+                    removed += await client.delete(*batch)
+                    batch = []
+            if batch:
+                removed += await client.delete(*batch)
+            return removed
         except Exception as e:
             logger.debug("Redis delete failed for pattern %s: %s", pattern, e)
             self.disable()

@@ -16,9 +16,12 @@ class TestSettings:
         monkeypatch.setenv("JWT_SECRET_KEY", "second-key")
         assert get_settings().JWT_SECRET_KEY == "second-key"
 
-    def test_get_settings_respects_env_file_defaults(self, monkeypatch):
+    def test_get_settings_respects_env_file_defaults(self, monkeypatch, tmp_path):
         from app.core.config import get_settings
 
+        # Hermetic: Settings reads .env from the CWD, so isolate from any
+        # developer-local .env (e.g. REDIS_ENABLED=false) that would leak in.
+        monkeypatch.chdir(tmp_path)
         monkeypatch.setenv("ENVIRONMENT", "testing")
         monkeypatch.delenv("REDIS_ENABLED", raising=False)
         monkeypatch.setenv(

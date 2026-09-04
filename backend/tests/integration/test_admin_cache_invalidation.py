@@ -1,8 +1,9 @@
-"""Integration: admin catalog writes invalidate the anonymous course list.
+"""Integration: admin catalog writes invalidate Redis caches.
 
-Proves the Redis-backed anonymous list never serves stale data after
-create/update/delete of courses (override is scoped to this module and
-removed afterwards so the session app stays untouched for other tests).
+Proves the Redis-backed anonymous course list never serves stale data after
+create/update/delete of courses, and that question detail entries are
+dropped on question delete (override is scoped to this module and removed
+afterwards so the session app stays untouched for other tests).
 """
 
 import os
@@ -69,3 +70,32 @@ class TestAdminCacheInvalidation:
             assert "cache-bust-course" not in _course_ids(test_client)
         finally:
             truncate_course_tables_sync()
+
+    def test_delete_question_drops_detail_cache(
+        self, test_client: TestClient, redis_override
+    ):
+        headers = _admin_headers(test_client)
+        qid = "cache-bust-question"
+        test_client.delete(f"/api/admin/questions/{qid}", headers=headers)
+        try:
+            create = test_client.post(
+                "/api/admin/questions",
+                json={
+                    "id": qid,
+                    "title": "Cache Bust Question",
+                    "difficulty": "easy",
+                    "category": "arrays",
+                    "description": "Reverse a string.",
+                },
+                headers=headers,
+            )
+            assert create.status_code == 200
+
+            first = test_client.get(f"/api/questions/{qid}")
+            assert first.status_code == 200
+
+            delete = test_client.delete(f"/api/admin/questions/{qid}", headers=headers)
+            assert delete.status_code == 200
+            assert test_client.get(f"/api/questions/{qid}").status_code == 404
+        finally:
+            test_client.delete(f"/api/admin/questions/{qid}", headers=headers)

@@ -531,3 +531,64 @@ class TestPistonServiceEvaluateSuite:
             call_kwargs = mock_exec.call_args[1]
             assert call_kwargs["code"] == raw_code  # fallback: raw code unchanged
             assert len(results) == 1
+
+
+class TestPistonServiceVersionRefresh:
+    def _ok_response(self, version="3.12.0"):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "run": {"stdout": "Hello\n", "stderr": "", "code": 0},
+            "language": "python",
+            "version": version,
+        }
+        return mock_response
+
+    def _bad_response(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = "Unknown version"
+        return mock_response
+
+    def _runtimes_response(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {"language": "python", "version": "3.12.0", "aliases": ["py"]},
+        ]
+        return mock_response
+
+    @pytest.mark.asyncio
+    async def test_execute_retries_with_resolved_version_on_400(self):
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_client.return_value = mock_instance
+            mock_instance.post.side_effect = [
+                self._bad_response(),
+                self._ok_response(),
+            ]
+            mock_instance.get.return_value = self._runtimes_response()
+
+            service = PistonService()
+            result = await service.execute("python", 'print("Hello")')
+
+            assert result.stdout == "Hello\n"
+            assert mock_instance.post.call_count == 2
+            retry_payload = mock_instance.post.call_args_list[1].kwargs["json"]
+            assert retry_payload["version"] == "3.12.0"
+
+    @pytest.mark.asyncio
+    async def test_execute_raises_original_when_refresh_fails(self):
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_client.return_value = mock_instance
+            mock_instance.post.return_value = self._bad_response()
+            mock_instance.get.side_effect = httpx.TimeoutException("Timeout")
+
+            service = PistonService()
+            with pytest.raises(HTTPException) as exc:
+                await service.execute("python", "bad code")
+            assert exc.value.status_code == 400
+            assert mock_instance.post.call_count == 1

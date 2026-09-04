@@ -20,7 +20,7 @@ async def get_questions(
     difficulty: Optional[Difficulty] = Query(None, description="Filter by difficulty"),
     category: Optional[str] = Query(None, description="Filter by category"),
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
+    per_page: int = Query(20, ge=1, le=200, description="Items per page"),
     bank: QuestionBank = Depends(get_question_bank),
 ):
     try:
@@ -73,7 +73,7 @@ async def search_questions(
     difficulty: Optional[Difficulty] = Query(None, description="Filter by difficulty"),
     category: Optional[str] = Query(None, description="Filter by category"),
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=100, description="Items per page"),
+    per_page: int = Query(20, ge=1, le=200, description="Items per page"),
     bank: QuestionBank = Depends(get_question_bank),
 ):
     try:
@@ -82,16 +82,16 @@ async def search_questions(
 
         result = await bank.query(
             QuestionFilters(
-                query=q, difficulty=difficulty, category=category, per_page=10000
+                query=q,
+                difficulty=difficulty,
+                category=category,
+                page=page,
+                per_page=per_page,
             )
         )
 
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated = result.items[start_idx:end_idx]
-
         return QuestionsListResponse(
-            questions=paginated,
+            questions=result.items,
             total=result.total,
             page=page,
             per_page=per_page,

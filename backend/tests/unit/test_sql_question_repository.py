@@ -215,6 +215,36 @@ class TestSqlQuestionRepository:
         assert results[0].id == "test-2"
 
     @pytest.mark.asyncio
+    async def test_get_summaries_limit_offset(self, repo, sample_question):
+        await repo.add(sample_question)
+
+        q2 = sample_question.model_copy()
+        q2.id = "test-2"
+        q2.title = "A Second Question"
+        await repo.add(q2)
+        await repo.session.commit()
+
+        first = await repo.get_summaries(limit=1, offset=0)
+        assert [s.id for s in first] == ["test-2"]
+        second = await repo.get_summaries(limit=1, offset=1)
+        assert [s.id for s in second] == ["test-1"]
+        assert await repo.count_summaries() == 2
+
+    @pytest.mark.asyncio
+    async def test_count_summaries_matches_search_filters(self, repo, sample_question):
+        await repo.add(sample_question)
+
+        q2 = sample_question.model_copy()
+        q2.id = "test-2"
+        q2.title = "Reverse String"
+        await repo.add(q2)
+        await repo.session.commit()
+
+        assert await repo.count_summaries(query="Reverse") == 1
+        assert await repo.count_summaries(difficulty=Difficulty.HARD) == 0
+        assert await repo.count_summaries() == 2
+
+    @pytest.mark.asyncio
     async def test_add_with_complex_fields(self, repo):
         q = Question(
             id="complex-1",

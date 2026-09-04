@@ -136,7 +136,7 @@ describe('LessonPage AI coaching wiring', () => {
     localStorage.setItem('codecoach:workspace:ai-open:theory', '1');
     const openSpy = vi.spyOn(window, 'open');
 
-    render(<LessonPage />);
+    const { unmount } = render(<LessonPage />);
     const animate = await screen.findByRole('button', { name: /animate solution/i });
     await userEvent.click(animate);
 
@@ -169,6 +169,9 @@ describe('LessonPage AI coaching wiring', () => {
     // The chat must never receive the animate request.
     expect(mockSendMessage).not.toHaveBeenCalled();
     openSpy.mockRestore();
+    // Tear down the phase-tick interval synchronously so it cannot flush a
+    // state update into a later test (intermittent act() unhandled error).
+    unmount();
   });
 });
 

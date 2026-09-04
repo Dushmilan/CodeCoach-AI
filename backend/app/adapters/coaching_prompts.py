@@ -8,6 +8,20 @@ import json
 from typing import Any, Dict, Optional, Tuple
 
 
+def _escape_fences(text: str) -> str:
+    """Neutralize ``` sequences in user content for the unstructured prompt.
+
+    The unstructured template wraps user code in its own fence pair; an
+    attacker-controlled fence inside the content would break out of that
+    block and reshape the prompt. A zero-width space keeps the text
+    human-identical while preventing fence parsing. Structured (JSON)
+    prompts need no escaping.
+    """
+    if not isinstance(text, str):
+        return text
+    return text.replace("```", "`\u200b``")
+
+
 # ── Constants (internal) ──────────────────────────────────────────────
 
 _PERSONA = """You are CodeCoach AI, a Socratic coding interview tutor.
@@ -421,13 +435,13 @@ Connect the student's current struggle back to the lesson's main objective."""
                 user_data["question"] = prompt_question
             return json.dumps(user_data, indent=2)
         suffix = "Please provide helpful coaching feedback."
-        return f"""Problem: {problem}
+        return f"""Problem: {_escape_fences(problem)}
 
 Current code:
-```{code}
+```{_escape_fences(code)}
 ```
 
-User message: {message}
+User message: {_escape_fences(message)}
 
 Mode: {mode}
 

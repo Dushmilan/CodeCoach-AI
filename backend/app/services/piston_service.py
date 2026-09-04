@@ -155,6 +155,17 @@ class PistonService(CodeExecutor):
                     json=payload,
                     headers={"Content-Type": "application/json"},
                 )
+                if response.status_code == 400 and await self._refresh_versions(
+                    language
+                ):
+                    # Pinned runtime likely drifted (image updated) — retry once
+                    # with the freshly resolved version.
+                    payload["version"] = self.languages[language]["version"]
+                    response = await client.post(
+                        f"{self.base_url}/execute",
+                        json=payload,
+                        headers={"Content-Type": "application/json"},
+                    )
                 if response.status_code != 200:
                     raise HTTPException(
                         status_code=response.status_code,
@@ -180,6 +191,36 @@ class PistonService(CodeExecutor):
                 status_code=500,
                 detail=f"Internal server error during code execution: {str(e)}",
             )
+
+    async def _refresh_versions(self, language: str) -> bool:
+        """Refresh the pinned runtime version from /runtimes.
+
+        Returns True when the pin changed (caller retries once); False on
+        any failure so the original error surfaces instead of a new one.
+        """
+        try:
+            runtimes = await self.get_runtimes()
+        except Exception as exc:  # noqa: BLE001 - refresh is best-effort
+            logger.debug("Piston runtime refresh failed: %s", exc)
+            return False
+        piston_language = self._PISTON_LANGUAGE_MAP.get(language, language)
+        for entry in runtimes:
+            if not isinstance(entry, dict):
+                continue
+            names = {entry.get("language"), *(entry.get("aliases") or [])}
+            if language in names or piston_language in names:
+                resolved = entry.get("version")
+                if resolved and resolved != self.languages[language]["version"]:
+                    logger.info(
+                        "Piston runtime drift: %s %s -> %s",
+                        language,
+                        self.languages[language]["version"],
+                        resolved,
+                    )
+                    self.languages[language]["version"] = resolved
+                    return True
+                return False
+        return False
 
     async def get_runtimes(self) -> List[dict]:
         if self.cache:

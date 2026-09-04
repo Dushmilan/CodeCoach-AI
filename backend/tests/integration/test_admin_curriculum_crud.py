@@ -278,3 +278,43 @@ class TestAdminCurriculumCRUD:
         assert "courses" in data
         assert "modules" in data
         assert "lessons" in data
+
+
+class TestAdminStats:
+    def test_admin_stats(self, test_client: TestClient):
+        headers = _admin_headers(test_client)
+        res = test_client.get("/api/admin/stats", headers=headers)
+        assert res.status_code == 200
+        data = res.json()
+        assert {"users", "questions", "courses", "system", "generation"} <= set(
+            data.keys()
+        )
+
+    def test_user_stats(self, test_client: TestClient):
+        headers = _admin_headers(test_client)
+        res = test_client.get("/api/admin/stats/users", headers=headers)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["total"] >= 1
+        assert data["admin"] >= 1
+        assert data["inactive"] == data["total"] - data["active"]
+
+    def test_stats_require_admin(self, test_client: TestClient):
+        res = test_client.post(
+            "/api/auth/register",
+            json={
+                "username": "plainuserstats",
+                "email": "plainuserstats@test.com",
+                "password": "testpass123",
+            },
+        )
+        token = res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        assert test_client.get("/api/admin/stats", headers=headers).status_code == 403
+        assert (
+            test_client.get("/api/admin/stats/users", headers=headers).status_code
+            == 403
+        )
+
+    def test_stats_require_auth(self, test_client: TestClient):
+        assert test_client.get("/api/admin/stats").status_code in (401, 403)

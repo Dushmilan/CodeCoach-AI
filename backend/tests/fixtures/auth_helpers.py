@@ -2,7 +2,7 @@
 
 Covers the two client styles used across the suite:
 - sync ``TestClient`` (most files): :func:`register_headers`,
-  :func:`admin_headers`
+  :func:`register_user_headers`, :func:`admin_headers`
 - async client (coach/rate-limit flows): :func:`aregister_headers`
 
 Files that test the auth endpoints themselves (``test_auth_endpoints``,
@@ -45,6 +45,29 @@ def register_headers(
             json={"username": username, "password": password},
         )
     return {"Authorization": f"Bearer {res.json()['access_token']}"}
+
+
+def register_user_headers(
+    client: TestClient,
+    username: str,
+    email: str | None = None,
+    password: str = _DEFAULT_PASSWORD,
+) -> Tuple[str, dict]:
+    """Sync variant returning ``(user_id, headers)``.
+
+    Register-only (asserts 201) — callers use fresh usernames per test.
+    """
+    res = client.post(
+        "/api/auth/register",
+        json={
+            "username": username,
+            "email": _email_for(username, email),
+            "password": password,
+        },
+    )
+    assert res.status_code == 201, res.text
+    data = res.json()
+    return data["user"]["id"], {"Authorization": f"Bearer {data['access_token']}"}
 
 
 def admin_headers(

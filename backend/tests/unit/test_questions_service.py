@@ -26,6 +26,7 @@ def mock_repo():
     repo.add = AsyncMock()
     repo.get_summaries = AsyncMock(return_value=[])
     repo.search_summaries = AsyncMock(return_value=[])
+    repo.count_summaries = AsyncMock(return_value=0)
     repo.save_validation_status = AsyncMock()
     repo.count = AsyncMock(return_value=0)
     repo.count_by_difficulty = AsyncMock(
@@ -56,6 +57,7 @@ class TestQuestionBankQuery:
     @pytest.mark.asyncio
     async def test_query_all(self, mock_repo, sample_questions):
         mock_repo.get_summaries = AsyncMock(return_value=sample_questions)
+        mock_repo.count_summaries = AsyncMock(return_value=2)
         bank = make_bank(mock_repo)
 
         result = await bank.query(QuestionFilters())
@@ -66,21 +68,33 @@ class TestQuestionBankQuery:
 
     @pytest.mark.asyncio
     async def test_query_with_pagination(self, mock_repo, sample_questions):
-        mock_repo.get_summaries = AsyncMock(return_value=sample_questions)
+        # Paging is pushed to the repository: the bank passes limit/offset
+        # and trusts the page contents (total comes from count_summaries).
+        mock_repo.get_summaries = AsyncMock(return_value=[sample_questions[0]])
+        mock_repo.count_summaries = AsyncMock(return_value=2)
         bank = make_bank(mock_repo)
 
         page1 = await bank.query(QuestionFilters(page=1, per_page=1))
         assert len(page1.items) == 1
         assert page1.items[0].id == "two-sum"
+        assert page1.total == 2
+        mock_repo.get_summaries.assert_called_with(
+            difficulty=None, category=None, limit=1, offset=0
+        )
 
+        mock_repo.get_summaries = AsyncMock(return_value=[sample_questions[1]])
         page2 = await bank.query(QuestionFilters(page=2, per_page=1))
         assert len(page2.items) == 1
         assert page2.items[0].id == "rev-list"
+        mock_repo.get_summaries.assert_called_with(
+            difficulty=None, category=None, limit=1, offset=1
+        )
 
     @pytest.mark.asyncio
     async def test_query_with_difficulty_filter(self, mock_repo, sample_questions):
         easy = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
         mock_repo.get_summaries = AsyncMock(return_value=easy)
+        mock_repo.count_summaries = AsyncMock(return_value=1)
         bank = make_bank(mock_repo)
 
         result = await bank.query(QuestionFilters(difficulty=Difficulty.EASY))
@@ -90,6 +104,7 @@ class TestQuestionBankQuery:
     @pytest.mark.asyncio
     async def test_query_with_search(self, mock_repo, sample_questions):
         mock_repo.search_summaries = AsyncMock(return_value=[sample_questions[0]])
+        mock_repo.count_summaries = AsyncMock(return_value=1)
         bank = make_bank(mock_repo)
 
         result = await bank.query(QuestionFilters(query="two"))
@@ -100,6 +115,7 @@ class TestQuestionBankQuery:
     async def test_query_with_category_filter(self, mock_repo, sample_questions):
         arrays = [q for q in sample_questions if q.category == "arrays"]
         mock_repo.get_summaries = AsyncMock(return_value=arrays)
+        mock_repo.count_summaries = AsyncMock(return_value=1)
         bank = make_bank(mock_repo)
 
         result = await bank.query(QuestionFilters(category="arrays"))
@@ -180,6 +196,7 @@ class TestQuestionBankStats:
     @pytest.mark.asyncio
     async def test_search_questions(self, mock_repo, sample_questions):
         mock_repo.search_summaries = AsyncMock(return_value=[sample_questions[0]])
+        mock_repo.count_summaries = AsyncMock(return_value=1)
         bank = make_bank(mock_repo)
 
         result = await bank.query(QuestionFilters(query="two"))
@@ -190,6 +207,7 @@ class TestQuestionBankStats:
     async def test_get_by_category(self, mock_repo, sample_questions):
         arrays = [q for q in sample_questions if q.category == "arrays"]
         mock_repo.get_summaries = AsyncMock(return_value=arrays)
+        mock_repo.count_summaries = AsyncMock(return_value=1)
         bank = make_bank(mock_repo)
 
         result = await bank.query(QuestionFilters(category="arrays"))
@@ -200,6 +218,7 @@ class TestQuestionBankStats:
     async def test_get_by_difficulty(self, mock_repo, sample_questions):
         easy = [q for q in sample_questions if q.difficulty == Difficulty.EASY]
         mock_repo.get_summaries = AsyncMock(return_value=easy)
+        mock_repo.count_summaries = AsyncMock(return_value=1)
         bank = make_bank(mock_repo)
 
         result = await bank.query(QuestionFilters(difficulty=Difficulty.EASY))
@@ -225,3 +244,34 @@ class TestQuestionBankAdd:
         )
         result = await bank.add(question, validate=False)
         assert result.is_validated is False
+
+
+class TestQuestionBankQueryPushdown:
+    @pytest.mark.asyncio
+    async def test_query_passes_limit_offset_to_repo(self, mock_repo, sample_questions):
+        mock_repo.get_summaries = AsyncMock(return_value=[sample_questions[1]])
+        mock_repo.count_summaries = AsyncMock(return_value=2)
+        bank = make_bank(mock_repo)
+
+        result = await bank.query(QuestionFilters(page=2, per_page=1))
+
+        mock_repo.get_summaries.assert_called_once_with(
+            difficulty=None, category=None, limit=1, offset=1
+        )
+        assert result.total == 2
+        assert [q.id for q in result.items] == ["rev-list"]
+
+    @pytest.mark.asyncio
+    async def test_search_passes_limit_offset_to_repo(
+        self, mock_repo, sample_questions
+    ):
+        mock_repo.search_summaries = AsyncMock(return_value=[sample_questions[0]])
+        mock_repo.count_summaries = AsyncMock(return_value=1)
+        bank = make_bank(mock_repo)
+
+        result = await bank.query(QuestionFilters(query="two", page=1, per_page=10))
+
+        mock_repo.search_summaries.assert_called_once_with(
+            "two", difficulty=None, category=None, limit=10, offset=0
+        )
+        assert result.total == 1
