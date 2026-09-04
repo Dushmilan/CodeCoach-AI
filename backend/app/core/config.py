@@ -78,6 +78,9 @@ class Settings(BaseSettings):
             )
         return self
 
+    # Anonymous course-list cache (Supabase pooler ~1.5s per query on cold pool)
+    COURSE_LIST_TTL_SECONDS: int = 30
+
     # Piston
     PISTON_API_URL: str = "http://piston:2000/api/v2"
 

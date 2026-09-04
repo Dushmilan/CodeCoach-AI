@@ -12,6 +12,7 @@ from app.main import app
 from app.api.dependencies import get_usage_repo
 from app.api.admin import require_admin
 from app.models.usage_schemas import RateLimitEventOut
+from tests.fixtures.auth_helpers import aregister_headers
 
 
 class _StubUsageRepo:
@@ -92,16 +93,8 @@ class TestAdminAbuseReport:
         repo = SqlUsageRepository(test_db)
         user_ids = []
         for i in range(2):
-            res = await async_client.post(
-                "/api/auth/register",
-                json={
-                    "username": f"abuseuser{i}",
-                    "email": f"abuse{i}@test.com",
-                    "password": "testpass123",
-                },
-            )
-            assert res.status_code == 201, res.text
-            user_ids.append(res.json()["user"]["id"])
+            uid, _ = await aregister_headers(async_client, f"abuseuser{i}")
+            user_ids.append(uid)
         for uid in user_ids:
             await repo.add_rate_limit_event(
                 user_id=uid,

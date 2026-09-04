@@ -9,6 +9,7 @@ from app.services.course_service import CourseService
 from app.services.redis_service import RedisCache
 from app.api.auth_deps import get_optional_current_user
 from app.api.dependencies import get_course_repo, get_progress_repo, get_redis_cache
+from app.core.config import Settings, get_settings
 from app.models.auth_schemas import UserResponse
 from app.middleware.rate_limit import limiter, QUESTIONS_RATE_LIMIT
 
@@ -21,9 +22,13 @@ def get_course_service(
     course_repo: CourseRepository = Depends(get_course_repo),
     progress_repo: ProgressRepository = Depends(get_progress_repo),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
+    settings: Settings = Depends(get_settings),
 ) -> CourseService:
     return CourseService(
-        course_repo=course_repo, progress_repo=progress_repo, cache=cache
+        course_repo=course_repo,
+        progress_repo=progress_repo,
+        cache=cache,
+        list_ttl=settings.COURSE_LIST_TTL_SECONDS,
     )
 
 

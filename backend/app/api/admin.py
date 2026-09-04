@@ -16,7 +16,10 @@ from app.api.dependencies import (
     get_course_admin_repo,
     get_executor,
     get_usage_repo,
+    get_redis_cache,
 )
+from app.services.course_service import invalidate_anonymous_course_list_cache
+from app.services.redis_service import RedisCache
 from app.services.question_validator import QuestionValidatorService
 from app.models.schemas import Question
 from app.models.auth_schemas import UserResponse
@@ -429,6 +432,7 @@ async def delete_course(
     course_id: str,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Delete a course (admins only)."""
     try:
@@ -439,6 +443,7 @@ async def delete_course(
                 detail="Course not found",
             )
         logger.info(f"Course {course_id} deleted by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return {"message": "Course deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -457,6 +462,7 @@ async def delete_module(
     module_id: str,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Delete a module (admins only)."""
     try:
@@ -467,6 +473,7 @@ async def delete_module(
                 detail="Module not found",
             )
         logger.info(f"Module {module_id} deleted by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return {"message": "Module deleted successfully"}
     except HTTPException:
         raise
@@ -483,6 +490,7 @@ async def delete_lesson(
     lesson_id: str,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Delete a lesson (admins only)."""
     try:
@@ -493,6 +501,7 @@ async def delete_lesson(
                 detail="Lesson not found",
             )
         logger.info(f"Lesson {lesson_id} deleted by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return {"message": "Lesson deleted successfully"}
     except HTTPException:
         raise
@@ -524,11 +533,13 @@ async def create_course(
     data: CourseCreate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Create a new course (admins only)."""
     try:
         result = await admin_repo.create_course(data.model_dump())
         logger.info(f"Course '{data.id}' created by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return result
     except FileExistsError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
@@ -546,6 +557,7 @@ async def update_course(
     data: CourseUpdate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Update a course (admins only)."""
     try:
@@ -557,6 +569,7 @@ async def update_course(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
             )
         logger.info(f"Course '{course_id}' updated by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return {"message": "Course updated successfully"}
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -575,11 +588,13 @@ async def create_module(
     data: ModuleCreate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Create a new module (admins only)."""
     try:
         result = await admin_repo.create_module(data.model_dump())
         logger.info(f"Module '{data.id}' created by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -597,6 +612,7 @@ async def update_module(
     data: ModuleUpdate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Update a module (admins only)."""
     try:
@@ -608,6 +624,7 @@ async def update_module(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Module not found"
             )
         logger.info(f"Module '{module_id}' updated by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return {"message": "Module updated successfully"}
     except HTTPException:
         raise
@@ -624,11 +641,13 @@ async def create_lesson(
     data: LessonCreate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Create a new lesson (admins only)."""
     try:
         result = await admin_repo.create_lesson(data.model_dump())
         logger.info(f"Lesson '{data.id}' created by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -646,6 +665,7 @@ async def update_lesson(
     data: LessonUpdate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
     current_user: UserResponse = Depends(require_admin),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
     """Update a lesson (admins only)."""
     try:
@@ -657,6 +677,7 @@ async def update_lesson(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found"
             )
         logger.info(f"Lesson '{lesson_id}' updated by {current_user.id}")
+        await invalidate_anonymous_course_list_cache(cache)
         return {"message": "Lesson updated successfully"}
     except HTTPException:
         raise
