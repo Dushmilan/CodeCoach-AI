@@ -1,9 +1,7 @@
 from fastapi.testclient import TestClient
 
-from tests.db_helpers import (
-    promote_to_admin,
-    truncate_course_tables_sync,
-)
+from tests.db_helpers import truncate_course_tables_sync
+from tests.fixtures.auth_helpers import admin_headers
 
 
 def _truncate_course_tables():
@@ -17,30 +15,8 @@ def teardown_module():
 
 
 def _admin_headers(test_client: TestClient) -> dict:
-    """Register a user and promote to admin by updating the users table."""
-    res = test_client.post(
-        "/api/auth/register",
-        json={
-            "username": "admincurriculum",
-            "email": "admincurriculum@test.com",
-            "password": "testpass123",
-        },
-    )
-    if res.status_code != 201:
-        res = test_client.post(
-            "/api/auth/login",
-            json={
-                "username": "admincurriculum",
-                "password": "testpass123",
-            },
-        )
-    token = res.json()["access_token"]
-
-    import asyncio
-
-    asyncio.run(promote_to_admin("admincurriculum"))
-
-    return {"Authorization": f"Bearer {token}"}
+    """Register a user and promote to admin (shared helper)."""
+    return admin_headers(test_client, "admincurriculum", "admincurriculum@test.com")
 
 
 class TestAdminCurriculumCRUD:

@@ -10,6 +10,7 @@ import pytest
 
 from app.main import app
 from app.api.coach import get_coaching_provider
+from tests.fixtures.auth_helpers import aregister_headers
 from tests.fixtures.mock_coaching_provider import MockCoachingProvider
 
 
@@ -60,17 +61,7 @@ def _redis_cache():
 
 
 async def _register_user(async_client, username: str):
-    res = await async_client.post(
-        "/api/auth/register",
-        json={
-            "username": username,
-            "email": f"{username}@test.com",
-            "password": "testpass123",
-        },
-    )
-    assert res.status_code == 201, res.text
-    data = res.json()
-    return data["user"]["id"], {"Authorization": f"Bearer {data['access_token']}"}
+    return await aregister_headers(async_client, username)
 
 
 def _coaching_payload():
