@@ -1,7 +1,7 @@
 """add adapter state tables (coaching + execution sent/submitted/failed)
 
 Revision ID: b4c5d6e7f8a1
-Revises: a3b4c5d6e7f8
+Revises: c9d0e1f2a3b4
 Create Date: 2026-09-03 00:00:00.000000
 
 Every coaching/execution intent persists sent before the external call and
@@ -19,7 +19,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 # revision identifiers, used by Alembic.
 revision: str = "b4c5d6e7f8a1"
-down_revision: Union[str, Sequence[str], None] = "a3b4c5d6e7f8"
+down_revision: Union[str, Sequence[str], None] = "c9d0e1f2a3b4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
