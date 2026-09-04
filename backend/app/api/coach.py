@@ -3,6 +3,7 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     HTTPException,
+    Query,
     Request,
     Response,
 )
@@ -36,13 +37,18 @@ from app.services.solution_animation_service import SolutionAnimationService
 from app.api.auth_deps import get_current_user
 from app.api.daily_limits import enforce_daily_request_cap
 from app.api.dependencies import (
+    get_coaching_interaction_repo,
     get_learner_context_service_dependency,
     get_redis_cache,
     get_usage_service,
     get_executor,
     get_workspace_service,
 )
+from app.ports.coaching_interaction_repository import CoachingInteractionRepository
+from app.models.adapter_state_schemas import CoachingInteractionListResponse
 from app.models.auth_schemas import UserResponse
+from app.services.coaching_adapter import hash_content as _chash
+import uuid as _uuid
 from app.middleware.rate_limit import limiter, COACH_RATE_LIMIT, COACH_WARM_RATE_LIMIT
 from app.services.learner_context_service import LearnerContextService
 
@@ -197,6 +203,9 @@ async def get_coaching(
         get_learner_context_service_dependency
     ),
     workspace_svc=Depends(get_workspace_service),
+    interactions: CoachingInteractionRepository = Depends(
+        get_coaching_interaction_repo
+    ),
 ):
     """
     Get AI coaching response for coding problems.
@@ -243,20 +252,63 @@ async def get_coaching(
             except Exception as e:  # pragma: no cover - degrade open
                 logger.debug("Learner context fetch failed: %s", e)
 
-        structured_data = await provider.get_structured(
-            problem=coaching_request.problem,
-            code=coaching_request.code,
-            language=coaching_request.language.value,
-            message=coaching_request.message,
-            mode=coaching_request.mode.value,
-            difficulty=coaching_request.difficulty.value,
-            lesson_context=coaching_request.lesson_context,
-            chat_history=chat_history_list,
-            initial_code=coaching_request.initial_code,
-            learner_context=learner_ctx.get("skill_block") or None,
-            submission_context=learner_ctx.get("submission_block") or None,
-            surface=surface,
-        )
+        # Stateful adapter contract: persist sent before the provider call
+        # so timeouts/failures still leave an auditable row (best-effort).
+        interaction = None
+        try:
+            interaction = await interactions.create_sent(
+                user_id=user.id,
+                question_id=None,
+                mode=coaching_request.mode.value,
+                language=coaching_request.language.value,
+                problem_hash=_chash(coaching_request.problem),
+                code_hash=_chash(coaching_request.code),
+                idempotency_key=_uuid.uuid4().hex,
+                request_payload={
+                    "mode": coaching_request.mode.value,
+                    "language": coaching_request.language.value,
+                    "difficulty": coaching_request.difficulty.value,
+                    "surface": surface,
+                },
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to persist coaching sent state", exc_info=True)
+            interaction = None
+
+        try:
+            structured_data = await provider.get_structured(
+                problem=coaching_request.problem,
+                code=coaching_request.code,
+                language=coaching_request.language.value,
+                message=coaching_request.message,
+                mode=coaching_request.mode.value,
+                difficulty=coaching_request.difficulty.value,
+                lesson_context=coaching_request.lesson_context,
+                chat_history=chat_history_list,
+                initial_code=coaching_request.initial_code,
+                learner_context=learner_ctx.get("skill_block") or None,
+                submission_context=learner_ctx.get("submission_block") or None,
+                surface=surface,
+            )
+        except Exception:
+            if interaction is not None:
+                try:
+                    await interactions.mark_failed(interaction.id)
+                except Exception:  # noqa: BLE001
+                    logger.warning(
+                        "Failed to persist coaching failed state", exc_info=True
+                    )
+            raise
+
+        if interaction is not None:
+            try:
+                await interactions.mark_completed(
+                    interaction.id, response_payload=structured_data
+                )
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "Failed to persist coaching completed state", exc_info=True
+                )
 
         raw_response = _format_structured_as_text(structured_data)
 
@@ -536,6 +588,28 @@ async def get_coaching_stream(
         media_type="text/event-stream",
         headers=stream_headers,
     )
+
+
+@router.get("/interactions", response_model=CoachingInteractionListResponse)
+async def get_my_coaching_interactions(
+    limit: int = Query(50, ge=1, le=200, description="Max interactions to return"),
+    user: UserResponse = Depends(get_current_user),
+    interactions: CoachingInteractionRepository = Depends(
+        get_coaching_interaction_repo
+    ),
+):
+    """Return the authenticated user's recent coaching intents, newest first."""
+    try:
+        items = await interactions.list_by_user(user.id, limit=limit)
+        return CoachingInteractionListResponse(
+            interactions=list(items),
+            total=len(items),
+        )
+    except Exception:
+        logger.exception("Failed to list coaching interactions for user %s", user.id)
+        raise HTTPException(
+            status_code=500, detail="Failed to list coaching interactions"
+        )
 
 
 @router.get("/modes")
