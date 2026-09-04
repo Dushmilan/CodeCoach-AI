@@ -26,6 +26,13 @@ export class SkillGraphService {
       },
     );
   }
+
+  async syncFromSubmissions(): Promise<{ accepted: number; duplicate: number; invalid: number; skipped: number }> {
+    return this.http.post<{ accepted: number; duplicate: number; invalid: number; skipped: number }>(
+      `/api/skills/me/sync`,
+      {},
+    );
+  }
 }
 
 export const skillGraphService = new SkillGraphService(new FetchClient());

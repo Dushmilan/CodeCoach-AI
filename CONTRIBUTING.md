@@ -27,6 +27,7 @@ Read [AGENTS.md](./AGENTS.md) first. The hard rules always apply:
 4. **Graphify-first exploration** — run `graphify query` before any raw search.
 5. **Docker rebuild after code changes** — rebuild the affected image before commit.
 6. **Caveman-review before every commit** — fix every bug:/risk:/nit: finding.
+7. **Branch per Issue — no work on `main`** — every session starts on a dedicated `type/issue-number-slug` branch; create the branch before any edit.
 
 ## Development Setup
 
@@ -80,11 +81,17 @@ docker run -d -p 2000:2000 --name piston ghcr.io/engineer-man/piston
 
 ### Branch naming
 
-- `feature/<name>` — new features
-- `fix/<name>` — bug fixes
-- `docs/<name>` — documentation
-- `refactor/<name>` — refactoring
-- `test/<name>` — adding tests
+Every session/task MUST be on a dedicated branch tied to its GitHub Issue. Never work directly on `main`.
+
+- Format: `<type>/<issue-number>-<kebab-slug>` where `<type>` is `feat|fix|chore|docs|refactor|test`
+  - `feat/42-ai-animation-viewer` — new features
+  - `fix/101-monaco-render` — bug fixes
+  - `chore/88-coverage-bump` — maintenance
+  - `docs/12-api-guide` — documentation
+  - `test/55-add-e2e` — tests
+- If no Issue exists, create one first (`gh issue create`), then branch. Exception for trivial no-issue work: `<type>/no-issue-<slug>` (call out in PR).
+- Always branch from latest `origin/main`: `git fetch origin && git checkout -b <type>/<issue-number>-<slug> origin/main`
+- One Issue = one branch. Open PR with `Closes #<issue-number>`.
 
 ### Commit messages
 

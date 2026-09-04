@@ -185,6 +185,32 @@ on the staged diff, fix ALL findings (bug:, risk:, and nit:), and re-stage befor
 - Applies to ALL commits — source code, configs, tests, everything
 - Pre-commit hooks (ruff, prettier, standard hygiene) run automatically on `git commit` — fix any hook failures before force-committing
 
+## MANDATORY: Branch Per Issue — No Work on `main`
+
+**Hard rule — Do NOT skip.** Every session/task MUST be on a dedicated branch tied to the GitHub Issue being addressed. Never make changes directly on `main`.
+
+**Session-start checklist (do this FIRST, before any edit, read, or plan):**
+
+1. `git status` + `git branch --show-current` — verify current branch.
+2. Identify the Issue number for the current task (from user request, `gh issue list`, or GitHub).
+3. If on `main` or on a branch unrelated to this Issue → create a new branch immediately:
+   ```bash
+   git fetch origin
+   git checkout -b <type>/<issue-number>-<slug> origin/main
+   # e.g. git checkout -b feat/42-ai-animation-viewer origin/main
+   # e.g. git checkout -b fix/101-monaco-render origin/main
+   ```
+4. `git push -u origin <branch>` on first commit. Open a PR with `Closes #<issue-number>` in the description.
+
+**Rules:**
+
+- Branch naming: `<type>/<issue-number>-<kebab-slug>` where `<type>` is `feat|fix|chore|docs|refactor|test`. The issue number MUST be present when an Issue exists. Examples: `feat/42-ai-animation-viewer`, `fix/101-monaco-render`, `chore/88-coverage-bump`.
+- If no Issue exists for the work, create one first (`gh issue create`), then branch from it. Trivial no-issue work is the only exception and MUST use `<type>/no-issue-<slug>` and be called out in the PR.
+- Always branch from latest `origin/main` — never from a stale local `main`.
+- No direct commits or pushes to `main` — all changes go through a branch + PR.
+- One Issue = one branch. Do not mix unrelated Issues in the same branch. If scope changes, create a new branch/Issue.
+- If the agent/session was started on `main` or the wrong branch, STOP and create/switch branches before any file edits.
+
 ## Engineering Best Practices
 
 Follow the existing layered architecture and conventions of this codebase:
