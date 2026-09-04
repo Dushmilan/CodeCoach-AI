@@ -11,7 +11,6 @@ import { ResizablePanelGroup } from '@/components/ui/ResizablePanelGroup';
 import { useCoaching } from '@/features/coaching/coaching.hook';
 import { useWorkspace } from '@/features/workspace/use-workspace.hook';
 import { useCoachWarm } from '@/features/coaching/use-coach-warm.hook';
-import { useWorkspace } from '@/features/workspace/use-workspace.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
