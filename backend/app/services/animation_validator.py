@@ -12,7 +12,7 @@ AnimationScript Pydantic model downstream.
 
 import logging
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +57,36 @@ HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 class AnimationValidator:
     """Validate the structural correctness of an animation scene dict."""
+
+    def lint_quality(self, script: Dict[str, Any]) -> List[str]:
+        """Non-blocking cinematic hints: camera, badge, narration quality.
+
+        Never rejects — returns warning strings so the pipeline stays
+        contract-stable while quality regressions become observable.
+        """
+        warnings: List[str] = []
+        if not isinstance(script, dict):
+            return ["script is not an object"]
+        steps = script.get("steps")
+        if not isinstance(steps, list) or not steps:
+            return ["no steps to lint"]
+        if not any(isinstance(s, dict) and s.get("camera") for s in steps):
+            warnings.append("missing camera guidance on all beats")
+        last = steps[-1] if isinstance(steps[-1], dict) else {}
+        if not last.get("badge"):
+            warnings.append("missing complexity badge on final beat")
+        prev = None
+        for i, step in enumerate(steps):
+            if not isinstance(step, dict):
+                continue
+            narration = step.get("narration", "")
+            if not isinstance(narration, str) or not narration.strip():
+                warnings.append(f"beat {i} has empty narration")
+            elif prev is not None and narration.strip() == prev:
+                warnings.append(f"beats {i - 1} and {i} share duplicate narration")
+            if isinstance(narration, str):
+                prev = narration.strip()
+        return warnings
 
     def validate(self, script: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], str]:
         """Return (validated_script, "") on success or (None, reason) on failure."""
