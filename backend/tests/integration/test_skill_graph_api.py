@@ -2,23 +2,7 @@
 
 from fastapi.testclient import TestClient
 
-
-def _headers(test_client: TestClient, username="skillapiuser") -> dict:
-    res = test_client.post(
-        "/api/auth/register",
-        json={
-            "username": username,
-            "email": f"{username}@test.com",
-            "password": "testpass123",
-        },
-    )
-    if res.status_code != 201:
-        res = test_client.post(
-            "/api/auth/login",
-            json={"username": username, "password": "testpass123"},
-        )
-    token = res.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+from tests.fixtures.auth_helpers import register_headers
 
 
 class TestSkillGraphAPI:
@@ -27,7 +11,7 @@ class TestSkillGraphAPI:
         assert res.status_code == 401
 
     def test_me_skills_empty_for_new_user(self, test_client: TestClient):
-        headers = _headers(test_client, "skillempty")
+        headers = register_headers(test_client, "skillempty")
         res = test_client.get("/api/skills/me/skills", headers=headers)
         assert res.status_code == 200
         data = res.json()
@@ -35,13 +19,13 @@ class TestSkillGraphAPI:
         assert "edges" in data
 
     def test_recommendations_empty_for_new_user(self, test_client: TestClient):
-        headers = _headers(test_client, "skillrecempty")
+        headers = register_headers(test_client, "skillrecempty")
         res = test_client.get("/api/skills/me/recommendations", headers=headers)
         assert res.status_code == 200
         assert isinstance(res.json(), list)
 
     def test_ingest_event_then_read_graph(self, test_client: TestClient):
-        headers = _headers(test_client, "skillsolve")
+        headers = register_headers(test_client, "skillsolve")
         event = {
             "id": "api-event-1",
             "user_id": "nobody",  # server normalizes to the caller
@@ -62,8 +46,8 @@ class TestSkillGraphAPI:
     def test_foreign_user_id_normalized_to_caller(self, test_client: TestClient):
         """A client-supplied user_id is never trusted: it is overwritten with
         the authenticated caller, so no cross-user write can happen."""
-        headers_a = _headers(test_client, "usera")
-        headers_b = _headers(test_client, "userb")
+        headers_a = register_headers(test_client, "usera")
+        headers_b = register_headers(test_client, "userb")
         event = {
             "id": "api-event-foreign",
             "user_id": "somebody-else",
@@ -82,7 +66,7 @@ class TestSkillGraphAPI:
         assert graph_b.json()["skills"] == []
 
     def test_delete_history(self, test_client: TestClient):
-        headers = _headers(test_client, "skilldelete")
+        headers = register_headers(test_client, "skilldelete")
         event = {
             "id": "api-event-del",
             "user_id": "nobody",
@@ -108,7 +92,7 @@ class TestSkillGraphAPI:
         assert res.status_code == 401
 
     def test_recommended_questions_empty_for_new_user(self, test_client: TestClient):
-        headers = _headers(test_client, "skillrqempty")
+        headers = register_headers(test_client, "skillrqempty")
         res = test_client.get("/api/skills/me/recommended-questions", headers=headers)
         assert res.status_code == 200
         assert isinstance(res.json(), list)
@@ -116,7 +100,7 @@ class TestSkillGraphAPI:
     def test_recommended_questions_after_activity(self, test_client: TestClient):
         """After solving questions, the endpoint returns recommendations that
         carry a fully-resolved Question payload."""
-        headers = _headers(test_client, "skillrqsolve")
+        headers = register_headers(test_client, "skillrqsolve")
         events = [
             {
                 "id": f"api-rq-{i}",
