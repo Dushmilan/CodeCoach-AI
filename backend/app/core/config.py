@@ -4,7 +4,7 @@ from pydantic import model_validator
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore")
 
     # Environment (fail-closed: unset = production for security gates)
     ENVIRONMENT: str = "production"
@@ -90,7 +90,13 @@ class Settings(BaseSettings):
     REDIS_TTL_STATIC: int = 3600
     REDIS_TTL_AI: int = 86400
     REDIS_TTL_EXECUTION: int = 3600
+    REDIS_TTL_WORKSPACE: int = 604800  # 7 days — draft code + last-visited
+    REDIS_TTL_CHAT: int = 604800  # 7 days — per-question chat history
+    REDIS_TTL_LAST_EXEC: int = 604800  # 7 days — last execution / submit snapshot
     REDIS_ENABLED: bool = True
+    WORKSPACE_CODE_MAX_BYTES: int = 51200
+    CHAT_HISTORY_MAX_MESSAGES: int = 20
+    CHAT_MESSAGE_MAX_CHARS: int = 5000
 
 
 def get_settings() -> Settings:

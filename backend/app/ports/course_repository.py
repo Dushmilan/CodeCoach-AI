@@ -27,3 +27,12 @@ class CourseRepository(ABC):
     async def get_modules_by_course_batch(
         self, course_ids: List[str]
     ) -> List[Module]: ...
+
+    async def get_lesson_summaries_by_module_ids(
+        self, module_ids: List[str]
+    ) -> List[Lesson]:
+        """Batch fetch lesson outlines (titles only) — default falls back to per-module fetch for test doubles."""
+        results: List[Lesson] = []
+        for mid in module_ids:
+            results.extend(await self.get_lessons_by_module(mid))
+        return results

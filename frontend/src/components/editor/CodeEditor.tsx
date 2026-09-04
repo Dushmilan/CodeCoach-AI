@@ -20,6 +20,7 @@ const Editor = dynamic(
 );
 
 interface CodeEditorProps {
+  onReset?: () => void;
   language: Language;
   code: string;
   initialCode: string;
@@ -43,6 +44,7 @@ export function CodeEditor({
   isRunning,
   isResizing,
   isAuthenticated = true,
+  onReset,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
   const monacoLanguage = language === "c" ? "cpp" : language;
@@ -56,7 +58,11 @@ export function CodeEditor({
   };
 
   const resetCode = () => {
-    onCodeChange(initialCode);
+    if (onReset) {
+      onReset();
+    } else {
+      onCodeChange(initialCode);
+    }
   };
 
   return (

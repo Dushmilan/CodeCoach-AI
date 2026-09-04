@@ -171,6 +171,14 @@ async def get_course_admin_repo(
     yield SqlCourseAdminRepository(db)
 
 
+def get_workspace_service(
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+):
+    from app.services.workspace_service import WorkspaceService
+
+    return WorkspaceService(cache=cache)
+
+
 async def get_coaching_interaction_repo(
     db: AsyncSession = Depends(get_db),
 ):

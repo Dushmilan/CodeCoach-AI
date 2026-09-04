@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 from sqlalchemy.pool import NullPool
-from app.core.config import get_settings, is_production
+from app.core.config import get_settings
 from app.core.db_url import pooler_connect_args, strip_pgbouncer
 
 settings = get_settings()
@@ -35,10 +35,23 @@ if settings.DATABASE_SEARCH_PATH:
 if _db_url.startswith("postgresql"):
     _connect_args.setdefault("connect_args", {}).update(pooler_connect_args())
 
+# NullPool only for isolated test schemas (DATABASE_SEARCH_PATH). In dev
+# it forces a new TLS handshake to Supabase per-request (~5s), which is
+# the "Request Timeouts" seen in the UI. Pooled engine reuses connections.
+# Pool tuning args are only valid for pooled engines — NullPool rejects
+# pool_size / max_overflow / pool_timeout.
+_use_nullpool = bool(settings.DATABASE_SEARCH_PATH)
+_pool_kwargs: dict = {}
+if not _use_nullpool:
+    _pool_kwargs = dict(
+        pool_size=20, max_overflow=10, pool_timeout=30, pool_recycle=300
+    )
+
 engine: AsyncEngine = create_async_engine(
     _db_url,
-    poolclass=NullPool if not is_production() else None,
+    poolclass=NullPool if _use_nullpool else None,
     pool_pre_ping=True,
+    **_pool_kwargs,
     **_connect_args,
 )
 async_session_maker: async_sessionmaker = async_sessionmaker(

@@ -42,6 +42,7 @@ from app.api.dependencies import (
     get_redis_cache,
     get_usage_service,
     get_executor,
+    get_workspace_service,
 )
 from app.ports.coaching_interaction_repository import CoachingInteractionRepository
 from app.models.adapter_state_schemas import CoachingInteractionListResponse
@@ -201,6 +202,7 @@ async def get_coaching(
     learner_context: LearnerContextService = Depends(
         get_learner_context_service_dependency
     ),
+    workspace_svc=Depends(get_workspace_service),
     interactions: CoachingInteractionRepository = Depends(
         get_coaching_interaction_repo
     ),
@@ -318,6 +320,25 @@ async def get_coaching(
         response.headers.update(getattr(request.state, "usage_headers", {}))
         response.headers.update(getattr(request.state, "daily_limit_headers", {}))
         response.headers["X-Surface"] = surface
+
+        # Best-effort chat persistence to Redis (per-question history, 7d TTL).
+        try:
+            qid = getattr(coaching_request, "question_id", None)
+            if qid and workspace_svc:
+                await workspace_svc.append_chat(
+                    user.id,
+                    qid,
+                    [
+                        {"role": "user", "content": coaching_request.message or ""},
+                        {
+                            "role": "assistant",
+                            "content": raw_response,
+                            "structured": structured_data,
+                        },
+                    ],
+                )
+        except Exception:  # noqa: BLE001
+            logger.debug("workspace chat append failed", exc_info=True)
 
         return CoachingResponse(
             response=raw_response,

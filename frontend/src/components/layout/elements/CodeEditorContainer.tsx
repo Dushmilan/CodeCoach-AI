@@ -24,6 +24,7 @@ interface CodeEditorContainerProps {
   onRunCode: (stdin: string) => void;
   onSubmitCode: () => void;
   isAuthenticated?: boolean;
+  onResetCode?: () => void;
 }
 
 export function CodeEditorContainer({
@@ -40,6 +41,7 @@ export function CodeEditorContainer({
   onRunCode,
   onSubmitCode,
   isAuthenticated = true,
+  onResetCode,
 }: CodeEditorContainerProps) {
   const [outputHeight, setOutputHeight] = useState(200); // Default 200px
   const [outputCollapsed, setOutputCollapsed] = useState(false);
@@ -122,6 +124,7 @@ export function CodeEditorContainer({
           isRunning={isRunning}
           isResizing={isResizing}
           isAuthenticated={isAuthenticated}
+          onReset={onResetCode}
         />
 
         {/* Interactive Input Area */}

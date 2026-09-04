@@ -23,7 +23,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { workspaceService } from '@/features/workspace/workspace.service';
+import { AuthContext } from '@/providers/AuthProvider';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 const difficultyStyles: Record<string, string> = {
@@ -45,6 +47,9 @@ export default function ProblemsPage() {
   const router = useRouter();
   const { allQuestions, loadQuestions, isLoading, error } = useQuestion();
   const [progress] = useLocalStorage<Record<string, 'attempted' | 'solved'>>('user_progress', {});
+  const auth = useContext(AuthContext);
+  const isAuthenticated = auth?.isAuthenticated ?? false;
+  const [lastVisited, setLastVisited] = useState<{ question_id: string; language: string | null } | null>(null);
 
   const [search, setSearch] = useState('');
   const [difficulty, setDifficulty] = useState<string>('all');
@@ -52,10 +57,19 @@ export default function ProblemsPage() {
   const [company, setCompany] = useState<string>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<QuestionSortKey>('daily');
+  const [visibleCount, setVisibleCount] = useState(20);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadQuestions();
   }, [loadQuestions]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    workspaceService.getLastVisited().then((data) => {
+      if (data?.question_id) setLastVisited(data);
+    }).catch(() => {});
+  }, [isAuthenticated]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -156,6 +170,34 @@ export default function ProblemsPage() {
     setSort('daily');
   }, []);
 
+  // Reset visible count when filters change — start from top
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [search, difficulty, category, company, status, sort]);
+
+  const hasMore = filtered.length > visibleCount;
+  const displayed = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
+  );
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((c) => Math.min(c + 20, filtered.length));
+  }, [filtered.length]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: '400px', threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
+
   const handleSelect = useCallback(
     (q: QuestionSummary) => {
       router.push(`/problems/${q.id}`);
@@ -183,6 +225,12 @@ export default function ProblemsPage() {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <Header />
       <main className="max-w-5xl mx-auto px-6 pt-20 pb-32">
+        {lastVisited && (
+          <div className="mb-4 flex items-center justify-between px-4 py-3 rounded-2xl bg-primary/10 ring-1 ring-primary/20">
+            <span className="text-xs text-primary/90">Continue where you left off: <span className="font-medium">{resolveQuestionTitle(lastVisited.question_id) || lastVisited.question_id}</span></span>
+            <button onClick={() => router.push(`/problems/${lastVisited.question_id}`)} className="text-xs px-3 py-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">Resume</button>
+          </div>
+        )}
         <RecommendedQuestions />
         <RescueDueQueue resolveTitle={resolveQuestionTitle} />
         <ReviewsDueQueue resolveTitle={resolveQuestionTitle} />
@@ -380,7 +428,7 @@ export default function ProblemsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((q) => {
+                      {displayed.map((q) => {
                         const s = progress[q.id];
                         return (
                           <tr
@@ -447,7 +495,7 @@ export default function ProblemsPage() {
 
                 {/* ── Mobile cards ───────────────────────────────── */}
                 <div className="md:hidden divide-y divide-white/[0.03]">
-                  {filtered.map((q) => {
+                  {displayed.map((q) => {
                     const s = progress[q.id];
                     return (
                       <button
@@ -500,6 +548,15 @@ export default function ProblemsPage() {
                     );
                   })}
                 </div>
+                {hasMore && (
+                  <div
+                    ref={sentinelRef}
+                    className="flex items-center justify-center py-4 text-[11px] text-muted-foreground/40"
+                  >
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Loading more...
+                  </div>
+                )}
               </>
             )}
 
@@ -507,8 +564,9 @@ export default function ProblemsPage() {
               <div className="px-6 py-3 border-t border-white/5 text-[10px] text-muted-foreground/40 flex items-center justify-between gap-2 flex-wrap">
                 <span>
                   {hasActiveFilters
-                    ? `Showing ${filtered.length} of ${allQuestions.length} questions`
-                    : `${filtered.length} questions available`}
+                    ? `Showing ${displayed.length} of ${filtered.length} (filtered from ${allQuestions.length})`
+                    : `Showing ${displayed.length} of ${filtered.length} questions`}
+                  {hasMore ? ' — scroll for more' : ''}
                 </span>
                 <span>Click any problem to start coding</span>
               </div>

@@ -17,6 +17,8 @@ from app.models.skill_graph_schemas import (
     UserSkillState,
 )
 from app.ports.skill_graph_repository import SkillGraphRepository
+from app.models.skill_graph_schemas import SkillStatus, Trend
+
 from app.services.skill_graph_rules import (
     apply_event,
     decay_state,
@@ -112,7 +114,10 @@ class SkillGraphService:
         return result
 
     async def get_graph(
-        self, user_id: str, now: Optional[datetime] = None
+        self,
+        user_id: str,
+        now: Optional[datetime] = None,
+        include_boilerplate: bool = False,
     ) -> SkillGraphResponse:
         now = now or datetime.now(timezone.utc)
         skills_by_slug, _ = await self._load_taxonomy()
@@ -122,6 +127,22 @@ class SkillGraphService:
         for slug, skill in skills_by_slug.items():
             state = states.get(slug)
             if state is None:
+                if not include_boilerplate:
+                    continue
+                summaries.append(
+                    SkillSummary(
+                        skill_slug=slug,
+                        name=skill.name,
+                        mastery_score=0.0,
+                        confidence=0.0,
+                        status=SkillStatus.NEW,
+                        trend=Trend.STABLE,
+                        evidence_count=0,
+                        recent_error_count=0,
+                        last_seen_at=None,
+                        last_reviewed_at=None,
+                    )
+                )
                 continue
             decayed = decay_state(state, now)
             summaries.append(
@@ -141,8 +162,44 @@ class SkillGraphService:
                     last_reviewed_at=decayed.last_reviewed_at,
                 )
             )
-        summaries.sort(key=lambda s: s.mastery_score, reverse=True)
+        # Boilerplate-first: stable learners see full taxonomy sorted by mastery;
+        # new users (all 0.0) keep taxonomy insertion order.
+        if include_boilerplate:
+            summaries.sort(key=lambda s: (-s.mastery_score, s.skill_slug))
+        else:
+            summaries.sort(key=lambda s: s.mastery_score, reverse=True)
 
+        edges = [
+            SkillGraphEdge(source=prereq, target=slug, relation="prerequisite")
+            for slug, skill in skills_by_slug.items()
+            for prereq in skill.prerequisite_ids
+            if prereq in skills_by_slug
+        ]
+        return SkillGraphResponse(skills=summaries, edges=edges)
+
+    async def get_boilerplate_graph(self) -> SkillGraphResponse:
+        """Deterministic boilerplate graph — no user state, all skills NEW.
+
+        Used for onboarding previews and unauthenticated tour. Pure taxonomy,
+        no DB state reads beyond the skill list.
+        """
+        skills_by_slug, _ = await self._load_taxonomy()
+        summaries = [
+            SkillSummary(
+                skill_slug=slug,
+                name=skill.name,
+                mastery_score=0.0,
+                confidence=0.0,
+                status=SkillStatus.NEW,
+                trend=Trend.STABLE,
+                evidence_count=0,
+                recent_error_count=0,
+                last_seen_at=None,
+                last_reviewed_at=None,
+            )
+            for slug, skill in skills_by_slug.items()
+        ]
+        summaries.sort(key=lambda s: s.skill_slug)
         edges = [
             SkillGraphEdge(source=prereq, target=slug, relation="prerequisite")
             for slug, skill in skills_by_slug.items()

@@ -15,7 +15,7 @@ function isRateLimited(err: unknown): boolean {
   );
 }
 
-export function useCoaching(): CoachingFeature {
+export function useCoaching(): CoachingFeature & { hydrateMessages: (msgs: ChatMessage[]) => void } {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -28,6 +28,11 @@ export function useCoaching(): CoachingFeature {
     clearLimitReached,
   } = useUsage();
 
+  const hydrateMessages = useCallback((msgs: ChatMessage[]) => {
+    setMessages(msgs);
+    messagesRef.current = msgs;
+  }, []);
+
   const sendMessage = useCallback(
     async (
       message: string,
@@ -39,6 +44,7 @@ export function useCoaching(): CoachingFeature {
       difficulty?: string,
       initialCode?: string,
       surface: CoachingSurface = "questions",
+      questionId?: string,
     ) => {
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -71,6 +77,7 @@ export function useCoaching(): CoachingFeature {
             chatHistory,
             initialCode,
             surface,
+            questionId,
           );
 
           const assistantMessage: ChatMessage = {
@@ -136,5 +143,6 @@ export function useCoaching(): CoachingFeature {
     clearError,
     limitReached,
     clearLimitReached,
+    hydrateMessages,
   };
 }

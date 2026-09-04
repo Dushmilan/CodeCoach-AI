@@ -17,6 +17,7 @@ def get_course_service(
     return CourseService(course_repo=course_repo, progress_repo=progress_repo)
 
 
+@router.get("")
 @router.get("/")
 async def get_all_progress(
     current_user: UserResponse = Depends(get_current_user),

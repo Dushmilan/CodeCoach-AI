@@ -146,19 +146,19 @@ class TestCourseService:
     ):
         mock_course_repo.get_course_by_id = AsyncMock(return_value=sample_course)
         mock_course_repo.get_modules_by_course = AsyncMock(return_value=[sample_module])
-        mock_course_repo.get_lessons_by_module = AsyncMock(
-            return_value=[
-                Lesson(
-                    id="py-hello-world",
-                    course_id="python-fundamentals",
-                    module_id="python-intro",
-                    title="Hello, World!",
-                    type=LessonType.THEORY,
-                    content="# Hello, World!",
-                    order=1,
-                    language="python",
-                )
-            ]
+        lesson = Lesson(
+            id="py-hello-world",
+            course_id="python-fundamentals",
+            module_id="python-intro",
+            title="Hello, World!",
+            type=LessonType.THEORY,
+            content="# Hello, World!",
+            order=1,
+            language="python",
+        )
+        mock_course_repo.get_lessons_by_module = AsyncMock(return_value=[lesson])
+        mock_course_repo.get_lesson_summaries_by_module_ids = AsyncMock(
+            return_value=[lesson]
         )
 
         service = CourseService(
