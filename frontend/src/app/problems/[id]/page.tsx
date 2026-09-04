@@ -10,6 +10,7 @@ import { QuestionDescriptionPanel } from '@/components/sidebar/QuestionDescripti
 import { ResizablePanelGroup } from '@/components/ui/ResizablePanelGroup';
 import { useCoaching } from '@/features/coaching/coaching.hook';
 import { useWorkspace } from '@/features/workspace/use-workspace.hook';
+import { useCoachWarm } from '@/features/coaching/use-coach-warm.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
@@ -66,6 +67,10 @@ export default function ProblemWorkspacePage() {
   const { messages, isTyping, sendMessage, hydrateMessages } = useCoaching() as ReturnType<typeof useCoaching> & { hydrateMessages: (msgs: import('@/types').ChatMessage[]) => void };
   const { ref: workspaceRef, mode } = useWorkspaceMode();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Background warm of reusable coach learner context on question enter.
+  // Fire-and-forget: never blocks question load or chat, degrades open.
+  useCoachWarm(fullQuestion?.id ?? null);
 
   useEffect(() => {
     if (

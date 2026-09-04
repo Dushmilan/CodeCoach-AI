@@ -1,15 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from app.services.course_service import CourseService, _course_list_cache
+from app.services.course_service import CourseService
 from app.models.course_schemas import Course, Module, Lesson, CourseProgress, LessonType
-
-
-@pytest.fixture(autouse=True)
-def _clear_course_cache():
-    _course_list_cache.clear()
-    yield
-    _course_list_cache.clear()
 
 
 @pytest.fixture
@@ -22,7 +15,6 @@ def mock_course_repo():
     repo.get_modules_by_course = AsyncMock(return_value=[])
     repo.get_modules_by_course_batch = AsyncMock(return_value=[])
     repo.get_lessons_by_module = AsyncMock(return_value=[])
-    repo.get_lesson_summaries_by_module_ids = AsyncMock(return_value=[])
     return repo
 
 
@@ -154,19 +146,19 @@ class TestCourseService:
     ):
         mock_course_repo.get_course_by_id = AsyncMock(return_value=sample_course)
         mock_course_repo.get_modules_by_course = AsyncMock(return_value=[sample_module])
-        lesson = Lesson(
-            id="py-hello-world",
-            course_id="python-fundamentals",
-            module_id="python-intro",
-            title="Hello, World!",
-            type=LessonType.THEORY,
-            content="# Hello, World!",
-            order=1,
-            language="python",
-        )
-        mock_course_repo.get_lessons_by_module = AsyncMock(return_value=[lesson])
-        mock_course_repo.get_lesson_summaries_by_module_ids = AsyncMock(
-            return_value=[lesson]
+        mock_course_repo.get_lessons_by_module = AsyncMock(
+            return_value=[
+                Lesson(
+                    id="py-hello-world",
+                    course_id="python-fundamentals",
+                    module_id="python-intro",
+                    title="Hello, World!",
+                    type=LessonType.THEORY,
+                    content="# Hello, World!",
+                    order=1,
+                    language="python",
+                )
+            ]
         )
 
         service = CourseService(
@@ -261,59 +253,142 @@ class TestCourseService:
         assert len(result) == 2
 
 
-class _FakeRedis:
-    """Minimal async get/set cache double."""
+class _FakeListCache:
+    """In-memory async stand-in for RedisCache (get/set/SET NX/delete)."""
 
-    def __init__(self, fail=False):
+    def __init__(self):
         self.store = {}
-        self.fail = fail
-        self.get_calls = 0
+        self.set_ttls = {}
 
     async def get(self, key):
-        self.get_calls += 1
-        if self.fail:
-            raise ConnectionError("redis down")
         return self.store.get(key)
 
     async def set(self, key, value, ttl=300):
-        if self.fail:
-            raise ConnectionError("redis down")
+        self.set_ttls[key] = ttl
         self.store[key] = value
 
+    async def set_if_absent(self, key, value, ttl=300):
+        if key in self.store:
+            return False
+        self.store[key] = value
+        return True
 
-class TestCourseListRedisCache:
+    async def delete(self, pattern):
+        if pattern in self.store:
+            del self.store[pattern]
+            return 1
+        return 0
+
+
+class _NeverAvailableCache(_FakeListCache):
+    """Simulates a stuck lock holder: lock never acquired, value never lands."""
+
+    async def get(self, key):
+        return None
+
+    async def set_if_absent(self, key, value, ttl=300):
+        return False
+
+
+class TestAnonymousCourseListCache:
     @pytest.mark.asyncio
-    async def test_anonymous_list_served_from_redis(
+    async def test_anonymous_list_served_from_cache(
         self, mock_course_repo, mock_progress_repo, sample_course
     ):
         mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
-        cache = _FakeRedis()
+        cache = _FakeListCache()
+
         service = CourseService(
             course_repo=mock_course_repo,
             progress_repo=mock_progress_repo,
             cache=cache,
+            list_ttl=30,
         )
-
         first = await service.list_courses(user_id=None)
         second = await service.list_courses(user_id=None)
 
-        assert len(first) == 1 and len(second) == 1
-        assert second[0].id == "python-fundamentals"
-        assert mock_course_repo.get_all_courses.await_count == 1
-        assert cache.get_calls == 2
+        assert mock_course_repo.get_all_courses.call_count == 1
+        assert (
+            [c.id for c in second] == [c.id for c in first] == ["python-fundamentals"]
+        )
 
     @pytest.mark.asyncio
-    async def test_redis_failure_falls_back_to_repo(
+    async def test_cache_entry_uses_configured_ttl(
         self, mock_course_repo, mock_progress_repo, sample_course
     ):
         mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
+        cache = _FakeListCache()
+
         service = CourseService(
             course_repo=mock_course_repo,
             progress_repo=mock_progress_repo,
-            cache=_FakeRedis(fail=True),
+            cache=cache,
+            list_ttl=7,
+        )
+        await service.list_courses(user_id=None)
+
+        assert 7 in cache.set_ttls.values()
+
+    @pytest.mark.asyncio
+    async def test_concurrent_miss_builds_only_once(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
+        import asyncio
+
+        async def slow_repo():
+            await asyncio.sleep(0.05)
+            return [sample_course]
+
+        mock_course_repo.get_all_courses = AsyncMock(side_effect=slow_repo)
+        cache = _FakeListCache()
+        service = CourseService(
+            course_repo=mock_course_repo,
+            progress_repo=mock_progress_repo,
+            cache=cache,
+            list_ttl=30,
         )
 
+        results = await asyncio.gather(
+            service.list_courses(user_id=None),
+            service.list_courses(user_id=None),
+        )
+
+        assert mock_course_repo.get_all_courses.call_count == 1
+        assert [c.id for c in results[0]] == ["python-fundamentals"]
+        assert [c.id for c in results[1]] == ["python-fundamentals"]
+
+    @pytest.mark.asyncio
+    async def test_stuck_lock_falls_back_to_direct_build(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
+        mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
+
+        service = CourseService(
+            course_repo=mock_course_repo,
+            progress_repo=mock_progress_repo,
+            cache=_NeverAvailableCache(),
+            list_ttl=30,
+        )
         result = await service.list_courses(user_id=None)
 
-        assert len(result) == 1
-        assert result[0].id == "python-fundamentals"
+        assert mock_course_repo.get_all_courses.call_count == 1
+        assert [c.id for c in result] == ["python-fundamentals"]
+
+    @pytest.mark.asyncio
+    async def test_authenticated_list_bypasses_cache(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
+        mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
+        cache = _FakeListCache()
+
+        service = CourseService(
+            course_repo=mock_course_repo,
+            progress_repo=mock_progress_repo,
+            cache=cache,
+            list_ttl=30,
+        )
+        await service.list_courses(user_id="user1")
+        await service.list_courses(user_id="user1")
+
+        assert mock_course_repo.get_all_courses.call_count == 2
+        assert cache.store == {}

@@ -94,6 +94,24 @@ class CoachingRequest(BaseModel):
         return self
 
 
+class WarmRequest(BaseModel):
+    """Fire-and-forget warm trigger for reusable coach learner context.
+
+    question_id is logging-only (slug like "two-sum"); context stays
+    user-scoped so anonymous callers never warm shared state.
+    """
+
+    question_id: Optional[str] = Field(
+        default=None, max_length=128, description="Question slug being viewed"
+    )
+
+
+class WarmResponse(BaseModel):
+    status: str = Field(..., description="warming | hit | disabled")
+    warmed: bool = Field(..., description="True when a background warm was queued")
+    ttl: int = Field(..., description="Coach context TTL seconds")
+
+
 class SceneShape(BaseModel):
     """One declarative vector shape in an animation scene (data, never code).
 

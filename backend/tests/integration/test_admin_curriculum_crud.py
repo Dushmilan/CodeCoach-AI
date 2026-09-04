@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
-from tests.fixtures.auth_helpers import admin_headers as _admin_headers
 from tests.db_helpers import truncate_course_tables_sync
+from tests.fixtures.auth_helpers import admin_headers
 
 
 def _truncate_course_tables():
@@ -12,6 +12,11 @@ def _truncate_course_tables():
 
 def teardown_module():
     _truncate_course_tables()
+
+
+def _admin_headers(test_client: TestClient) -> dict:
+    """Register a user and promote to admin (shared helper)."""
+    return admin_headers(test_client, "admincurriculum", "admincurriculum@test.com")
 
 
 class TestAdminCurriculumCRUD:

@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from tests.fixtures.auth_helpers import register_user_headers
+from tests.fixtures.auth_helpers import register_headers
 
 
 class TestCoursesEndpoints:
@@ -51,7 +51,7 @@ class TestCoursesEndpoints:
 
 class TestCoursesEndpointsAuthenticated:
     def _get_auth_headers(self, test_client: TestClient):
-        return register_user_headers(test_client, "coursetestuser")
+        return register_headers(test_client, "coursetestuser", "coursetest@example.com")
 
     def test_list_courses_authenticated_empty(self, test_client: TestClient):
         headers = self._get_auth_headers(test_client)

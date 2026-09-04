@@ -18,7 +18,7 @@ from app.api.dependencies import (
     get_redis_cache,
     get_usage_repo,
 )
-from app.services.course_service import invalidate_course_list_cache
+from app.services.course_service import invalidate_anonymous_course_list_cache
 from app.services.redis_service import RedisCache
 from app.services.question_validator import QuestionValidatorService
 from app.models.schemas import Question
@@ -56,9 +56,12 @@ async def _invalidate_course_caches(cache: Optional[RedisCache]) -> None:
     Learners must see published/edited content immediately instead of
     waiting out the anonymous-list (30s) and detail (1h) TTLs.
     """
-    invalidate_course_list_cache()
+    await invalidate_anonymous_course_list_cache(cache)
     if cache is not None:
-        await cache.delete("codecoach:courses:*")
+        try:
+            await cache.delete(RedisCache.key("courses", "detail", "*"))
+        except Exception as exc:  # noqa: BLE001 - invalidation is best-effort
+            logger.debug("Course detail cache invalidation failed: %s", exc)
 
 
 async def _invalidate_question_caches(cache: Optional[RedisCache]) -> None:

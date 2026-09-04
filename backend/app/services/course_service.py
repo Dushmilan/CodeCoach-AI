@@ -1,7 +1,7 @@
+import asyncio
 import logging
-import time
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional
 
 from app.models.course_schemas import Course, CourseProgress, CourseSummary, Lesson
 from app.ports.course_repository import CourseRepository
@@ -10,16 +10,31 @@ from app.services.redis_service import RedisCache
 
 logger = logging.getLogger(__name__)
 
-# In-memory TTL cache for anonymous course list (Supabase pooler ~1.5s per query; intermittent timeout on cold pool)
-# Keyed by None (anonymous) — user-specific progress bypasses cache
-_course_list_cache: Dict[str, Tuple[float, List[CourseSummary]]] = {}
-_COURSE_LIST_TTL = 30.0
-_ANON_LIST_REDIS_KEY = RedisCache.key("courses", "list", "anonymous")
+# Anonymous course list is identical for every visitor — cache it in Redis so
+# every backend replica shares one entry (avoids repeated Supabase roundtrips
+# and intermittent 408s on a cold pool).
+_ANON_LIST_KEY = RedisCache.key("courses", "list", "anonymous")
+_ANON_LIST_LOCK_KEY = RedisCache.key("courses", "list", "anonymous", "lock")
+# Stampede protection: SET NX lock so only one worker rebuilds on a miss.
+# Losers poll briefly, then build directly (fail-safe — never block the hot path).
+_ANON_LIST_LOCK_TTL = 10
+_ANON_LIST_LOCK_POLLS = 20
+_ANON_LIST_LOCK_POLL_INTERVAL = 0.05
 
 
-def invalidate_course_list_cache() -> None:
-    """Drop the anonymous course-list cache (call after admin mutations)."""
-    _course_list_cache.clear()
+async def invalidate_anonymous_course_list_cache(
+    cache: Optional[RedisCache],
+) -> None:
+    """Drop the cached anonymous course list after a catalog write.
+
+    Best-effort: cache failures must never break admin mutations.
+    """
+    if cache is None:
+        return
+    try:
+        await cache.delete(_ANON_LIST_KEY)
+    except Exception as exc:  # noqa: BLE001 - invalidation is best-effort
+        logger.debug("Course-list cache invalidation failed: %s", exc)
 
 
 class CourseService:
@@ -28,45 +43,68 @@ class CourseService:
         course_repo: CourseRepository,
         progress_repo: ProgressRepository,
         cache: Optional[RedisCache] = None,
+        list_ttl: int = 30,
     ):
         self.course_repo = course_repo
         self.progress_repo = progress_repo
         self.cache = cache
+        self.list_ttl = list_ttl
 
     async def list_courses(self, user_id: Optional[str] = None) -> List[CourseSummary]:
-        # Anonymous list is same for everyone — cache to avoid repeated Supabase roundtrips and intermittent 408 on cold pool.
-        # Redis is preferred so every backend replica shares one entry (multi-worker safe);
-        # the in-memory dict is the fallback when Redis is not configured.
-        if not user_id:
-            if self.cache is not None:
-                return await self._list_courses_anonymous_redis()
-            cached = _course_list_cache.get("anonymous")
-            if cached and (time.time() - cached[0] < _COURSE_LIST_TTL):
-                return cached[1]
+        # Anonymous list is the same for everyone — serve from the shared
+        # Redis entry. Authenticated lists embed per-user progress and bypass
+        # the cache.
+        if user_id is None and self.cache is not None:
+            return await self._list_courses_anonymous_cached()
+        return await self._build_summaries(user_id)
 
-        summaries = await self._build_summaries(user_id)
-
-        if not user_id and self.cache is None:
-            _course_list_cache["anonymous"] = (time.time(), summaries)
-        return summaries
-
-    async def _list_courses_anonymous_redis(self) -> List[CourseSummary]:
+    async def _list_courses_anonymous_cached(self) -> List[CourseSummary]:
         try:
-            cached = await self.cache.get(_ANON_LIST_REDIS_KEY)  # type: ignore[union-attr]
+            cached = await self.cache.get(_ANON_LIST_KEY)  # type: ignore[union-attr]
             if cached is not None:
                 return [CourseSummary(**s) for s in cached]
         except Exception as exc:  # noqa: BLE001 - cache must never break listing
             logger.debug("Course-list Redis read failed: %s", exc)
-        summaries = await self._build_summaries(None)
+            return await self._build_summaries(None)
+
         try:
-            await self.cache.set(  # type: ignore[union-attr]
-                _ANON_LIST_REDIS_KEY,
-                [s.model_dump() for s in summaries],
-                ttl=int(_COURSE_LIST_TTL),
+            acquired = await self.cache.set_if_absent(  # type: ignore[union-attr]
+                _ANON_LIST_LOCK_KEY, "1", ttl=_ANON_LIST_LOCK_TTL
             )
         except Exception as exc:  # noqa: BLE001 - cache must never break listing
-            logger.debug("Course-list Redis write failed: %s", exc)
-        return summaries
+            logger.debug("Course-list Redis lock failed: %s", exc)
+            return await self._build_summaries(None)
+
+        if acquired:
+            # Winner rebuilds. DB errors propagate (route maps them to 500);
+            # only the cache write itself is best-effort.
+            summaries = await self._build_summaries(None)
+            try:
+                await self.cache.set(  # type: ignore[union-attr]
+                    _ANON_LIST_KEY,
+                    [s.model_dump() for s in summaries],
+                    ttl=self.list_ttl,
+                )
+            except Exception as exc:  # noqa: BLE001 - cache must never break listing
+                logger.debug("Course-list Redis write failed: %s", exc)
+            finally:
+                try:
+                    await self.cache.delete(_ANON_LIST_LOCK_KEY)  # type: ignore[union-attr]
+                except Exception:  # noqa: BLE001 - lock auto-expires via TTL
+                    pass
+            return summaries
+        else:
+            # Another worker is rebuilding — wait briefly for its value,
+            # then fall back to a direct build (fail-safe under lock stalls).
+            for _ in range(_ANON_LIST_LOCK_POLLS):
+                await asyncio.sleep(_ANON_LIST_LOCK_POLL_INTERVAL)
+                try:
+                    cached = await self.cache.get(_ANON_LIST_KEY)  # type: ignore[union-attr]
+                except Exception:  # noqa: BLE001 - fall through to direct build
+                    break
+                if cached is not None:
+                    return [CourseSummary(**s) for s in cached]
+            return await self._build_summaries(None)
 
     async def _build_summaries(self, user_id: Optional[str]) -> List[CourseSummary]:
         courses = await self.course_repo.get_all_courses()
@@ -129,24 +167,9 @@ class CourseService:
         modules.sort(key=lambda m: m.order)
         result = course.model_dump()
         result["modules"] = []
-        # Batch fetch lesson outlines (titles only) in single query — avoids N+1 roundtrips to Supabase pooler (~1-2s each)
-        module_ids = [m.id for m in modules]
-        all_lessons = []
-        if hasattr(self.course_repo, "get_lesson_summaries_by_module_ids"):
-            all_lessons = await self.course_repo.get_lesson_summaries_by_module_ids(
-                module_ids
-            )  # type: ignore
-        else:
-            # Fallback for in-memory test repos
-            for mid in module_ids:
-                all_lessons.extend(await self.course_repo.get_lessons_by_module(mid))
-        # Group by module_id preserving order
-        lessons_by_module: dict[str, list] = {mid: [] for mid in module_ids}
-        for le in all_lessons:
-            lessons_by_module.setdefault(le.module_id, []).append(le)
         for mod in modules:
             mod_dict = mod.model_dump()
-            lessons = lessons_by_module.get(mod.id, [])
+            lessons = await self.course_repo.get_lessons_by_module(mod.id)
             lessons.sort(key=lambda le: le.order)
             mod_dict["lessons"] = [le.model_dump() for le in lessons]
             result["modules"].append(mod_dict)

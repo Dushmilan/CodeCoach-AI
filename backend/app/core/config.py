@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Per-user request rate limit (requests per minute)
     USER_RATE_LIMIT_PER_MINUTE: int = 60
 
+    # Background coach-context warming on question enter (kill-switch)
+    COACH_WARM_ENABLED: bool = True
+
     # Abuse detection thresholds
     ABUSE_MULTI_ACCOUNT_MIN_ACCOUNTS: int = 3
     ABUSE_BURST_MIN_EVENTS: int = 20
@@ -74,6 +77,9 @@ class Settings(BaseSettings):
                 "postgresql://", "postgresql+asyncpg://", 1
             )
         return self
+
+    # Anonymous course-list cache (Supabase pooler ~1.5s per query on cold pool)
+    COURSE_LIST_TTL_SECONDS: int = 30
 
     # Piston
     PISTON_API_URL: str = "http://piston:2000/api/v2"

@@ -78,6 +78,24 @@ async def submit_code(
         for tc in question.test_cases
     ]
 
+    # Stateful adapter contract: persist sent before grading so executor
+    # crashes still leave an auditable row, then transition to graded/failed.
+    # Persistence is best-effort and never breaks the graded response.
+    sent = None
+    try:
+        sent = await submissions.create_sent(
+            user_id=current_user.id,
+            submission=SubmissionIn(
+                question_id=submit_request.question_id,
+                code=submit_request.code,
+                language=submit_request.language.value,
+                passed=False,
+            ),
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning("Failed to persist submission sent state", exc_info=True)
+        sent = None
+
     try:
         results = await executor.evaluate_suite(
             language=submit_request.language.value,
@@ -85,28 +103,49 @@ async def submit_code(
             test_cases=test_cases,
         )
     except HTTPException:
+        if sent is not None:
+            try:
+                await submissions.mark_failed(sent.id)
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "Failed to persist submission failed state", exc_info=True
+                )
         raise
     except Exception as e:
         logger.error(f"Submit evaluation error: {e}", exc_info=True)
+        if sent is not None:
+            try:
+                await submissions.mark_failed(sent.id)
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "Failed to persist submission failed state", exc_info=True
+                )
         raise HTTPException(status_code=500, detail="Evaluation failed")
 
     passed_count = sum(1 for r in results if r.passed)
     passed = passed_count == len(results) if results else False
 
-    # Persist the graded attempt for the mistake-memory data layer. Best-effort:
-    # a failed write must not 500 the graded result, but it IS logged.
+    # Transition sent -> graded for the mistake-memory data layer.
+    # Best-effort: a failed write must not 500 the graded result.
     persisted = None
     try:
-        persisted = await submissions.add(
-            user_id=current_user.id,
-            submission=SubmissionIn(
-                question_id=submit_request.question_id,
-                code=submit_request.code,
-                language=submit_request.language.value,
+        if sent is not None:
+            persisted = await submissions.mark_graded(
+                sent.id,
                 passed=passed,
                 error_signature=_error_signature(results),
-            ),
-        )
+            )
+        else:
+            persisted = await submissions.add(
+                user_id=current_user.id,
+                submission=SubmissionIn(
+                    question_id=submit_request.question_id,
+                    code=submit_request.code,
+                    language=submit_request.language.value,
+                    passed=passed,
+                    error_signature=_error_signature(results),
+                ),
+            )
     except Exception:  # noqa: BLE001
         logger.warning("Failed to persist submission", exc_info=True)
 

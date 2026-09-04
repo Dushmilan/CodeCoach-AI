@@ -56,8 +56,15 @@ class TestMonitoringEndpoint:
         async def override_cache():
             return _DisabledRedis()
 
+        # NOTE: the endpoint reads request.app.state.redis_cache directly
+        # (not the get_redis_cache dependency), so the state slot must be
+        # swapped too — otherwise this test passes only when the app
+        # lifespan never ran, i.e. depending on which test file ran first.
+        _sentinel = object()
+        previous = getattr(app.state, "redis_cache", _sentinel)
         app.dependency_overrides[get_redis_cache] = override_cache
         app.dependency_overrides[get_usage_repo] = lambda: _UsageRepo()
+        app.state.redis_cache = _DisabledRedis()
         try:
             res = await async_client.get("/health/monitoring")
             assert res.status_code == 200
@@ -68,3 +75,10 @@ class TestMonitoringEndpoint:
         finally:
             app.dependency_overrides.pop(get_redis_cache, None)
             app.dependency_overrides.pop(get_usage_repo, None)
+            if previous is _sentinel:
+                try:
+                    delattr(app.state, "redis_cache")
+                except AttributeError:
+                    pass
+            else:
+                app.state.redis_cache = previous

@@ -10,7 +10,7 @@ import uuid
 from fastapi.testclient import TestClient
 
 from tests.db_helpers import truncate_course_tables_sync
-from tests.fixtures.auth_helpers import admin_headers, register_user_headers
+from tests.fixtures.auth_helpers import admin_headers, register_headers
 
 
 def _uid(prefix: str) -> str:
@@ -78,7 +78,7 @@ def teardown_module():
 class TestProgressFlows:
     def test_mark_complete_then_read_progress(self, test_client: TestClient):
         course_id, lesson_id = _seed_curriculum(test_client)
-        headers = register_user_headers(test_client, f"learner-{uuid.uuid4().hex[:8]}")
+        headers = register_headers(test_client, f"learner-{uuid.uuid4().hex[:8]}")
         try:
             done = test_client.post(
                 f"/api/progress/{lesson_id}/complete?course_id={course_id}",
@@ -105,7 +105,7 @@ class TestProgressFlows:
 
     def test_progress_empty_for_new_learner(self, test_client: TestClient):
         course_id, _ = _seed_curriculum(test_client)
-        headers = register_user_headers(test_client, f"fresh-{uuid.uuid4().hex[:8]}")
+        headers = register_headers(test_client, f"fresh-{uuid.uuid4().hex[:8]}")
         try:
             res = test_client.get(f"/api/progress/{course_id}", headers=headers)
             assert res.status_code == 200
@@ -117,7 +117,7 @@ class TestProgressFlows:
 
     def test_track_access_returns_last_accessed(self, test_client: TestClient):
         course_id, lesson_id = _seed_curriculum(test_client)
-        headers = register_user_headers(test_client, f"access-{uuid.uuid4().hex[:8]}")
+        headers = register_headers(test_client, f"access-{uuid.uuid4().hex[:8]}")
         try:
             res = test_client.post(
                 f"/api/progress/{lesson_id}/access?course_id={course_id}",
@@ -132,7 +132,7 @@ class TestProgressFlows:
 
     def test_complete_lesson_wrong_course_rejected(self, test_client: TestClient):
         course_id, lesson_id = _seed_curriculum(test_client)
-        headers = register_user_headers(test_client, f"mismatch-{uuid.uuid4().hex[:8]}")
+        headers = register_headers(test_client, f"mismatch-{uuid.uuid4().hex[:8]}")
         try:
             res = test_client.post(
                 f"/api/progress/{lesson_id}/complete?course_id=other-course",
@@ -146,8 +146,8 @@ class TestProgressFlows:
 
     def test_progress_isolated_per_learner(self, test_client: TestClient):
         course_id, lesson_id = _seed_curriculum(test_client)
-        headers_a = register_user_headers(test_client, f"usera-{uuid.uuid4().hex[:8]}")
-        headers_b = register_user_headers(test_client, f"userb-{uuid.uuid4().hex[:8]}")
+        headers_a = register_headers(test_client, f"usera-{uuid.uuid4().hex[:8]}")
+        headers_b = register_headers(test_client, f"userb-{uuid.uuid4().hex[:8]}")
         try:
             test_client.post(
                 f"/api/progress/{lesson_id}/complete?course_id={course_id}",
