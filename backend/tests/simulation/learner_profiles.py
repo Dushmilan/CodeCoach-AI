@@ -208,7 +208,7 @@ def profile_many_failed_attempts(user, rng):
         events.append(fail_evt(seq, user, Q_MAX_SUB))
         seq += 1
     expected = {}
-    expect_skill(expected, "dynamic-programming", mastery_ge=0.0)
+    expect_skill(expected, "dp-1d", mastery_ge=0.0)
     return events, expected
 
 
@@ -273,7 +273,7 @@ def profile_ai_diagnosis_dependent(user, rng):
         pass_evt(5, user, Q_MAX_SUB),
     ]
     expected = {}
-    expect_skill(expected, "dynamic-programming", mastery_lt=0.75)
+    expect_skill(expected, "dp-1d", mastery_lt=0.75)
     return events, expected
 
 
@@ -371,7 +371,7 @@ def profile_lucky_guesser(user, rng):
         fail_evt(5, user, Q_MAX_SUB),
     ]
     expected = {}
-    expect_skill(expected, "dynamic-programming", mastery_lt=0.75)
+    expect_skill(expected, "dp-1d", mastery_lt=0.75)
     return events, expected
 
 
@@ -397,14 +397,14 @@ def profile_mixed_skill(user, rng):
         pass_evt(0, user, Q_TWO_SUM),
         pass_evt(1, user, Q_TWO_SUM),
         pass_evt(2, user, Q_TWO_SUM),
-        # Merge-intervals is arrays+sorting; learner is bad at sorting.
+        # Merge-intervals is arrays+intervals; learner is bad at intervals.
         fail_evt(3, user, Q_MERGE, error="wrong_order"),
         fail_evt(4, user, Q_MERGE, error="wrong_order"),
         pass_evt(5, user, Q_MERGE, hints=2),
     ]
     expected = {}
     expect_skill(expected, "hash-maps", mastery_ge=0.2, mastery_lt=0.75)
-    expect_skill(expected, "sorting", errors_ge=2)
+    expect_skill(expected, "intervals", errors_ge=2)
     return events, expected
 
 
@@ -459,9 +459,9 @@ def profile_topic_transfer(user, rng):
     ]
     expected = {}
     # Transfer: two-pointers evidence from reverse-string persists and the
-    # merge-interval practice feeds sorting without resetting anything.
+    # merge-interval practice feeds intervals without resetting anything.
     expect_skill(expected, "two-pointers", mastery_ge=0.2)
-    expect_skill(expected, "sorting", mastery_ge=0.2)
+    expect_skill(expected, "intervals", mastery_ge=0.2)
     return events, expected
 
 
