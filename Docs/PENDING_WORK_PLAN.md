@@ -14,9 +14,9 @@ remaining product, quality, testing, and ops backlog.
 
 ## Phase 0 — Ops (no code, do first)
 
-### OPS-1 · Apply pending migrations to live Supabase — ✅ DONE (already at head e1f2a3b4c5d6, verified)
-- **What:** `alembic upgrade head` (head = `e1f2a3b4c5d6`) via `DIRECT_URL` (session pooler).
-- **Applies:** `c8d0e1f2a3b4` (repair `rate_limit_events` + `request_count`), `d9e1f2a3b4c5` (`submissions`), `e1f2a3b4c5d6` (public `request_count`).
+### OPS-1 · Apply pending migrations to live Supabase — ✅ DONE (at head b4c5d6e7f8a1, verified)
+- **What:** `alembic upgrade head` (head = `b4c5d6e7f8a1`) via `DIRECT_URL` (session pooler).
+- **Applies since `e1f2a3b4c5d6`:** `f2a3b4c5d6e7` (`rescue_queue`), `a3b4c5d6e7f8` (`review_cards`), `c9d0e1f2a3b4` (taxonomy DP prune), `b4c5d6e7f8a1` (`coaching_interactions` + `execution_jobs` + `submissions` status columns).
 - **Verify:** `alembic heads` = single head; `alembic current` = head; `/health/` → `questions_db == "ok"`.
 - **Dep:** none. **Blocks:** any backend deploy.
 
@@ -68,15 +68,16 @@ as a tiny, re-entry step — the "no-loss economy" of the mistake-memory moat.
 - Reuse the `RescueIntervention` concept already referenced in `Progress.md`
   (checkpoints + flow maps exist). Add a durable record:
   - `rescue_queue` table: `id (uuid pk)`, `user_id (fk)`, `question_id (fk)`,
-    `status` (`abandoned` | `due` | `completed` | `dismissed`),
+    `status` (`abandoned` | `completed` | `dismissed` — "due" is **derived**,
+    `status='abandoned' AND due_at <= now()`),
     `first_abandoned_at`, `due_at` (next re-surface time),
     `resurface_count`, `last_intervention_at`, `created_at`, `updated_at`.
   - Index: `(user_id, status, due_at)` — the "what's due for me today" query.
 - Idempotent upsert: one open row per (user, question).
 
 **API surface (new `app/api/rescue.py`, port + `sql_*` repo)**
-- `GET /api/rescue/due` — due items for the current user (filter
-  `status='due' AND due_at <= now`, ordered by `due_at`).
+- `GET /api/rescue/due` — due items for the current user (derived:
+  `status='abandoned' AND due_at <= now`, ordered by `due_at`).
 - `POST /api/rescue/{question_id}/abandon` — mark abandoned, set
   `due_at = tomorrow 09:00 local` (first time), or push one day out on repeat
   abandonment; idempotent.
@@ -97,7 +98,7 @@ as a tiny, re-entry step — the "no-loss economy" of the mistake-memory moat.
 - Backend (integration, fresh client + mocked repo):
   - abandon → row created with `due_at` tomorrow; re-abandon same question
     is idempotent (no duplicate rows).
-  - `due` returns only rows where `due_at <= now` and `status='due'`.
+  - `due` returns only rows where `due_at <= now` and `status='abandoned'` (due is derived, never stored).
   - complete/dismiss transition the row; dismissed never re-surfaces.
 - Frontend: hook calls the API on abandon; queue renders due items; solving
   removes the item.
@@ -113,7 +114,9 @@ as a tiny, re-entry step — the "no-loss economy" of the mistake-memory moat.
 
 ---
 
-### F3 · Skill-graph mapping 21 → 109 🟠 — every question recommendable
+### F3 · Skill-graph mapping 21 → 109 🟠 — every question recommendable — ✅ DONE (Aug 23; taxonomy reworked Sep 04)
+
+> Sep 04 note: the live inventory is now 107 ids (`backend/tests/fixtures/live_question_ids.json`); taxonomy is 26 skills (21 roadmap in NeetCode `ROADMAP_ORDER` + 5 supporting, `#134`/`#135`); stale DP rows pruned (`c9d0e1f2a3b4`, `#138`).
 
 **Goal / user value**
 "Practice Next" only works for questions mapped to skills. Today 25 mapping
@@ -155,13 +158,13 @@ question resolves a skill-based next-step.
 **Effort:** Medium (mostly taxonomy curation).
 
 **Definition of done**
-- 109/109 mapped in the taxonomy; `question_skills` ≥ 109 rows on live;
+- 109/109 mapped in the taxonomy (superseded Sep 04: 107 live ids — see note at the top of this section); `question_skills` ≥ 109 rows on live;
   every mapping resolves to a real question; recommendations non-empty for
   mapped questions.
 
 ---
 
-### F5 · C / Java curricula 🟡 — curriculum breadth
+### F5 · C / Java curricula 🟡 — curriculum breadth — ✅ DONE (Aug 23: 5 modules / 35 lessons each, 30/30 Piston verified)
 
 **Goal / user value**
 The curriculum is Python-only today. C and Java unlock the language-oriented
@@ -212,7 +215,7 @@ lessons, structured like Python Fundamentals (modules → lessons → exercises)
 | M-01 | Split `LessonPage.tsx` (381 lines) into `EditorPanel`/`ChatPanel`/`LessonSidebar`/`ProgressBar` | existing lesson page tests keep passing | High |
 | M-02 | Split `schemas.py` (500 lines) into `coach/execution/question` modules | import parity test | Medium |
 | M-03 | Add TanStack Query; replace manual `useEffect` fetch hooks | existing hook tests (15 files) stay green | Medium |
-| M-04 | Fix N+1 filtered count — `total = len(summaries)` → SQL `COUNT(*)` in repo | assert repo issues a single `COUNT` query (query-count spy) | Low |
+| M-04 | Fix N+1 filtered count — `total = len(summaries)` → SQL `COUNT(*)` in repo (✅ DONE: `func.count()` in `sql_question_repository.py`) | assert repo issues a single `COUNT` query (query-count spy) | Low |
 | M-07 | Keyset cursor pagination for `/api/questions` + admin list endpoints | contract test for `next_cursor` response shape | Medium |
 | L-01 | Standardize on `lucide-react`; drop `@radix-ui/react-icons` | visual/typecheck | Low |
 | L-02 | Move hardcoded Tailwind colors to CSS custom properties | snapshot | Low |

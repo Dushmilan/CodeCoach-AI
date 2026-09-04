@@ -2,7 +2,7 @@
 
 > Status legend: 🔴 Not started · 🟡 Partial / foundation only · 🟢 Mostly built · ✅ Done
 > Trackable with checkboxes — tick `[x]` as work lands.
-> Audit date: Sep 02, 2026 (branch `feat/125-coach-skill-context-cache` — audited against code). Companion status doc: [Progress.md](./Progress.md).
+> Audit date: Sep 04, 2026 (branch `docs/no-issue-docs-sync`, origin/main `51f7a02` — audited against code). Companion status doc: [Progress.md](./Progress.md).
 
 This is a **closed / private** product. Defensibility therefore rides on the
 product's own data and UX personality, not on an open-source community.
@@ -11,14 +11,14 @@ product's own data and UX personality, not on an open-source community.
 
 | # | Idea | Status | Key blocker |
 |---|------|--------|-------------|
-| 1 | Mistake-memory moat | ✅ Done (+ learner-context shipped `f246c4a`) | No blocker — submissions + error graph + SM-2 + analytics + learner-context caching landed; backfill only |
-| 2 | Segment moat | 🟡 | No professor/class dashboard |
+| 1 | Mistake-memory moat | ✅ Done (+ learner-context `f246c4a`, adapter-state `#133`) | No blocker — submissions + error graph + SM-2 + analytics + learner-context + adapter-state audit landed; backfill only |
+| 2 | Segment moat | 🟡 | No professor/class dashboard (course list now anonymously cached, `#144`) |
 | 3 | Forgetting-curve UI | ✅ Done | None — `/dashboard` memory graph live |
 | 4 | Never-alone rescue contract | ✅ Done | None — durable queue + T1→T2→T3 live; flow-map retired to animate |
-| 5 | See-how-you-think replay | 🟡 | `ProblemFlowMap` static list, not journey replay |
-| 6 | Live interviewer theater | 🔴 | Needs session/event engine |
-| 7 | Time-travel debugging | 🟡 | `trace_instrumenter` exists for animation only; needs generic user-code tracing |
-| 8 | Reverse interview | 🔴 | Cheap — `CoachingMode.SENIOR` + prompt not yet added |
+| 5 | See-how-you-think replay | 🟡 | `ProblemFlowMap` static list, not journey replay (workspace code/chat now persisted — more journey data) |
+| 6 | Live interviewer theater | 🔴 | Needs session/event engine (surface split + coach warm are new primitives) |
+| 7 | Time-travel debugging | 🟡 | `trace_instrumenter` exists for animation only + `#141` quality gates; needs generic user-code tracing |
+| 8 | Reverse interview | 🔴 | Cheap — `CoachingMode.SENIOR` + prompt not yet added (`surface` is the seam) |
 | 9 | Honourable mentions | 🔴 | Backlog |
 
 ---
@@ -35,17 +35,17 @@ Why it's leverage: every session compounds switching cost. Five years of a
 user's mistake-history is a moat nobody can walk into. This is the thing you
 gather user data for.
 
-### Status: ✅ Done — plus learner-context shipped (`f246c4a` Sep 02)
+### Status: ✅ Done — plus learner-context shipped (`f246c4a` Sep 02) and adapter-state durability (`#133` Sep 04)
 
 **Detailed explanation:** The core product promise is that every run/submit/diagnosis
 a user makes is persisted per-user. From that history we derive (a) an error graph
 linking questions → failing concepts → recurring error signatures, (b) a spaced-repetition
 scheduler (SM-2/FSRS) that quizzes you on your _own_ past bugs, and (c) learning-analytics
-signals like "recursion plateau detected." Now **unblocked**: `SubmissionORM` (`submissions` table, `d9e1f2a3b4c5`) is live, and `LearnerContextService` (`backend/app/services/learner_context_service.py`, `backend/app/core/cache_keys.py`) composes cached skill graph + recent attempts into coach prompts (`feat/125`).
+signals like "recursion plateau detected." Now **unblocked**: `SubmissionORM` (`submissions` table, `d9e1f2a3b4c5`) is live, and `LearnerContextService` (`backend/app/services/learner_context_service.py`, `backend/app/core/cache_keys.py`) composes cached skill graph + recent attempts into coach prompts (`feat/125`). Since Sep 04 every coach/exec/submit call is also durability-tracked: `coaching_interactions` + `execution_jobs` + `submissions.status` (migration `b4c5d6e7f8a1`, `CoachingAdapter`/`ExecutionAdapter`, `adapter_state_recovery` worker, `GET /api/coach/interactions`).
 
 **The critical gap (was):** the codebase stored completed lessons (`course_progress`),
 usage events, and skill-graph learning events, but never persisted actual code attempts
-— now **RESOLVED**: `submissions` + `review_cards` + `error_graph` + learner-context `f246c4a` are at head; diagnosis capture remains the only open wire (Piston `run`/`submit` already best-effort).
+— now **RESOLVED**: `submissions` + `review_cards` + `error_graph` + learner-context `f246c4a` + adapter-state `#133` are at head; diagnosis capture remains the only open wire (Piston `run`/`submit` already best-effort, coach/exec `sent`-states now auditable).
 
 ### Progress
 
@@ -56,7 +56,8 @@ usage events, and skill-graph learning events, but never persisted actual code a
 - [x] Spaced-repetition scheduler producing review sessions from own past bugs (SM-2, `/api/reviews/*`)
 - [x] Learning-analytics signals ("recursion plateau detected")
 - [x] Learner-aware coaching (shipped `f246c4a`): `LearnerContextService` + `cache_keys.py` + `PromptBuilder` injection + `submit`/`skills` invalidation + `MainWorkspace` full description + `learner-context-invalidated` refresh
-- [ ] Backfill/adopt for existing questions where feasible
+- [x] Adapter-state durability (shipped `#133`): `coaching_interactions` + `execution_jobs` + `submissions.status` (`b4c5d6e7f8a1`), `CoachingAdapter`/`ExecutionAdapter` sent-tracking, `adapter_state_recovery` worker, `GET /api/coach/interactions`
+- [ ] Backfill/adopt for existing questions where feasible (`scripts/backfill_skill_graph.py` emits idempotent `backfill:{submission.id}` events)
 
 ### Next steps
 
@@ -78,10 +79,10 @@ Closed-source lets you be ruthlessly niche without community backlash:
 Why it's leverage: giants fight for the crowded middle (interview grinders).
 Owning one underserved segment makes you the default, not a choice.
 
-### Status: 🟡 Partial — curriculum exists, no professor ecosystem
+### Status: 🟡 Partial — curriculum exists, no professor ecosystem (course list anonymously cached `#144`)
 
 **Detailed explanation:** The curriculum half is built: Python Fundamentals —
-modules, lessons, progress tracking, exercises, `/learn`. The segment-moat half
+modules, lessons, progress tracking, exercises, `/learn` — served from the DB through a cached `CourseService` (anonymous list in Redis, 30s + stampede lock, invalidated on admin writes). The segment-moat half
 is not: there is no professor/class dashboard, no roster/classroom model, and no
 first-30-days onboarding funnel. The "one professor = a whole class" flywheel
 needs a teaching view.
@@ -192,19 +193,19 @@ Why it's a moat: it needs your full attempt-history (the data you're already
 gathering for idea #1), and it makes users look back at themselves — rare and
 addictive. Nobody else can show you your brain.
 
-### Status: 🟡 Partial — per-solve `ProblemFlowMap` static list, not journey replay — code-audited Sep 02
+### Status: 🟡 Partial — per-solve `ProblemFlowMap` static list, not journey replay — code-audited Sep 04
 
 **Detailed explanation:** The flow-map feature (`frontend/src/components/rescue/ProblemFlowMap.tsx`,
 static checkpoint list, plus `frontend/src/components/visualization/` for animations) shows a checkpoint map
 for a single solve. It is **not** a replay of the user's _attempt journey_ (every
-attempt, where they errored, how their code evolved). `submissions` history is now persisted (#1 done), so the data layer is unblocked — the renderer/timeline is still missing. Former AI flow-map was retired to `animate`.
+attempt, where they errored, how their code evolved). `submissions` history is now persisted (#1 done) and the workspace journey is captured (Redis draft code + chat + last exec/submit via `WorkspaceService`, `#124`) — the renderer/timeline is still missing. Former AI flow-map was retired to `animate`.
 
 ### Progress
 
 - [x] Flow-map checkpoint list (`ProblemFlowMap.tsx`) + rescue checkpoints (`rescue.checkpoints.ts`)
 - [x] Animation visualization infra (`AnimationPlayer.tsx`, `AnimationScriptRenderer.tsx`) for canonical solutions only
 - [x] AI diagnosis of a submission (deterministic fallback)
-- [x] Persist full attempt journey per problem — **unblocked** (`submissions` now live, needs journey query)
+- [x] Persist full attempt journey per problem — **unblocked** (`submissions` now live + workspace Redis code/chat/last-exec via `WorkspaceService`, needs journey query)
 - [ ] Animated replay timeline over the stored journey
 - [ ] "Where you errored / what you almost got" highlights
 
@@ -228,12 +229,12 @@ answer. Fail = the interviewer "loses interest."
 Why it's a moat: a UX personality and a live-reaction paradigm can't be copied by
 adding database tables. Immersive, shareable, high retention.
 
-### Status: 🔴 Not started — streaming foundation exists
+### Status: 🔴 Not started — streaming foundation exists (+ surface split / warm primitives Sep 04)
 
 **Detailed explanation:** The key foundation already exists: the backend streams
 AI coaching via SSE (`POST /coach/stream` in `backend/app/api/coach.py`), the
 frontend consumes it via `coaching.service.ts` / `coaching.hook.ts`, and the
-editor (`CodeEditor.tsx`, Monaco) can emit change events. What's missing is the
+editor (`CodeEditor.tsx`, Monaco) can emit change events. New since Sep 04: the coach has a `surface` split — `questions` (graph-aware, fetches learner-context) vs `learn` (graph-free) — and `POST /api/coach/warm` pre-warms learner-context on question enter (`useCoachWarm`), both natural session-engine primitives. What's missing is the
 _session engine_: a per-session interviewer state machine (attempts, last code
 snapshot, curveball cursor, persona mood) that reacts to editor debounce +
 run/pass events and pushes structured `CoachEvent`s (probe / interrupt /
@@ -243,6 +244,7 @@ history required.
 ### Progress
 
 - [x] SSE streaming coach endpoint (`POST /coach/stream`)
+- [x] Coach `surface` split (`questions` graph-aware vs `learn` graph-free, `#131`) + warm prefetch (`POST /api/coach/warm`, `useCoachWarm`, `#132`)
 - [x] Frontend streaming consumption (`coaching.service.ts` / `coaching.hook.ts`)
 - [x] Monaco editor change events (debounce hookup needed)
 - [ ] Interview session schema + event union (`probe`/`interrupt`/`requirement_change`/`reveal`/`escalate`)
@@ -271,11 +273,11 @@ position, variables mutating, the exact frame where a value went wrong.
 Why it's a moat: genuinely modern technology, not a gamification skin — it makes
 "watch the bug happen" possible. Self-contained and demo-able with zero user data.
 
-### Status: 🟡 Partial — canonical tracing only (Sep 02 audit)
+### Status: 🟡 Partial — canonical tracing only + quality gates (Sep 04 audit)
 
 **Detailed explanation:** Piston (`piston_service.py`) is stdout/exit-code only —
 it has **no step/trace support**. Canonical-solution tracing **is** built for animations:
-`backend/app/services/trace_instrumenter.py:35` `wrap_traced_solution` injects `__trace` helper + JSON-array dump, `trace_parser.py:112` `parse_trace` normalizes `init`/`compare`/`swap`/`pointer`/`mark`/…/`return` events, `SolutionAnimationService` compiles them into `AnimationScript` for `GET /api/coach/animate`. **Missing:** generic AST-instrumented tracing of the *student's* code (Python `ast` + JS transform) producing a scrubbable `TraceTimeline` (`TraceStep`/`TraceFrame` schemas, `POST /trace`), plus `TimelineScrubber` (play/pause, var inspector) and line-highlight overlay on `CodeEditor.tsx`. Former AI flow-map is now animate.
+`backend/app/services/trace_instrumenter.py:35` `wrap_traced_solution` injects `__trace` helper + JSON-array dump, `trace_parser.py:112` `parse_trace` normalizes `init`/`compare`/`swap`/`pointer`/`mark`/…/`return` events, `SolutionAnimationService` compiles them into `AnimationScript` for `GET /api/coach/animate` — now through an 8-family scene planner with complexity resolution, 96-step downsampling, and a `lint_quality` gate (`#141`). **Missing:** generic AST-instrumented tracing of the *student's* code (Python `ast` + JS transform) producing a scrubbable `TraceTimeline` (`TraceStep`/`TraceFrame` schemas, `POST /trace`), plus `TimelineScrubber` (play/pause, var inspector) and line-highlight overlay on `CodeEditor.tsx`. Former AI flow-map is now animate.
 
 ### Progress
 
@@ -308,7 +310,7 @@ follow-ups until you've taught it.
 Why it's leverage: cheap to ship first (no realtime needed) and it validates the
 shared persona engine that powers ideas #6 and #7.
 
-### Status: 🔴 Not started — cheapest genuinely-new win
+### Status: 🔴 Not started — cheapest genuinely-new win (coach `surface` is the seam)
 
 **Detailed explanation:** `CoachingMode` (`backend/app/models/schemas.py`) already
 has hint/review/explain/debug/freeform/animate. This adds a `senior` mode where the
@@ -371,12 +373,14 @@ numbered ideas when chosen.
 
 ---
 
-## Suggested execution order (updated Sep 02 — code-audited)
+## Suggested execution order (updated Sep 04 — code-audited)
 
-1. **#8 Reverse interview** — smallest effort, validates the persona engine (`CoachingMode.SENIOR`, `coaching_prompts.py` junior persona, mode picker) — cheapest genuinely-new win
-2. **#6 Live interviewer theater** — flagship, rides existing SSE (`POST /coach/stream`) + persona engine from #8
-3. **#5 Attempt-journey replay** — now **unblocked** by #1 `submissions` (audited Sep 02); animate with existing `ProblemFlowMap` + `AnimationPlayer`
-4. **#7 Time-travel debugging — student-code path** — canonical trace done; add generic `TracingExecutor` + `POST /trace` + `TimelineScrubber`
+1. **#8 Reverse interview** — smallest effort, validates the persona engine (`CoachingMode.SENIOR`, `coaching_prompts.py` junior persona, mode picker; plugs into the `surface` seam) — cheapest genuinely-new win
+2. **#6 Live interviewer theater** — flagship, rides existing SSE (`POST /coach/stream`) + `surface` split + warm prefetch + persona engine from #8
+3. **#5 Attempt-journey replay** — now **unblocked** by #1 `submissions` + workspace Redis journey (`WorkspaceService`); animate with existing `ProblemFlowMap` + `AnimationPlayer`
+4. **#7 Time-travel debugging — student-code path** — canonical trace done + `#141` quality gates; add generic `TracingExecutor` + `POST /trace` + `TimelineScrubber`
 5. **#2 professor dashboard** — define `class`/`roster` model + class-level views (reads existing `course_progress`)
 6. **#1 residual** — diagnosis capture
 7. **#9 Honourable mentions** — promote after #8: adversarial twin / takeover (cheap, no data)
+
+> Taxonomy note (Sep 04, `#134`/`#135`/`#138`): the skill inventory is now 26 skills — 21 roadmap buckets in NeetCode `ROADMAP_ORDER` plus 5 supporting skills kept for analytics/coaching context. "Practice Next" and any roadmap UI must use the roadmap track (`is_roadmap_skill` / `get_roadmap`), not the full skill list.

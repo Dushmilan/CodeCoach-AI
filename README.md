@@ -40,7 +40,7 @@ Private, proprietary project — no public fork/PR intake. See [AGENTS.md](./AGE
 
 CodeCoach AI is an AI-assisted coding practice platform for university students. It combines:
 
-- **DSA practice** — 109 problems (33 Easy / 50 Medium / 26 Hard) across ~19 categories (Arrays & Hashing, Two Pointers, Sliding Window, Trees & Recursion, Dynamic Programming, Graphs, Linked Lists, Binary Search, …) with Python, JavaScript, and Java starter code, seeded in Supabase.
+- **DSA practice** — 107 live questions (`backend/tests/fixtures/live_question_ids.json`) across a 26-skill taxonomy (21 roadmap buckets in NeetCode order + 5 supporting skills) with Python, JavaScript, and Java starter code, seeded in Supabase.
 - **Language curriculum** — Python Fundamentals (5 modules, 36 lessons: 21 theory + 15 exercises) plus C Programming and Java Programming (5 modules, 35 lessons each: 20 theory + 15 exercises). All content is served from `/learn`; the data model supports arbitrary languages.
 - **AI coaching** — hint, review, explain, debug, freeform, and animate (six modes) via Groq, with SSE streaming and structured JSON responses.
 - **Submit & grade** — isolated Piston execution against visible + hidden test cases, with pass/fail reporting.
@@ -60,22 +60,24 @@ Coaching runs on a platform-owned Groq key with per-user daily token caps — st
 
 ## Features
 
-State is kept in sync with code — audited Sep 02, 2026 on branch `feat/125-coach-skill-context-cache` (see [Progress.md](./Progress.md) and [Ideas.md](./Ideas.md)).
+State is kept in sync with code — audited Sep 04, 2026 on branch `docs/no-issue-docs-sync` (see [Progress.md](./Progress.md) and [Ideas.md](./Ideas.md)).
 
 ### Built
 
 | Feature | Description |
 |---|---|
-| **AI Coaching** | 6 modes (hint, review, explain, debug, freeform, animate) via Groq — structured JSON + SSE streaming (`POST /api/coach`, `POST /api/coach/stream`); lesson-aware + **learner-aware** (`feat/125` `LearnerContextService`: weakest-3 skills + last-3 attempts injected) |
-| **Code Execution** | Piston container — Python, JavaScript, Java; smart code wrapping for stdin→call→stdout harness (`GET/POST /api/run`, `/api/run/validate`, `/api/run/languages`) |
-| **Submit & Grade** | `POST /api/submit` (idempotent `LearningEvent sub:{id}` → skill graph) and `POST /api/run` (optional `question_id` crash capture); visible + hidden cases, `GET /api/submissions/me` history |
-| **Question Bank** | DSA questions with CRUD, search, filtering by difficulty/category/company tags + `/stats` aggregates (`/api/questions`) |
-| **Curriculum** | Python Fundamentals (5/36), C Programming (5/35), Java Programming (5/35) — `/learn` dashboard, module tree, lesson viewer, adjacent-lesson navigation, progress tracking |
-| **Lesson-aware Coaching** | Lesson context injected into every AI prompt; theory vs exercise layouts |
-| **Solution Animations** | Generate → validate → compile → play structured step animations (animate mode, canonical-solution `__trace` pipeline via `trace_instrumenter`/`trace_parser`/`SolutionAnimationService`, flow-map retired; `AnimationPlayer`, Motion Canvas `viewer.html` on `:9000`) |
-| **Skill Graph** | Learning events (run, submit, hint, diagnosis, review) → mastery/status, trends, decay, prerequisite-aware graphs (tables `skills`, `question_skills`, `learning_events`, `user_skill_states`; 22 skills, 212 rows, 109/109 mapped) |
-| **Practice Next** | `GET /api/skills/me/recommended-questions` deterministic queue respecting prerequisites; `useRecommendedQuestions` on `/problems` with `learner-context-invalidated` silent refresh |
-| **Rescue Contract** | Never-alone intervention: `useRescueContract` T1(4m)→T2(+5m AI hint)→T3(+5m re-plan), `RescueIntervention` + `ProblemFlowMap` (static checkpoint list via `rescue.checkpoints.ts`, flow-map retired), durable `rescue_queue` (`f2a3b4c5d6e7`) + `/api/rescue/*` re-surface (`Back tomorrow` on `/problems`) |
+| **AI Coaching** | 6 modes (hint, review, explain, debug, freeform, animate) via Groq — structured JSON + SSE streaming (`POST /api/coach`, `POST /api/coach/stream`); lesson-aware + **learner-aware** (`LearnerContextService`: weakest-3 skills + last-3 attempts injected); `surface=questions` (graph-aware) vs `surface=learn` (graph-free); background warm via `POST /api/coach/warm` (`useCoachWarm`) |
+| **Code Execution** | Piston container — Python, JavaScript, Java; smart code wrapping for stdin→call→stdout harness (`GET/POST /api/run`, `/api/run/validate`, `/api/run/languages`); runtime-version self-heal + result cache |
+| **Submit & Grade** | `POST /api/submit` (idempotent `LearningEvent sub:{id}` → skill graph) and `POST /api/run` (optional `question_id` crash capture); visible + hidden cases, `GET /api/submissions/me` history; graded via `submit_grading_service` with adapter-state tracking |
+| **Question Bank** | DSA questions with CRUD, search, filtering by difficulty/category/company tags + `/stats` aggregates (SQL `COUNT(*)` pushdown); paginated list + summary-column search; admin delete invalidates detail cache (`/api/questions`) |
+| **Curriculum** | Python Fundamentals (5/36), C Programming (5/35), Java Programming (5/35) — `/learn` dashboard, module tree, lesson viewer, adjacent-lesson navigation, progress tracking; anonymous course list served from Redis (30s + stampede lock) |
+| **Lesson-aware Coaching** | Lesson context injected into every AI prompt; theory vs exercise layouts; required for `surface=learn` |
+| **Solution Animations** | Generate → validate → compile → play structured step animations (animate mode, canonical-solution `__trace` pipeline via `trace_instrumenter`/`trace_parser`/`SolutionAnimationService`, 8-family scene planner with complexity resolution + 96-step downsampling + `lint_quality` gate, flow-map retired; `AnimationPlayer`, Motion Canvas `viewer.html` on `:9000`) |
+| **Skill Graph** | Learning events (run, submit, hint, diagnosis, review) → mastery/status, trends, decay, prerequisite-aware graphs (tables `skills`, `question_skills`, `learning_events`, `user_skill_states`; 26 skills = 21 roadmap + 5 supporting, 107/107 mapped) + idempotent `backfill_skill_graph.py` |
+| **Practice Next** | `GET /api/skills/me/recommended-questions` deterministic queue respecting prerequisites (+ `GET /api/skills/boilerplate` roadmap view); `useRecommendedQuestions` on `/problems` with `learner-context-invalidated` silent refresh |
+| **Rescue Contract** | Never-alone intervention: `useRescueContract` T1(4m)→T2(+5m AI hint)→T3(+5m re-plan), `RescueIntervention` + `ProblemFlowMap` (static checkpoint list via `rescue.checkpoints.ts`, flow-map retired), durable `rescue_queue` (`f2a3b4c5d6e7`; stored statuses `abandoned/completed/dismissed`, `due` derived) + `/api/rescue/*` re-surface (`Back tomorrow` on `/problems`) |
+| **Adapter-State Durability** | Every coach/exec/submit call tracked `sent → completed/failed` (`coaching_interactions`, `execution_jobs`, `submissions.status`, migration `b4c5d6e7f8a1`); stale-row recovery worker; `GET /api/coach/interactions` audit |
+| **Workspace Persistence** | Draft code + last-visited + AI chat + last exec/submit snapshot in Redis (7d TTL, caps 51KB / 20 msgs / 5k chars, degrade-open) via `WorkspaceService` + `PUT/GET/DELETE /api/workspace/*`; `useWorkspace` hydrate + 800ms debounce; last-visited resume on `/problems` |
 | **Attempt History** | `submissions` table (`d9e1f2a3b4c5`, attempt_index, error_signature) — every graded submit + crashed `run?question_id`; foundation for #1/#3/#5 |
 | **Error Graph** | `GET /api/mistakes/graph` — per-user mistake graph derived from attempt history (signatures, occurrences, affected questions, first/last seen, resolution) |
 | **Spaced Repetition** | SM-2 rotation over own bugs (`review_cards` `a3b4c5d6e7f8`, `/api/reviews/due`, `POST /api/reviews/{id}/grade`); `run` and `submit` observe failures/passes best-effort |
@@ -85,25 +87,25 @@ State is kept in sync with code — audited Sep 02, 2026 on branch `feat/125-coa
 | **Usage Metering** | Per-user daily input/output token caps, `X-Usage-*` headers, Redis-backed limits |
 | **Plans & Gates** | Per-user plan field and quota-gated coaching (free 20 req/day, paid 500), usage bar, `UpgradeModal` |
 | **Admin Panel** | Dashboard, users, questions, curriculum, validation, usage/rate-limit analytics, abuse reports; Header shows Dashboard + Admin links (role-gated) |
-| **Workspace UX** | Monaco editor (CSP `worker-src blob:` fix `e51ddf4`), dark/light theme, resizable panels, onboarding tour, toasts, hydration guard, `/dashboard` memory-first entry |
-| **Infrastructure** | Docker Compose (backend, frontend, redis, piston), Alembic (head `e1f2a3b4c5d6`), Supabase as the single DB, Cloudflare Workers (OpenNext) build |
-| **Learner-aware Coaching** | `feat/125` `f246c4a`: `LearnerContextService` + `cache_keys` central TTLs + `GroqService` v7 hash + prompt injection; invalidated on `submit`/`skills` |
+| **Workspace UX** | Monaco editor (CSP `worker-src blob:` fix `e51ddf4`), dark/light theme, resizable panels, onboarding tour, toasts, hydration guard, `/dashboard` memory-first entry, last-visited resume |
+| **Infrastructure** | Docker Compose (backend, frontend, redis, piston), Alembic (head `b4c5d6e7f8a1`), Supabase as the single DB, Cloudflare Workers (OpenNext) build |
+| **Learner-aware Coaching** | `LearnerContextService` + `cache_keys` central TTLs + `GroqService` v7 hash + prompt injection; invalidated on `submit`/`skills`; pre-warmed via `POST /api/coach/warm` |
 
 ### Partial / foundation
 
 | Feature | What exists | What's missing |
 |---|---|---|
 | **Curriculum breadth** | Python, C, Java live (F5) | DBMS/SQL, OOP/Design Patterns, Web Dev, MCQ — Phase 3; `backend/data/courses` only `c/`+`java/` |
-| **Attempt-journey replay** | `ProblemFlowMap` static list + `submissions` history now persisted; animation infra for canonical solutions only | Animated replay timeline over own journey + "where you errored" highlights (Idea #5) |
-| **Interview theater** | SSE streaming + Monaco `onCodeChange` | Session/event engine + `InterviewSessionService` + `InterviewTheater` UI (Idea #6) |
-| **Time-travel debugging** | `trace_instrumenter`/`trace_parser` for `animate` only | Generic AST tracing for student code + `POST /trace` + `TimelineScrubber` (Idea #7) |
-| **Classroom / Segment moat** | Courses + progress tracking | Professor/class dashboard, roster model (Idea #2) |
+| **Attempt-journey replay** | `ProblemFlowMap` static list + `submissions` history persisted + workspace Redis journey (draft code, chat, last exec/submit); animation infra for canonical solutions only (8-family planner + `#141` gates) | Animated replay timeline over own journey + "where you errored" highlights (Idea #5) |
+| **Interview theater** | SSE streaming + Monaco `onCodeChange` + coach `surface` split + `POST /api/coach/warm` prefetch | Session/event engine + `InterviewSessionService` + `InterviewTheater` UI (Idea #6) |
+| **Time-travel debugging** | `trace_instrumenter`/`trace_parser` for `animate` only (now with complexity + downsample + `lint_quality` gates) | Generic AST tracing for student code + `POST /trace` + `TimelineScrubber` (Idea #7) |
+| **Classroom / Segment moat** | Courses + progress tracking + anonymously cached course list | Professor/class dashboard, roster model (Idea #2) |
 
-### Planned — audited Sep 02
+### Planned — audited Sep 04
 
 | Phase | Scope |
 |---|---|
-| **Phase 1 — DSA** | Learner-context shipped (`feat/125`); attempt-journey replay (unblocked by `submissions`); onboarding polish |
+| **Phase 1 — DSA** | Learner-context shipped; coach surfaces + warm landed; attempt-journey replay (unblocked by `submissions` + workspace journey); onboarding polish |
 | **Phase 2 — Curriculum** | Context-aware coaching per lesson (now learner-aware); ML/PromptEng/R/JS source JSON parked |
 | **Phase 3 — Expand** | DBMS/SQL, OOP/Design Patterns, Web Dev, theory/MCQ type, classroom dashboard (Idea #2) |
 | **Next up** | **Idea #8 Reverse interview** (`CoachingMode.SENIOR` + junior persona) — cheapest win, validates persona engine for #6 |
@@ -121,7 +123,7 @@ State is kept in sync with code — audited Sep 02, 2026 on branch `feat/125-coa
 | **Code Execution** | Piston (self-hosted Docker, `PistonService` adapter) |
 | **AI Coach** | Groq (`openai/gpt-oss-120b` / `openai/gpt-oss-20b`, animate override) via `api.groq.com/openai/v1` |
 | **Database** | Supabase PostgreSQL (async SQLAlchemy) — **the only database** |
-| **Cache / Limits** | Redis 7-alpine |
+| **Cache / Limits** | Redis 7-alpine — rate/request tracking, learner-context, workspace (7d), anonymous course list (30s + lock), question detail, Piston runtimes |
 | **Auth** | JWT (python-jose), bcrypt, Supabase OAuth (Google) |
 | **Migrations** | Alembic (`backend/alembic/`) |
 | **Testing** | pytest (backend), Vitest + Testing Library + MSW (frontend), Playwright (E2E) |
@@ -135,16 +137,20 @@ State is kept in sync with code — audited Sep 02, 2026 on branch `feat/125-coa
 ```
 backend/app/
   ports/          Abstract interfaces (ABCs) — repositories, code executor, coaching provider
-  adapters/       Concrete adapters (code_wrappers, coaching_prompts, response parser, formatter)
-  use_cases/      Single-responsibility validation logic (question validation)
+  adapters/       Concrete adapters (code_wrappers, coaching_prompts, coaching_adapter,
+                  execution_adapter, submit_grading_service, response parser, formatter)
+  use_cases/      Single-responsibility validation logic (question validation, incl. ANIMATION gate)
   services/       Business logic wrapping ports (Groq, Piston, skill_graph, sm2, memory_graph,
-                   error_graph, learning_analytics, rescue, review, animations, usage, submissions)
+                   error_graph, learning_analytics, rescue, review, animations + scene_planner,
+                   usage, submissions, course (cached), question_bank, workspace,
+                   learner_context, adapter_state_recovery)
   repositories/   SQLAlchemy impls (sql_*) — Supabase/PostgreSQL only
   api/            Thin FastAPI route handlers (auth, coach, run, submit, questions, courses,
-                   progress, skills, submissions, rescue, reviews, memory, mistakes, analytics, admin, health)
+                   progress, skills, submissions, rescue, reviews, memory, mistakes, analytics,
+                   workspace, admin, health)
   models/         Pydantic schemas (request/response + domain enums — TopicMemory, AnalyticsSignal, …)
   core/           Database engine/session (async_session_maker), settings, security (JWT/bcrypt)
-  middleware/     Rate limiting (slowapi), security headers (CSP, HSTS, X-Frame-Options)
+  middleware/     Rate limiting (in-process limiter), security headers (CSP, HSTS, X-Frame-Options)
   dependencies/   FastAPI Depends() injection wiring (app/api/dependencies.py)
 ```
 
@@ -154,7 +160,8 @@ backend/app/
 frontend/src/
   app/            Next.js App Router — /, /problems/[id], /learn, /dashboard, /admin, /login, /privacy …
   features/       {auth, coaching, code-execution, question, curriculum, skill-graph,
-                   rescue, review, memory, analytics, animation, usage} → {hook, service, types, *.test.*}
+                   rescue, review, memory, analytics, animation, usage, workspace} → {hook, service, types, *.test.*}
+                   (coaching includes `use-coach-warm`; skill-graph includes `SkillGraphInline`)
   components/     Reusable UI (editor, chat, sidebar, header, layout, rescue, visualization, admin, ui/*)
   lib/            HTTP client port/adapter (FetchClient / HttpClient), shuffle, fetch-client
   hooks/          Shared hooks (useLocalStorage, useDebounce, useWorkspaceMode)
@@ -164,7 +171,7 @@ frontend/src/
 
 **Key decisions**
 
-- **Supabase/PostgreSQL is the single source of truth** — questions, courses/modules/lessons, users, progress, submissions, review_cards, rescue_queue, usage, and skill-graph state all live in PostgreSQL; the app never reads content from the filesystem at runtime. See [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md).
+- **Supabase/PostgreSQL is the single source of truth** — questions, courses/modules/lessons, users, progress, submissions, coaching_interactions, execution_jobs, review_cards, rescue_queue, usage, and skill-graph state all live in PostgreSQL; the app never reads content from the filesystem at runtime. Committed JSON under `backend/data/courses/{c,java}/` is a transient bootstrap source consumed by `sync_local_to_db.py` only. See [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md).
 - **Platform-owned Groq key** — server-side key; per-user input/output tokens metered with daily caps on coach endpoints.
 - **Deterministic skill graph & learning analytics** — mastery + plateau signals derived via pure, unit-tested rules (`skill_graph_rules.py`, `sm2_rules.py`, `error_graph_rules.py`, `learning_analytics_rules.py`); recommendations respect taxonomy prerequisites; analytics is bounded (1000 recent submissions, 7-day window) and fail-safe (500 → empty list).
 - **Code wrapping** — every Piston language has a `_wrap_<language>_code` adapter converting bare function definitions into a stdin→call→stdout harness.
@@ -180,16 +187,16 @@ frontend/src/
 | `questions` | Bank (difficulty, category, starter_code JSON, test_cases, hints, company_tags GIN) |
 | `courses`, `modules`, `lessons` | Curriculum (language, order, theory/exercise, linked question) |
 | `course_progress` | Per-user lesson progress (continue-where-you-left-off) |
-| `submissions` | Attempt history (user_id, question_id, language, code, passed, error_signature, attempt_index, created_at) — `d9e1f2a3b4c5` |
+| `submissions` | Attempt history (user_id, question_id, language, code, passed, error_signature, attempt_index, status, idempotency_key, execution_job_id, created_at) — `d9e1f2a3b4c5` + `b4c5d6e7f8a1` |
+| `coaching_interactions`, `execution_jobs` | Adapter-state audit (sent/completed/failed per coach + exec call, stale-row recovery) — `b4c5d6e7f8a1` |
 | `review_cards` | SM-2 cards (user_id, question_id, error_signature unique, state active/scheduled, ease, interval_days, lapses, due_at) — `a3b4c5d6e7f8` |
 | `rescue_queue` | Abandoned-problem re-surface (user_id, question_id unique partial open, due_at 09:00, dismissed) — `f2a3b4c5d6e7` |
 | `usage_*`, `rate_limit_events`, `user_daily_usage` | AI usage events, daily counters, rate-limit tracking (Redis-backed) |
-| `skills`, `question_skills`, `learning_events`, `user_skill_states` | Skill graph (definitions, question↔skill, per-user events + mastery) — `5bb567dd8649` (22 skills) |
-| `admin_*`, `audit_logs` | Admin sessions + audit trail |
+| `skills`, `question_skills`, `learning_events`, `user_skill_states` | Skill graph (definitions, question↔skill, per-user events + mastery) — `5bb567dd8649` + taxonomy prune `c9d0e1f2a3b4` (26 skills: 21 roadmap + 5 supporting) |
 
-> **Live DB (Supabase `qazpxjpcvsjbmgbzuxxp`, TEST, Sep 02, 2026 — audited):** `alembic current` = `e1f2a3b4c5d6` (head); `public` holds 109 questions, `courses`/`modules`/`lessons` seeded (Python 5/36 + C 5/35 + Java 5/35), `review_cards`/`rescue_queue` verified, 212 `question_skills` rows (109/109 mapped, F3). No `class`/`roster`/`trace` tables. Flow-map retired. `CoachingMode` has 6 modes (no `SENIOR`).
+> **Live DB (Supabase `qazpxjpcvsjbmgbzuxxp`, TEST, Sep 04, 2026 — audited):** `alembic current` = `b4c5d6e7f8a1` (head); `public` holds 107 live questions, `courses`/`modules`/`lessons` seeded (Python 5/36 + C 5/35 + Java 5/35), `review_cards`/`rescue_queue`/`coaching_interactions`/`execution_jobs` verified, 107/107 skill-mapped (F3; 26 skills: 21 roadmap + 5 supporting). No `class`/`roster`/`trace` tables. Flow-map retired. `CoachingMode` has 6 modes (no `SENIOR`).
 
-Migrations in `backend/alembic/versions/` (initial, admin, usage, user plan, skill-graph, review_cards, rescue_queue). Tests use an isolated `codecoach_test` schema (`DATABASE_SEARCH_PATH`).
+Migrations in `backend/alembic/versions/` (initial, admin, usage, user plan, skill-graph, submissions, review_cards, rescue_queue, taxonomy prune, adapter-state). Tests use an isolated `codecoach_test` schema (`DATABASE_SEARCH_PATH`; per-worker `codecoach_test_gwN` under xdist).
 
 ## Getting Started
 
@@ -252,9 +259,11 @@ Content lives in the database. Initial data can be bootstrapped idempotently fro
 
 ```bash
 cd backend
-python scripts/sync_local_to_db.py                 # uses DATABASE_URL; upserts questions/courses/modules/lessons
+python scripts/sync_local_to_db.py                 # uses DATABASE_URL; upserts questions/courses/modules/lessons (ANIMATION full-validate gate enforced)
 python scripts/seed_admin.py                       # promote auditadmin → admin
-python scripts/seed_skill_graph.py                 # rescues skill graph after mapping changes
+python scripts/seed_skill_graph.py                 # rescues skill graph after mapping changes (upserts taxonomy kinds)
+python scripts/backfill_skill_graph.py             # idempotent backfill of learning events from submissions
+python scripts/seed_e2e.py                         # E2E question bank
 DATABASE_URL=postgresql://... python scripts/verify_course_exercises.py  # 30/30 Piston checks for C/Java
 ```
 
@@ -283,6 +292,13 @@ DATABASE_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:6543/postg
 DAILY_TOKEN_INPUT_CAP=250000
 DAILY_TOKEN_OUTPUT_CAP=125000
 USER_RATE_LIMIT_PER_MINUTE=60
+COACH_WARM_ENABLED=true                          # background learner-context pre-warm on question enter
+COURSE_LIST_TTL_SECONDS=30                       # anonymous course-list Redis cache
+REDIS_TTL_WORKSPACE=604800                       # 7d — draft code + last-visited
+REDIS_TTL_CHAT=604800                            # 7d — per-question chat history
+REDIS_TTL_LAST_EXEC=604800                       # 7d — last execution / submit snapshot
+WORKSPACE_CODE_MAX_BYTES=51200
+CHAT_HISTORY_MAX_MESSAGES=20
 SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_...              # publishable key (public)
 PISTON_API_URL=http://localhost:2000/api/v2        # Docker compose sets http://piston:2000/api/v2
@@ -313,22 +329,23 @@ Interactive docs at `/docs` (Swagger) and `/redoc`. Selected routes:
 |---|---|---|---|
 | **Health** | `GET /health`, `GET /health/` | — | Dependency checks (`questions_db`, `piston`, `redis`) |
 | **Auth** | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh` | — / Bearer | JWT + Supabase OAuth callback |
-| **Questions** | `GET /api/questions`, `GET /api/questions/{id}`, `GET /api/questions/search?q=` | — | Trailing slash handled (`/api/questions` + `/api/questions/`) |
+| **Questions** | `GET /api/questions`, `GET /api/questions/{id}`, `GET /api/questions/search?q=` | — | Paginated list + summary-column search; trailing slash handled (`/api/questions` + `/api/questions/`) |
 | **Run** | `POST /api/run` (+ `question_id` optional crash capture) | Optional | Piston; validation `POST /api/run/validate` |
-| **Submit** | `POST /api/submit` | Bearer | Grades + best-effort submission + SM-2 observe |
+| **Submit** | `POST /api/submit` | Bearer | Grades + best-effort submission + SM-2 observe + adapter-state tracking |
 | **Submissions** | `GET /api/submissions/me` | Bearer | Own attempt history |
-| **Coach** | `POST /api/coach`, `POST /api/coach/stream` (SSE) | Bearer | 6 modes, per-user daily caps, `X-Usage-*` headers |
-| **Skills** | `GET /api/skills/graph`, `GET /api/skills/recommendations` | Bearer | Mastery + Practice Next |
+| **Coach** | `POST /api/coach`, `POST /api/coach/stream` (SSE), `POST /api/coach/warm` (202 pre-warm), `GET /api/coach/interactions` | Bearer | 6 modes (`surface=questions|learn`), per-user daily caps, `X-Usage-*` headers |
+| **Skills** | `GET /api/skills/graph`, `GET /api/skills/me/skills`, `GET /api/skills/boilerplate`, `GET /api/skills/me/recommended-questions` | Bearer | Mastery + roadmap view + Practice Next |
 | **Mistakes** | `GET /api/mistakes/graph` | Bearer | Error graph from attempt history |
 | **Reviews** | `GET /api/reviews/due`, `POST /api/reviews/{id}/grade` | Bearer | SM-2 queue |
 | **Memory** | `GET /api/memory/graph` | Bearer | Forgetting-curve topics (Idea #3) |
 | **Analytics** | `GET /api/analytics/signals` | Bearer | Plateau signals (recursion plateau etc., 7d window) |
 | **Rescue** | `GET /api/rescue/due`, `POST /api/rescue/{id}/abandon|complete|dismiss` | Bearer | Re-surface queue |
-| **Courses** | `GET /api/courses`, `GET /api/courses/{id}`, lessons, progress | Bearer | Curriculum + `/api/progress` |
-| **Admin** | `GET /api/admin/*` (stats, users, questions, courses, usage, validation) | Admin | Role-gated `admin`/`super_admin` |
-| **Debug** | `GET /debug/*` | — | Dev-only diagnostics |
+| **Courses** | `GET /api/courses`, `GET /api/courses/{id}`, lessons, progress | Bearer (list also anonymous, cached) | Curriculum + `/api/progress` |
+| **Workspace** | `PUT/GET/DELETE /api/workspace/code/{id}`, `GET /api/workspace/last-visited`, `GET /api/workspace/chat/{id}`, `GET /api/workspace/meta/{id}` | Bearer | Redis-persisted drafts, chat, resume |
+| **Admin** | `GET /api/admin/*` (stats, users, questions, courses, usage, validation) | Admin | Role-gated `admin`/`super_admin`; writes invalidate course/question caches |
+| **Debug** | `GET /debug/*` | — | Dev-only diagnostics (404 in production) |
 
-Error semantics: `HTTPException` → 4xx client, unexpected → 5xx via global handler; rate-limit 429 via `slowapi`/`rescue`/`usage` middleware.
+Error semantics: `HTTPException` → 4xx client, unexpected → 5xx via global handler; rate-limit 429 via in-process limiter + `usage` middleware.
 
 ## Testing
 
@@ -338,25 +355,25 @@ Error semantics: `HTTPException` → 4xx client, unexpected → 5xx via global h
 cd backend
 pip install -r requirements.txt -r tests/test_requirements.txt
 DATABASE_URL=postgresql://codecoach:codecoach@127.0.0.1:5433/codecoach_test \
-  python -m pytest tests/unit/            # 53 files (incl. memory_graph)
-python -m pytest tests/integration/       # 23 files (needs isolated Postgres schema)
-python -m pytest tests/contract/          # 2 files (OpenAPI response contracts)
-python -m pytest tests/security/          # 7 files
-python -m pytest tests/performance/       # 4 files
-python -m pytest tests/migrations/        # 5 files
-python -m pytest tests/simulation/        # 8 files (skill-graph)
+  python -m pytest tests/unit/            # 82 files (incl. memory_graph, animation quality, adapter-state)
+python -m pytest tests/integration/       # 33 files (needs isolated Postgres schema)
+python -m pytest tests/contract/          # 1 file (OpenAPI response contracts)
+python -m pytest tests/security/          # 5 files
+python -m pytest tests/performance/       # 2 files
+python -m pytest tests/migrations/        # 2 files
+python -m pytest tests/simulation/        # 2 files (skill-graph)
 python -m pytest                          # all tiers; coverage via qa/enforce_coverage_budget.py
 ruff check . && ruff format . --check     # lint gate
 ```
 
-Tests use an isolated `codecoach_test` schema (`DATABASE_SEARCH_PATH`); never touch production. Flaky tests are quarantined via `tests/enforce_flaky_quarantine.py`.
+Tests use an isolated `codecoach_test` schema (`DATABASE_SEARCH_PATH`; per-worker `codecoach_test_gwN` under xdist); never touch production. Shared auth builders live in `tests/fixtures/auth_helpers.py`; the 50-question seed bank + 107 live ids (`fixtures/live_question_ids.json`) come from `conftest.py`. Flaky tests are quarantined via `tests/enforce_flaky_quarantine.py`.
 
 ### Frontend (Vitest)
 
 ```bash
 cd frontend
 pnpm install
-pnpm test:run                    # 76 files (Vitest + Testing Library + MSW)
+pnpm test:run                    # 80 files (Vitest + Testing Library + MSW)
 pnpm lint                        # ESLint (0 warnings)
 pnpm typecheck                   # tsc --noEmit (0 errors)
 ```
@@ -397,20 +414,24 @@ See [AGENTS.md](./AGENTS.md) for the full mandatory rules and [Progress.md](./Pr
 CodeCoach-AI/
 ├── backend/
 │   ├── app/
-│   │   ├── api/               # coach, run, submit, submissions, questions, skills, mistakes,
-│   │   │                      # reviews, memory, rescue, courses, progress, admin, auth, health, debug
-│   │   ├── adapters/          # code_wrappers, coaching_prompts, response parser, formatter
-│   │   ├── use_cases/         # question validation (structure, test_cases, starter_code, solution, time, signature, output_format)
-│   │   ├── services/          # groq, piston, skill_graph, sm2, memory_graph, error_graph,
-│   │   │                      # rescue, review, animations, usage, submissions, course, question …
-│   │   ├── repositories/      # sql_* (Supabase/PostgreSQL only)
-│   │   ├── ports/             # Abstract interfaces (ABCs)
-│   │   ├── models/            # Pydantic schemas + domain enums (Question, ReviewCard, TopicMemory, RescueItem …)
-│   │   ├── core/              # database (async engine), config (get_settings), security (JWT/bcrypt)
-│   │   ├── middleware/        # rate_limit (slowapi), security_headers (CSP)
-│   │   └── dependencies/      # FastAPI Depends() wiring (app/api/dependencies.py)
-│   ├── alembic/               # migrations (initial, admin, usage, skill-graph, review_cards, rescue_queue)
-│   ├── scripts/               # sync_local_to_db, seed_admin, seed_skill_graph, verify_course_exercises, animate_coverage
+ │   │   ├── api/               # coach, run, submit, submissions, questions, skills, mistakes,
+ │   │   │                      # reviews, memory, rescue, courses, progress, workspace, admin, auth, health, debug
+ │   │   ├── adapters/          # code_wrappers, coaching_prompts, coaching_adapter, execution_adapter,
+ │   │   │                      # submit_grading_service, response parser, formatter
+ │   │   ├── use_cases/         # question validation (structure, test_cases, starter_code, solution, time, signature, output_format, animation gate)
+ │   │   ├── services/          # groq, piston, skill_graph, sm2, memory_graph, error_graph,
+ │   │   │                      # rescue, review, animations + scene_planner, usage, submissions, course (cached),
+ │   │   │                      # question_bank, workspace, learner_context, adapter_state_recovery …
+ │   │   ├── repositories/      # sql_* (Supabase/PostgreSQL only)
+ │   │   ├── ports/             # Abstract interfaces (ABCs)
+ │   │   ├── models/            # Pydantic schemas + domain enums (Question, ReviewCard, TopicMemory, RescueItem …)
+ │   │   ├── core/              # database (async engine), config (get_settings), security (JWT/bcrypt)
+ │   │   ├── middleware/        # rate_limit (in-process limiter), security_headers (CSP)
+ │   │   └── dependencies/      # FastAPI Depends() wiring (app/api/dependencies.py)
+ │   ├── alembic/               # migrations (initial, admin, usage, skill-graph, submissions,
+ │   │                            # review_cards, rescue_queue, taxonomy prune, adapter-state — head b4c5d6e7f8a1)
+ │   ├── scripts/               # sync_local_to_db, seed_admin, seed_skill_graph, backfill_skill_graph,
+ │   │                            # seed_e2e, verify_course_exercises, animate_coverage
 │   ├── tests/                 # unit, integration, contract, security, performance, simulation, migrations
 │   └── docs/                  # CURRICULUM_DEPLOYMENT.md
 ├── frontend/
@@ -434,26 +455,27 @@ CodeCoach-AI/
 
 - **Docker Compose (production):** `docker compose up -d --build` builds `pip install` / `npm run build` into images. No volume mounts; `PistonService` + `Redis` + `Supabase` wired via env.
 - **Cloudflare Workers (frontend):** OpenNext build — `NEXT_PUBLIC_*` must be set as build args, not runtime env.
-- **Supabase migrations:** `alembic upgrade head` against the pooler (handles `pgbouncer=true` stripping, `%`-escaping, `asyncpg` statement-cache off). Verified Aug 24: `e1f2a3b4c5d6` on TEST.
+- **Supabase migrations:** `alembic upgrade head` against the pooler (handles `pgbouncer=true` stripping, `%`-escaping, `asyncpg` statement-cache off). Verified Sep 04: `b4c5d6e7f8a1` on TEST.
 - **Health:** `GET /health` checks `questions_db`, `piston`, `redis`; Docker `HEALTHCHECK` gates `backend`.
 
 ## Security
 
 - Input validated at API boundaries (Pydantic); auth via JWT + bcrypt + Supabase OAuth; role-gated admin routes.
-- Rate limiting via `slowapi` (coach/run/submit/rescue per-user) + `UsageService` token caps; 429 → `Retry-After` + `X-Usage-*`.
+- Rate limiting via in-process limiter (`middleware/rate_limit.py`, coach/run/submit/rescue per-user) + `UsageService` token caps; 429 → `Retry-After` + `X-Usage-*`.
 - Security headers: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, and CSP (`default-src 'self'` + `frame-src` viewer allowlist, `worker-src blob:` for Monaco).
 - Secrets only from `.env` / env — never committed or logged; least privilege on all auth/authz paths.
-- See `backend/tests/security/` for 7 committed security suites (auth, execution, rate-limit, etc.).
+- See `backend/tests/security/` for 5 committed security suites (auth, execution, input validation, etc.).
 
-## Roadmap — audited Sep 02, 2026 (branch `feat/125-coach-skill-context-cache`)
+## Roadmap — audited Sep 04, 2026 (branch `docs/no-issue-docs-sync`)
 
 ```
 Phase 1 ─── DSA Practice (current focus)
-├── 109 / 100 questions ─── 33 Easy / 50 Medium / 26 Hard (109/109 skill-mapped, F3, 212 rows)
-├── Practice Next / skill-graph recommendations (shipped; silent refresh on learner-context invalidation)
-├── Mistake-memory (submissions d9e1f2a3b4c5 + error graph + SM-2 a3b4c5d6e7f8 + Memory Graph /dashboard + Learning Analytics signals) (F6 + Idea #3 done Aug 24)
+├── 107 live questions (107/107 skill-mapped, F3; 26 skills = 21 roadmap + 5 supporting)
+├── Practice Next / skill-graph recommendations (shipped; silent refresh on learner-context invalidation; roadmap-only view)
+├── Mistake-memory (submissions + error graph + SM-2 + Memory Graph /dashboard + Learning Analytics signals + adapter-state audit) (F6 + Idea #3 + #133 done)
 ├── Rescue contract — durable queue f2a3b4c5d6e7 + T1→T2→T3 escalation (Idea #4 done Aug 24, ProblemFlowMap static list; flow-map retired to animate)
-├── Learner-aware coaching (shipped Sep 02 `f246c4a`): LearnerContextService + cache_keys + prompt injection + skill emission
+├── Learner-aware coaching (shipped `f246c4a`): LearnerContextService + cache_keys + prompt injection + skill emission; coach surfaces (`questions`/`learn`) + warm prefetch landed Sep 04
+├── Workspace persistence (shipped `#124`): Redis drafts + chat + last-visited (7d); adapter-state durability (shipped `#133`)
 └── Next: attempt-journey replay (now unblocked) + reverse interview (#8, CoachingMode.SENIOR)
 
 Phase 2 ─── Programming Language Curriculum
@@ -472,9 +494,9 @@ Phase 3 ─── Future Modules
 Backlog — Ideas #6 (InterviewTheater), #7 (student-code POST /trace + TimelineScrubber), #9 honourable mentions (adversarial twin, takeover, …)
 ```
 
-Detailed per-idea status (9 ideas + honourable mentions) lives in [Ideas.md](./Ideas.md) — audited Sep 02; #1/#3/#4 done + #5 unblocked + #8 next; flow-map retired.
+Detailed per-idea status (9 ideas + honourable mentions) lives in [Ideas.md](./Ideas.md) — audited Sep 04; #1/#3/#4 done + #5 unblocked + #8 next; flow-map retired.
 
-## Known Gaps — code-audited Sep 02
+## Known Gaps — code-audited Sep 04
 
 - No full attempt-journey animated replay yet (`ProblemFlowMap` is static checkpoint list; `submissions` history now persisted and unblocks it, but timeline + highlights missing — Idea #5; former AI flow-map retired).
 - No interview-theater session engine / interviewer UI (`CoachingMode` has 6 modes, no `SENIOR`; no `InterviewSessionService`, no `POST /interview` — Idea #6/`#8`; streaming + Monaco foundation only).

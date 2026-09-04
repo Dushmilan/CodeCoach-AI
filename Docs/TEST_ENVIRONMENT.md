@@ -2,7 +2,7 @@
 
 > ⚠️ **IMP — the current Supabase project is the TEST database, and the Google
 > OAuth integration is TEST OAuth. A production database is NOT configured yet.**
-> Last verified: 2026-08-15.
+> Last verified: 2026-08-15 (migration head re-verified Sep 04, 2026: `b4c5d6e7f8a1`).
 
 This document is the source of truth for how the **test** environment is wired.
 Nothing here is production.
@@ -131,7 +131,7 @@ curl -X POST http://localhost:8000/api/auth/supabase -H "Content-Type: applicati
 The test DB is migrated to Alembic head:
 
 ```
-alembic_version = e1f2a3b4c5d6
+alembic_version = b4c5d6e7f8a1
 ```
 
 Apply/re-run (against the test project, session pooler):
@@ -143,8 +143,17 @@ export DATABASE_URL="$(grep '^DIRECT_URL=' .env | cut -d= -f2- | tr -d '\"')"
 ```
 
 **Never** run tests against the test project DB — the test suite uses a local
-Postgres (`postgres:16` on `127.0.0.1:5433`) and refuses non-local hosts
-(`backend/tests/db_guard.py`).
+Postgres (`postgres:16` on `127.0.0.1:5433` in the example below; `conftest.py`
+defaults to `127.0.0.1:5432` when `DATABASE_URL` is unset) and refuses non-local hosts
+(`backend/tests/db_guard.py`, overridable only with `ALLOW_PRODUCTION_TEST_DB=1`).
+
+Test isolation details (`backend/tests/conftest.py`):
+- Each run creates an isolated schema (`codecoach_test`, or `codecoach_test_gwN`
+  per xdist worker) set via `DATABASE_SEARCH_PATH`, and drops it afterwards.
+- Shared auth builders: `backend/tests/fixtures/auth_helpers.py`
+  (`register_headers`, `register_user_headers`, `admin_headers`, `aregister_headers`).
+- Seed bank: 50 questions (5 hand-written + 45 generated) plus the 107 live ids
+  (`backend/tests/fixtures/live_question_ids.json`).
 
 ---
 

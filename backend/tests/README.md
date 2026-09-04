@@ -12,19 +12,22 @@ as the Supabase production database).
 
 ```
 tests/
-├── conftest.py                 # Fixtures: app, client, isolated schema, auth mocks
+├── conftest.py                 # Fixtures: app, client, isolated schema, auth mocks, 50-question seed bank
+├── db_guard.py                 # Refuses non-local DB hosts (ALLOW_PRODUCTION_TEST_DB=1 override)
 ├── db_helpers.py               # Schema creation/teardown helpers
 ├── test_requirements.txt       # Test-only dependencies
 ├── fixtures/
 │   ├── factories.py            # Test data generators
+│   ├── auth_helpers.py         # Shared register/admin header builders
+│   ├── live_question_ids.json  # Pinned live-question inventory (107 ids)
 │   └── mock_coaching_provider.py
-├── unit/            (53 files) # Services, rules, wrappers, repositories (sql_*), validators
-├── integration/    (23 files)  # Endpoints against the app + isolated DB schema
-├── contract/        (2 files)  # OpenAPI response-contract validation
-├── security/        (7 files)  # Auth, injection, CORS, headers, abuse detection
-├── performance/     (4 files)  # Load / concurrency / rate-limit stress
-├── simulation/      (8 files)  # Deterministic skill-graph learner simulations
-├── migrations/      (5 files)  # Alembic up/down + schema-vs-model drift
+├── unit/            (82 files) # Services, rules, wrappers, repositories (sql_*), validators
+├── integration/    (33 files)  # Endpoints against the app + isolated DB schema
+├── contract/        (1 file)   # OpenAPI response-contract validation
+├── security/        (5 files)  # Auth, injection, CORS, headers, abuse detection
+├── performance/     (2 files)  # Load / concurrency / rate-limit stress
+├── simulation/      (2 files)  # Deterministic skill-graph learner simulations
+├── migrations/      (2 files)  # Alembic up/down + schema-vs-model drift
 ├── enforce_flaky_quarantine.py # CI gate for the flaky-test manifest
 └── flaky-quarantine.json       # Quarantined flaky tests (must stay green)
 ```
@@ -33,9 +36,23 @@ tests/
 
 Tests never touch the production schema. `conftest.py` creates an isolated
 `codecoach_test` schema on the same PostgreSQL server pointed at by
-`DATABASE_URL` and drops it after the run.
+`DATABASE_URL` and drops it after the run (per-worker `codecoach_test_gwN`
+schemas under xdist, selected via `DATABASE_SEARCH_PATH`).
 
 Local Postgres (recommended for speed):
+
+```bash
+docker run -d --name codecoach-testdb -e POSTGRES_DB=codecoach_test \
+  -e POSTGRES_USER=codecoach -e POSTGRES_PASSWORD=codecoach \
+  -p 5433:5432 postgres:16-alpine
+
+export DATABASE_URL=postgresql://codecoach:codecoach@127.0.0.1:5433/codecoach_test
+export DATABASE_SEARCH_PATH=codecoach_test
+```
+
+> Port note: the `-p 5433:5432` mapping above exposes container port 5432 as
+> host port 5433. `conftest.py` defaults to `127.0.0.1:5432` when `DATABASE_URL`
+> is unset — always export `DATABASE_URL` explicitly as shown.
 
 ```bash
 docker run -d --name codecoach-testdb -e POSTGRES_DB=codecoach_test \
