@@ -1,16 +1,18 @@
 """Fixtures for migration tests.
 
-Migration testing runs against the shared per-suite test schema
-(`codecoach_test`) that the parent tests/conftest.py already resets at session
-start. The migration module drops all tables itself before exercising the
-Alembic graph, so it never depends on `Base.metadata.create_all` to build the
-schema — verifying the migrations produce it end-to-end.
+Migration testing runs against the schema named by DATABASE_SEARCH_PATH
+(default ``public``) on the configured server. The harness resets that
+schema itself before exercising the Alembic graph, so it never depends on
+``Base.metadata.create_all`` to build the schema — verifying the migrations
+produce it end-to-end. alembic/env.py reads the same env var, so reset,
+migrate, and version reads all target one schema.
 
 In CI this suite runs as its own job against a dedicated, empty
-`POSTGRES_DB=codecoach_test`, so there is no cross-suite interference.
+``POSTGRES_DB=codecoach_test``, so there is no cross-suite interference.
 """
 
 import os
+import re
 import urllib.parse
 from pathlib import Path
 from typing import Iterator
@@ -55,7 +57,15 @@ def _connection_params(url: str):
     }
 
 
-def _drop_all_tables(url: str) -> None:
+def _target_schema() -> str:
+    """Schema under test: DATABASE_SEARCH_PATH, defaulting to public."""
+    schema = os.environ.get("DATABASE_SEARCH_PATH", "public")
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", schema):
+        raise RuntimeError(f"Unsafe DATABASE_SEARCH_PATH for migrations: {schema!r}")
+    return schema
+
+
+def _drop_all_tables(url: str, schema: str) -> None:
     import psycopg
 
     params = _connection_params(url)
@@ -69,15 +79,33 @@ def _drop_all_tables(url: str) -> None:
     )
     try:
         with conn.cursor() as cur:
-            cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
-            cur.execute("CREATE SCHEMA public")
+            cur.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
+            cur.execute(f'CREATE SCHEMA "{schema}"')
     finally:
         conn.close()
 
 
 @pytest.fixture(scope="session", autouse=True)
 def _reset_tables() -> Iterator[None]:
-    _drop_all_tables(_migration_url())
+    """Reset the migration schema once per session.
+
+    Migration tests chain DB state across the file (each test starts from
+    the head left by the previous one), so the reset must stay
+    session-scoped — a per-test reset would strand downgrade targets.
+    """
+    _drop_all_tables(_migration_url(), _target_schema())
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def seed_test_questions():
+    """Neutralize the parent conftest's question seed.
+
+    The seed recreates tables via ``create_all`` and inserts rows; run after
+    the reset it would rebuild tables Alembic is about to create (spurious
+    DuplicateTable), and migration tests never need seed data. Shadowing the
+    parent fixture keeps DDL tests hermetic regardless of fixture order.
+    """
     yield
 
 

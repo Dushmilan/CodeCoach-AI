@@ -33,15 +33,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def _public_request_count_exists(conn) -> bool:
-    """True when `public.user_daily_usage.request_count` exists.
+    """True when `user_daily_usage.request_count` exists.
 
-    Scoped to ``public`` — a same-named column in another schema must not
-    satisfy this guard.
+    Scoped to the migration schema (``current_schema()``) — a same-named
+    column in another schema must not satisfy this guard.
     """
     row = conn.execute(
         sa.text(
             "SELECT COUNT(*) FROM information_schema.columns "
-            "WHERE table_schema = 'public' "
+            "WHERE table_schema = current_schema() "
             "AND table_name = 'user_daily_usage' "
             "AND column_name = 'request_count'"
         )

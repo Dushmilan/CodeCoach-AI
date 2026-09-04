@@ -71,33 +71,40 @@ jobs:
           ruff check .
           ruff format . --check
 
+      - name: Env-hermeticity guard (hostile local .env must not change results)
+        run: |
+          printf 'REDIS_ENABLED=false\nENVIRONMENT=development\nJWT_SECRET_KEY=hostile-secret\nUSER_RATE_LIMIT_PER_MINUTE=1\n' > .env
+          pytest tests/unit/test_settings.py tests/unit/test_debug_guard.py -q -p no:cacheprovider --no-cov -o log_cli=false --maxfail=0
+          rm .env
+
       - name: Run unit tests
         run: |
-          pytest tests/unit -v --cov=app --cov-report=xml:unit-coverage.xml --cov-append
+          pytest tests/unit -v --cov=app --cov-report=xml:unit-coverage.xml --cov-append --maxfail=0
 
       - name: Run integration tests
         run: |
           pytest tests/integration -v --cov=app --cov-report=xml:integration-coverage.xml --cov-append \
             --ignore=tests/integration/test_run_endpoints.py \
             --ignore=tests/integration/test_auth_supabase.py \
-            --ignore=tests/integration/test_database_sync.py
+            --ignore=tests/integration/test_database_sync.py \
+            --maxfail=0
 
       - name: Run contract + failure-simulation tests
         run: |
           pytest tests/contract tests/integration/test_external_failures.py -v --no-cov \
-            --cov-report= --cov-fail-under=0
+            --cov-report= --cov-fail-under=0 --maxfail=0
 
       - name: Run boundary condition tests
         run: |
-          pytest tests/unit/test_boundary_conditions.py -v --cov-append
+          pytest tests/unit/test_boundary_conditions.py -v --cov-append --maxfail=0
 
       - name: Run security tests
         run: |
-          pytest tests/security -v --cov-append
+          pytest tests/security -v --cov-append --maxfail=0
 
       - name: Run smoke tests
         run: |
-          pytest tests/integration -k "test_health_check_basic" -v --cov-append
+          pytest tests/integration -k "test_health_check_basic" -v --cov-append --maxfail=0
 
       - name: Combine coverage and enforce per-module budget
         run: |
@@ -154,7 +161,7 @@ jobs:
 
       - name: Run migration tests (isolated schema)
         run: |
-          pytest tests/migrations -v --no-cov --cov-report= --cov-fail-under=0
+          pytest tests/migrations -v --no-cov --cov-report= --cov-fail-under=0 --maxfail=0
 
   frontend:
     name: Frontend
@@ -200,6 +207,10 @@ jobs:
 
       - name: Run tests
         run: pnpm run test:run
+
+      - name: Validate flaky-quarantine manifest
+        run: |
+          node -e "const m=require('./flaky-quarantine.json'); if(m.schema_version!==1||!Array.isArray(m.quarantined)) throw new Error('bad manifest'); for(const e of m.quarantined){for(const k of ['node_id','reason','owner','fix_by']) if(!e[k]) throw new Error('entry missing '+k);} console.log('flaky-quarantine OK');"
 
       - name: OpenNext Cloudflare build
         env:

@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from tests.fixtures.auth_helpers import register_user_headers
+
 
 class TestCoursesEndpoints:
     def test_list_courses_empty(self, test_client: TestClient):
@@ -49,23 +51,7 @@ class TestCoursesEndpoints:
 
 class TestCoursesEndpointsAuthenticated:
     def _get_auth_headers(self, test_client: TestClient):
-        response = test_client.post(
-            "/api/auth/register",
-            json={
-                "username": "coursetestuser",
-                "email": "coursetest@example.com",
-                "password": "testpass123",
-            },
-        )
-        if response.status_code == 201:
-            token = response.json()["access_token"]
-        else:
-            response = test_client.post(
-                "/api/auth/login",
-                json={"username": "coursetestuser", "password": "testpass123"},
-            )
-            token = response.json()["access_token"]
-        return {"Authorization": f"Bearer {token}"}
+        return register_user_headers(test_client, "coursetestuser")
 
     def test_list_courses_authenticated_empty(self, test_client: TestClient):
         headers = self._get_auth_headers(test_client)

@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "description": "Known-flaky frontend tests quarantined from CI. A test belongs here ONLY if it is genuinely flaky (passes/fails nondeterministically) AND a fix is tracked in the linked issue. Mirrors backend/tests/flaky-quarantine.json.",
+  "quarantined": []
+}

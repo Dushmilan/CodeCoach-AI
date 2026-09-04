@@ -69,8 +69,16 @@ class QuestionBank:
     # ── Interface ─────────────────────────────────────────────────────
 
     async def query(self, filters: QuestionFilters) -> QuestionPage:
+        offset = (filters.page - 1) * filters.per_page
         if filters.query:
             summaries = await self._repo.search_summaries(
+                filters.query,
+                difficulty=filters.difficulty,
+                category=filters.category,
+                limit=filters.per_page,
+                offset=offset,
+            )
+            total = await self._repo.count_summaries(
                 filters.query,
                 difficulty=filters.difficulty,
                 category=filters.category,
@@ -79,14 +87,16 @@ class QuestionBank:
             summaries = await self._repo.get_summaries(
                 difficulty=filters.difficulty,
                 category=filters.category,
+                limit=filters.per_page,
+                offset=offset,
+            )
+            total = await self._repo.count_summaries(
+                difficulty=filters.difficulty,
+                category=filters.category,
             )
 
-        total = len(summaries)
-        start = (filters.page - 1) * filters.per_page
-        items = summaries[start : start + filters.per_page]
-
         return QuestionPage(
-            items=items, total=total, page=filters.page, per_page=filters.per_page
+            items=summaries, total=total, page=filters.page, per_page=filters.per_page
         )
 
     async def get(self, question_id: str) -> Question:

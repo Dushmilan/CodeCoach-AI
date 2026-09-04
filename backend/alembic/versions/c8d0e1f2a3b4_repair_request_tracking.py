@@ -36,24 +36,24 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def _rate_limit_events_table_exists(conn) -> bool:
-    """True when `rate_limit_events` already exists in the public schema."""
+    """True when `rate_limit_events` exists in the migration schema."""
     row = conn.execute(
-        sa.text("SELECT to_regclass('public.rate_limit_events') IS NOT NULL")
+        sa.text("SELECT to_regclass('rate_limit_events') IS NOT NULL")
     ).scalar_one()
     return bool(row)
 
 
 def _request_count_column_exists(conn) -> bool:
-    """True when `public.user_daily_usage.request_count` already exists.
+    """True when `user_daily_usage.request_count` exists.
 
-    Scoped to the ``public`` schema: a stray test schema (e.g.
-    ``codecoach_test``) may carry a same-named column, which must NOT satisfy
-    this guard or the real column is never created.
+    Scoped to the migration schema (``current_schema()``): a stray
+    same-named column in another schema must NOT satisfy this guard or the
+    real column is never created.
     """
     row = conn.execute(
         sa.text(
             "SELECT COUNT(*) FROM information_schema.columns "
-            "WHERE table_schema = 'public' "
+            "WHERE table_schema = current_schema() "
             "AND table_name = 'user_daily_usage' "
             "AND column_name = 'request_count'"
         )

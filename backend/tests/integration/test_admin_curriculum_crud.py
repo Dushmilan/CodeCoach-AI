@@ -1,9 +1,7 @@
 from fastapi.testclient import TestClient
 
-from tests.db_helpers import (
-    promote_to_admin,
-    truncate_course_tables_sync,
-)
+from tests.fixtures.auth_helpers import admin_headers as _admin_headers
+from tests.db_helpers import truncate_course_tables_sync
 
 
 def _truncate_course_tables():
@@ -14,33 +12,6 @@ def _truncate_course_tables():
 
 def teardown_module():
     _truncate_course_tables()
-
-
-def _admin_headers(test_client: TestClient) -> dict:
-    """Register a user and promote to admin by updating the users table."""
-    res = test_client.post(
-        "/api/auth/register",
-        json={
-            "username": "admincurriculum",
-            "email": "admincurriculum@test.com",
-            "password": "testpass123",
-        },
-    )
-    if res.status_code != 201:
-        res = test_client.post(
-            "/api/auth/login",
-            json={
-                "username": "admincurriculum",
-                "password": "testpass123",
-            },
-        )
-    token = res.json()["access_token"]
-
-    import asyncio
-
-    asyncio.run(promote_to_admin("admincurriculum"))
-
-    return {"Authorization": f"Bearer {token}"}
 
 
 class TestAdminCurriculumCRUD:
@@ -302,3 +273,43 @@ class TestAdminCurriculumCRUD:
         assert "courses" in data
         assert "modules" in data
         assert "lessons" in data
+
+
+class TestAdminStats:
+    def test_admin_stats(self, test_client: TestClient):
+        headers = _admin_headers(test_client)
+        res = test_client.get("/api/admin/stats", headers=headers)
+        assert res.status_code == 200
+        data = res.json()
+        assert {"users", "questions", "courses", "system", "generation"} <= set(
+            data.keys()
+        )
+
+    def test_user_stats(self, test_client: TestClient):
+        headers = _admin_headers(test_client)
+        res = test_client.get("/api/admin/stats/users", headers=headers)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["total"] >= 1
+        assert data["admin"] >= 1
+        assert data["inactive"] == data["total"] - data["active"]
+
+    def test_stats_require_admin(self, test_client: TestClient):
+        res = test_client.post(
+            "/api/auth/register",
+            json={
+                "username": "plainuserstats",
+                "email": "plainuserstats@test.com",
+                "password": "testpass123",
+            },
+        )
+        token = res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        assert test_client.get("/api/admin/stats", headers=headers).status_code == 403
+        assert (
+            test_client.get("/api/admin/stats/users", headers=headers).status_code
+            == 403
+        )
+
+    def test_stats_require_auth(self, test_client: TestClient):
+        assert test_client.get("/api/admin/stats").status_code in (401, 403)

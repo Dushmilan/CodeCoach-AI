@@ -95,24 +95,63 @@ class SqlQuestionRepository(QuestionRepository):
         result = await self.session.execute(stmt)
         return [self._orm_to_model(q) for q in result.scalars().all()]
 
-    async def get_summaries(
-        self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None
-    ):
-        """Optimized: fetch only summary columns (no starter/test_cases). Heavy fields would bloat payload & roundtrip."""
-        from app.models.schemas import QuestionSummary
-
-        stmt = select(
-            QuestionORM.id,
-            QuestionORM.title,
-            QuestionORM.difficulty,
-            QuestionORM.category,
-            QuestionORM.company_tags,
-        )
+    @staticmethod
+    def _apply_summary_filters(stmt, query=None, difficulty=None, category=None):
+        if query:
+            query_param = f"%{query}%"
+            stmt = stmt.where(
+                or_(
+                    QuestionORM.title.ilike(query_param),
+                    QuestionORM.description.ilike(query_param),
+                )
+            )
         if difficulty:
             stmt = stmt.where(QuestionORM.difficulty == difficulty.value)
         if category:
             stmt = stmt.where(QuestionORM.category.ilike(category))
+        return stmt
+
+    async def count_summaries(
+        self,
+        query: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
+        category: Optional[str] = None,
+    ) -> int:
+        stmt = self._apply_summary_filters(
+            select(func.count()).select_from(QuestionORM),
+            query=query,
+            difficulty=difficulty,
+            category=category,
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
+    async def get_summaries(
+        self,
+        difficulty: Optional[Difficulty] = None,
+        category: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0,
+    ):
+        """Optimized: fetch only summary columns (no starter/test_cases). Heavy fields would bloat payload & roundtrip."""
+        from app.models.schemas import QuestionSummary
+
+        stmt = self._apply_summary_filters(
+            select(
+                QuestionORM.id,
+                QuestionORM.title,
+                QuestionORM.difficulty,
+                QuestionORM.category,
+                QuestionORM.company_tags,
+            ),
+            difficulty=difficulty,
+            category=category,
+        )
         stmt = stmt.order_by(QuestionORM.title)
+        if limit is not None:
+            stmt = stmt.limit(limit).offset(offset)
+        elif offset:
+            stmt = stmt.offset(offset)
         result = await self.session.execute(stmt)
         return [
             QuestionSummary(
@@ -131,27 +170,28 @@ class SqlQuestionRepository(QuestionRepository):
         query: str,
         difficulty: Optional[Difficulty] = None,
         category: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0,
     ):
         from app.models.schemas import QuestionSummary
 
-        query_param = f"%{query}%"
-        stmt = select(
-            QuestionORM.id,
-            QuestionORM.title,
-            QuestionORM.difficulty,
-            QuestionORM.category,
-            QuestionORM.company_tags,
-        ).where(
-            or_(
-                QuestionORM.title.ilike(query_param),
-                QuestionORM.description.ilike(query_param),
-            )
+        stmt = self._apply_summary_filters(
+            select(
+                QuestionORM.id,
+                QuestionORM.title,
+                QuestionORM.difficulty,
+                QuestionORM.category,
+                QuestionORM.company_tags,
+            ),
+            query=query,
+            difficulty=difficulty,
+            category=category,
         )
-        if difficulty:
-            stmt = stmt.where(QuestionORM.difficulty == difficulty.value)
-        if category:
-            stmt = stmt.where(QuestionORM.category.ilike(category))
         stmt = stmt.order_by(QuestionORM.title)
+        if limit is not None:
+            stmt = stmt.limit(limit).offset(offset)
+        elif offset:
+            stmt = stmt.offset(offset)
         result = await self.session.execute(stmt)
         return [
             QuestionSummary(

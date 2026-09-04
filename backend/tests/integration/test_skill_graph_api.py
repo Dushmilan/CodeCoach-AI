@@ -2,23 +2,7 @@
 
 from fastapi.testclient import TestClient
 
-
-def _headers(test_client: TestClient, username="skillapiuser") -> dict:
-    res = test_client.post(
-        "/api/auth/register",
-        json={
-            "username": username,
-            "email": f"{username}@test.com",
-            "password": "testpass123",
-        },
-    )
-    if res.status_code != 201:
-        res = test_client.post(
-            "/api/auth/login",
-            json={"username": username, "password": "testpass123"},
-        )
-    token = res.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+from tests.fixtures.auth_helpers import register_user_headers as _headers
 
 
 class TestSkillGraphAPI:
@@ -167,3 +151,30 @@ class TestSkillGraphAPI:
             if item["question"]:
                 assert item["question"]["id"]
                 assert item["question"]["title"]
+
+
+class TestSkillGraphBoilerplate:
+    def test_boilerplate_needs_no_auth(self, test_client: TestClient):
+        res = test_client.get("/api/skills/boilerplate")
+        assert res.status_code == 200
+        data = res.json()
+        assert "skills" in data and "edges" in data
+        # Taxonomy is DB-backed: whatever it holds is returned all-NEW.
+        assert all(s["status"] == "new" for s in data["skills"])
+
+    def test_recommended_questions_resolve_to_bank(self, test_client: TestClient):
+        headers = _headers(test_client, "skillrecq")
+        event = {
+            "id": "api-event-recq-1",
+            "user_id": "nobody",
+            "event_type": "submission_passed",
+            "question_id": "two-sum",
+            "metadata": {},
+            "occurred_at": "2026-08-01T09:00:00Z",
+        }
+        ingested = test_client.post("/api/skills/events", headers=headers, json=[event])
+        assert ingested.status_code == 200
+
+        res = test_client.get("/api/skills/me/recommended-questions", headers=headers)
+        assert res.status_code == 200
+        assert isinstance(res.json(), list)

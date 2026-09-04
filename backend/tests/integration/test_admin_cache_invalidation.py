@@ -6,7 +6,6 @@ Learners must see admin-published content immediately:
 - question detail (Redis cache) reflects question updates
 """
 
-import asyncio
 import os
 import uuid
 from contextlib import contextmanager
@@ -17,7 +16,8 @@ from fastapi.testclient import TestClient
 from app.api.dependencies import get_redis_cache
 from app.main import app
 from app.services.redis_service import RedisCache
-from tests.db_helpers import promote_to_admin, truncate_course_tables_sync
+from tests.db_helpers import truncate_course_tables_sync
+from tests.fixtures.auth_helpers import admin_headers
 
 _TEST_REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0")
 
@@ -36,25 +36,6 @@ def _redis_available() -> bool:
 
 def _uid(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:10]}"
-
-
-def _admin_headers(test_client: TestClient) -> dict:
-    res = test_client.post(
-        "/api/auth/register",
-        json={
-            "username": "cacheadmin",
-            "email": "cacheadmin@test.com",
-            "password": "testpass123",
-        },
-    )
-    if res.status_code != 201:
-        res = test_client.post(
-            "/api/auth/login",
-            json={"username": "cacheadmin", "password": "testpass123"},
-        )
-    token = res.json()["access_token"]
-    asyncio.run(promote_to_admin("cacheadmin"))
-    return {"Authorization": f"Bearer {token}"}
 
 
 @contextmanager
@@ -87,7 +68,7 @@ class TestCourseListInvalidation:
             first = test_client.get("/api/courses/")
             assert first.status_code == 200
 
-            headers = _admin_headers(test_client)
+            headers = admin_headers(test_client, "cacheadmin")
             created = test_client.post(
                 "/api/admin/courses",
                 json={
@@ -106,14 +87,14 @@ class TestCourseListInvalidation:
             ids = [c["id"] for c in second.json()["courses"]]
             assert course_id in ids
         finally:
-            headers = _admin_headers(test_client)
+            headers = admin_headers(test_client, "cacheadmin")
             test_client.delete(f"/api/admin/courses/{course_id}", headers=headers)
             truncate_course_tables_sync()
             _clear_course_list_cache()
 
     def test_deleted_course_disappears_immediately(self, test_client: TestClient):
         course_id = _uid("cache-course")
-        headers = _admin_headers(test_client)
+        headers = admin_headers(test_client, "cacheadmin")
         try:
             test_client.post(
                 "/api/admin/courses",
@@ -145,12 +126,47 @@ class TestCourseListInvalidation:
 
 
 @pytest.mark.skipif(not _redis_available(), reason="Redis unavailable")
+class TestCourseListRedisInvalidation:
+    def test_created_course_visible_immediately_via_redis(
+        self, test_client: TestClient
+    ):
+        """Same staleness probe through the Redis-backed anonymous list."""
+        course_id = _uid("cache-course")
+        headers = admin_headers(test_client, "cacheadmin")
+        try:
+            with live_redis_cache():
+                primed = test_client.get("/api/courses/")
+                assert primed.status_code == 200
+
+                created = test_client.post(
+                    "/api/admin/courses",
+                    json={
+                        "id": course_id,
+                        "title": "Cache Test Course",
+                        "description": "staleness probe",
+                        "language": "python",
+                        "order": 1,
+                    },
+                    headers=headers,
+                )
+                assert created.status_code == 200
+
+                second = test_client.get("/api/courses/")
+                ids = [c["id"] for c in second.json()["courses"]]
+                assert course_id in ids
+        finally:
+            test_client.delete(f"/api/admin/courses/{course_id}", headers=headers)
+            truncate_course_tables_sync()
+            _clear_course_list_cache()
+
+
+@pytest.mark.skipif(not _redis_available(), reason="Redis unavailable")
 class TestCourseDetailInvalidation:
     def test_lesson_update_visible_in_course_detail(self, test_client: TestClient):
         course_id = _uid("cache-course")
         module_id = _uid("cache-mod")
         lesson_id = _uid("cache-lesson")
-        headers = _admin_headers(test_client)
+        headers = admin_headers(test_client, "cacheadmin")
         try:
             with live_redis_cache():
                 test_client.post(
@@ -214,7 +230,7 @@ class TestCourseDetailInvalidation:
 class TestQuestionDetailInvalidation:
     def test_question_update_visible_in_detail(self, test_client: TestClient):
         question_id = _uid("cache-q")
-        headers = _admin_headers(test_client)
+        headers = admin_headers(test_client, "cacheadmin")
         try:
             with live_redis_cache():
                 created = test_client.post(

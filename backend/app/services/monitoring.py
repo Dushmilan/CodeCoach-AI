@@ -43,7 +43,7 @@ class MonitoringService:
 
     async def probe_redis(self) -> DependencyStatus:
         if self._redis is None:
-            return DependencyStatus(name="redis", ok=False, detail="unavailable")
+            return DependencyStatus(name="redis", ok=False, detail="disabled")
         try:
             if getattr(self._redis, "_enabled", True) is False:
                 return DependencyStatus(name="redis", ok=False, detail="disabled")

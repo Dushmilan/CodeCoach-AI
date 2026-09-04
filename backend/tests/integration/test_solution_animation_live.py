@@ -69,6 +69,38 @@ QUESTIONS = [
         "[-1,0,3,5,9,12], 9",
         "4",
     ),
+    _question(
+        "valid-parentheses",
+        "Valid Parentheses",
+        "stack",
+        "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
+        '"()[]{}"',
+        "true",
+    ),
+    _question(
+        "reverse-linked-list",
+        "Reverse Linked List",
+        "linked-list",
+        "Given the head of a singly linked list, reverse the list and return the reversed list.",
+        "[1,2,3,4,5]",
+        "[5,4,3,2,1]",
+    ),
+    _question(
+        "maximum-depth-of-binary-tree",
+        "Maximum Depth of Binary Tree",
+        "tree",
+        "Given the root of a binary tree, return its maximum depth.",
+        "[3,9,20,null,null,15,7]",
+        "3",
+    ),
+    _question(
+        "number-of-islands",
+        "Number of Islands",
+        "grid",
+        "Given an m x n 2D binary grid, count the number of islands.",
+        '[["1","1","0"],["1","0","0"],["0","0","0"]]',
+        "1",
+    ),
 ]
 
 

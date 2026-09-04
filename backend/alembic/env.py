@@ -17,8 +17,8 @@ from app.models.orm import Base
 from app.core.config import get_settings
 from app.core.db_url import (
     escape_configparser,
+    migration_connect_args,
     normalize_db_url,
-    pooler_connect_args,
     strip_pgbouncer,
 )
 
@@ -70,7 +70,7 @@ async def run_async_migrations() -> None:
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args=pooler_connect_args(),
+        connect_args=migration_connect_args(os.getenv("DATABASE_SEARCH_PATH")),
     )
 
     async with connectable.connect() as connection:

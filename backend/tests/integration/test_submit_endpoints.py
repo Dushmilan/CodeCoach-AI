@@ -707,3 +707,124 @@ class TestSubmitEndpoint:
             assert response.status_code == 200
         finally:
             _teardown_overrides(get_repository, get_executor)
+
+
+class TestSubmitSideEffects:
+    @pytest.fixture
+    def fakes(self):
+        from types import SimpleNamespace
+
+        class FakeSubmissions:
+            def __init__(self):
+                self.added = []
+
+            async def add(self, user_id, submission):
+                self.added.append((user_id, submission))
+                return SimpleNamespace(id="sub-1", created_at=None)
+
+        class FakeReviews:
+            def __init__(self):
+                self.observed = []
+
+            async def observe_submission(self, **kwargs):
+                self.observed.append(kwargs)
+
+        class FakeSkillService:
+            def __init__(self):
+                self.events = []
+
+            async def ingest_events(self, events, user_id):
+                self.events.extend(events)
+                return {"accepted": len(events)}
+
+        return SimpleNamespace(
+            submissions=FakeSubmissions(),
+            reviews=FakeReviews(),
+            skill=FakeSkillService(),
+        )
+
+    def _override_all(self, test_client, mock_question_repo, mock_executor, fakes):
+        from app.api.auth_deps import get_current_user
+        from app.api.dependencies import (
+            get_question_repo,
+            get_executor,
+            get_submission_repo,
+            get_review_service,
+        )
+        from app.api.submit import get_skill_graph_service_dependency
+
+        app.dependency_overrides[get_question_repo] = lambda: mock_question_repo
+        app.dependency_overrides[get_executor] = lambda: mock_executor
+        app.dependency_overrides[get_submission_repo] = lambda: fakes.submissions
+        app.dependency_overrides[get_review_service] = lambda: fakes.reviews
+        app.dependency_overrides[get_skill_graph_service_dependency] = lambda: (
+            fakes.skill
+        )
+        try:
+            yield
+        finally:
+            for dep in (
+                get_question_repo,
+                get_executor,
+                get_submission_repo,
+                get_review_service,
+                get_skill_graph_service_dependency,
+                get_current_user,
+            ):
+                app.dependency_overrides.pop(dep, None)
+
+    def test_submit_pass_persists_and_emits(
+        self, test_client, mock_question_repo, mock_executor, fakes
+    ):
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _all():
+            yield from self._override_all(
+                test_client, mock_question_repo, mock_executor, fakes
+            )
+
+        with mock_auth(), _all():
+            res = test_client.post(
+                "/api/submit/",
+                json={
+                    "question_id": "test-question",
+                    "language": "python",
+                    "code": "print(input())",
+                },
+            )
+        assert res.status_code == 200
+        assert res.json()["passed"] is True
+        assert len(fakes.submissions.added) == 1
+        uid, sub = fakes.submissions.added[0]
+        assert uid == "test-id" and sub.passed is True
+        assert len(fakes.reviews.observed) == 1
+        assert fakes.reviews.observed[0]["passed"] is True
+        assert len(fakes.skill.events) == 1
+        assert fakes.skill.events[0].event_type.value == "submission_passed"
+
+    def test_submit_fail_records_mistake(
+        self, test_client, mock_question_repo, mock_executor, fakes
+    ):
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _all():
+            yield from self._override_all(
+                test_client, mock_question_repo, mock_executor, fakes
+            )
+
+        with mock_auth(), _all():
+            res = test_client.post(
+                "/api/submit/",
+                json={
+                    "question_id": "test-question",
+                    "language": "python",
+                    "code": "print('wrong')",
+                },
+            )
+        assert res.status_code == 200
+        assert res.json()["passed"] is False
+        assert fakes.submissions.added[0][1].passed is False
+        assert fakes.reviews.observed[0]["passed"] is False
+        assert fakes.skill.events[0].event_type.value == "submission_failed"

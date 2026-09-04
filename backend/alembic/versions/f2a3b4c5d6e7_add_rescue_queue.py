@@ -30,7 +30,7 @@ def upgrade() -> None:
         raise RuntimeError("Only Supabase/PostgreSQL is supported")
 
     table_exists = bind.execute(
-        sa.text("SELECT to_regclass('public.rescue_queue') IS NOT NULL")
+        sa.text("SELECT to_regclass('rescue_queue') IS NOT NULL")
     ).scalar_one()
     if table_exists:
         return

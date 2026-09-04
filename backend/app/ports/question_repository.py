@@ -48,19 +48,44 @@ class QuestionRepository(ABC):
     async def add(self, question: Question) -> None: ...
 
     async def get_summaries(
-        self, difficulty: Optional[Difficulty] = None, category: Optional[str] = None
+        self,
+        difficulty: Optional[Difficulty] = None,
+        category: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0,
     ) -> List[QuestionSummary]:
         questions = await self.get_all(difficulty=difficulty, category=category)
-        return [self._to_summary(q) for q in questions]
+        summaries = [self._to_summary(q) for q in questions]
+        if limit is None:
+            return summaries[offset:]
+        return summaries[offset : offset + limit]
 
     async def search_summaries(
         self,
         query: str,
         difficulty: Optional[Difficulty] = None,
         category: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0,
     ) -> List[QuestionSummary]:
         questions = await self.search(query, difficulty=difficulty, category=category)
-        return [self._to_summary(q) for q in questions]
+        summaries = [self._to_summary(q) for q in questions]
+        if limit is None:
+            return summaries[offset:]
+        return summaries[offset : offset + limit]
+
+    async def count_summaries(
+        self,
+        query: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
+        category: Optional[str] = None,
+    ) -> int:
+        """Total rows matching the list filters (for page metadata)."""
+        if query:
+            return len(
+                await self.search(query, difficulty=difficulty, category=category)
+            )
+        return len(await self.get_all(difficulty=difficulty, category=category))
 
     async def save_validation_status(self, question_id: str, status: Any) -> None:
         pass

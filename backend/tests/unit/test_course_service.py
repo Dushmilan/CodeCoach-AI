@@ -259,3 +259,61 @@ class TestCourseService:
         result = await service.get_all_progress("user1")
 
         assert len(result) == 2
+
+
+class _FakeRedis:
+    """Minimal async get/set cache double."""
+
+    def __init__(self, fail=False):
+        self.store = {}
+        self.fail = fail
+        self.get_calls = 0
+
+    async def get(self, key):
+        self.get_calls += 1
+        if self.fail:
+            raise ConnectionError("redis down")
+        return self.store.get(key)
+
+    async def set(self, key, value, ttl=300):
+        if self.fail:
+            raise ConnectionError("redis down")
+        self.store[key] = value
+
+
+class TestCourseListRedisCache:
+    @pytest.mark.asyncio
+    async def test_anonymous_list_served_from_redis(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
+        mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
+        cache = _FakeRedis()
+        service = CourseService(
+            course_repo=mock_course_repo,
+            progress_repo=mock_progress_repo,
+            cache=cache,
+        )
+
+        first = await service.list_courses(user_id=None)
+        second = await service.list_courses(user_id=None)
+
+        assert len(first) == 1 and len(second) == 1
+        assert second[0].id == "python-fundamentals"
+        assert mock_course_repo.get_all_courses.await_count == 1
+        assert cache.get_calls == 2
+
+    @pytest.mark.asyncio
+    async def test_redis_failure_falls_back_to_repo(
+        self, mock_course_repo, mock_progress_repo, sample_course
+    ):
+        mock_course_repo.get_all_courses = AsyncMock(return_value=[sample_course])
+        service = CourseService(
+            course_repo=mock_course_repo,
+            progress_repo=mock_progress_repo,
+            cache=_FakeRedis(fail=True),
+        )
+
+        result = await service.list_courses(user_id=None)
+
+        assert len(result) == 1
+        assert result[0].id == "python-fundamentals"

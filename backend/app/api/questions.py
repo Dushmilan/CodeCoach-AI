@@ -82,16 +82,16 @@ async def search_questions(
 
         result = await bank.query(
             QuestionFilters(
-                query=q, difficulty=difficulty, category=category, per_page=100
+                query=q,
+                difficulty=difficulty,
+                category=category,
+                page=page,
+                per_page=per_page,
             )
         )
 
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated = result.items[start_idx:end_idx]
-
         return QuestionsListResponse(
-            questions=paginated,
+            questions=result.items,
             total=result.total,
             page=page,
             per_page=per_page,

@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
@@ -7,10 +8,13 @@ from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
 from app.services.redis_service import RedisCache
 
+logger = logging.getLogger(__name__)
+
 # In-memory TTL cache for anonymous course list (Supabase pooler ~1.5s per query; intermittent timeout on cold pool)
 # Keyed by None (anonymous) — user-specific progress bypasses cache
 _course_list_cache: Dict[str, Tuple[float, List[CourseSummary]]] = {}
 _COURSE_LIST_TTL = 30.0
+_ANON_LIST_REDIS_KEY = RedisCache.key("courses", "list", "anonymous")
 
 
 def invalidate_course_list_cache() -> None:
@@ -30,12 +34,41 @@ class CourseService:
         self.cache = cache
 
     async def list_courses(self, user_id: Optional[str] = None) -> List[CourseSummary]:
-        # Anonymous list is same for everyone — cache to avoid repeated Supabase roundtrips and intermittent 408 on cold pool
+        # Anonymous list is same for everyone — cache to avoid repeated Supabase roundtrips and intermittent 408 on cold pool.
+        # Redis is preferred so every backend replica shares one entry (multi-worker safe);
+        # the in-memory dict is the fallback when Redis is not configured.
         if not user_id:
+            if self.cache is not None:
+                return await self._list_courses_anonymous_redis()
             cached = _course_list_cache.get("anonymous")
             if cached and (time.time() - cached[0] < _COURSE_LIST_TTL):
                 return cached[1]
 
+        summaries = await self._build_summaries(user_id)
+
+        if not user_id and self.cache is None:
+            _course_list_cache["anonymous"] = (time.time(), summaries)
+        return summaries
+
+    async def _list_courses_anonymous_redis(self) -> List[CourseSummary]:
+        try:
+            cached = await self.cache.get(_ANON_LIST_REDIS_KEY)  # type: ignore[union-attr]
+            if cached is not None:
+                return [CourseSummary(**s) for s in cached]
+        except Exception as exc:  # noqa: BLE001 - cache must never break listing
+            logger.debug("Course-list Redis read failed: %s", exc)
+        summaries = await self._build_summaries(None)
+        try:
+            await self.cache.set(  # type: ignore[union-attr]
+                _ANON_LIST_REDIS_KEY,
+                [s.model_dump() for s in summaries],
+                ttl=int(_COURSE_LIST_TTL),
+            )
+        except Exception as exc:  # noqa: BLE001 - cache must never break listing
+            logger.debug("Course-list Redis write failed: %s", exc)
+        return summaries
+
+    async def _build_summaries(self, user_id: Optional[str]) -> List[CourseSummary]:
         courses = await self.course_repo.get_all_courses()
         courses.sort(key=lambda c: c.order)
 
@@ -77,8 +110,6 @@ class CourseService:
                     progress=progress,
                 )
             )
-        if not user_id:
-            _course_list_cache["anonymous"] = (time.time(), summaries)
         return summaries
 
     async def get_course(self, course_id: str) -> Optional[Course]:
