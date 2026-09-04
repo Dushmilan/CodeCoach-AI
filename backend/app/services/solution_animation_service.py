@@ -54,7 +54,78 @@ _COMPLEXITY_BY_ALGO = {
     "binary_search": ("O(log n)", "O(1)"),
     "bubble_sort": ("O(n²)", "O(1)"),
     "linear_search": ("O(n)", "O(1)"),
+    "merge_sort": ("O(n log n)", "O(n)"),
+    "quick_sort": ("O(n log n)", "O(log n)"),
+    "two_sum": ("O(n)", "O(n)"),
+    "clone_graph": ("O(V+E)", "O(V)"),
+    "course_schedule": ("O(V+E)", "O(V)"),
+    "number_of_islands": ("O(m*n)", "O(m*n)"),
+    "coin_change": ("O(n*amount)", "O(amount)"),
+    "climbing_stairs": ("O(n)", "O(1)"),
 }
+
+_COMPLEXITY_BY_FAMILY = {
+    "array": ("O(n)", "O(1)"),
+    "backtrack": ("O(2^n)", "O(n)"),
+    "stack": ("O(n)", "O(n)"),
+    "linked_list": ("O(n)", "O(1)"),
+    "tree": ("O(n)", "O(h)"),
+    "graph": ("O(V+E)", "O(V)"),
+    "grid": ("O(m*n)", "O(m*n)"),
+    "intervals": ("O(n log n)", "O(n)"),
+}
+
+# Compressible trace actions are sampled; everything else is always kept.
+_DOWNSAMPLE_KEEP = frozenset(
+    {
+        "swap",
+        "write",
+        "mark",
+        "found",
+        "not_found",
+        "dp_update",
+        "partition",
+        "edge",
+        "choose",
+        "backtrack",
+        "push",
+        "pop",
+    }
+)
+
+
+def resolve_complexity(entry: Dict[str, Any], algorithm: str) -> tuple:
+    """Resolve (time, space) preferring catalog entry, then algo, then family."""
+    complexity = (entry or {}).get("complexity")
+    if isinstance(complexity, (list, tuple)) and len(complexity) == 2:
+        return (str(complexity[0]), str(complexity[1]))
+    if algorithm in _COMPLEXITY_BY_ALGO:
+        return _COMPLEXITY_BY_ALGO[algorithm]
+    family = (entry or {}).get("family", "")
+    return _COMPLEXITY_BY_FAMILY.get(family, ("O(n)", "O(1)"))
+
+
+def downsample_steps(steps: list, limit: int = 96) -> list:
+    """Cap semantic steps preserving key events and original order."""
+    if len(steps) <= limit:
+        return list(steps)
+    key = [s for s in steps if getattr(s, "action", None) in _DOWNSAMPLE_KEEP]
+    if len(key) >= limit:
+        return key[:limit]
+    others = [s for s in steps if getattr(s, "action", None) not in _DOWNSAMPLE_KEEP]
+    budget = limit - len(key)
+    stride = max(1.0, len(others) / max(budget, 1))
+    sampled_ids = {
+        id(s)
+        for s in (
+            others[round(i * stride)]
+            for i in range(budget)
+            if round(i * stride) < len(others)
+        )
+    }
+    key_ids = {id(s) for s in key}
+    return [s for s in steps if id(s) in key_ids or id(s) in sampled_ids][:limit]
+
 
 _EVENT_TO_ACTION = {
     "compare": "compare",
@@ -78,9 +149,15 @@ _EVENT_TO_ACTION = {
 class SolutionAnimationService:
     """Generate algorithm animations from the canonical solution trace."""
 
+    resolve_complexity = staticmethod(resolve_complexity)
+
     def __init__(self, executor: CodeExecutor):
         self.executor = executor
         self._validator = AnimationValidator()
+
+    def _log_quality(self, algorithm: str, animation: Dict[str, Any]) -> None:
+        for warning in self._validator.lint_quality(animation):
+            logger.warning("Animation quality (%s): %s", algorithm, warning)
 
     async def build_animation(
         self,
@@ -146,6 +223,7 @@ class SolutionAnimationService:
         if planner_animation is not None:
             validated, reason = self._validator.validate(planner_animation)
             if validated is not None:
+                self._log_quality(algorithm, validated)
                 return validated
             logger.warning(
                 "Planner animation for %s failed validation: %s", algorithm, reason
@@ -162,6 +240,7 @@ class SolutionAnimationService:
                 "Compiled animation for %s failed validation: %s", algorithm, reason
             )
             return None
+        self._log_quality(algorithm, validated)
         return validated
 
     def _try_planner(
@@ -177,7 +256,7 @@ class SolutionAnimationService:
                 viz = "sorted-array"
             elif entry["family"] == "array" and algorithm in ("bubble_sort",):
                 viz = "bars"
-            time_c, space_c = _COMPLEXITY_BY_ALGO.get(algorithm, ("O(n)", "O(1)"))
+            time_c, space_c = resolve_complexity(entry, algorithm)
             steps: List[AnimationStepSpec] = []
             for e in events:
                 if e.kind in ("init", "return"):
@@ -230,8 +309,7 @@ class SolutionAnimationService:
                 steps.append(AnimationStepSpec(**kwargs))
             if not steps:
                 return None
-            if len(steps) > 96:
-                steps = steps[:96]
+            steps = downsample_steps(steps, limit=96)
             spec = AlgorithmAnimation(
                 algorithm=algorithm,
                 visualization=viz,  # type: ignore[arg-type]

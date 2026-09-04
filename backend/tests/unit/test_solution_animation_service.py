@@ -187,6 +187,8 @@ class TestBuildAnimation:
         assert animation is not None
         validated, reason = AnimationValidator().validate(animation)
         assert validated is not None, reason
-        assert "stack_box" in {
-            op["target"] for step in animation["steps"] for op in step["motion"]
-        }
+        # #141: the cinematic planner path now validates for stack, so it wins
+        # over the family-compiler fallback (stack_box). Pin the planner scene.
+        targets = {op["target"] for step in animation["steps"] for op in step["motion"]}
+        assert "stack_base" in targets
+        assert AnimationValidator().lint_quality(animation) == []
