@@ -285,6 +285,11 @@ class SolutionAnimationService:
                 ):
                     if e.has("i"):
                         kwargs["index"] = int(e.fields["i"])
+                    elif e.has("index"):
+                        # Pointer events carry the scan position in `index`
+                        # (trace schema), not `i` — without this every
+                        # pointer beat clamps to cell 0 (#153).
+                        kwargs["index"] = int(e.fields["index"])
                     if e.has("value"):
                         kwargs["values"] = [e.fields["value"]]
                 elif e.kind == "window":

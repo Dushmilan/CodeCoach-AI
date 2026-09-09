@@ -166,6 +166,28 @@ class TestBuildAnimation:
         assert animation["title"]  # non-empty fallback
 
     @pytest.mark.asyncio
+    async def test_pointer_beats_carry_event_index(self):
+        # #153: pointer events carry the scan position in the `index` field
+        # (trace schema), not `i`. The planner mapped `i` only, so every
+        # pointer beat clamped to cell_0 and the scan highlight never moved.
+        executor = FakeExecutor(_ok_result())
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(_question())
+
+        assert animation is not None
+        pointer_beats = [
+            s
+            for s in animation["steps"]
+            if (s.get("narration") or "").startswith("Pointer")
+        ]
+        assert [b["narration"] for b in pointer_beats] == [
+            "Pointer → [0]",
+            "Pointer → [1]",
+        ]
+        targets = [op["target"] for b in pointer_beats for op in b["motion"]]
+        assert targets == ["cell_0", "cell_1"]
+
+    @pytest.mark.asyncio
     async def test_stack_family_question_dispatches_to_stack_compiler(self):
         stdout = "\n".join(
             [
