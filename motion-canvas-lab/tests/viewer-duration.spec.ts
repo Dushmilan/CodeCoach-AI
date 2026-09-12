@@ -103,6 +103,8 @@ test('tokened scrubber binds to the real timeline once (no demo-length jump)', a
   // demo-length value followed by a jump to the real length.
   const real = distinct.filter((v) => v !== 100);
   expect(real.length).toBeGreaterThan(0);
+  // TODO(#155): tighten to exactly 1 distinct maximum once transient
+  // pre-recalculate values are characterized; the looser bound stands for now.
   expect(new Set(real).size).toBeLessThanOrEqual(2);
   expect(real[real.length - 1]).toBeGreaterThan(100);
   // The bound length is the real ~17s branch: strictly above the untokened
@@ -132,4 +134,76 @@ test('tokened error payload surfaces Generation failed', async ({ page }) => {
   }, [token]);
   await expect(page.locator('#viewer-narration')).toContainText('boom-155', { timeout: 30000 });
   await expect(page.locator('#viewer-step-chip')).toContainText('Generation failed', { timeout: 30000 });
+});
+
+test('iframe launcher payload reaches the scene bridge (parent!==self)', async ({ page }) => {
+  // Real launcher embeds viewer.html in an iframe and posts from the parent
+  // window, so inside the iframe parent!==self. The player re-posts the
+  // payload to itself (source===window); the scene bridge must accept that
+  // self re-post or the real branch never plays (top-level tests pass
+  // vacuously because there parent===self).
+  const token = 'test-155-iframe-' + Date.now();
+  await page.goto('/');
+  await page.evaluate(([t]) => {
+    const iframe = document.createElement('iframe');
+    iframe.id = 'viewer-frame';
+    iframe.src = `/viewer.html?token=${t}`;
+    document.body.appendChild(iframe);
+  }, [token]);
+  const frame = page.frameLocator('#viewer-frame');
+  await frame.locator('#viewer-scrubber').waitFor({ timeout: 30000 });
+  await page.evaluate(([t]) => {
+    const iframe = document.getElementById('viewer-frame') as HTMLIFrameElement;
+    iframe.contentWindow?.postMessage(
+      {
+        type: 'CODECOACH_ANIMATION',
+        token: t,
+        animation: { title: 'iframe-probe', steps: [{ narration: 'one' }, { narration: 'two' }] },
+      },
+      '*',
+    );
+  }, [token]);
+  await expect(frame.locator('#viewer-step-chip')).toContainText('2 / 2', { timeout: 45000 });
+});
+
+test('scene bridge accepts self re-posts with matching token (parent!==self)', async ({ page }) => {
+  // Unit-level bridge check at e2e level: post ONLY from inside the iframe
+  // itself (source===window, parent!==self) — the exact shape of
+  // viewer-player.ts waitForPayload's re-post. No parent post is ever sent,
+  // so the real branch plays iff the bridge accepts self re-posts.
+  const token = 'test-155-selfpost-' + Date.now();
+  await page.goto('/');
+  await page.evaluate(([t]) => {
+    const iframe = document.createElement('iframe');
+    iframe.id = 'viewer-frame';
+    iframe.src = `/viewer.html?token=${t}`;
+    document.body.appendChild(iframe);
+  }, [token]);
+  const frame = page.frameLocator('#viewer-frame');
+  await frame.locator('#viewer-scrubber').waitFor({ timeout: 30000 });
+  await frame.locator('body').evaluate((_el: unknown, t: string) => {
+    window.postMessage(
+      {
+        type: 'CODECOACH_ANIMATION',
+        token: t,
+        animation: { title: 'selfpost-probe', steps: [{ narration: 'one' }, { narration: 'two' }] },
+      },
+      '*',
+    );
+  }, token);
+  await expect(frame.locator('#viewer-step-chip')).toContainText('2 / 2', { timeout: 45000 });
+});
+
+test('tokened payload timeout warns instead of failing silently', async ({ page }) => {
+  // 8s waitForPayload timeout with no payload builds the Player on the demo
+  // branch and drops late payloads; the timeout must be diagnosable.
+  const warnings: string[] = [];
+  page.on('console', (msg) => {
+    if (msg.type() === 'warning') warnings.push(msg.text());
+  });
+  const token = 'test-155-timeout-' + Date.now();
+  await page.goto(`/viewer.html?token=${token}`);
+  await expect
+    .poll(() => warnings.some((w) => w.includes('token') && w.includes('timeout')), { timeout: 30000 })
+    .toBe(true);
 });

@@ -172,12 +172,16 @@ function setupMessageBridge(token: string | null): void {
   window.addEventListener('message', (event: MessageEvent) => {
     const data = event.data;
     if (!data || typeof data !== 'object') return;
-    // The animation payload only ever comes from the embedding CodeCoach app.
-    // Accept it only when a token was requested AND the sender is the parent
-    // frame; direct opens of viewer.html run the built-in demo instead.
     if (!token) return;
-    if (event.source !== window.parent) return;
     if (data.token !== token) return;
+    if (data.type !== MESSAGE_TYPE && data.type !== ERROR_MESSAGE_TYPE) return;
+    // The animation payload only ever comes from the embedding CodeCoach app
+    // (the parent frame) — or from viewer-player.ts's waitForPayload re-post
+    // to itself (source===window), which gates Player creation on the real
+    // payload. Accept both; the parent-only rule stays for all other traffic
+    // (only these two token-gated types may arrive as self re-posts).
+    // Direct opens of viewer.html run the built-in demo instead.
+    if (event.source !== window.parent && event.source !== window) return;
     if (data.type === MESSAGE_TYPE && data.animation) {
       receivedAnimation = data.animation as AnimationData;
     } else if (data.type === ERROR_MESSAGE_TYPE) {
