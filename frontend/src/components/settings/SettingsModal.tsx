@@ -34,7 +34,11 @@ export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout
             {tab === 'dashboard' && (
               <div className="space-y-3" data-testid="settings-dashboard-tab">
                 <div className="max-h-96 overflow-y-auto pr-1">
-                  <SkillGraph />
+                  {isAuthenticated ? (
+                    <SkillGraph />
+                  ) : (
+                    <SkillGraphInline isAuthenticated={isAuthenticated} />
+                  )}
                 </div>
                 <button onClick={() => { window.location.href = '/dashboard'; onClose(); }} data-testid="settings-dashboard-open" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white text-black px-4 py-1.5 text-xs font-medium hover:bg-white/90 transition-colors"><LayoutDashboard className="h-3.5 w-3.5" /> Open Dashboard</button>
               </div>

@@ -1,15 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+import { server } from '@/mocks/server';
+import { setAccessToken } from '@/lib/auth-session';
 import { SettingsModal } from './SettingsModal';
 
-vi.mock('@/features/skill-graph/SkillGraphInline', () => ({
-  SkillGraphInline: () => <div data-testid='skill-graph-inline' />,
-}));
-
-vi.mock('@/features/skill-graph/SkillGraph', () => ({
-  SkillGraph: () => <div data-testid='skill-graph' />,
-}));
+const graphPayload = {
+  skills: [
+    {
+      skill_slug: 'arrays',
+      name: 'Arrays',
+      mastery_score: 0.5,
+      confidence: 0.7,
+      status: 'learning',
+      trend: 'improving',
+      evidence_count: 3,
+      recent_error_count: 0,
+      last_seen_at: null,
+      last_reviewed_at: null,
+    },
+    {
+      skill_slug: 'hash-maps',
+      name: 'Hash Maps',
+      mastery_score: 0.2,
+      confidence: 0.4,
+      status: 'new',
+      trend: 'stable',
+      evidence_count: 1,
+      recent_error_count: 0,
+      last_seen_at: null,
+      last_reviewed_at: null,
+    },
+  ],
+  edges: [{ source: 'arrays', target: 'hash-maps', relation: 'prerequisite' }],
+};
 
 describe('SettingsModal', () => {
   const defaultProps = {
@@ -19,6 +44,7 @@ describe('SettingsModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setAccessToken(null);
   });
 
   it('returns null when open is false', () => {
@@ -127,12 +153,33 @@ describe('SettingsModal', () => {
     expect(screen.getByText('Premium')).toBeInTheDocument();
   });
 
-  it('gear dashboard tab embeds the skill graph, not just a link', async () => {
+  it('gear dashboard tab embeds the real skill graph via MSW, not just a link', async () => {
+    setAccessToken('test-token');
+    server.use(
+      http.get('/api/skills/me/skills', () => HttpResponse.json(graphPayload)),
+    );
     render(<SettingsModal open onClose={() => {}} isAuthenticated />);
     fireEvent.click(screen.getByTestId('settings-tab-dashboard'));
     expect(await screen.findByTestId('settings-dashboard-tab')).toBeInTheDocument();
     expect(screen.getByTestId('settings-dashboard-open')).toBeInTheDocument();
-    // NEW: embedded content, not just a link card
+    // Real SkillGraph (no component mock): MSW-backed fetch renders the graph
     expect(await screen.findByTestId('skill-graph')).toBeInTheDocument();
+    expect(await screen.findAllByTestId('skill-graph-node')).toHaveLength(2);
+  });
+
+  it('guest dashboard tab shows preview, never mounts the live skill graph', async () => {
+    server.use(
+      http.get('/api/skills/me/skills', () =>
+        HttpResponse.json({ detail: 'boom' }, { status: 500 }),
+      ),
+    );
+    render(<SettingsModal open onClose={() => {}} />);
+    fireEvent.click(screen.getByTestId('settings-tab-dashboard'));
+    expect(await screen.findByTestId('settings-dashboard-tab')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-dashboard-open')).toBeInTheDocument();
+    // Guest-safe preview (boilerplate path), not the authed live graph
+    expect(await screen.findByText(/preview — sign in to track progress/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('skill-graph')).toBeNull();
+    expect(screen.queryByText(/request failed/i)).toBeNull();
   });
 });
