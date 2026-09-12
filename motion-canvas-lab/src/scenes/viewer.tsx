@@ -1,5 +1,5 @@
 import {makeScene2D, Rect, Circle, Line, Txt, View2D} from '@motion-canvas/2d';
-import {all, createRef, waitFor, Vector2, ThreadGenerator} from '@motion-canvas/core';
+import {all, createRef, PlaybackState, useScene, waitFor, Vector2, ThreadGenerator} from '@motion-canvas/core';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VIEWER SCENE — the runtime the CodeCoach app opens in the in-app modal.
@@ -32,12 +32,26 @@ const WAIT_TICK_MS = 200;
 // Broadcast the current step to the page's own DOM overlay (see
 // viewer-player.ts). The overlay renders a narration bar, a step counter and a
 // scrubber; it cannot read the scene's internal step index itself.
+//
+// The Player measures the timeline by fast-forwarding this generator
+// (PlaybackManager.recalculate) while playback is still Paused. Posting step
+// messages during that measurement pass would flash beats / Complete in the
+// overlay before beat 1 of real playback, so only post while actually playing.
 function postViewerStep(state: {
   state: 'running' | 'complete' | 'error';
   step?: number;
   total?: number;
   narration?: string;
 }): void {
+  let playing = false;
+  try {
+    playing = useScene().playback.state === PlaybackState.Playing;
+  } catch {
+    // Fail closed: a step message we cannot attribute to real playback must
+    // never reach the overlay.
+    return;
+  }
+  if (!playing) return;
   window.postMessage({type: STEP_MESSAGE_TYPE, ...state}, window.location.origin);
 }
 

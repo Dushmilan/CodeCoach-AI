@@ -192,10 +192,22 @@ function buildOverlay(player: Player): void {
     )}`;
   });
 
+  // The Player measures the timeline by fast-forwarding the scene generator
+  // (PlaybackManager.recalculate), which executes the scene's postViewerStep
+  // side effects: a 'complete' posted during that measurement pass would flash
+  // the chip before beat 1 of real playback. Only honor 'complete' once the
+  // playhead has actually reached the end of the timeline. Ignoring a real
+  // completion is self-healing (the loop replay re-earns it); showing a false
+  // one is the bug — so the gate fails closed.
+  let maxFrameSeen = 0;
+  const COMPLETE_EPSILON_FRAMES = 5;
+
   player.onFrameChanged.subscribe((frame) => {
+    maxFrameSeen = Math.max(maxFrameSeen, frame);
     if (!scrubbing) setProgress(frame, player.playback.duration);
   });
   player.onDurationChanged.subscribe((duration) => {
+    maxFrameSeen = Math.max(maxFrameSeen, player.playback.frame);
     setProgress(player.playback.frame, duration);
   });
   player.onStateChanged.subscribe((state) => {
@@ -221,6 +233,11 @@ function buildOverlay(player: Player): void {
       total: data.total,
       narration: typeof data.narration === 'string' ? data.narration : '',
     };
+    if (state.state === 'complete') {
+      if (maxFrameSeen < timelineMaxFrames(player) - COMPLETE_EPSILON_FRAMES) return;
+      // Consume the pass so each loop replay must re-earn its Complete.
+      maxFrameSeen = 0;
+    }
     setNarration(state);
   });
 
