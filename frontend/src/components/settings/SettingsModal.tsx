@@ -54,7 +54,7 @@ export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout
                   )}
                 </div>
                 <p className="text-[11px] text-muted-foreground/60 leading-relaxed mb-3">{isAuthenticated ? 'Full mastery graph — open Dashboard for the larger map.' : 'Mastery per skill lives in the Dashboard as a graph — open Dashboard to see the full map. This preview is the boilerplate (all 22 skills).'}</p>
-                <button onClick={() => { window.location.href = '/dashboard'; onClose(); }} className="inline-flex items-center gap-1.5 rounded-full bg-primary/90 text-primary-foreground px-4 py-1.5 text-xs font-medium hover:bg-primary transition-colors"><LayoutDashboard className="h-3.5 w-3.5" /> View graph in Dashboard</button>
+                <button onClick={() => { window.location.href = '/dashboard'; onClose(); }} data-testid="settings-skills-open" className="inline-flex items-center gap-1.5 rounded-full bg-primary/90 text-primary-foreground px-4 py-1.5 text-xs font-medium hover:bg-primary transition-colors"><LayoutDashboard className="h-3.5 w-3.5" /> View graph in Dashboard</button>
               </div>
             )}
             {tab === 'settings' && (

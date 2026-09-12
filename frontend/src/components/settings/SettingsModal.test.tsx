@@ -176,6 +176,7 @@ describe('SettingsModal', () => {
     fireEvent.click(screen.getByTestId('settings-tab-skills'));
     const graph = await screen.findByTestId('skill-graph');
     expect(graph).toBeInTheDocument();
+    expect(screen.getByTestId('settings-skills-open')).toBeInTheDocument();
     expect(graph.querySelectorAll('[data-testid="skill-graph-node"]').length).toBeGreaterThan(0);
   });
 
