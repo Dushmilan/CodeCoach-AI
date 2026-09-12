@@ -52,6 +52,53 @@ describe('SkillGraphService', () => {
     service = new SkillGraphService(http);
   });
 
+  describe('getGraph', () => {
+    it('calls GET /api/skills/me/skills with include_boilerplate when true', async () => {
+      vi.mocked(http.get).mockResolvedValue({ skills: [], edges: [] });
+
+      await service.getGraph(true);
+
+      expect(http.get).toHaveBeenCalledWith(
+        '/api/skills/me/skills?include_boilerplate=true',
+        { cache: 'no-store' },
+      );
+    });
+
+    it('omits the query suffix when includeBoilerplate is false', async () => {
+      vi.mocked(http.get).mockResolvedValue({ skills: [], edges: [] });
+
+      await service.getGraph(false);
+
+      expect(http.get).toHaveBeenCalledWith('/api/skills/me/skills', {
+        cache: 'no-store',
+      });
+    });
+
+    it('throws when http.get fails', async () => {
+      vi.mocked(http.get).mockRejectedValue(new Error('Server error'));
+
+      await expect(service.getGraph(true)).rejects.toThrow('Server error');
+    });
+  });
+
+  describe('getBoilerplate', () => {
+    it('calls GET /api/skills/boilerplate without auth-scoped path', async () => {
+      vi.mocked(http.get).mockResolvedValue({ skills: [], edges: [] });
+
+      await service.getBoilerplate();
+
+      expect(http.get).toHaveBeenCalledWith('/api/skills/boilerplate', {
+        cache: 'no-store',
+      });
+    });
+
+    it('throws when http.get fails', async () => {
+      vi.mocked(http.get).mockRejectedValue(new Error('Server error'));
+
+      await expect(service.getBoilerplate()).rejects.toThrow('Server error');
+    });
+  });
+
   describe('getRecommendedQuestions', () => {
     it('calls GET /api/skills/me/recommended-questions with limit query', async () => {
       vi.mocked(http.get).mockResolvedValue([sampleRecommendation]);
