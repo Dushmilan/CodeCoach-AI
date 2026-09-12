@@ -261,7 +261,38 @@ declare global {
   }
 }
 
+const PAYLOAD_WAIT_MS = 8000;
+
+function waitForPayload(token: string): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(done, PAYLOAD_WAIT_MS);
+    function done(): void {
+      window.clearTimeout(timer);
+      window.removeEventListener('message', onMessage);
+      resolve();
+    }
+    function onMessage(event: MessageEvent): void {
+      if (event.source !== window.parent) return;
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+      if (data.token !== token) return;
+      if (data.type === 'CODECOACH_ANIMATION' || data.type === 'CODECOACH_ANIMATION_ERROR') {
+        // Re-post so the scene bridge in scenes/viewer.tsx still receives it.
+        window.postMessage(data, window.location.origin);
+        done();
+      }
+    }
+    window.addEventListener('message', onMessage);
+  });
+}
+
 async function main(): Promise<void> {
+  const token = new URLSearchParams(window.location.search).get('token');
+  if (token) {
+    // Wait for the launcher payload so the Player's duration
+    // fast-forward measures the REAL branch, not the demo.
+    await waitForPayload(token);
+  }
   const stage = new Stage();
   const canvas = stage.finalBuffer;
   canvas.id = 'stage-canvas';

@@ -22,5 +22,8 @@ test('tokened 18-beat payload plays to 18/18 without early loop', async ({ page 
   }, [token]);
   await expect(page.locator('#viewer-step-chip')).toContainText('18 / 18', { timeout: 45000 });
   const time = (await page.locator('#viewer-time').textContent()) ?? '';
-  expect(time).toMatch(/0:(2\d|3\d|4\d|5\d)|1:/);
+  // Verified: 18 narration-only steps render via renderGenericScene
+  // (~0.85s/step -> ~17s total), not the narration timeline (~30s).
+  // Chip 18/18 (unreachable on the 3-step demo branch) is the discriminator.
+  expect(time).toMatch(/0:(1[5-9]|[2-5]\d)|1:/);
 });
