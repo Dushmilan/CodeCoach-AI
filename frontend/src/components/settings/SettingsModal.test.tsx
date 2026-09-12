@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsModal } from './SettingsModal';
 
 vi.mock('@/features/skill-graph/SkillGraphInline', () => ({
   SkillGraphInline: () => <div data-testid='skill-graph-inline' />,
+}));
+
+vi.mock('@/features/skill-graph/SkillGraph', () => ({
+  SkillGraph: () => <div data-testid='skill-graph' />,
 }));
 
 describe('SettingsModal', () => {
@@ -121,5 +125,14 @@ describe('SettingsModal', () => {
   it('shows Premium plan when plan is premium', () => {
     render(<SettingsModal {...defaultProps} plan="premium" />);
     expect(screen.getByText('Premium')).toBeInTheDocument();
+  });
+
+  it('gear dashboard tab embeds the skill graph, not just a link', async () => {
+    render(<SettingsModal open onClose={() => {}} isAuthenticated />);
+    fireEvent.click(screen.getByTestId('settings-tab-dashboard'));
+    expect(await screen.findByTestId('settings-dashboard-tab')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-dashboard-open')).toBeInTheDocument();
+    // NEW: embedded content, not just a link card
+    expect(await screen.findByTestId('skill-graph')).toBeInTheDocument();
   });
 });

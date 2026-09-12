@@ -1,6 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { SkillGraphInline } from '@/features/skill-graph/SkillGraphInline';
+import { SkillGraph } from '@/features/skill-graph/SkillGraph';
 import { FileText, LayoutDashboard, LogOut, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 interface SettingsModalProps { open: boolean; onClose: () => void; isAuthenticated?: boolean; onLogout?: () => void; plan?: string; }
@@ -32,11 +33,10 @@ export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout
           <div ref={inputRef} tabIndex={-1} className="space-y-4">
             {tab === 'dashboard' && (
               <div className="space-y-3" data-testid="settings-dashboard-tab">
-                <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-4">
-                  <div className="flex items-center gap-2 mb-1"><LayoutDashboard className="h-4 w-4 text-primary" /><p className="text-xs font-medium text-foreground/80">Dashboard</p></div>
-                  <p className="text-[11px] text-muted-foreground/60 leading-relaxed">Your memory graph — what to refresh before you forget. Open the full dashboard for reviews, rescue queue and skill graph.</p>
-                  <button onClick={() => { window.location.href = '/dashboard'; onClose(); }} data-testid="settings-dashboard-open" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white text-black px-4 py-1.5 text-xs font-medium hover:bg-white/90 transition-colors"><LayoutDashboard className="h-3.5 w-3.5" /> Open Dashboard</button>
+                <div className="max-h-96 overflow-y-auto pr-1">
+                  <SkillGraph />
                 </div>
+                <button onClick={() => { window.location.href = '/dashboard'; onClose(); }} data-testid="settings-dashboard-open" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white text-black px-4 py-1.5 text-xs font-medium hover:bg-white/90 transition-colors"><LayoutDashboard className="h-3.5 w-3.5" /> Open Dashboard</button>
               </div>
             )}
             {tab === 'skills' && (
