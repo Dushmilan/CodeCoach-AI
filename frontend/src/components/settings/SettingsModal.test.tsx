@@ -167,6 +167,31 @@ describe('SettingsModal', () => {
     expect(await screen.findAllByTestId('skill-graph-node')).toHaveLength(2);
   });
 
+  it('gear skills tab renders the SVG graph', async () => {
+    setAccessToken('test-token');
+    server.use(
+      http.get('/api/skills/me/skills', () => HttpResponse.json(graphPayload)),
+    );
+    render(<SettingsModal open onClose={() => {}} isAuthenticated />);
+    fireEvent.click(screen.getByTestId('settings-tab-skills'));
+    const graph = await screen.findByTestId('skill-graph');
+    expect(graph).toBeInTheDocument();
+    expect(graph.querySelectorAll('[data-testid="skill-graph-node"]').length).toBeGreaterThan(0);
+  });
+
+  it('guest skills tab shows preview, never mounts the live skill graph', async () => {
+    server.use(
+      http.get('/api/skills/me/skills', () =>
+        HttpResponse.json({ detail: 'boom' }, { status: 500 }),
+      ),
+    );
+    render(<SettingsModal open onClose={() => {}} />);
+    fireEvent.click(screen.getByTestId('settings-tab-skills'));
+    expect(await screen.findByTestId('settings-skills-tab')).toBeInTheDocument();
+    expect(await screen.findByText(/preview — sign in to track progress/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('skill-graph')).toBeNull();
+  });
+
   it('guest dashboard tab shows preview, never mounts the live skill graph', async () => {
     server.use(
       http.get('/api/skills/me/skills', () =>
