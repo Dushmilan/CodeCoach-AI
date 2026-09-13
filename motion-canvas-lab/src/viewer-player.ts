@@ -134,6 +134,7 @@ function buildOverlay(player: Player): void {
     btn.setAttribute('aria-label', `Speed ${speed.label}`);
     btn.title = `Speed ${speed.label}`;
     btn.addEventListener('click', () => {
+      maxFrameSeen = 0;
       player.setSpeed(speed.value);
       if (player.status.state === PlaybackState.Paused) player.togglePlayback(true);
     });
@@ -173,11 +174,15 @@ function buildOverlay(player: Player): void {
 
   play.addEventListener('click', () => player.togglePlayback());
   restart.addEventListener('click', () => {
+    maxFrameSeen = 0;
     player.requestReset();
     player.togglePlayback(true);
   });
 
   let scrubbing = false;
+  // Highest playhead frame seen on the current pass; reset on every seek or
+  // speed change so a stale max can never admit a false Complete.
+  let maxFrameSeen = 0;
   scrubber.addEventListener('pointerdown', () => {
     scrubbing = true;
   });
@@ -186,16 +191,28 @@ function buildOverlay(player: Player): void {
   });
   scrubber.addEventListener('input', () => {
     const frame = Math.min(Number(scrubber.value), Number(scrubber.max));
+    maxFrameSeen = 0;
     player.requestSeek(frame);
     timeLabel.textContent = `${fmtTime(player.status.framesToSeconds(frame))} / ${fmtTime(
       player.status.framesToSeconds(Number(scrubber.max)),
     )}`;
   });
 
+  // The Player measures the timeline by fast-forwarding the scene generator
+  // (PlaybackManager.recalculate), which executes the scene's postViewerStep
+  // side effects: a 'complete' posted during that measurement pass would flash
+  // the chip before beat 1 of real playback. Only honor 'complete' once the
+  // playhead has actually reached the end of the timeline. Ignoring a real
+  // completion is self-healing (the loop replay re-earns it); showing a false
+  // one is the bug — so the gate fails closed.
+  const COMPLETE_EPSILON_FRAMES = 5;
+
   player.onFrameChanged.subscribe((frame) => {
+    maxFrameSeen = Math.max(maxFrameSeen, frame);
     if (!scrubbing) setProgress(frame, player.playback.duration);
   });
   player.onDurationChanged.subscribe((duration) => {
+    maxFrameSeen = Math.max(maxFrameSeen, player.playback.frame);
     setProgress(player.playback.frame, duration);
   });
   player.onStateChanged.subscribe((state) => {
@@ -221,6 +238,11 @@ function buildOverlay(player: Player): void {
       total: data.total,
       narration: typeof data.narration === 'string' ? data.narration : '',
     };
+    if (state.state === 'complete') {
+      if (maxFrameSeen < timelineMaxFrames(player) - COMPLETE_EPSILON_FRAMES) return;
+      // Consume the pass so each loop replay must re-earn its Complete.
+      maxFrameSeen = 0;
+    }
     setNarration(state);
   });
 
@@ -236,11 +258,13 @@ function buildOverlay(player: Player): void {
     } else if (event.key.toLowerCase() === 'r') {
       if (isFormControl || hasModifier) return;
       event.preventDefault();
+      maxFrameSeen = 0;
       player.requestReset();
       player.togglePlayback(true);
     } else if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
       if (target instanceof HTMLInputElement || hasModifier) return;
       event.preventDefault();
+      maxFrameSeen = 0;
       const delta =
         (event.key === 'ArrowRight' ? SEEK_STEP_SECONDS : -SEEK_STEP_SECONDS) *
         player.status.fps;
@@ -249,6 +273,7 @@ function buildOverlay(player: Player): void {
     } else if (/^[1-4]$/.test(event.key)) {
       if (isFormControl || hasModifier) return;
       event.preventDefault();
+      maxFrameSeen = 0;
       player.setSpeed(SPEEDS[Number(event.key) - 1].value);
       if (player.status.state === PlaybackState.Paused) player.togglePlayback(true);
     }
@@ -261,7 +286,42 @@ declare global {
   }
 }
 
+const PAYLOAD_WAIT_MS = 8000;
+
+function waitForPayload(token: string): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(() => done(false), PAYLOAD_WAIT_MS);
+    function done(received: boolean): void {
+      window.clearTimeout(timer);
+      window.removeEventListener('message', onMessage);
+      if (!received)
+        console.warn(
+          `[viewer] token payload timeout after ${PAYLOAD_WAIT_MS}ms; playing demo branch — late payloads will be ignored`,
+        );
+      resolve();
+    }
+    function onMessage(event: MessageEvent): void {
+      if (event.source !== window.parent) return;
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+      if (data.token !== token) return;
+      if (data.type === 'CODECOACH_ANIMATION' || data.type === 'CODECOACH_ANIMATION_ERROR') {
+        // Re-post so the scene bridge in scenes/viewer.tsx still receives it.
+        window.postMessage(data, window.location.origin);
+        done(true);
+      }
+    }
+    window.addEventListener('message', onMessage);
+  });
+}
+
 async function main(): Promise<void> {
+  const token = new URLSearchParams(window.location.search).get('token');
+  if (token) {
+    // Wait for the launcher payload so the Player's duration
+    // fast-forward measures the REAL branch, not the demo.
+    await waitForPayload(token);
+  }
   const stage = new Stage();
   const canvas = stage.finalBuffer;
   canvas.id = 'stage-canvas';
