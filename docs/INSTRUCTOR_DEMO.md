@@ -24,14 +24,16 @@ only runtime database; the JSON file is a transient demo/bootstrap source only.
 
 ## Verify roles with existing credentials
 
-Seeded logins (see `backend/scripts/seed_admin.py`):
+Seeded logins (see `backend/scripts/seed_admin.py` — run
+`DATABASE_URL=... python backend/scripts/seed_admin.py` to create them;
+usernames match `frontend/src/data/instructor-demo.json`):
 
 | Login | Password | Role | Sees |
 |---|---|---|---|
 | `admin` | `admin123` | `admin` | Admin panel + professor + demonstrator areas |
 | `superadmin` | `superadmin123` | `super_admin` | Everything, incl. user role assignment |
-| `professor.ada` (demo-mode) | — | `professor` | `/professor/*` full, `/demonstrator/*` visible, no admin panel |
-| `demonstrator.turing` (demo-mode) | — | `ta` | `/demonstrator/*` read-only, no roster management, no course editing |
+| `professor.ada` | `professor123` | `professor` | `/professor/*` full, `/demonstrator/*` visible, no admin panel |
+| `demonstrator.turing` | `demonstrator123` | `ta` | `/demonstrator/*` read-only, no roster management, no course editing |
 
 To grant real professor/TA roles on a live instance: log in as `superadmin` →
 Admin → Users → set role to `professor` or `ta` (allow-list extended in
