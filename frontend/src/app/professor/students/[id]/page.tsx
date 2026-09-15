@@ -1,17 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { use } from "react";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getStudentDetail } from "@/features/instructor/demo";
 
-export default function ProfessorStudentDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+export default function ProfessorStudentDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const detail = getStudentDetail(id);
   if (!detail.enrollment) notFound();
 

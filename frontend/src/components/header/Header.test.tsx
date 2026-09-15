@@ -175,6 +175,45 @@ describe('Header', () => {
       expect(screen.getByTestId('header-demonstrator-link')).toHaveAttribute('href', '/demonstrator');
     });
 
+    it('does not show demonstrator link for professor user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: 'p1', username: 'professor.ada', email: 'a@u.edu', created_at: '', is_active: true, role: 'professor' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.getByTestId('header-professor-link')).toBeInTheDocument();
+      expect(screen.queryByTestId('header-demonstrator-link')).not.toBeInTheDocument();
+    });
+
+    it('does not show professor link for ta user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: 't1', username: 'demonstrator.turing', email: 't@u.edu', created_at: '', is_active: true, role: 'ta' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.getByTestId('header-demonstrator-link')).toBeInTheDocument();
+      expect(screen.queryByTestId('header-professor-link')).not.toBeInTheDocument();
+    });
+
+    it('shows both instructor links for admin user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '1', username: 'admin', email: 'a@a.com', created_at: '', is_active: true, role: 'admin' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.getByTestId('header-professor-link')).toBeInTheDocument();
+      expect(screen.getByTestId('header-demonstrator-link')).toBeInTheDocument();
+    });
+
     it('does not show instructor links for regular user', () => {
       mockUseAuth.mockReturnValue({
         user: { id: '2', username: 'bob', email: 'b@a.com', created_at: '', is_active: true, role: 'user' },

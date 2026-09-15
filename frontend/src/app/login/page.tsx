@@ -41,6 +41,10 @@ export default function LoginPage() {
         const role = response.user?.role;
         if (role && ['admin', 'super_admin'].includes(role)) {
           router.push('/admin');
+        } else if (role === 'professor') {
+          router.push('/professor');
+        } else if (role === 'ta') {
+          router.push('/demonstrator');
         } else {
           router.push('/');
         }

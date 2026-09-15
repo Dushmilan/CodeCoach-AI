@@ -25,8 +25,10 @@ export function Header() {
     isHydrated && isAuthenticated && !!user?.role && ['admin', 'super_admin'].includes(user.role);
   const isProfessor =
     isHydrated && isAuthenticated && !!user?.role && ['professor', 'admin', 'super_admin'].includes(user.role);
-  const isInstructor =
-    isHydrated && isAuthenticated && !!user?.role && ['professor', 'ta', 'admin', 'super_admin'].includes(user.role);
+  // Professors have their own dashboard; the Demonstrator link is TA-only
+  // (admins keep both). Mirrors the backend professor/ta permission matrix.
+  const isDemonstrator =
+    isHydrated && isAuthenticated && !!user?.role && ['ta', 'admin', 'super_admin'].includes(user.role);
 
   return (
     <>
@@ -73,7 +75,7 @@ export function Header() {
                 Professor
               </Link>
             )}
-            {isInstructor && (
+            {isDemonstrator && (
               <Link
                 href="/demonstrator"
                 data-testid="header-demonstrator-link"
@@ -195,7 +197,7 @@ export function Header() {
             ...(isProfessor
               ? [{ href: '/professor', label: 'Professor', delay: 'delay-135' as const, highlight: true as const }]
               : []),
-            ...(isInstructor
+            ...(isDemonstrator
               ? [{ href: '/demonstrator', label: 'Demonstrator', delay: 'delay-140' as const, highlight: true as const }]
               : []),
             ...(isAdmin

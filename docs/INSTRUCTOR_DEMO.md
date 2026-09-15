@@ -32,8 +32,12 @@ usernames match `frontend/src/data/instructor-demo.json`):
 |---|---|---|---|
 | `admin` | `admin123` | `admin` | Admin panel + professor + demonstrator areas |
 | `superadmin` | `superadmin123` | `super_admin` | Everything, incl. user role assignment |
-| `professor.ada` | `professor123` | `professor` | `/professor/*` full, `/demonstrator/*` visible, no admin panel |
-| `demonstrator.turing` | `demonstrator123` | `ta` | `/demonstrator/*` read-only, no roster management, no course editing |
+| `professor.ada` | `professor123` | `professor` | `/professor/*` full (login lands here), no admin panel, no demonstrator nav link |
+| `demonstrator.turing` | `demonstrator123` | `ta` | `/demonstrator/*` read-only (login lands here), no roster management, no course editing |
+
+Post-login routing (`frontend/src/app/login/page.tsx`): `professor` → `/professor`,
+`ta` → `/demonstrator`, `admin`/`super_admin` → `/admin`, everyone else → `/`.
+Header shows Professor xor Demonstrator link by primary role (admins see both).
 
 To grant real professor/TA roles on a live instance: log in as `superadmin` →
 Admin → Users → set role to `professor` or `ta` (allow-list extended in

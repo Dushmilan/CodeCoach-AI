@@ -1,18 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { use } from "react";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RosterTable, StatCard } from "@/components/instructor/InstructorWidgets";
 import { getClassroom, getClassAnalytics } from "@/features/instructor/demo";
 
-export default function DemonstratorClassroomDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+export default function DemonstratorClassroomDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const classroom = getClassroom(id);
   if (!classroom) notFound();
   const analytics = getClassAnalytics(id);
