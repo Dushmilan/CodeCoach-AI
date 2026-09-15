@@ -97,3 +97,41 @@ def test_intervals_without_pairs_still_renders_beats():
     assert len(beats) >= 3
     assert beats[0].get("camera", {}).get("action") == "reset"
     assert beats[-1].get("badge") is not None
+
+
+def test_array_intro_caps_long_inputs_within_validator_caps():
+    from app.services.animation_validator import AnimationValidator
+
+    spec = AlgorithmAnimation(
+        algorithm="partition_labels",
+        visualization="array",
+        initialState=InitialState(array=list("ababcbacadefegdehijhklij"), extra={}),
+        steps=[
+            AnimationStepSpec(action="pointer", index=0),
+            AnimationStepSpec(action="mark", index=8),
+        ],
+        complexity=Complexity(time="O(n)", space="O(1)"),
+        title="T",
+    )
+    beats = scene_planner.plan(spec)
+    intro = beats[0]
+    assert len(intro["shapes"]) <= 40
+    assert len(intro["motion"]) <= 30
+    validated, reason = AnimationValidator().validate(
+        {"title": "T", "data": {}, "steps": beats}
+    )
+    assert validated is not None, reason
+
+
+def test_array_whitespace_values_render_visible_labels():
+    spec = AlgorithmAnimation(
+        algorithm="first_word",
+        visualization="array",
+        initialState=InitialState(array=list("hello world"), extra={}),
+        steps=[AnimationStepSpec(action="pointer", index=5)],
+        complexity=Complexity(time="O(n)", space="O(1)"),
+        title="T",
+    )
+    beats = scene_planner.plan(spec)
+    texts = [s["text"] for s in beats[0]["shapes"] if s.get("type") == "text"]
+    assert texts and all(t.strip() for t in texts)

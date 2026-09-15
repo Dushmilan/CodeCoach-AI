@@ -58,6 +58,16 @@ def _cell_x(index: int, n: int, cell: float = 88.0, gap: float = 12.0) -> float:
     return round(start + index * (cell + gap), 2)
 
 
+def _label_text(value: Any) -> str:
+    """Visible label for a cell value.
+
+    Whitespace-only values (e.g. the space in a char array) render as ␣ so
+    the text shape passes validation — blank text is rejected.
+    """
+    text = str(value)[: tokens.MAX_LABEL]
+    return text if text.strip() else "␣"
+
+
 def _root_shape(sid: str, w: float = 140.0, h: float = 48.0) -> Dict[str, Any]:
     """Container shape so the intro beat's appear target validates."""
     return {
@@ -152,7 +162,7 @@ def plan_searching(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                 "type": "text",
                 "x": x,
                 "y": tokens.ROW_Y,
-                "text": str(v)[: tokens.MAX_LABEL],
+                "text": _label_text(v),
                 "fontSize": tokens.CELL_LABEL_SIZE,
                 "fill": tokens.PALETTE["text"],
             }
@@ -312,11 +322,15 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     n = len(arr) if arr else 8
     if spec.initialState.array is not None and len(arr) == 0:
         return []
+    # Cap displayed cells so the 2-per-cell intro never busts validator caps
+    # (40 shapes / 30 motions per step): 15 cells → 30 shapes + 30 motions.
+    # Same pattern as MAX_PLAN_NODES; downstream clamps already use n.
+    n = min(n, MAX_ARRAY_CELLS)
+    display = (arr if arr else [0] * n)[:n]
     title = spec.title or spec.algorithm.replace("-", " ").title()
     # Intro: bars/cells stagger
     shapes: List[Dict[str, Any]] = []
     motion: List[Dict[str, Any]] = []
-    display = arr if arr else [0] * n
     for i, v in enumerate(display):
         x = _cell_x(i, n)
         shapes.append(
@@ -339,7 +353,7 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                 "type": "text",
                 "x": x,
                 "y": tokens.ROW_Y,
-                "text": str(v)[: tokens.MAX_LABEL],
+                "text": _label_text(v),
                 "fontSize": tokens.CELL_LABEL_SIZE,
                 "fill": tokens.PALETTE["text"],
             }
@@ -825,6 +839,9 @@ GRID_Y = -80.0
 # MAX_MOTIONS_PER_STEP 30) bound full-layout intros; canonical inputs are far
 # smaller, but a stray large index must never hang the planner or bust caps.
 MAX_PLAN_NODES = 16
+# Array intros emit 2 shapes + 2 motions per cell, so the display cap is 15
+# (30 shapes + 30 motions — both exactly within caps).
+MAX_ARRAY_CELLS = 15
 
 
 def _plan_node_count(array_len: int, refs: List[int]) -> int:
