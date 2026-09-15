@@ -159,8 +159,19 @@ function resolveCenter(
     return null;
   }
   if (Array.isArray(camera.region)) {
+    // Numeric entries are element indices, not shape positions: the shapes
+    // array interleaves cells and value labels, so resolve via cell_/node_
+    // ids and skip anything unresolvable (never clamp — violations stay
+    // visible to the backend validator).
+    const byId = new Map(shapes.map((s) => [s.id, s]));
     const pts = (camera.region as unknown[])
-      .map((r) => (typeof r === "number" ? shapes[r] : shapes.find((s) => s.id === r)))
+      .map((r) => {
+        if (typeof r === "number") {
+          return byId.get(`cell_${r}`) ?? byId.get(`node_${r}`) ?? null;
+        }
+        if (typeof r === "string") return byId.get(r) ?? null;
+        return null;
+      })
       .filter((s): s is SceneShape => !!s && isFiniteNumber(s.x) && isFiniteNumber(s.y));
     if (pts.length === 0) return null;
     const x = pts.reduce((sum, s) => sum + (s.x as number), 0) / pts.length;
