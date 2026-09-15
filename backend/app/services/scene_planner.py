@@ -1263,7 +1263,7 @@ def plan_intervals(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                     "duration": 0.3,
                 }
             )
-            narr = step.label or f"Range [{s},{e}]"
+            narr = step.label or f"{step.action.title()} [{s},{e}] (interval {idx})"
         else:
             camera = None
             m.append({"target": "bar_0", "op": "scale", "to": 1.0, "duration": 0.25})
