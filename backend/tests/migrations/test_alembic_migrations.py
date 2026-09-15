@@ -199,6 +199,14 @@ def _drift_signature(diff: object) -> str:
             col = diff[2]
             name = getattr(col, "name", col) if not isinstance(col, str) else col
             return f"{op}:{getattr(table, 'name', table)}:{name}"
+        if op in ("add_fk", "remove_fk"):
+            constraint = diff[1]
+            name = getattr(constraint, "name", None)
+            if name:
+                return f"{op}:{name}"
+            table = getattr(getattr(constraint, "table", None), "name", "?")
+            cols = ",".join(sorted(c.name for c in constraint.columns))
+            return f"{op}:{table}:{cols}"
         if op in (
             "add_constraint",
             "remove_constraint",
@@ -328,6 +336,112 @@ def test_ensure_public_request_count_migration_repairs_public_only(
         with _sync_engine(migration_url).connect() as conn:
             conn.execute(text("DROP SCHEMA IF EXISTS stray_test CASCADE"))
             conn.commit()
+
+
+EXPECTED_PROFESSOR_CLASSROOM_INDEXES = {
+    "ix_classrooms_owner",
+    "ix_enrollments_classroom",
+    "ix_enrollments_user",
+}
+
+EXPECTED_PROFESSOR_CLASSROOM_FKS = {
+    ("courses", "owner_id", "users", "SET NULL", "fk_courses_owner_id_users"),
+    (
+        "classrooms",
+        "course_id",
+        "courses",
+        "CASCADE",
+        "fk_classrooms_course_id_courses",
+    ),
+    ("classrooms", "owner_id", "users", "SET NULL", "fk_classrooms_owner_id_users"),
+    (
+        "classroom_enrollments",
+        "classroom_id",
+        "classrooms",
+        "CASCADE",
+        "fk_enrollments_classroom_id_classrooms",
+    ),
+    (
+        "classroom_enrollments",
+        "user_id",
+        "users",
+        "CASCADE",
+        "fk_enrollments_user_id_users",
+    ),
+}
+
+
+def test_professor_classrooms_tables_exist(
+    alembic_config: Config, migration_url: str
+) -> None:
+    """Issue #159 Task 1: professor ownership migration.
+
+    At head, `courses.owner_id` plus the `classrooms` and
+    `classroom_enrollments` tables (with the brief's indexes and FKs)
+    must exist. Upgrades to head first so the test is order-independent.
+    """
+    _retry(lambda: command.upgrade(alembic_config, "head"), "upgrade head")
+
+    with _sync_engine(migration_url).connect() as conn:
+        tables = {
+            row[0]
+            for row in conn.execute(
+                text(
+                    "SELECT table_name FROM information_schema.tables "
+                    "WHERE table_schema = 'public' "
+                    "AND table_name IN ('classrooms', 'classroom_enrollments')"
+                )
+            ).fetchall()
+        }
+        owner_col = conn.execute(
+            text(
+                "SELECT COUNT(*) FROM information_schema.columns "
+                "WHERE table_schema = 'public' "
+                "AND table_name = 'courses' "
+                "AND column_name = 'owner_id'"
+            )
+        ).scalar_one()
+        indexes = {
+            row[0]
+            for row in conn.execute(
+                text(
+                    "SELECT indexname FROM pg_indexes "
+                    "WHERE schemaname = 'public' "
+                    "AND tablename IN ('classrooms', 'classroom_enrollments')"
+                )
+            ).fetchall()
+        }
+        fks = {
+            (row[0], row[1], row[2], row[3], row[4])
+            for row in conn.execute(
+                text(
+                    "SELECT tc.table_name, kcu.column_name, "
+                    "ccu.table_name AS ref_table, "
+                    "rc.delete_rule, tc.constraint_name "
+                    "FROM information_schema.table_constraints tc "
+                    "JOIN information_schema.key_column_usage kcu "
+                    "ON tc.constraint_name = kcu.constraint_name "
+                    "AND tc.table_schema = kcu.table_schema "
+                    "JOIN information_schema.constraint_column_usage ccu "
+                    "ON tc.constraint_name = ccu.constraint_name "
+                    "AND tc.table_schema = ccu.table_schema "
+                    "JOIN information_schema.referential_constraints rc "
+                    "ON tc.constraint_name = rc.constraint_name "
+                    "AND tc.table_schema = rc.constraint_schema "
+                    "WHERE tc.constraint_type = 'FOREIGN KEY' "
+                    "AND tc.table_schema = 'public'"
+                )
+            ).fetchall()
+        }
+    assert "classrooms" in tables, "classrooms table missing at head"
+    assert "classroom_enrollments" in tables, (
+        "classroom_enrollments table missing at head"
+    )
+    assert owner_col == 1, "courses.owner_id column missing at head"
+    missing_indexes = EXPECTED_PROFESSOR_CLASSROOM_INDEXES - indexes
+    assert not missing_indexes, f"missing indexes at head: {sorted(missing_indexes)}"
+    missing_fks = EXPECTED_PROFESSOR_CLASSROOM_FKS - fks
+    assert not missing_fks, f"missing foreign keys at head: {sorted(missing_fks)}"
 
 
 EXPECTED_RESCUE_QUEUE_COLUMNS = {

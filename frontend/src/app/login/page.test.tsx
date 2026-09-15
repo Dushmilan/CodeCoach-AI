@@ -94,4 +94,28 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByTestId('login-submit'));
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/admin'));
   });
+
+  it('redirects to /professor when professor user logs in', async () => {
+    const profResponse = { user: { role: 'professor' }, access_token: 'tok' };
+    const mockLogin = vi.fn().mockResolvedValue(profResponse);
+    mockUseAuth.mockReturnValue({ login: mockLogin } as unknown as ReturnType<typeof mockUseAuth>);
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'professor.ada' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'professor123' } });
+    fireEvent.click(screen.getByTestId('login-submit'));
+    await waitFor(() => expect(mockLogin).toHaveBeenCalled());
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/professor'));
+  });
+
+  it('redirects to /demonstrator when ta user logs in', async () => {
+    const taResponse = { user: { role: 'ta' }, access_token: 'tok' };
+    const mockLogin = vi.fn().mockResolvedValue(taResponse);
+    mockUseAuth.mockReturnValue({ login: mockLogin } as unknown as ReturnType<typeof mockUseAuth>);
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'demonstrator.turing' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'demonstrator123' } });
+    fireEvent.click(screen.getByTestId('login-submit'));
+    await waitFor(() => expect(mockLogin).toHaveBeenCalled());
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/demonstrator'));
+  });
 });

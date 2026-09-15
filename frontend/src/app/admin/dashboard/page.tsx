@@ -13,21 +13,56 @@ interface AdminStats {
   generation?: { total_jobs: number; pending: number; completed: number };
 }
 
+interface HierarchyCourse {
+  id: string;
+  title: string;
+  lessons: number;
+}
+
+interface HierarchyClassroom {
+  id: string;
+  name: string;
+  invite_code: string;
+  tas: string[];
+  students: number;
+  avg_completion: number;
+}
+
+interface HierarchyProfessor {
+  id: string;
+  username: string;
+  courses: HierarchyCourse[];
+  classrooms: HierarchyClassroom[];
+}
+
+interface HierarchyTree {
+  professors?: HierarchyProfessor[];
+}
+
 export default function AdminDashboard() {
   const { user, token } = useAuth();
   const [stats, setStats] = useState<AdminStats>({});
+  const [hierarchy, setHierarchy] = useState<HierarchyTree>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch("/api/admin/stats", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch stats");
-        const data = (await res.json()) as AdminStats;
+        const [statsRes, treeRes] = await Promise.all([
+          fetch("/api/admin/stats", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("/api/admin/hierarchy", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        if (!statsRes.ok) throw new Error("Failed to fetch stats");
+        const data = (await statsRes.json()) as AdminStats;
         setStats(data);
+        if (treeRes.ok) {
+          setHierarchy((await treeRes.json()) as HierarchyTree);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error loading stats");
       } finally {
@@ -166,7 +201,82 @@ export default function AdminDashboard() {
                     Manage courses
                   </div>
                 </div>
-              </a>
+                </a>
+              </CardContent>
+            </Card>
+
+          {/* Professor hierarchy: admin → professors → courses/classrooms */}
+          <Card data-testid="hierarchy-section">
+            <CardHeader>
+              <CardTitle>Professor hierarchy</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(hierarchy.professors ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No professors found.
+                </p>
+              ) : (
+                (hierarchy.professors ?? []).map((prof) => (
+                  <div
+                    key={prof.id}
+                    className="rounded-lg border border-border p-4 space-y-3"
+                  >
+                    <div className="font-medium">{prof.username}</div>
+                    <div>
+                      <div className="text-xs uppercase text-muted-foreground mb-1">
+                        Courses
+                      </div>
+                      {prof.courses.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No courses.
+                        </p>
+                      ) : (
+                        <ul className="text-sm space-y-1">
+                          {prof.courses.map((course) => (
+                            <li key={course.id}>
+                              {course.title}{" "}
+                              <span className="text-muted-foreground">
+                                ({course.lessons} lessons)
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase text-muted-foreground mb-1">
+                        Classrooms
+                      </div>
+                      {prof.classrooms.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No classrooms.
+                        </p>
+                      ) : (
+                        <ul className="text-sm space-y-1">
+                          {prof.classrooms.map((room) => (
+                            <li key={room.id}>
+                              <span className="font-medium">{room.name}</span>{" "}
+                              <span className="text-muted-foreground">
+                                {room.invite_code}
+                              </span>{" "}
+                              <span className="text-muted-foreground">
+                                · {room.students} students ·{" "}
+                                {room.avg_completion}% avg completion
+                              </span>
+                              {room.tas.length > 0 && (
+                                <span className="text-muted-foreground">
+                                  {" "}
+                                  · TAs: <span>{room.tas.join(", ")}</span>
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </>

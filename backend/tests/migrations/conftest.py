@@ -18,6 +18,8 @@ from typing import Iterator
 import pytest
 from alembic.config import Config
 
+from app.core.db_url import escape_configparser
+
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -98,7 +100,9 @@ def alembic_config(migration_url: str) -> Iterator[Config]:
     try:
         cfg = Config(str(BACKEND_DIR / "alembic.ini"))
         cfg.set_main_option("script_location", str(BACKEND_DIR / "alembic"))
-        cfg.set_main_option("sqlalchemy.url", migration_url)
+        # Escape `%` (percent-encoded pooler passwords) like alembic/env.py
+        # does — RawConfigParser interpolation rejects bare `%` in values.
+        cfg.set_main_option("sqlalchemy.url", escape_configparser(migration_url))
         yield cfg
     finally:
         if old_url is None:
