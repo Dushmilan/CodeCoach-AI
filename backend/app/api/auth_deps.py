@@ -70,6 +70,49 @@ async def require_super_admin(
     return current_user
 
 
+# Issue #159 — institutional roles. Professors own classrooms/courses;
+# demonstrators (TAs) get limited access: roster + analytics + coaching only.
+PROFESSOR_ROLES = ("professor", "admin", "super_admin")
+INSTRUCTOR_ROLES = ("professor", "ta", "admin", "super_admin")
+
+
+async def require_professor(
+    current_user: UserResponse = Depends(get_current_user),
+):
+    if current_user.role not in PROFESSOR_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions: professor role required",
+        )
+    return current_user
+
+
+async def require_instructor(
+    current_user: UserResponse = Depends(get_current_user),
+):
+    if current_user.role not in INSTRUCTOR_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions: instructor role required",
+        )
+    return current_user
+
+
+def instructor_can_manage_roster(role: str) -> bool:
+    """Roster add/remove (and TA assignment) is professor-only per #159 matrix."""
+    return role in PROFESSOR_ROLES
+
+
+def instructor_can_edit_courses(role: str) -> bool:
+    """Course create/edit (and classroom/course deletes) is professor-only."""
+    return role in PROFESSOR_ROLES
+
+
+def instructor_can_view_analytics(role: str) -> bool:
+    """Class analytics + per-student progress are visible to professor and TA."""
+    return role in INSTRUCTOR_ROLES
+
+
 REFRESH_COOKIE = "refresh_token"
 CSRF_COOKIE = "csrf_token"
 

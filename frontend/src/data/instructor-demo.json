@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "mode": "demo",
+    "note": "Frontend-only demo dataset for professor/demonstrator dashboards (Issue #159, phase 2). Not a runtime store — Supabase remains the only database. Live mode replaces these MSW/demo reads with /api/instructor/*.",
+    "verification": "Roles verifiable with seeded credentials (admin/admin123, superadmin/superadmin123); demo professor/TA identities below are demo-mode only."
+  },
+  "professors": [
+    {
+      "id": "prof-ada-01",
+      "username": "professor.ada",
+      "name": "Prof. Ada Lovelace",
+      "email": "ada@university.edu",
+      "role": "professor",
+      "department": "Computer Science",
+      "coursesCreated": ["python-fundamentals", "data-structures"]
+    },
+    {
+      "id": "prof-grace-02",
+      "username": "professor.grace",
+      "name": "Prof. Grace Hopper",
+      "email": "grace@university.edu",
+      "role": "professor",
+      "department": "Computer Science",
+      "coursesCreated": ["data-structures"]
+    }
+  ],
+  "demonstrators": [
+    {
+      "id": "ta-alex-01",
+      "username": "demonstrator.turing",
+      "name": "Alex Turing",
+      "email": "alex@university.edu",
+      "role": "ta",
+      "assignedClassrooms": ["class-cs101-a", "class-cs201-b"]
+    }
+  ],
+  "courses": [
+    {
+      "id": "python-fundamentals",
+      "title": "Python Fundamentals",
+      "description": "Created by Prof. Ada Lovelace — variables to recursion with verified animations.",
+      "language": "python",
+      "icon": "code",
+      "order": 1,
+      "createdBy": "prof-ada-01",
+      "modules": 5,
+      "lessons": 36,
+      "validation": { "pipeline": "full_validate", "animationGate": "passed", "steps": 12 }
+    },
+    {
+      "id": "data-structures",
+      "title": "Data Structures",
+      "description": "Created by Prof. Grace Hopper — arrays to graphs with class-paced milestones.",
+      "language": "python",
+      "icon": "database",
+      "order": 2,
+      "createdBy": "prof-grace-02",
+      "modules": 5,
+      "lessons": 30,
+      "validation": { "pipeline": "full_validate", "animationGate": "passed", "steps": 9 }
+    }
+  ],
+  "classrooms": [
+    {
+      "id": "class-cs101-a",
+      "name": "CS101 · Section A",
+      "courseId": "python-fundamentals",
+      "ownerId": "prof-ada-01",
+      "inviteCode": "CS101-A-2026",
+      "term": "Fall 2026",
+      "schedule": "Mon/Wed 10:00",
+      "totalLessons": 36
+    },
+    {
+      "id": "class-cs201-b",
+      "name": "CS201 · Section B",
+      "courseId": "data-structures",
+      "ownerId": "prof-grace-02",
+      "inviteCode": "CS201-B-2026",
+      "term": "Fall 2026",
+      "schedule": "Tue/Thu 14:00",
+      "totalLessons": 30
+    }
+  ],
+  "enrollments": [
+    { "classroomId": "class-cs101-a", "userId": "stu-mia-01", "username": "mia", "name": "Mia Chen", "enrolledAt": "2026-09-01" },
+    { "classroomId": "class-cs101-a", "userId": "stu-leo-02", "username": "leo", "name": "Leo Park", "enrolledAt": "2026-09-01" },
+    { "classroomId": "class-cs101-a", "userId": "stu-ava-03", "username": "ava", "name": "Ava Novak", "enrolledAt": "2026-09-02" },
+    { "classroomId": "class-cs101-a", "userId": "stu-noah-04", "username": "noah", "name": "Noah Ali", "enrolledAt": "2026-09-02" },
+    { "classroomId": "class-cs101-a", "userId": "stu-zoe-05", "username": "zoe", "name": "Zoe Rao", "enrolledAt": "2026-09-03" },
+    { "classroomId": "class-cs201-b", "userId": "stu-eli-06", "username": "eli", "name": "Eli Moss", "enrolledAt": "2026-09-01" },
+    { "classroomId": "class-cs201-b", "userId": "stu-ivy-07", "username": "ivy", "name": "Ivy Sato", "enrolledAt": "2026-09-02" },
+    { "classroomId": "class-cs201-b", "userId": "stu-max-08", "username": "max", "name": "Max Diallo", "enrolledAt": "2026-09-03" }
+  ],
+  "progress": [
+    { "userId": "stu-mia-01", "classroomId": "class-cs101-a", "completedLessons": 30, "solved": 24, "attempted": 31, "lastActive": "2026-09-14" },
+    { "userId": "stu-leo-02", "classroomId": "class-cs101-a", "completedLessons": 22, "solved": 15, "attempted": 28, "lastActive": "2026-09-13" },
+    { "userId": "stu-ava-03", "classroomId": "class-cs101-a", "completedLessons": 18, "solved": 12, "attempted": 25, "lastActive": "2026-09-12" },
+    { "userId": "stu-noah-04", "classroomId": "class-cs101-a", "completedLessons": 9, "solved": 5, "attempted": 18, "lastActive": "2026-09-08" },
+    { "userId": "stu-zoe-05", "classroomId": "class-cs101-a", "completedLessons": 5, "solved": 2, "attempted": 9, "lastActive": "2026-09-05" },
+    { "userId": "stu-eli-06", "classroomId": "class-cs201-b", "completedLessons": 21, "solved": 16, "attempted": 24, "lastActive": "2026-09-14" },
+    { "userId": "stu-ivy-07", "classroomId": "class-cs201-b", "completedLessons": 12, "solved": 7, "attempted": 19, "lastActive": "2026-09-10" },
+    { "userId": "stu-max-08", "classroomId": "class-cs201-b", "completedLessons": 4, "solved": 1, "attempted": 8, "lastActive": "2026-09-04" }
+  ],
+  "skillMastery": [
+    { "classroomId": "class-cs101-a", "slug": "arrays", "label": "Arrays", "avgMastery": 0.72 },
+    { "classroomId": "class-cs101-a", "slug": "strings", "label": "Strings", "avgMastery": 0.64 },
+    { "classroomId": "class-cs101-a", "slug": "hash-maps", "label": "Hash Maps", "avgMastery": 0.51 },
+    { "classroomId": "class-cs101-a", "slug": "two-pointers", "label": "Two Pointers", "avgMastery": 0.44 },
+    { "classroomId": "class-cs101-a", "slug": "stacks-queues", "label": "Stacks & Queues", "avgMastery": 0.38 },
+    { "classroomId": "class-cs101-a", "slug": "recursion", "label": "Recursion", "avgMastery": 0.29 },
+    { "classroomId": "class-cs201-b", "slug": "trees", "label": "Trees", "avgMastery": 0.58 },
+    { "classroomId": "class-cs201-b", "slug": "graphs", "label": "Graphs", "avgMastery": 0.41 },
+    { "classroomId": "class-cs201-b", "slug": "dp-1d", "label": "DP 1D", "avgMastery": 0.33 }
+  ],
+  "plateauSignals": [
+    { "classroomId": "class-cs101-a", "userId": "stu-noah-04", "skill": "recursion", "title": "Recursion plateau", "detail": "6 failed attempts on recursion in 7 days without a solve.", "severity": "warning" },
+    { "classroomId": "class-cs101-a", "userId": "stu-zoe-05", "skill": "stacks-queues", "title": "Low activity", "detail": "No submissions in 9 days; completion 14%.", "severity": "warning" },
+    { "classroomId": "class-cs201-b", "userId": "stu-max-08", "skill": "graphs", "title": "Graph plateau", "detail": "5 failed attempts on graphs without progress.", "severity": "warning" }
+  ]
+}

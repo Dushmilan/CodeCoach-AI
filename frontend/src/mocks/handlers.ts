@@ -146,4 +146,19 @@ export const handlers = [
       type: "theory",
     });
   }),
+  // Instructor demo (Issue #159, phase 2) — serves the committed demo dataset
+  // in tests/Storybook. Live mode calls the real /api/instructor/* backend.
+  http.get("/api/instructor/class-analytics", ({ request }) => {
+    const url = new URL(request.url);
+    const ids = (url.searchParams.get("user_ids") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return HttpResponse.json({
+      total_students: ids.length,
+      avg_completion: 0.0,
+      avg_solved: 0.0,
+      students: [],
+    });
+  }),
 ];

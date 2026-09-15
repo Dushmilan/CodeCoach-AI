@@ -149,4 +149,43 @@ describe('Header', () => {
       expect(screen.queryByTestId('header-admin-link')).not.toBeInTheDocument();
     });
   });
+
+  describe('instructor dashboard links', () => {
+    it('shows professor link for professor user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: 'p1', username: 'professor.ada', email: 'a@u.edu', created_at: '', is_active: true, role: 'professor' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.getByTestId('header-professor-link')).toHaveAttribute('href', '/professor');
+    });
+
+    it('shows demonstrator link for ta user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: 't1', username: 'demonstrator.turing', email: 't@u.edu', created_at: '', is_active: true, role: 'ta' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.getByTestId('header-demonstrator-link')).toHaveAttribute('href', '/demonstrator');
+    });
+
+    it('does not show instructor links for regular user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '2', username: 'bob', email: 'b@a.com', created_at: '', is_active: true, role: 'user' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.queryByTestId('header-professor-link')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('header-demonstrator-link')).not.toBeInTheDocument();
+    });
+  });
 });

@@ -32,6 +32,7 @@ from app.services.rescue_service import RescueService
 from app.services.review_service import ReviewService
 from app.services.error_graph_service import ErrorGraphService
 from app.services.learning_analytics_service import LearningAnalyticsService
+from app.services.class_analytics_service import ClassAnalyticsService
 from app.services.memory_graph_service import MemoryGraphService
 from app.ports.code_executor import CodeExecutor
 from app.services.piston_service import PistonService
@@ -135,6 +136,13 @@ def get_analytics_service(
     repo: SubmissionRepository = Depends(get_submission_repo),
 ) -> LearningAnalyticsService:
     return LearningAnalyticsService(repo)
+
+
+def get_class_analytics_service(
+    submissions: SubmissionRepository = Depends(get_submission_repo),
+    progress: ProgressRepository = Depends(get_progress_repo),
+) -> ClassAnalyticsService:
+    return ClassAnalyticsService(submissions=submissions, progress=progress)
 
 
 async def get_admin_repo(
