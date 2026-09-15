@@ -1,0 +1,20 @@
+export const TOKENS = {
+  palette: {
+    idle_fill: "#1e293b",
+    idle_stroke: "#334155",
+    highlight_fill: "#1d4ed8",
+    highlight_stroke: "#3b82f6",
+    dim_fill: "#0f172a",
+    dim_stroke: "#1e293b",
+    accent: "#facc15",
+    success_fill: "#14532d",
+    success_stroke: "#22c55e",
+    muted: "#94a3b8",
+    text: "#e2e8f0",
+  },
+  duration: { enter: 0.4, highlight: 0.35, focus: 0.5, dim: 0.3, stagger: 0.08 },
+  camera: { zoom_focus: 1.25, zoom_full: 1.0, pan_duration: 0.5 },
+  rowY: 0,
+  cellLabelSize: 28,
+  maxLabel: 24,
+} as const;
