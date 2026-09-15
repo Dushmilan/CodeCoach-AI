@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MasteryBars, StatCard } from "@/components/instructor/InstructorWidgets";
-import { getClassrooms, getClassAnalytics } from "@/features/instructor/demo";
+import { useClassrooms } from "@/features/instructor/use-instructor";
 
 export default function ProfessorAnalyticsPage() {
-  const classrooms = getClassrooms();
+  const { classrooms, analytics, ready } = useClassrooms();
+  if (!ready || classrooms === null) {
+    return <p className="text-sm text-muted-foreground">Loading analytics…</p>;
+  }
 
   return (
     <div className="space-y-6">
@@ -18,7 +21,7 @@ export default function ProfessorAnalyticsPage() {
       </div>
 
       {classrooms.map((c) => {
-        const a = getClassAnalytics(c.id);
+        const a = analytics[c.id];
         return (
           <Card key={c.id} data-testid={`analytics-${c.id}`}>
             <CardHeader>

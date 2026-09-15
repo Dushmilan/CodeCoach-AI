@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/instructor/InstructorWidgets";
-import { getClassrooms, getClassAnalytics } from "@/features/instructor/demo";
+import { useClassrooms } from "@/features/instructor/use-instructor";
 
 export default function DemonstratorOverviewPage() {
-  const classrooms = getClassrooms();
+  const { classrooms, analytics, ready } = useClassrooms();
+  if (!ready || classrooms === null) {
+    return <p className="text-sm text-muted-foreground">Loading classrooms…</p>;
+  }
   const totalStudents = classrooms.reduce(
-    (n, c) => n + getClassAnalytics(c.id).totalStudents,
+    (n, c) => n + analytics[c.id].totalStudents,
     0,
   );
 
@@ -32,7 +35,7 @@ export default function DemonstratorOverviewPage() {
         </CardHeader>
         <CardContent data-testid="ta-classrooms" className="space-y-3">
           {classrooms.map((c) => {
-            const a = getClassAnalytics(c.id);
+            const a = analytics[c.id];
             return (
               <div
                 key={c.id}

@@ -16,9 +16,9 @@ vi.mock('next/link', () => ({
 import DemonstratorClassroomDetailPage from './page';
 
 describe('DemonstratorClassroomDetailPage', () => {
-  it('renders the read-only classroom roster from the route id', () => {
+  it('renders the read-only classroom roster from the route id', async () => {
     render(<DemonstratorClassroomDetailPage />);
-    expect(screen.getByText('CS101 · Section A')).toBeInTheDocument();
+    expect(await screen.findByText('CS101 · Section A')).toBeInTheDocument();
     expect(screen.getByTestId('roster-table')).toBeInTheDocument();
     expect(screen.getByText('Roster (read-only)')).toBeInTheDocument();
   });

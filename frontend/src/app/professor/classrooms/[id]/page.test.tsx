@@ -16,9 +16,9 @@ vi.mock('next/link', () => ({
 import ProfessorClassroomDetailPage from './page';
 
 describe('ProfessorClassroomDetailPage', () => {
-  it('renders the classroom roster from the route id', () => {
+  it('renders the classroom roster from the route id', async () => {
     render(<ProfessorClassroomDetailPage />);
-    expect(screen.getByText('CS101 · Section A')).toBeInTheDocument();
+    expect(await screen.findByText('CS101 · Section A')).toBeInTheDocument();
     expect(screen.getByTestId('roster-table')).toBeInTheDocument();
     expect(screen.getByText('Roster — manage enrollment')).toBeInTheDocument();
   });

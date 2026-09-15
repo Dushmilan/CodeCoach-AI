@@ -4,14 +4,16 @@ import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RosterTable, StatCard } from "@/components/instructor/InstructorWidgets";
-import { getClassroom, getClassAnalytics } from "@/features/instructor/demo";
+import { useClassroom } from "@/features/instructor/use-instructor";
 
 export default function DemonstratorClassroomDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const classroom = getClassroom(id);
-  if (!classroom) notFound();
-  const analytics = getClassAnalytics(id);
+  const { classroom, analytics } = useClassroom(id);
+  if (classroom === null) notFound();
+  if (classroom === undefined || analytics === null) {
+    return <p className="text-sm text-muted-foreground">Loading classroom…</p>;
+  }
 
   return (
     <div className="space-y-6">

@@ -15,15 +15,20 @@ vi.mock("@/components/header/Header", () => ({
 }));
 
 describe("DemonstratorOverviewPage", () => {
-  it("renders demonstrator overview with assigned classrooms", () => {
+  it("renders demonstrator overview with assigned classrooms", async () => {
     render(<DemonstratorOverviewPage />);
-    expect(screen.getByText(/demonstrator dashboard/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/demonstrator dashboard/i),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("ta-classrooms")).toBeInTheDocument();
   });
 
-  it("is read-only: no roster management controls", () => {
+  it("is read-only: no roster management controls", async () => {
     render(<DemonstratorOverviewPage />);
+    await screen.findByText(/demonstrator dashboard/i);
     expect(screen.queryByText(/manage roster/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /class analytics/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /class analytics/i }),
+    ).toBeInTheDocument();
   });
 });
