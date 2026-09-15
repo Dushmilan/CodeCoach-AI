@@ -30,3 +30,21 @@ def test_compare_narration_includes_values():
 def test_swap_narration_includes_indices_and_values():
     beats = scene_planner.plan_array(_spec())
     assert "[0]" in beats[2]["narration"] and "[1]" in beats[2]["narration"]
+
+
+def test_every_focus_beat_has_camera_and_final_has_badge():
+    beats = scene_planner.plan_array(_spec())
+    assert beats[0].get("camera", {}).get("action") == "reset"
+    assert beats[-1].get("badge") == {"time": "O(n²)", "space": "O(1)"}
+
+
+def test_no_duplicate_consecutive_narrations():
+    spec = _spec()
+    spec.steps = [
+        AnimationStepSpec(action="compare", indices=[0, 1]),
+        AnimationStepSpec(action="compare", indices=[0, 1]),
+        AnimationStepSpec(action="compare", indices=[0, 1]),
+    ]
+    beats = scene_planner.plan_array(spec)
+    narrs = [b["narration"] for b in beats[1:-1]]
+    assert len(set(narrs)) == len(narrs)

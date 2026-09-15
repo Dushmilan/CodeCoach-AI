@@ -539,6 +539,27 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             "badge": {"time": spec.complexity.time, "space": spec.complexity.space},
         }
     )
+    prev_base = None
+    repeat = 0
+    for b in beats[1:-1]:
+        base = b["narration"]
+        if base == prev_base:
+            repeat += 1
+            suffix = " (cont.)" if repeat == 1 else f" (cont. {repeat})"
+            b["narration"] = (base + suffix)[:300]
+        else:
+            repeat = 0
+        prev_base = base
+    if "camera" not in beats[0]:
+        beats[0]["camera"] = {
+            "action": "reset",
+            "zoom": tokens.CAMERA["zoom_full"],
+        }
+    if "badge" not in beats[-1]:
+        beats[-1]["badge"] = {
+            "time": spec.complexity.time,
+            "space": spec.complexity.space,
+        }
     return beats
 
 
