@@ -1,9 +1,15 @@
 "use client";
 
 import { Pause, Play, RotateCcw, SkipBack, SkipForward } from "lucide-react";
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { AnimationStep } from "@/types";
-import { cn } from "@/lib/utils";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
+import { AnimationStep } from "@/types";import { cn } from "@/lib/utils";
 
 const SPEEDS = [
   { label: "Slow", ms: 1400 },
@@ -25,6 +31,7 @@ export function AnimationPlayer({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speedMs, setSpeedMs] = useState(800);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const currentRef = useRef(currentIndex);
   currentRef.current = currentIndex;
 
@@ -32,7 +39,16 @@ export function AnimationPlayer({
   const currentStep = steps[currentIndex] as AnimationStep | undefined;
 
   useEffect(() => {
-    if (!isPlaying) return;
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(query.matches);
+    const onChange = (event: MediaQueryListEvent) => setReducedMotion(event.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying || reducedMotion) return;
     const timer = setInterval(() => {
       const next = currentRef.current + 1;
       if (next >= stepCount) {
@@ -45,7 +61,7 @@ export function AnimationPlayer({
       }
     }, speedMs);
     return () => clearInterval(timer);
-  }, [isPlaying, speedMs, stepCount, steps, autoPauseOnMatch]);
+  }, [isPlaying, reducedMotion, speedMs, stepCount, steps, autoPauseOnMatch]);
 
   const togglePlay = useCallback(() => {
     if (!isPlaying && currentIndex >= stepCount - 1) {
@@ -66,9 +82,41 @@ export function AnimationPlayer({
 
   const progress = stepCount > 1 ? currentIndex / (stepCount - 1) : 1;
 
+  const onKeyDown = useCallback(
+    (event: ReactKeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (tag === "BUTTON" && (event.key === " " || event.key === "Enter")) return;
+      switch (event.key) {
+        case "ArrowRight":
+          stepTo(currentRef.current + 1);
+          event.preventDefault();
+          break;
+        case "ArrowLeft":
+          stepTo(currentRef.current - 1);
+          event.preventDefault();
+          break;
+        case " ":
+          togglePlay();
+          event.preventDefault();
+          break;
+        case "Home":
+          stepTo(0);
+          event.preventDefault();
+          break;
+        case "End":
+          stepTo(stepCount - 1);
+          event.preventDefault();
+          break;
+      }
+    },
+    [stepTo, togglePlay, stepCount],
+  );
+
   return (
-    <div className="space-y-3">
-      <div>{currentStep ? children(currentStep, currentIndex) : null}</div>
+    <div className="space-y-3" tabIndex={0} onKeyDown={onKeyDown} aria-label="Animation player">
+      <div aria-live="polite">{currentStep ? children(currentStep, currentIndex) : null}</div>
 
       <div className="flex items-center gap-1.5">
         <button
@@ -121,6 +169,15 @@ export function AnimationPlayer({
               style={{ width: `${progress * 100}%` }}
             />
           </div>
+          <input
+            type="range"
+            aria-label="Animation progress"
+            min={0}
+            max={Math.max(stepCount - 1, 0)}
+            value={currentIndex}
+            onChange={(event) => stepTo(Number(event.target.value))}
+            className="w-24 accent-primary"
+          />
           <span className="text-[10px] tabular-nums text-muted-foreground/50 whitespace-nowrap">
             {currentIndex + 1} / {stepCount}
           </span>
