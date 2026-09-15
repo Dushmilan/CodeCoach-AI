@@ -3,7 +3,6 @@
 import { Header } from '@/components/header/Header';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { RecommendedQuestions } from '@/features/skill-graph/RecommendedQuestions';
-import { RescueDueQueue } from '@/features/rescue/RescueDueQueue';
 import { ReviewsDueQueue } from '@/features/review/ReviewsDueQueue';
 import { useQuestion } from '@/features/question/question.hook';
 import { QuestionSortKey } from '@/features/question/question.types';
@@ -232,7 +231,6 @@ export default function ProblemsPage() {
           </div>
         )}
         <RecommendedQuestions />
-        <RescueDueQueue resolveTitle={resolveQuestionTitle} />
         <ReviewsDueQueue resolveTitle={resolveQuestionTitle} />
         <div className="flex flex-col rounded-[2rem] bg-white/[0.03] ring-1 ring-white/5 p-1.5">
           <div className="flex flex-col rounded-[calc(2rem-0.375rem)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] overflow-hidden">

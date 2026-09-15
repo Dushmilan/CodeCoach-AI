@@ -17,10 +17,8 @@ from app.ports.user_repository import UserRepository
 from app.ports.usage_repository import UsageRepository
 from app.ports.submission_repository import SubmissionRepository
 from app.ports.review_repository import ReviewRepository
-from app.ports.rescue_repository import RescueRepository
 from app.repositories.sql_submission_repository import SqlSubmissionRepository
 from app.repositories.sql_review_repository import SqlReviewRepository
-from app.repositories.sql_rescue_repository import SqlRescueRepository
 from app.repositories.sql_question_repository import SqlQuestionRepository
 from app.repositories.sql_course_repository import SqlCourseRepository
 from app.repositories.sql_classroom_repository import SqlClassroomRepository
@@ -30,7 +28,6 @@ from app.repositories.sql_admin_repository import SqlAdminRepository
 from app.repositories.sql_usage_repository import SqlUsageRepository
 from app.services.redis_service import RedisCache
 from app.services.usage_service import UsageService
-from app.services.rescue_service import RescueService
 from app.services.review_service import ReviewService
 from app.services.error_graph_service import ErrorGraphService
 from app.services.learning_analytics_service import LearningAnalyticsService
@@ -96,18 +93,6 @@ async def get_submission_repo(
     db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[SubmissionRepository, None]:
     yield SqlSubmissionRepository(db)
-
-
-async def get_rescue_repo(
-    db: AsyncSession = Depends(get_db),
-) -> AsyncGenerator[RescueRepository, None]:
-    yield SqlRescueRepository(db)
-
-
-def get_rescue_service(
-    rescue_repo: RescueRepository = Depends(get_rescue_repo),
-) -> RescueService:
-    return RescueService(repo=rescue_repo)
 
 
 async def get_review_repo(

@@ -34,15 +34,13 @@ describe('OnboardingTour', () => {
     expect(screen.getByText('Question Browser')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /next/i }));
     expect(screen.getByText('AI Coach')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /next/i }));
-    expect(screen.getByText('Never-Alone Rescue')).toBeInTheDocument();
   });
 
   it('completes tour on last step', async () => {
     const user = userEvent.setup();
     render(<OnboardingTour />);
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       await user.click(screen.getByRole('button', { name: /next/i }));
     }
 

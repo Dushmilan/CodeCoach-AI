@@ -5,7 +5,6 @@ import StudentDashboardPage from "./page";
 vi.mock("@/components/header/Header", () => ({ Header: () => <div data-testid="header" /> }));
 vi.mock("@/features/analytics/LearningSignals", () => ({ default: () => <div data-testid="signals" /> }));
 vi.mock("@/features/memory/MemoryGraph", () => ({ MemoryGraph: () => <div data-testid="memory-graph" /> }));
-vi.mock("@/features/rescue/RescueDueQueue", () => ({ RescueDueQueue: () => <div data-testid="rescue-queue" /> }));
 vi.mock("@/features/review/ReviewsDueQueue", () => ({ ReviewsDueQueue: () => <div data-testid="reviews-queue" /> }));
 vi.mock("@/features/question/question.hook", () => ({
   useQuestion: () => ({ allQuestions: [], loadQuestions: vi.fn() }),

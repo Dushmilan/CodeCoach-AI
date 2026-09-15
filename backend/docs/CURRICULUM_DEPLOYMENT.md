@@ -18,7 +18,6 @@ consumed by `sync_local_to_db.py` only.
 | `course_progress`| Per-user progress                                   |
 | `submissions`    | Attempt history (incl. adapter-state status columns) |
 | `coaching_interactions`, `execution_jobs` | Adapter-state audit              |
-| `rescue_queue`   | Abandoned-problem re-surface queue                  |
 | `review_cards`   | SM-2 spaced-repetition cards                        |
 | `skills`, `question_skills`, `learning_events`, `user_skill_states` | Skill graph |
 | `usage_*`, `rate_limit_events`, `user_daily_usage` | Usage metering |

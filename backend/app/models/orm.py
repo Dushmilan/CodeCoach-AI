@@ -425,47 +425,6 @@ class ExecutionJobORM(Base):
     )
 
 
-class RescueQueueORM(Base):
-    """Durable rescue re-surface queue (Ideas #4).
-
-    One OPEN row (``status='abandoned'``) per (user, question), enforced by a
-    partial unique index. Whether an open row is *due* is derived from
-    ``due_at`` at read time - no scheduler job flips states.
-    """
-
-    __tablename__ = "rescue_queue"
-    id = Column(String(36), primary_key=True)
-    user_id = Column(
-        String(36),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    question_id = Column(
-        String(64),
-        ForeignKey("questions.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    status = Column(String(20), nullable=False, server_default="abandoned")
-    first_abandoned_at = Column(DateTime(timezone=True), nullable=False)
-    due_at = Column(DateTime(timezone=True), nullable=False)
-    resurface_count = Column(Integer, nullable=False, server_default="0")
-    last_intervention_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False)
-    updated_at = Column(DateTime(timezone=True), nullable=False)
-
-    __table_args__ = (
-        Index(
-            "uq_rescue_queue_open_user_question",
-            "user_id",
-            "question_id",
-            unique=True,
-            postgresql_where=text("status = 'abandoned'"),
-        ),
-        Index("ix_rescue_queue_user_status_due", "user_id", "status", "due_at"),
-    )
-
-
 class UserDailyUsageORM(Base):
     __tablename__ = "user_daily_usage"
     id = Column(String(36), primary_key=True)

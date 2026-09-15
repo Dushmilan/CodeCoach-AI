@@ -851,7 +851,7 @@ async def _seed_questions() -> int:
         # Idempotent PER-QUESTION upsert (not all-or-nothing): other test
         # files may leave orphan question rows behind, and an "only if table
         # empty" guard made the fixture bank order-dependent (latent flake
-        # surfaced by the rescue-queue tests, Aug 23).
+        # surfaced by a removed queue test module, Aug 23).
         existing = set((await session.execute(select(QuestionORM.id))).scalars().all())
         if len(existing) < len(_TEST_QUESTIONS):
             from app.models.schemas import Question

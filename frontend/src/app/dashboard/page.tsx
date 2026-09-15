@@ -3,7 +3,6 @@
 import { Header } from "@/components/header/Header";
 import LearningSignals from "@/features/analytics/LearningSignals";
 import { MemoryGraph } from "@/features/memory/MemoryGraph";
-import { RescueDueQueue } from "@/features/rescue/RescueDueQueue";
 import { ReviewsDueQueue } from "@/features/review/ReviewsDueQueue";
 import { SkillGraph } from "@/features/skill-graph/SkillGraph";
 import { useQuestion } from "@/features/question/question.hook";
@@ -72,7 +71,6 @@ export default function StudentDashboardPage() {
             <SkillGraph />
             <LearningSignals />
             <MemoryGraph />
-            <RescueDueQueue resolveTitle={resolveTitle} />
             <ReviewsDueQueue resolveTitle={resolveTitle} />
           </div>
         </div>
