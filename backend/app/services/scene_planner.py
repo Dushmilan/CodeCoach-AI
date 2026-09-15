@@ -341,7 +341,21 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                     }
                 )
             narr = f"Compare {idxs}"
-            camera = {"action": "focus", "region": idxs[:2]}
+            if len(idxs) >= 2:
+                vals = [str(display[i])[:12] if 0 <= i < n else "?" for i in idxs[:2]]
+                narr = (
+                    f"Compare [{idxs[0]}]={vals[0]} "
+                    f"vs [{idxs[1]}]={vals[1] if len(vals) > 1 else '?'}"
+                )
+            elif len(idxs) == 1:
+                i0 = idxs[0]
+                v0 = str(display[i0])[:12] if 0 <= i0 < n else "?"
+                narr = f"Compare [{i0}]={v0}"
+            camera = {
+                "action": "focus",
+                "region": idxs[:2],
+                "zoom": tokens.CAMERA["zoom_focus"],
+            }
         elif step.action == "swap":
             if step.indices and len(step.indices) >= 2:
                 a, b = step.indices[0], step.indices[1]
@@ -377,8 +391,15 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                         "duration": 0.25,
                     }
                 )
-                narr = f"Swap [{a}] ↔ [{b}]"
-                camera = {"action": "focus", "region": [a, b]}
+                if 0 <= a < n and 0 <= b < n:
+                    narr = f"Swap [{a}]={display[a]} ↔ [{b}]={display[b]}"
+                else:
+                    narr = f"Swap [{a}] ↔ [{b}]"
+                camera = {
+                    "action": "focus",
+                    "region": [a, b],
+                    "zoom": tokens.CAMERA["zoom_focus"],
+                }
             else:
                 m.append(
                     {"target": "cell_0", "op": "scale", "to": 1.0, "duration": 0.25}
@@ -404,7 +425,11 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                 }
             )
             narr = f"Write [{idx}] = {val}"
-            camera = {"action": "focus", "element": f"cell_{idx}"}
+            camera = {
+                "action": "focus",
+                "element": f"cell_{idx}",
+                "zoom": tokens.CAMERA["zoom_focus"],
+            }
         elif step.action == "window":
             low, high = int(step.low or 0), int(step.high or 0)
             for idx in range(low, min(high + 1, n)):
@@ -416,7 +441,7 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                         "duration": 0.25,
                     }
                 )
-            narr = f"Window [{low}..{high}]"
+            narr = f"Window [{low}..{high}] (len {max(0, high - low + 1)})"
             camera = {
                 "action": "focus",
                 "region": [low, high],
@@ -440,8 +465,15 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                     "duration": 0.3,
                 }
             )
-            narr = f"Partition at [{idx}]"
-            camera = {"action": "focus", "element": f"cell_{idx}"}
+            if 0 <= idx < n:
+                narr = f"Partition at [{idx}]={display[idx]}"
+            else:
+                narr = f"Partition at [{idx}]"
+            camera = {
+                "action": "focus",
+                "element": f"cell_{idx}",
+                "zoom": tokens.CAMERA["zoom_focus"],
+            }
         elif step.action == "mark":
             idx = max(0, min(int(step.index or 0), n - 1))
             m.append(
@@ -460,7 +492,15 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                     "duration": 0.3,
                 }
             )
-            narr = f"Mark [{idx}] sorted"
+            if 0 <= idx < n:
+                narr = f"Mark [{idx}]={display[idx]} sorted"
+            else:
+                narr = f"Mark [{idx}] sorted"
+            camera = {
+                "action": "focus",
+                "element": f"cell_{idx}",
+                "zoom": tokens.CAMERA["zoom_focus"],
+            }
         elif step.action == "pointer":
             idx = max(0, min(int(step.index or 0), n - 1))
             m.append(
@@ -471,8 +511,17 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                     "duration": 0.25,
                 }
             )
-            narr = step.label or f"Pointer → [{idx}]"
-            camera = {"action": "focus", "element": f"cell_{idx}"}
+            if step.label:
+                narr = step.label
+            elif 0 <= idx < n:
+                narr = f"Pointer → [{idx}]={display[idx]}"
+            else:
+                narr = f"Pointer → [{idx}]"
+            camera = {
+                "action": "focus",
+                "element": f"cell_{idx}",
+                "zoom": tokens.CAMERA["zoom_focus"],
+            }
         else:
             m.append({"target": "cell_0", "op": "scale", "to": 1.0, "duration": 0.25})
             narr = step.label or step.action
