@@ -3,6 +3,7 @@
 import { ComponentType } from "react";
 import { AnimationScript, AnimationStep } from "@/types";
 import { AnimationPlayer } from "./AnimationPlayer";
+import { GenericSceneRenderer } from "./GenericSceneRenderer";
 import { LinearSearchVisualizer } from "./LinearSearchVisualizer";
 import { CodeComparisonVisualizer } from "./CodeComparisonVisualizer";
 
@@ -33,18 +34,37 @@ function FallbackTrace({ script }: { script: AnimationScript }) {
   );
 }
 
+function isGenericStep(step: AnimationStep): boolean {
+  return (
+    (Array.isArray(step.shapes) && step.shapes.length > 0) ||
+    (Array.isArray(step.motion) && step.motion.length > 0)
+  );
+}
+
 export function AnimationScriptRenderer({ script }: { script: AnimationScript }) {
   const steps = Array.isArray(script?.steps) ? script.steps : [];
   if (steps.length === 0) return null;
 
   const Visualizer = script.type ? VISUALIZERS[script.type] : undefined;
-  if (!Visualizer) return <FallbackTrace script={script} />;
+  if (Visualizer) {
+    return (
+      <AnimationPlayer steps={steps}>
+        {(step, index) => (
+          <Visualizer script={script} step={step} stepIndex={index} />
+        )}
+      </AnimationPlayer>
+    );
+  }
 
-  return (
-    <AnimationPlayer steps={steps}>
-      {(step, index) => (
-        <Visualizer script={script} step={step} stepIndex={index} />
-      )}
-    </AnimationPlayer>
-  );
+  if (steps.some(isGenericStep)) {
+    return (
+      <AnimationPlayer steps={steps}>
+        {(step, index) => (
+          <GenericSceneRenderer script={script} step={step} stepIndex={index} />
+        )}
+      </AnimationPlayer>
+    );
+  }
+
+  return <FallbackTrace script={script} />;
 }
