@@ -60,6 +60,12 @@ INSTRUCTOR_SEED_USERS = [
         "role": "professor",
     },
     {
+        "username": "professor.grace",
+        "email": "grace@university.edu",
+        "password": "professor123",
+        "role": "professor",
+    },
+    {
         "username": "demonstrator.turing",
         "email": "alex@university.edu",
         "password": "demonstrator123",
