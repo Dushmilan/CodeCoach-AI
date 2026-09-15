@@ -10,6 +10,7 @@ import uuid
 import pytest
 import pytest_asyncio
 from sqlalchemy import delete
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -284,3 +285,38 @@ async def test_set_course_owner_persists(db_session):
     await _repo(db_session).set_course_owner("c-1", "u-other")
     db_session.expire_all()
     assert (await db_session.get(CourseORM, "c-1")).owner_id == "u-other"
+
+
+async def test_create_classroom_non_unique_error_is_not_mapped_to_duplicate(
+    db_session,
+):
+    """A NOT NULL IntegrityError must re-raise, not map to Duplicate (409)."""
+    await _seed_professor_course(db_session)
+    with pytest.raises(IntegrityError) as exc_info:
+        await _repo(db_session).create_classroom(
+            course_id="c-1",
+            owner_id="u-prof",
+            name="CS101",
+            invite_code=None,
+            term="Fall 2026",
+            schedule="Mon",
+        )
+    assert not isinstance(exc_info.value, DuplicateInviteCodeError)
+
+
+async def test_enroll_fk_violation_surfaces_instead_of_no_result(db_session):
+    """A bad classroom_id must raise IntegrityError, never NoResultFound."""
+    await _seed_professor_course(db_session)
+    student = UserORM(
+        id="u-student",
+        username="user-u-student",
+        email="u-student@e.edu",
+        hashed_password="x",
+        role="user",
+    )
+    db_session.add(student)
+    await db_session.commit()
+    with pytest.raises(IntegrityError):
+        await _repo(db_session).enroll(
+            classroom_id="no-such-room", user_id="u-student", role="student"
+        )

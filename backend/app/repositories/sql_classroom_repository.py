@@ -13,6 +13,17 @@ from app.ports.classroom_repository import ClassroomRepository
 _ALLOWED_ROLES = ("student", "ta")
 
 
+def _is_unique_violation(exc: IntegrityError) -> bool:
+    """True only for unique violations (Postgres sqlstate 23505).
+
+    Falls back to the constraint name because the message text alone
+    (e.g. a column name) also appears in NOT NULL / FK failures.
+    """
+    if getattr(exc.orig, "sqlstate", None) == "23505":
+        return True
+    return "uq_classrooms_invite_code" in str(exc.orig)
+
+
 class DuplicateInviteCodeError(ValueError):
     """Raised when a classroom invite_code collides (unique constraint).
 
@@ -49,9 +60,7 @@ class SqlClassroomRepository(ClassroomRepository):
             await self.session.commit()
         except IntegrityError as exc:
             await self.session.rollback()
-            if "uq_classrooms_invite_code" in str(exc.orig) or "invite_code" in str(
-                exc.orig
-            ):
+            if _is_unique_violation(exc):
                 raise DuplicateInviteCodeError(
                     f"invite code {invite_code!r} already exists"
                 ) from exc
@@ -106,8 +115,13 @@ class SqlClassroomRepository(ClassroomRepository):
         self.session.add(orm)
         try:
             await self.session.commit()
-        except IntegrityError:
-            # Lost a concurrent enroll race: re-read the winner and apply role.
+        except IntegrityError as exc:
+            # Lost a concurrent enroll race: re-read the winner and apply
+            # role — but only on unique violations. Anything else (e.g. an
+            # FK failure on a bad id) re-raises the original error.
+            if not _is_unique_violation(exc):
+                await self.session.rollback()
+                raise
             await self.session.rollback()
             result = await self.session.execute(
                 select(ClassroomEnrollmentORM).where(
@@ -115,7 +129,9 @@ class SqlClassroomRepository(ClassroomRepository):
                     ClassroomEnrollmentORM.user_id == user_id,
                 )
             )
-            winner = result.scalar_one()
+            winner = result.scalar_one_or_none()
+            if winner is None:
+                raise
             winner.role = role
             await self.session.commit()
             return winner
