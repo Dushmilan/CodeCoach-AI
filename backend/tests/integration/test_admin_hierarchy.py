@@ -47,7 +47,9 @@ SUPER_ADMIN = ("t6-root", "root", "super_admin")
 CS101_STUDENTS = ("t6-mia", "t6-leo", "t6-ava", "t6-noah", "t6-zoe")
 CS201_STUDENTS = ("t6-eli", "t6-ivy", "t6-max")
 
-# Deterministic completed-lesson counts for the CS101 roster (total_lessons=10).
+# Deterministic completed-lesson counts for the CS101 roster (t6-py holds
+# 3 real lessons, so the average uses denominator 3 with per-student clamp:
+# 6 -> 200 -> 100; 4 -> 133.3 -> 100; 2 -> 66.7; 0; 8 -> 266.7 -> 100).
 CS101_COMPLETED = {
     "t6-mia": 6,
     "t6-leo": 4,
@@ -55,8 +57,8 @@ CS101_COMPLETED = {
     "t6-noah": 0,
     "t6-zoe": 8,
 }
-# (6 + 4 + 2 + 0 + 8) / 10 * 100 / 5 = 40.0
-CS101_AVG = 40.0
+# (100 + 100 + 66.7 + 0 + 100) / 5 = 73.3
+CS101_AVG = 73.3
 
 
 @contextmanager
@@ -216,6 +218,35 @@ async def _seed_hierarchy(test_db) -> None:
 def _professors_by_username(body: dict) -> dict:
     assert set(body.keys()) == {"professors"}
     return {p["username"]: p for p in body["professors"]}
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_avg_completion_capped_when_completed_exceeds_lessons(
+    async_client, test_db
+):
+    """Regression: completed lessons above the real course lesson count must
+    not push avg_completion past 100 — the average uses the room's real
+    per-course denominator (3 lessons here), clamped per student at 100.
+
+    mia at 10 completed: 333.3 → 100; leo 4 → 133.3 → 100; ava 2 → 66.7;
+    noah 0; zoe 8 → 266.7 → 100. avg = (100 + 100 + 66.7 + 0 + 100) / 5.
+    """
+    await _seed_hierarchy(test_db)
+    result = await test_db.execute(
+        select(CourseProgressORM).where(CourseProgressORM.id == "t6-prog-t6-mia")
+    )
+    row = result.scalar_one()
+    row.completed_lessons = [f"t6-py-lesson-{i:03d}" for i in range(1, 11)]
+    await test_db.commit()
+    with _auth_as(*ADMIN):
+        resp = await async_client.get("/api/admin/hierarchy")
+    assert resp.status_code == 200, resp.text
+    by_name = _professors_by_username(resp.json())
+    ada = by_name["professor.ada"]
+    cs101 = next(r for r in ada["classrooms"] if r["invite_code"] == CS101_INVITE)
+    assert cs101["avg_completion"] <= 100
+    assert cs101["avg_completion"] == 73.3
 
 
 @pytest.mark.integration

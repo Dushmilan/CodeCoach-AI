@@ -45,7 +45,10 @@ class ClassAnalyticsService:
             attempted = len(subs)
             solved = sum(1 for s in subs if getattr(s, "passed", False))
             completed = await self._completed_lessons(user_id)
-            pct = (completed / total_lessons * 100.0) if total_lessons else 0.0
+            raw_pct = (completed / total_lessons * 100.0) if total_lessons else 0.0
+            # Belt-and-braces: completed lessons can exceed the denominator
+            # (stale progress rows, cross-course ids), so clamp at 100%.
+            pct = min(raw_pct, 100.0)
             students.append(
                 ClassStudentSummary(
                     user_id=user_id,

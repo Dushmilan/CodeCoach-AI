@@ -11,8 +11,10 @@ Composes existing ports only (never touches a SQL session):
 - lesson counts from ``CourseRepository`` module/lesson reads;
 - TA names from ``list_classroom_ta_ids`` + user lookup (TAs are staff, so
   the student-only roster read cannot serve this);
-- student counts + avg completion from ``ClassAnalyticsService``
-  (the same optimal-path aggregates the instructor views use).
+- student counts + avg completion from ``ClassAnalyticsService`` (the
+  same optimal-path aggregates the instructor views use, with the room's
+  real per-course lesson count as the denominator — never a hardcoded
+  constant, so completion can never exceed 100%).
 
 Tree shape matches the Task 6 brief exactly::
 
@@ -27,11 +29,6 @@ from app.ports.classroom_repository import ClassroomRepository
 from app.ports.course_repository import CourseRepository
 from app.ports.user_admin_repository import UserAdminRepository
 from app.services.class_analytics_service import ClassAnalyticsService
-
-# Fixed denominator for the per-room average, matching the instructor
-# classroom detail default. Pinned explicitly so a future default change
-# cannot silently alter the admin contract.
-TOTAL_LESSONS = 10
 
 # list_users pages through the whole user table; large enough that an admin
 # tree build stays a handful of queries on realistic tenants.
@@ -60,12 +57,21 @@ class HierarchyService:
         for prof in professors:
             rooms = await self._classrooms.list_owned_by_professor(prof.id)
             course_ids = list(dict.fromkeys(room.course_id for room in rooms))
+            lessons_by_course = {
+                course_id: await self._lesson_count(course_id)
+                for course_id in course_ids
+            }
             course_entries = []
             for course_id in course_ids:
-                entry = await self._course_entry(course_id)
+                entry = await self._course_entry(
+                    course_id, lessons_by_course.get(course_id, 0)
+                )
                 if entry is not None:
                     course_entries.append(entry)
-            room_entries = [await self._room_entry(room) for room in rooms]
+            room_entries = [
+                await self._room_entry(room, lessons_by_course.get(room.course_id, 0))
+                for room in rooms
+            ]
             tree.append(
                 {
                     "id": prof.id,
@@ -88,21 +94,25 @@ class HierarchyService:
             skip += len(page)
         return users
 
-    async def _course_entry(self, course_id: str) -> dict | None:
-        course = await self._courses.get_course_by_id(course_id)
-        if course is None:
-            return None
+    async def _lesson_count(self, course_id: str) -> int:
+        """Real per-course lesson count backing both the tree and the average."""
         modules = await self._courses.get_modules_by_course(course_id)
         lessons = await self._courses.get_lesson_summaries_by_module_ids(
             [m.id for m in modules]
         )
-        return {"id": course.id, "title": course.title, "lessons": len(lessons)}
+        return len(lessons)
 
-    async def _room_entry(self, room: ClassroomORM) -> dict:
+    async def _course_entry(self, course_id: str, lesson_count: int) -> dict | None:
+        course = await self._courses.get_course_by_id(course_id)
+        if course is None:
+            return None
+        return {"id": course.id, "title": course.title, "lessons": lesson_count}
+
+    async def _room_entry(self, room: ClassroomORM, total_lessons: int) -> dict:
         student_ids = await self._classrooms.list_classroom_student_ids(room.id)
         _, overview = await self._analytics.classroom_overview(
             room.id,
-            total_lessons=TOTAL_LESSONS,
+            total_lessons=total_lessons,
             classrooms=self._classrooms,
         )
         ta_ids = await self._classrooms.list_classroom_ta_ids(room.id)
