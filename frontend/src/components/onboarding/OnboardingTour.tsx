@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks';
-import { ChevronLeft, ChevronRight, Brain, Code, LifeBuoy, Lightbulb, MessageSquare, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Brain, Code, Lightbulb, MessageSquare, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export const ONBOARDING_STORAGE_KEY = 'onboarding-done';
@@ -39,12 +39,6 @@ const STEPS = [
     description:
       'Get 24/7 AI-powered help. Ask for hints, code reviews, explanations, or debugging assistance. The AI understands your code context.',
     icon: MessageSquare,
-  },
-  {
-    title: 'Never-Alone Rescue',
-    description:
-      'Stuck for 4 minutes? AI nudges you. Abandon a problem and it resurfaces tomorrow as a tiny step — you are never alone with failure.',
-    icon: LifeBuoy,
   },
 ];
 

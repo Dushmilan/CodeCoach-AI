@@ -35,10 +35,6 @@ vi.mock('@/components/layout/lessons', () => ({
   AIPanelDrawer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('@/components/rescue/RescueIntervention', () => ({
-  RescueIntervention: () => <div>Rescue</div>,
-}));
-
 vi.mock('@/components/sidebar/QuestionDescriptionPanel', () => ({
   QuestionDescriptionPanel: () => <div>Description</div>,
 }));
@@ -71,17 +67,6 @@ vi.mock('@/features/question/use-code-runner.hook', () => ({
     handleRunCode: vi.fn(),
     handleSubmitCode: vi.fn(),
     isAuthenticated: true,
-  }),
-}));
-
-vi.mock('@/features/rescue/use-rescue-contract.hook', () => ({
-  useRescueContract: () => ({
-    registerActivity: vi.fn(),
-    tier: 'none',
-    checkpoints: [],
-    isSuppressed: false,
-    leaveMeAlone: vi.fn(),
-    resume: vi.fn(),
   }),
 }));
 

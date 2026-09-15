@@ -5,7 +5,6 @@ import { AnimateLauncher } from '@/components/animate/AnimateLauncher';
 import { AIChatPanelContainer } from '@/components/layout/elements/AIChatPanelContainer';
 import { CodeEditorContainer } from '@/components/layout/elements/CodeEditorContainer';
 import { AIPanelDrawer, useWorkspaceMode } from '@/components/layout/lessons';
-import { RescueIntervention } from '@/components/rescue/RescueIntervention';
 import { QuestionDescriptionPanel } from '@/components/sidebar/QuestionDescriptionPanel';
 import { ResizablePanelGroup } from '@/components/ui/ResizablePanelGroup';
 import { useCoaching } from '@/features/coaching/coaching.hook';
@@ -14,8 +13,6 @@ import { useCoachWarm } from '@/features/coaching/use-coach-warm.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
-import { useRescueContract } from '@/features/rescue/use-rescue-contract.hook';
-import { buildRescueCheckpoints } from '@/features/rescue/rescue.checkpoints';
 import { Language, Question } from '@/types';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -58,7 +55,6 @@ export default function ProblemWorkspacePage() {
     output,
     testResults,
     executionError,
-    lastSubmitResult,
     handleRunCode,
     handleSubmitCode,
     isAuthenticated,
@@ -108,70 +104,9 @@ export default function ProblemWorkspacePage() {
     },
   });
 
-  const handleEscalateToT2 = useCallback(() => {
-    if (!fullQuestion) return;
-    const checkpoints = buildRescueCheckpoints(
-      fullQuestion.test_cases ?? [],
-      lastSubmitResult,
-    );
-    const current = checkpoints.find((c) => c.state === 'current');
-    const hintMsg = current
-      ? `I'm stuck on "${current.label}"${current.detail ? ` — ${current.detail}` : ''}. Can you give me a targeted hint?`
-      : "I'm stuck on the failing test — can you give me a targeted hint?";
-    void sendMessage(
-      hintMsg,
-      'explain' as CoachingMode,
-      fullQuestion.title,
-      currentCode,
-      language,
-      undefined,
-      fullQuestion.difficulty,
-      starterCode,
-      'questions',
-      questionId,
-    );
-    if (mode !== 'wide') setDrawerOpen(true);
-  }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode, questionId]);
-
-  const handleEscalateToT3 = useCallback(() => {
-    if (!fullQuestion) return;
-    const checkpoints = buildRescueCheckpoints(
-      fullQuestion.test_cases ?? [],
-      lastSubmitResult,
-    );
-    const current = checkpoints.find((c) => c.state === 'current');
-    const replanMsg = current
-      ? `I've been stuck on "${current.label}" for a while. Can you re-plan my path with a smaller next step?`
-      : "I've been stuck for a while. Can you re-plan my path with a smaller next step?";
-    void sendMessage(
-      replanMsg,
-      'review' as CoachingMode,
-      fullQuestion.title,
-      currentCode,
-      language,
-      undefined,
-      fullQuestion.difficulty,
-      starterCode,
-      'questions',
-      questionId,
-    );
-    if (mode !== 'wide') setDrawerOpen(true);
-  }, [fullQuestion, lastSubmitResult, currentCode, language, starterCode, sendMessage, mode, questionId]);
-
-  const rescue = useRescueContract({
-    questionId,
-    questionTitle: fullQuestion?.title ?? '',
-    testCases: fullQuestion?.test_cases ?? [],
-    lastSubmitResult,
-    onEscalateToT2: handleEscalateToT2,
-    onEscalateToT3: handleEscalateToT3,
-  });
-  const { registerActivity: rescueActivity } = rescue;
-
   const handleSendMessage = useCallback(
     async (message: string, mode: CoachingMode) => {
       if (!fullQuestion) return;
-      rescueActivity();
       await sendMessage(
         message,
         mode,
@@ -185,65 +120,17 @@ export default function ProblemWorkspacePage() {
         questionId,
       );
     },
-    [fullQuestion, currentCode, language, sendMessage, rescueActivity, starterCode, questionId],
-  );
-
-  const handleRunCodeRescue = useCallback(
-    (stdin: string) => {
-      rescueActivity();
-      handleRunCode(stdin);
-    },
-    [handleRunCode, rescueActivity],
-  );
-
-  const handleSubmitCodeRescue = useCallback(() => {
-    rescueActivity();
-    handleSubmitCode();
-  }, [handleSubmitCode, rescueActivity]);
-
-  const handleCodeChangeRescue = useCallback(
-    (code: string) => {
-      rescueActivity();
-      setCurrentCode(code);
-    },
-    [rescueActivity],
+    [fullQuestion, currentCode, language, sendMessage, starterCode, questionId],
   );
 
   const handleResetCode = useCallback(() => {
-    rescueActivity();
     setCurrentCode(starterCode);
     void deleteDraft();
-  }, [rescueActivity, starterCode, deleteDraft]);
-
-  const handleLanguageChangeRescue = useCallback(
-    (lang: Language) => {
-      rescueActivity();
-      setLanguage(lang);
-    },
-    [rescueActivity],
-  );
+  }, [starterCode, deleteDraft]);
 
   useEffect(() => {
     if (mode === 'wide' && drawerOpen) setDrawerOpen(false);
   }, [mode, drawerOpen]);
-
-  // Open the AI chat drawer when the rescue escalates to T2+ so the learner
-  // can take the targeted coach help / re-plan offer.
-  useEffect(() => {
-    if ((rescue.tier === 't2' || rescue.tier === 't3') && mode !== 'wide') {
-      setDrawerOpen(true);
-    }
-  }, [rescue.tier, mode]);
-
-  const requestCoachHelp = useCallback(() => {
-    rescueActivity();
-    if (mode !== 'wide') setDrawerOpen(true);
-  }, [rescueActivity, mode]);
-
-  const requestReplan = useCallback(() => {
-    rescueActivity();
-    if (mode !== 'wide') setDrawerOpen(true);
-  }, [rescueActivity, mode]);
 
   if (loading) {
     return (
@@ -316,11 +203,11 @@ export default function ProblemWorkspacePage() {
           error={executionError || error || ''}
           testResults={testResults}
           isInteractive={fullQuestion.is_interactive || false}
-          onCodeChange={handleCodeChangeRescue}
+          onCodeChange={setCurrentCode}
           onResetCode={handleResetCode}
-          onLanguageChange={handleLanguageChangeRescue}
-          onRunCode={handleRunCodeRescue}
-          onSubmitCode={handleSubmitCodeRescue}
+          onLanguageChange={setLanguage}
+          onRunCode={handleRunCode}
+          onSubmitCode={handleSubmitCode}
           isAuthenticated={isAuthenticated}
         />
       </div>
@@ -444,17 +331,6 @@ export default function ProblemWorkspacePage() {
               )}
             </>
           )}
-
-          <RescueIntervention
-            tier={rescue.tier}
-            checkpoints={rescue.checkpoints}
-            isSuppressed={rescue.isSuppressed}
-            onLeaveMeAlone={rescue.leaveMeAlone}
-            onResume={rescue.resume}
-            onRequestCoachHelp={requestCoachHelp}
-            onReplan={requestReplan}
-            onContinue={rescueActivity}
-          />
         </div>
       </div>
     </div>
