@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 
 from app.services.trace_parser import TraceEvent
 from app.services.animation_compiler import AnimationCompiler
+from app.services.scene_planner import tree_layout as _tree_layout
 
 logger = logging.getLogger(__name__)
 
@@ -536,23 +537,7 @@ def _compile_linked_list(
 
 # ── tree ────────────────────────────────────────────────────────────────────
 TREE_MAX_NODES = 14
-TREE_LEVEL_H = 96.0
-TREE_WIDTH = 620.0
-TREE_TOP = -240.0
 TREE_PTR_DY = 30.0
-
-
-def _tree_layout(n: int) -> List[Dict[str, float]]:
-    """Return [{x, y}] positions for level-order indices 0..n-1."""
-    positions = []
-    for i in range(n):
-        level = int(math.floor(math.log2(i + 1)))
-        pos_in_level = i - (2**level - 1)
-        slots = 2**level
-        x = -TREE_WIDTH / 2 + (pos_in_level + 0.5) * (TREE_WIDTH / slots)
-        y = TREE_TOP + level * TREE_LEVEL_H
-        positions.append({"x": round(x, 2), "y": round(y, 2)})
-    return positions
 
 
 def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, Any]]:

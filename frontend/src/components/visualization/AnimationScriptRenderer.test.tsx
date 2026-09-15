@@ -167,6 +167,20 @@ describe("AnimationScriptRenderer", () => {
     });
   });
 
+  it("renders generic scenes with the cinematic renderer", () => {
+    const generic = {
+      title: "Bubble Sort",
+      data: { family: "array" },
+      steps: [
+        { narration: "Intro", shapes: [{ id: "cell_0", type: "rect", x: 0, y: 0, width: 88, height: 88 }], motion: [{ target: "cell_0", op: "appear", duration: 0.4 }] },
+        { narration: "Compare", shapes: [], motion: [{ target: "cell_0", op: "fill", to: "#1d4ed8", duration: 0.3 }] },
+        { narration: "Done", shapes: [], motion: [{ target: "cell_0", op: "scale", to: 1.0, duration: 0.25 }] },
+      ],
+    };
+    const { container } = render(<AnimationScriptRenderer script={generic as never} />);
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+
   it("renders a plain trace for unsupported animation types", () => {
     const unknown: AnimationScript = {
       type: "quantum_sort",

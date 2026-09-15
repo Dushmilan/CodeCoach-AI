@@ -1,8 +1,16 @@
 "use client";
 
 import { Pause, Play, RotateCcw, SkipBack, SkipForward } from "lucide-react";
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { AnimationStep } from "@/types";
+
 import { cn } from "@/lib/utils";
 
 const SPEEDS = [
@@ -25,6 +33,7 @@ export function AnimationPlayer({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speedMs, setSpeedMs] = useState(800);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const currentRef = useRef(currentIndex);
   currentRef.current = currentIndex;
 
@@ -32,8 +41,31 @@ export function AnimationPlayer({
   const currentStep = steps[currentIndex] as AnimationStep | undefined;
 
   useEffect(() => {
-    if (!isPlaying) return;
-    const timer = setInterval(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(query.matches);
+    const onChange = (event: MediaQueryListEvent) => setReducedMotion(event.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying || reducedMotion) return;
+    // Easing-aware auto-advance: wait for the longest motion in the current
+    // beat (ms), clamped below to the speed preset and above to the
+    // validator's max motion duration, so fast presets never cut a beat's
+    // motion short and corrupt presets never stall playback.
+    const current = steps[currentIndex] as AnimationStep | undefined;
+    const motions = Array.isArray(current?.motion) ? current.motion : [];
+    let longestMs = 0;
+    for (const motion of motions) {
+      const duration = (motion as { duration?: unknown }).duration;
+      if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+        longestMs = Math.max(longestMs, duration * 1000);
+      }
+    }
+    const delay = Math.min(Math.max(longestMs, speedMs), 5000);
+    const timer = setTimeout(() => {
       const next = currentRef.current + 1;
       if (next >= stepCount) {
         setIsPlaying(false);
@@ -43,9 +75,9 @@ export function AnimationPlayer({
       if (autoPauseOnMatch && steps[next]?.result === "match") {
         setIsPlaying(false);
       }
-    }, speedMs);
-    return () => clearInterval(timer);
-  }, [isPlaying, speedMs, stepCount, steps, autoPauseOnMatch]);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [isPlaying, reducedMotion, speedMs, stepCount, steps, autoPauseOnMatch, currentIndex]);
 
   const togglePlay = useCallback(() => {
     if (!isPlaying && currentIndex >= stepCount - 1) {
@@ -66,9 +98,41 @@ export function AnimationPlayer({
 
   const progress = stepCount > 1 ? currentIndex / (stepCount - 1) : 1;
 
+  const onKeyDown = useCallback(
+    (event: ReactKeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (tag === "BUTTON" && (event.key === " " || event.key === "Enter")) return;
+      switch (event.key) {
+        case "ArrowRight":
+          stepTo(currentRef.current + 1);
+          event.preventDefault();
+          break;
+        case "ArrowLeft":
+          stepTo(currentRef.current - 1);
+          event.preventDefault();
+          break;
+        case " ":
+          togglePlay();
+          event.preventDefault();
+          break;
+        case "Home":
+          stepTo(0);
+          event.preventDefault();
+          break;
+        case "End":
+          stepTo(stepCount - 1);
+          event.preventDefault();
+          break;
+      }
+    },
+    [stepTo, togglePlay, stepCount],
+  );
+
   return (
-    <div className="space-y-3">
-      <div>{currentStep ? children(currentStep, currentIndex) : null}</div>
+    <div className="space-y-3" tabIndex={0} onKeyDown={onKeyDown} role="region" aria-label="Animation player">
+      <div aria-live="polite">{currentStep ? children(currentStep, currentIndex) : null}</div>
 
       <div className="flex items-center gap-1.5">
         <button
@@ -121,6 +185,15 @@ export function AnimationPlayer({
               style={{ width: `${progress * 100}%` }}
             />
           </div>
+          <input
+            type="range"
+            aria-label="Animation progress"
+            min={0}
+            max={Math.max(stepCount - 1, 0)}
+            value={currentIndex}
+            onChange={(event) => stepTo(Number(event.target.value))}
+            className="w-24 accent-primary"
+          />
           <span className="text-[10px] tabular-nums text-muted-foreground/50 whitespace-nowrap">
             {currentIndex + 1} / {stepCount}
           </span>

@@ -181,8 +181,8 @@ class TestBuildAnimation:
             if (s.get("narration") or "").startswith("Pointer")
         ]
         assert [b["narration"] for b in pointer_beats] == [
-            "Pointer → [0]",
-            "Pointer → [1]",
+            "Pointer → [0]=5",
+            "Pointer → [1]=1",
         ]
         targets = [op["target"] for b in pointer_beats for op in b["motion"]]
         assert targets == ["cell_0", "cell_1"]
