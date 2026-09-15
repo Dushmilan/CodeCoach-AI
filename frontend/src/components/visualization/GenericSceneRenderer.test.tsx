@@ -35,4 +35,36 @@ describe("GenericSceneRenderer", () => {
     const { container } = render(<GenericSceneRenderer script={script as never} step={bad as never} stepIndex={0} />);
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
+  it("resolves numeric camera regions by cell id, not shape position", () => {
+    // shapes are cell/val interleaved: positional lookup would average
+    // cell_0 (x=-100) with val_0 (x=500) → cx=200. Id lookup averages
+    // cell_0 (x=-100) with cell_1 (x=100) → cx=0.
+    const step = {
+      narration: "Compare",
+      shapes: [
+        { id: "cell_0", type: "rect", x: -100, y: 0, width: 88, height: 88 },
+        { id: "val_0", type: "text", x: 500, y: 0, text: "5", fontSize: 28 },
+        { id: "cell_1", type: "rect", x: 100, y: 0, width: 88, height: 88 },
+        { id: "val_1", type: "text", x: 500, y: 0, text: "1", fontSize: 28 },
+      ],
+      motion: [{ target: "cell_0", op: "fill", to: "#1d4ed8", duration: 0.35 }],
+      camera: { action: "focus", region: [0, 1] },
+    };
+    const { container } = render(<GenericSceneRenderer script={script as never} step={step as never} stepIndex={0} />);
+    // zoom_focus 1.25 → 1536x864 viewBox centered on cx=0, cy=0.
+    expect(container.querySelector("svg")?.getAttribute("viewBox")).toBe("-768 -432 1536 864");
+  });
+  it("resolves numeric camera regions via node_ ids", () => {
+    const step = {
+      narration: "Visit",
+      shapes: [
+        { id: "node_0", type: "rect", x: -230, y: 0, width: 64, height: 44 },
+        { id: "node_1", type: "rect", x: 230, y: 0, width: 64, height: 44 },
+      ],
+      motion: [{ target: "node_1", op: "fill", to: "#1d4ed8", duration: 0.3 }],
+      camera: { action: "focus", region: [1] },
+    };
+    const { container } = render(<GenericSceneRenderer script={script as never} step={step as never} stepIndex={0} />);
+    expect(container.querySelector("svg")?.getAttribute("viewBox")).toBe("-538 -432 1536 864");
+  });
 });

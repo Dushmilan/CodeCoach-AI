@@ -9,7 +9,9 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { AnimationStep } from "@/types";import { cn } from "@/lib/utils";
+import { AnimationStep } from "@/types";
+
+import { cn } from "@/lib/utils";
 
 const SPEEDS = [
   { label: "Slow", ms: 1400 },
@@ -49,7 +51,21 @@ export function AnimationPlayer({
 
   useEffect(() => {
     if (!isPlaying || reducedMotion) return;
-    const timer = setInterval(() => {
+    // Easing-aware auto-advance: wait for the longest motion in the current
+    // beat (ms), clamped below to the speed preset and above to the
+    // validator's max motion duration, so fast presets never cut a beat's
+    // motion short and corrupt presets never stall playback.
+    const current = steps[currentIndex] as AnimationStep | undefined;
+    const motions = Array.isArray(current?.motion) ? current.motion : [];
+    let longestMs = 0;
+    for (const motion of motions) {
+      const duration = (motion as { duration?: unknown }).duration;
+      if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+        longestMs = Math.max(longestMs, duration * 1000);
+      }
+    }
+    const delay = Math.min(Math.max(longestMs, speedMs), 5000);
+    const timer = setTimeout(() => {
       const next = currentRef.current + 1;
       if (next >= stepCount) {
         setIsPlaying(false);
@@ -59,9 +75,9 @@ export function AnimationPlayer({
       if (autoPauseOnMatch && steps[next]?.result === "match") {
         setIsPlaying(false);
       }
-    }, speedMs);
-    return () => clearInterval(timer);
-  }, [isPlaying, reducedMotion, speedMs, stepCount, steps, autoPauseOnMatch]);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [isPlaying, reducedMotion, speedMs, stepCount, steps, autoPauseOnMatch, currentIndex]);
 
   const togglePlay = useCallback(() => {
     if (!isPlaying && currentIndex >= stepCount - 1) {
