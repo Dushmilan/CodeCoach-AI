@@ -345,11 +345,29 @@ EXPECTED_PROFESSOR_CLASSROOM_INDEXES = {
 }
 
 EXPECTED_PROFESSOR_CLASSROOM_FKS = {
-    ("courses", "owner_id", "users", "SET NULL"),
-    ("classrooms", "course_id", "courses", "CASCADE"),
-    ("classrooms", "owner_id", "users", "SET NULL"),
-    ("classroom_enrollments", "classroom_id", "classrooms", "CASCADE"),
-    ("classroom_enrollments", "user_id", "users", "CASCADE"),
+    ("courses", "owner_id", "users", "SET NULL", "fk_courses_owner_id_users"),
+    (
+        "classrooms",
+        "course_id",
+        "courses",
+        "CASCADE",
+        "fk_classrooms_course_id_courses",
+    ),
+    ("classrooms", "owner_id", "users", "SET NULL", "fk_classrooms_owner_id_users"),
+    (
+        "classroom_enrollments",
+        "classroom_id",
+        "classrooms",
+        "CASCADE",
+        "fk_enrollments_classroom_id_classrooms",
+    ),
+    (
+        "classroom_enrollments",
+        "user_id",
+        "users",
+        "CASCADE",
+        "fk_enrollments_user_id_users",
+    ),
 }
 
 
@@ -394,12 +412,12 @@ def test_professor_classrooms_tables_exist(
             ).fetchall()
         }
         fks = {
-            (row[0], row[1], row[2], row[3])
+            (row[0], row[1], row[2], row[3], row[4])
             for row in conn.execute(
                 text(
                     "SELECT tc.table_name, kcu.column_name, "
                     "ccu.table_name AS ref_table, "
-                    "rc.delete_rule "
+                    "rc.delete_rule, tc.constraint_name "
                     "FROM information_schema.table_constraints tc "
                     "JOIN information_schema.key_column_usage kcu "
                     "ON tc.constraint_name = kcu.constraint_name "

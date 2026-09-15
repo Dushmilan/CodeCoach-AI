@@ -44,6 +44,31 @@ def _column_exists(bind, table: str, column: str) -> bool:
     )
 
 
+def _index_exists(bind, name: str) -> bool:
+    return bool(
+        bind.execute(
+            sa.text(
+                "SELECT EXISTS (SELECT 1 FROM pg_indexes "
+                "WHERE schemaname='public' AND indexname=:n)"
+            ),
+            {"n": name},
+        ).scalar_one()
+    )
+
+
+def _constraint_exists(bind, table: str, name: str) -> bool:
+    return bool(
+        bind.execute(
+            sa.text(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.table_constraints "
+                "WHERE table_schema='public' AND table_name=:t "
+                "AND constraint_name=:n)"
+            ),
+            {"t": table, "n": name},
+        ).scalar_one()
+    )
+
+
 def upgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
@@ -72,8 +97,18 @@ def upgrade() -> None:
             sa.Column("invite_code", sa.String(length=64), nullable=False),
             sa.Column("term", sa.String(length=64), nullable=True),
             sa.Column("schedule", sa.String(length=255), nullable=True),
-            sa.ForeignKeyConstraint(["course_id"], ["courses.id"], ondelete="CASCADE"),
-            sa.ForeignKeyConstraint(["owner_id"], ["users.id"], ondelete="SET NULL"),
+            sa.ForeignKeyConstraint(
+                ["course_id"],
+                ["courses.id"],
+                name="fk_classrooms_course_id_courses",
+                ondelete="CASCADE",
+            ),
+            sa.ForeignKeyConstraint(
+                ["owner_id"],
+                ["users.id"],
+                name="fk_classrooms_owner_id_users",
+                ondelete="SET NULL",
+            ),
             sa.PrimaryKeyConstraint("id"),
             sa.UniqueConstraint("invite_code", name="uq_classrooms_invite_code"),
         )
@@ -91,9 +126,17 @@ def upgrade() -> None:
                 nullable=False,
             ),
             sa.ForeignKeyConstraint(
-                ["classroom_id"], ["classrooms.id"], ondelete="CASCADE"
+                ["classroom_id"],
+                ["classrooms.id"],
+                name="fk_enrollments_classroom_id_classrooms",
+                ondelete="CASCADE",
             ),
-            sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["user_id"],
+                ["users.id"],
+                name="fk_enrollments_user_id_users",
+                ondelete="CASCADE",
+            ),
             sa.PrimaryKeyConstraint("id"),
             sa.UniqueConstraint(
                 "classroom_id", "user_id", name="uq_enrollment_classroom_user"
@@ -111,10 +154,25 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_enrollments_user", table_name="classroom_enrollments")
-    op.drop_index("ix_enrollments_classroom", table_name="classroom_enrollments")
-    op.drop_table("classroom_enrollments")
-    op.drop_index("ix_classrooms_owner", table_name="classrooms")
-    op.drop_table("classrooms")
-    op.drop_constraint("fk_courses_owner_id_users", "courses", type_="foreignkey")
-    op.drop_column("courses", "owner_id")
+    bind = op.get_bind()
+    if bind.dialect.name != "postgresql":
+        raise RuntimeError("Only Supabase/PostgreSQL is supported")
+
+    if _table_exists(bind, "classroom_enrollments"):
+        if _index_exists(bind, "ix_enrollments_user"):
+            op.drop_index("ix_enrollments_user", table_name="classroom_enrollments")
+        if _index_exists(bind, "ix_enrollments_classroom"):
+            op.drop_index(
+                "ix_enrollments_classroom", table_name="classroom_enrollments"
+            )
+        op.drop_table("classroom_enrollments")
+    if _table_exists(bind, "classrooms"):
+        if _index_exists(bind, "ix_classrooms_owner"):
+            op.drop_index("ix_classrooms_owner", table_name="classrooms")
+        op.drop_table("classrooms")
+    if _column_exists(bind, "courses", "owner_id"):
+        if _constraint_exists(bind, "courses", "fk_courses_owner_id_users"):
+            op.drop_constraint(
+                "fk_courses_owner_id_users", "courses", type_="foreignkey"
+            )
+        op.drop_column("courses", "owner_id")
