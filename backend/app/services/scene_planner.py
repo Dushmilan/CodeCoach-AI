@@ -12,8 +12,44 @@ is cinematic (highlight/dim/camera/badges) not literal debugger steps.
 import math
 from typing import Any, Dict, List
 
-from app.models.animation_spec import AlgorithmAnimation
+from app.models.animation_spec import AlgorithmAnimation, Complexity
 from app.services import animation_design_tokens as tokens
+
+
+def _finalize_beats(
+    beats: List[Dict[str, Any]], complexity: Complexity
+) -> List[Dict[str, Any]]:
+    """Shared post-pass so ALL families get A2 pedagogy guarantees.
+
+    Dedupe consecutive narrations with a repeat counter (A2 precedent),
+    ensure the intro beat carries camera.reset, and ensure the final beat
+    carries the complexity badge. Idempotent — safe to apply over beats
+    that already went through a per-family post-pass.
+    """
+    if not beats:
+        return beats
+    prev_base = None
+    repeat = 0
+    for b in beats[1:-1]:
+        base = b.get("narration", "")
+        if base == prev_base:
+            repeat += 1
+            suffix = " (cont.)" if repeat == 1 else f" (cont. {repeat})"
+            b["narration"] = (base + suffix)[:300]
+        else:
+            repeat = 0
+        prev_base = base
+    if "camera" not in beats[0]:
+        beats[0]["camera"] = {
+            "action": "reset",
+            "zoom": tokens.CAMERA["zoom_full"],
+        }
+    if "badge" not in beats[-1]:
+        beats[-1]["badge"] = {
+            "time": complexity.time,
+            "space": complexity.space,
+        }
+    return beats
 
 
 def _cell_x(index: int, n: int, cell: float = 88.0, gap: float = 12.0) -> float:
@@ -549,28 +585,7 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             "badge": {"time": spec.complexity.time, "space": spec.complexity.space},
         }
     )
-    prev_base = None
-    repeat = 0
-    for b in beats[1:-1]:
-        base = b["narration"]
-        if base == prev_base:
-            repeat += 1
-            suffix = " (cont.)" if repeat == 1 else f" (cont. {repeat})"
-            b["narration"] = (base + suffix)[:300]
-        else:
-            repeat = 0
-        prev_base = base
-    if "camera" not in beats[0]:
-        beats[0]["camera"] = {
-            "action": "reset",
-            "zoom": tokens.CAMERA["zoom_full"],
-        }
-    if "badge" not in beats[-1]:
-        beats[-1]["badge"] = {
-            "time": spec.complexity.time,
-            "space": spec.complexity.space,
-        }
-    return beats
+    return _finalize_beats(beats, spec.complexity)
 
 
 # ── stack ────────────────────────────────────────────────────────────────────
@@ -663,7 +678,13 @@ def plan_stack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
 def plan_linked_list(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     arr = list(spec.initialState.array or [])
     n = len(arr) if arr else 5
-    node_x = [round(-200.0 + i * 100.0, 2) for i in range(n)]
+    # Cap like tree/graph (MAX_PLAN_NODES) so the 2n+1-shape intro can never
+    # bust the validator caps (40 shapes / 30 motions per step).
+    n = max(1, min(n, MAX_PLAN_NODES))
+    # Compress horizontal spacing for large n so nodes stay in ±960 bounds;
+    # identical to the old -200+i*100 layout for n <= 5.
+    gap = min(100.0, 1500.0 / n)
+    node_x = [round((i - (n - 1) / 2) * gap, 2) for i in range(n)]
     intro_shapes: List[Dict[str, Any]] = [
         {
             "id": f"node_{i}",
@@ -687,7 +708,7 @@ def plan_linked_list(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                 "lineWidth": 2,
             }
         )
-    null_x = round(-200.0 + n * 100.0, 2)
+    null_x = round(((n + 1) / 2) * gap, 2)
     intro_shapes.append(
         {
             "id": "node_null",
@@ -715,9 +736,12 @@ def plan_linked_list(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
         {
             "narration": f"{spec.title or spec.algorithm} — Linked List"[:300],
             "shapes": intro_shapes,
+            # Appear motions cover nodes only (n + 2 ops): link lines render
+            # statically so the intro stays under the 30-motions-per-step cap.
             "motion": [
                 {"target": s["id"], "op": "appear", "duration": 0.3}
                 for s in intro_shapes
+                if s["id"].startswith("node_") or s["id"] == "val_null"
             ],
             "camera": {"action": "reset"},
         }
@@ -1055,57 +1079,186 @@ def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, 
 # ── intervals ────────────────────────────────────────────────────────────────
 
 
+# Token-scaled interval bars (mirrors family_compilers._compile_intervals math:
+# lo/hi span, IV_WIDTH 700, bar_x/bar_w). Kept local so the planner owns its
+# layout while the compiler remains the fallback path's source of truth.
+IV_WIDTH = 700.0
+IV_Y0 = -160.0
+IV_H = 40.0
+IV_GAP = 18.0
+IV_MAX = 10
+
+
+def _interval_pairs(array: Any) -> List[Any]:
+    """Extract [lo, hi] pairs from the initial state, ignoring junk."""
+    pairs: List[Any] = []
+    for item in array or []:
+        if isinstance(item, (list, tuple)) and len(item) >= 2:
+            try:
+                pairs.append((int(item[0]), int(item[1])))
+            except (TypeError, ValueError):
+                continue
+    return pairs
+
+
 def plan_intervals(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
+    pairs = _interval_pairs(spec.initialState.array)
+    if not pairs:
+        # Traces carry init `data`, which _try_planner does not forward — fall
+        # back to one unit bar per distinct referenced index so visit/mark
+        # beats still render instead of a placeholder rect.
+        seen: List[int] = []
+        for s in spec.steps:
+            refs = ([s.index] if s.index is not None else []) + list(s.indices or [])
+            for v in refs:
+                try:
+                    idx = int(v)
+                except (TypeError, ValueError):
+                    continue
+                if idx not in seen:
+                    seen.append(idx)
+        pairs = [(i, i + 1) for i in seen[:IV_MAX]] or [(0, 1)]
+    else:
+        pairs = pairs[:IV_MAX]
+
+    lo = min(s for s, _ in pairs)
+    hi = max(e for _, e in pairs)
+    span = max(hi - lo, 1)
+
+    def bar_x(start: int) -> float:
+        return round(-IV_WIDTH / 2 + (start - lo) * IV_WIDTH / span, 2)
+
+    def bar_w(start: int, end: int) -> float:
+        return max(20.0, round((end - start) * IV_WIDTH / span, 2))
+
+    intro_shapes: List[Dict[str, Any]] = []
+    intro_motion: List[Dict[str, Any]] = []
+    for i, (s, e) in enumerate(pairs):
+        y = round(IV_Y0 + i * (IV_H + IV_GAP), 2)
+        w = bar_w(s, e)
+        cx = round(bar_x(s) + w / 2, 2)
+        intro_shapes.append(
+            {
+                "id": f"bar_{i}",
+                "type": "rect",
+                "x": cx,
+                "y": y,
+                "width": w,
+                "height": IV_H,
+                "radius": 6,
+                "fill": tokens.PALETTE["idle_fill"],
+                "stroke": tokens.PALETTE["idle_stroke"],
+                "lineWidth": 2,
+            }
+        )
+        intro_shapes.append(
+            {
+                "id": f"bar_val_{i}",
+                "type": "text",
+                "x": cx,
+                "y": y,
+                "text": f"[{s},{e}]"[: tokens.MAX_LABEL],
+                "fontSize": 16,
+                "fill": tokens.PALETTE["text"],
+            }
+        )
+        intro_motion.append(
+            {"target": f"bar_{i}", "op": "appear", "duration": tokens.DURATION["enter"]}
+        )
     beats: List[Dict[str, Any]] = [
         {
-            "narration": f"{spec.title or spec.algorithm} — Intervals"[:300],
-            "shapes": [_root_shape("interval_0", w=180.0)],
-            "motion": [{"target": "interval_0", "op": "appear", "duration": 0.4}],
+            "narration": f"{spec.title or spec.algorithm} — Intervals {pairs}"[:300],
+            "shapes": intro_shapes,
+            "motion": intro_motion,
             "camera": {"action": "reset"},
         }
     ]
-    known = {"interval_0"}
+
+    def _clamp(idx: int) -> int:
+        return max(0, min(int(idx), len(pairs) - 1))
+
     for step in spec.steps:
         m: List[Dict[str, Any]] = []
-        shapes: List[Dict[str, Any]] = []
         narr = step.label or step.action
-        if step.action in ("partition", "window"):
-            m.append(
-                {
-                    "target": "interval_0",
-                    "op": "stroke",
-                    "to": tokens.PALETTE["accent"],
-                    "duration": 0.3,
-                }
-            )
-            narr = f"{step.action} {step.indices or [step.low, step.high]}"
-        elif step.action == "visit":
-            idx = int(step.index or 0)
-            sid = f"interval_{idx}"
-            if sid not in known:
-                shapes.append(_item_shape(sid, x=0.0, y=idx * 60.0 - 120.0))
-                known.add(sid)
+        raw = step.index
+        if raw is None and step.indices:
+            raw = step.indices[0]
+        idx = _clamp(raw if raw is not None else 0)
+        sid = f"bar_{idx}"
+        s, e = pairs[idx]
+        camera: Dict[str, Any] | None = {
+            "action": "focus",
+            "element": sid,
+            "zoom": tokens.CAMERA["zoom_focus"],
+        }
+        if step.action == "visit":
             m.append(
                 {
                     "target": sid,
                     "op": "fill",
                     "to": tokens.PALETTE["highlight_fill"],
+                    "duration": tokens.DURATION["highlight"],
+                }
+            )
+            m.append(
+                {
+                    "target": sid,
+                    "op": "stroke",
+                    "to": tokens.PALETTE["highlight_stroke"],
+                    "duration": tokens.DURATION["highlight"],
+                }
+            )
+            narr = step.label or f"Visit [{s},{e}] (interval {idx})"
+        elif step.action == "mark":
+            m.append(
+                {
+                    "target": sid,
+                    "op": "fill",
+                    "to": tokens.PALETTE["success_fill"],
                     "duration": 0.3,
                 }
             )
-            narr = f"Visit interval {idx}"
-        else:
             m.append(
-                {"target": "interval_0", "op": "scale", "to": 1.0, "duration": 0.25}
+                {
+                    "target": sid,
+                    "op": "stroke",
+                    "to": tokens.PALETTE["success_stroke"],
+                    "duration": 0.3,
+                }
             )
-        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
+            narr = step.label or f"Mark [{s},{e}] (interval {idx})"
+        elif step.action == "pointer":
+            m.append(
+                {
+                    "target": sid,
+                    "op": "stroke",
+                    "to": tokens.PALETTE["accent"],
+                    "duration": 0.25,
+                }
+            )
+            narr = step.label or f"Pointer → [{s},{e}]"
+        elif step.action in ("partition", "window"):
+            m.append(
+                {
+                    "target": sid,
+                    "op": "stroke",
+                    "to": tokens.PALETTE["accent"],
+                    "duration": 0.3,
+                }
+            )
+            narr = step.label or f"Range [{s},{e}]"
+        else:
+            camera = None
+            m.append({"target": "bar_0", "op": "scale", "to": 1.0, "duration": 0.25})
+        beat: Dict[str, Any] = {"narration": narr[:300], "shapes": [], "motion": m}
+        if camera:
+            beat["camera"] = camera
+        beats.append(beat)
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
             "shapes": [],
-            "motion": [
-                {"target": "interval_0", "op": "scale", "to": 1.0, "duration": 0.25}
-            ],
+            "motion": [{"target": "bar_0", "op": "scale", "to": 1.0, "duration": 0.25}],
             "badge": {"time": spec.complexity.time, "space": spec.complexity.space},
         }
     )
@@ -1209,24 +1362,25 @@ def plan(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     """Dispatch to template planner — covers all 103 canonical algos."""
     viz = spec.visualization
     if viz == "sorted-array":
-        return plan_searching(spec)
+        return _finalize_beats(plan_searching(spec), spec.complexity)
     if viz in ("bars", "array"):
-        return plan_array(spec)
+        return _finalize_beats(plan_array(spec), spec.complexity)
     if viz == "stack":
-        return plan_stack(spec)
+        return _finalize_beats(plan_stack(spec), spec.complexity)
     if viz == "queue":
-        return plan_stack(spec)  # queue reuses stack beats with shifted layout
+        # queue reuses stack beats with shifted layout
+        return _finalize_beats(plan_stack(spec), spec.complexity)
     if viz == "linked_list":
-        return plan_linked_list(spec)
+        return _finalize_beats(plan_linked_list(spec), spec.complexity)
     if viz == "tree":
-        return plan_tree(spec)
+        return _finalize_beats(plan_tree(spec), spec.complexity)
     if viz == "graph":
-        return plan_graph(spec, "graph")
+        return _finalize_beats(plan_graph(spec, "graph"), spec.complexity)
     if viz == "grid":
-        return plan_graph(spec, "grid")
+        return _finalize_beats(plan_graph(spec, "grid"), spec.complexity)
     if viz == "intervals":
-        return plan_intervals(spec)
+        return _finalize_beats(plan_intervals(spec), spec.complexity)
     if viz == "backtrack":
-        return plan_backtrack(spec)
+        return _finalize_beats(plan_backtrack(spec), spec.complexity)
     # Fallback: generic array beats so no algo renders empty
-    return plan_array(spec)
+    return _finalize_beats(plan_array(spec), spec.complexity)

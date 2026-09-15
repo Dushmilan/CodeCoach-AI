@@ -48,3 +48,49 @@ def test_no_duplicate_consecutive_narrations():
     beats = scene_planner.plan_array(spec)
     narrs = [b["narration"] for b in beats[1:-1]]
     assert len(set(narrs)) == len(narrs)
+
+
+def _tree_spec():
+    return AlgorithmAnimation(
+        algorithm="maximum_depth_of_binary_tree",
+        visualization="tree",
+        initialState=InitialState(array=[3, 9, 20, None, None, 15, 7], extra={}),
+        steps=[
+            AnimationStepSpec(action="visit", index=0),
+            AnimationStepSpec(action="visit", index=0),
+            AnimationStepSpec(action="visit", index=1),
+        ],
+        complexity=Complexity(time="O(n)", space="O(h)"),
+        title="T",
+    )
+
+
+def _graph_spec():
+    return AlgorithmAnimation(
+        algorithm="clone_graph",
+        visualization="graph",
+        initialState=InitialState(array=[], extra={}),
+        steps=[
+            AnimationStepSpec(action="visit", index=0),
+            AnimationStepSpec(action="visit", index=0),
+            AnimationStepSpec(action="visit", index=1),
+        ],
+        complexity=Complexity(time="O(V+E)", space="O(V)"),
+        title="T",
+    )
+
+
+def test_finalize_beats_applies_to_tree_path():
+    beats = scene_planner.plan(_tree_spec())
+    narrs = [b["narration"] for b in beats[1:-1]]
+    assert len(set(narrs)) == len(narrs)
+    assert beats[0].get("camera", {}).get("action") == "reset"
+    assert beats[-1].get("badge") == {"time": "O(n)", "space": "O(h)"}
+
+
+def test_finalize_beats_applies_to_graph_path():
+    beats = scene_planner.plan(_graph_spec())
+    narrs = [b["narration"] for b in beats[1:-1]]
+    assert len(set(narrs)) == len(narrs)
+    assert beats[0].get("camera", {}).get("action") == "reset"
+    assert beats[-1].get("badge") == {"time": "O(V+E)", "space": "O(V)"}
