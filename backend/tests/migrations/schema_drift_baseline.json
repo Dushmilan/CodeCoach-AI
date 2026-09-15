@@ -3,11 +3,7 @@
   "remove_index:ix_audit_logs_user_id",
   "remove_index:ix_generation_jobs_created_at",
   "remove_index:ix_generation_jobs_status",
-  "remove_index:ix_rescue_queue_user_id",
-  "remove_index:ix_rescue_queue_user_status_due",
-  "remove_index:uq_rescue_queue_open_user_question",
   "remove_table:audit_logs",
   "remove_table:feature_flags",
-  "remove_table:generation_jobs",
-  "remove_table:rescue_queue"
+  "remove_table:generation_jobs"
 ]
