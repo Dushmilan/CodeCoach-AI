@@ -14,7 +14,8 @@ def test_downsample_keeps_first_last_and_key_actions_in_order():
     assert out[0] is steps[0]
     assert out[-1] is steps[-1]
     assert any(s.action == "found" for s in out)
-    assert [id(s) for s in out] == sorted(id(s) for s in out) or True  # order kept
+    pos = {id(s): k for k, s in enumerate(steps)}
+    assert [pos[id(s)] for s in out] == sorted(pos[id(s)] for s in out)  # order kept
     actions = [s.action for s in out]
     assert actions[0] == "compare" and actions[-1] == "found"
 
