@@ -115,7 +115,7 @@ export function AnimationPlayer({
   );
 
   return (
-    <div className="space-y-3" tabIndex={0} onKeyDown={onKeyDown} aria-label="Animation player">
+    <div className="space-y-3" tabIndex={0} onKeyDown={onKeyDown} role="region" aria-label="Animation player">
       <div aria-live="polite">{currentStep ? children(currentStep, currentIndex) : null}</div>
 
       <div className="flex items-center gap-1.5">
