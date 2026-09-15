@@ -54,22 +54,31 @@ def _item_shape(sid: str, x: float = 0.0, y: float = 0.0) -> Dict[str, Any]:
     }
 
 
-def _edge_shape(sid: str) -> Dict[str, Any]:
+def _ensure_graph_node(
+    known: set,
+    shapes: List[Dict[str, Any]],
+    sid: str,
+    idx: int,
+    positions: List[Dict[str, float]],
+) -> None:
+    if sid not in known:
+        pos = positions[max(0, min(int(idx), len(positions) - 1))]
+        shapes.append(_item_shape(sid, x=pos["x"], y=pos["y"]))
+        known.add(sid)
+
+
+def _graph_edge_shape(
+    sid: str,
+    a_pos: Dict[str, float],
+    b_pos: Dict[str, float],
+) -> Dict[str, Any]:
     return {
         "id": sid,
         "type": "line",
-        "points": [[-60.0, 0.0], [60.0, 0.0]],
+        "points": [[a_pos["x"], a_pos["y"]], [b_pos["x"], b_pos["y"]]],
         "stroke": tokens.PALETTE["idle_stroke"],
         "lineWidth": 2,
     }
-
-
-def _ensure_planner_node(
-    known: set, shapes: List[Dict[str, Any]], sid: str, pos: int
-) -> None:
-    if sid not in known:
-        shapes.append(_item_shape(sid, x=(pos % 8) * 80.0 - 280.0, y=0.0))
-        known.add(sid)
 
 
 # ── searching (binary search hero template) ──────────────────────────────────
@@ -584,25 +593,61 @@ def plan_stack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
 def plan_linked_list(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     arr = list(spec.initialState.array or [])
     n = len(arr) if arr else 5
+    node_x = [round(-200.0 + i * 100.0, 2) for i in range(n)]
+    intro_shapes: List[Dict[str, Any]] = [
+        {
+            "id": f"node_{i}",
+            "type": "ellipse",
+            "x": node_x[i],
+            "y": 0,
+            "width": 60,
+            "height": 60,
+            "fill": tokens.PALETTE["idle_fill"],
+            "stroke": tokens.PALETTE["idle_stroke"],
+        }
+        for i in range(n)
+    ]
+    for i in range(n - 1):
+        intro_shapes.append(
+            {
+                "id": f"link_{i}",
+                "type": "line",
+                "points": [[node_x[i] + 30.0, 0.0], [node_x[i + 1] - 30.0, 0.0]],
+                "stroke": tokens.PALETTE["muted"],
+                "lineWidth": 2,
+            }
+        )
+    null_x = round(-200.0 + n * 100.0, 2)
+    intro_shapes.append(
+        {
+            "id": "node_null",
+            "type": "ellipse",
+            "x": null_x,
+            "y": 0,
+            "width": 60,
+            "height": 60,
+            "fill": tokens.PALETTE["idle_fill"],
+            "stroke": tokens.PALETTE["idle_stroke"],
+        }
+    )
+    intro_shapes.append(
+        {
+            "id": "val_null",
+            "type": "text",
+            "x": null_x,
+            "y": 0,
+            "text": "null",
+            "fontSize": 22,
+            "fill": tokens.PALETTE["muted"],
+        }
+    )
     beats: List[Dict[str, Any]] = [
         {
             "narration": f"{spec.title or spec.algorithm} — Linked List"[:300],
-            "shapes": [
-                {
-                    "id": f"node_{i}",
-                    "type": "ellipse",
-                    "x": -200 + i * 100,
-                    "y": 0,
-                    "width": 60,
-                    "height": 60,
-                    "fill": tokens.PALETTE["idle_fill"],
-                    "stroke": tokens.PALETTE["idle_stroke"],
-                }
-                for i in range(n)
-            ],
+            "shapes": intro_shapes,
             "motion": [
-                {"target": f"node_{i}", "op": "appear", "duration": 0.3}
-                for i in range(n)
+                {"target": s["id"], "op": "appear", "duration": 0.3}
+                for s in intro_shapes
             ],
             "camera": {"action": "reset"},
         }
@@ -677,16 +722,100 @@ def tree_layout(n: int) -> List[Dict[str, float]]:
     return positions
 
 
+GRAPH_RADIUS = 230.0
+GRID_CELL = 60.0
+GRID_GAP = 8.0
+GRID_Y = -80.0
+
+# Validator caps (animation_validator MAX_SHAPES_PER_STEP 40 /
+# MAX_MOTIONS_PER_STEP 30) bound full-layout intros; canonical inputs are far
+# smaller, but a stray large index must never hang the planner or bust caps.
+MAX_PLAN_NODES = 16
+
+
+def _plan_node_count(array_len: int, refs: List[int]) -> int:
+    want = max([int(array_len)] + [i + 1 for i in refs if i >= 0] + [1])
+    return max(1, min(want, MAX_PLAN_NODES))
+
+
+def _tree_edge_shape(
+    sid: str, pos: Dict[str, float], parent_pos: Dict[str, float]
+) -> Dict[str, Any]:
+    return {
+        "id": sid,
+        "type": "line",
+        "points": [
+            [parent_pos["x"], round(parent_pos["y"] + 22.0, 2)],
+            [pos["x"], round(pos["y"] - 22.0, 2)],
+        ],
+        "stroke": tokens.PALETTE["idle_stroke"],
+        "lineWidth": 2,
+    }
+
+
+def _tree_pos(idx: int) -> Dict[str, float]:
+    """Level-order position for one tree index (index-pure math)."""
+    safe = max(0, min(int(idx), MAX_PLAN_NODES - 1))
+    return tree_layout(safe + 1)[safe]
+
+
+def _graph_positions(n: int) -> List[Dict[str, float]]:
+    """Circular layout radius GRAPH_RADIUS (parity with family_compilers)."""
+    total = max(int(n), 1)
+    positions = []
+    for i in range(total):
+        angle = 2 * math.pi * i / total - math.pi / 2
+        positions.append(
+            {
+                "x": round(GRAPH_RADIUS * math.cos(angle), 2),
+                "y": round(GRAPH_RADIUS * math.sin(angle), 2),
+            }
+        )
+    return positions
+
+
+def _grid_position(idx: int, n: int) -> Dict[str, float]:
+    """Grid cell position from GRID_CELL/GAP centered on GRID_Y."""
+    total = max(int(n), 1)
+    cols = max(1, int(math.ceil(math.sqrt(total))))
+    rows = max(1, int(math.ceil(total / cols)))
+    safe = max(0, min(int(idx), total - 1))
+    c, r = safe % cols, safe // cols
+    return {
+        "x": round((c - (cols - 1) / 2) * (GRID_CELL + GRID_GAP), 2),
+        "y": round(GRID_Y + (r - (rows - 1) / 2) * (GRID_CELL + GRID_GAP), 2),
+    }
+
+
 def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
+    ref = [int(s.index or 0) for s in spec.steps]
+    node_count = _plan_node_count(len(spec.initialState.array or []), ref)
+    positions = tree_layout(node_count)
+    intro_shapes: List[Dict[str, Any]] = [_root_shape("tree_root")]
+    intro_motion: List[Dict[str, Any]] = [
+        {
+            "target": "tree_root",
+            "op": "appear",
+            "duration": tokens.DURATION["enter"],
+        }
+    ]
+    for i, pos in enumerate(positions):
+        intro_shapes.append(_item_shape(f"tree_{i}", x=pos["x"], y=pos["y"]))
+        intro_motion.append({"target": f"tree_{i}", "op": "appear", "duration": 0.3})
+        if i > 0:
+            intro_shapes.append(
+                _tree_edge_shape(f"tree_edge_{i}", pos, positions[(i - 1) // 2])
+            )
+    known = {"tree_root"}
+    known.update(s["id"] for s in intro_shapes)
     beats: List[Dict[str, Any]] = [
         {
             "narration": f"{spec.title or spec.algorithm} — Tree"[:300],
-            "shapes": [_root_shape("tree_root")],
-            "motion": [{"target": "tree_root", "op": "appear", "duration": 0.4}],
+            "shapes": intro_shapes,
+            "motion": intro_motion,
             "camera": {"action": "reset"},
         }
     ]
-    known = {"tree_root"}
     for step in spec.steps:
         m: List[Dict[str, Any]] = []
         shapes: List[Dict[str, Any]] = []
@@ -694,8 +823,14 @@ def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
         idx = int(step.index or 0)
         sid = f"tree_{idx}"
         if step.action in ("visit", "choose", "backtrack") and sid not in known:
-            shapes.append(_item_shape(sid, x=(idx % 8) * 80.0 - 280.0, y=0.0))
+            pos = _tree_pos(idx)
+            shapes.append(_item_shape(sid, x=pos["x"], y=pos["y"]))
             known.add(sid)
+            if idx > 0:
+                eid = f"tree_edge_{idx}"
+                if eid not in known:
+                    shapes.append(_tree_edge_shape(eid, pos, _tree_pos((idx - 1) // 2)))
+                    known.add(eid)
         if step.action == "visit":
             m.append(
                 {
@@ -749,15 +884,40 @@ def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
 
 def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, Any]]:
     root = f"{kind}_root"
+    ref_idxs: List[int] = []
+    for _s in spec.steps:
+        if _s.action == "visit" and _s.index is not None:
+            ref_idxs.append(int(_s.index))
+        elif _s.action == "edge" and _s.indices:
+            ref_idxs.extend(int(v) for v in _s.indices[:2])
+        elif _s.action == "relax_edge" and _s.indices:
+            ref_idxs.append(int(_s.indices[0]))
+    node_count = _plan_node_count(len(spec.initialState.array or []), ref_idxs)
+    if kind == "grid":
+        positions = [_grid_position(i, node_count) for i in range(node_count)]
+    else:
+        positions = _graph_positions(node_count)
+
+    def _pos(idx: int) -> Dict[str, float]:
+        return positions[max(0, min(int(idx), len(positions) - 1))]
+
+    intro_shapes: List[Dict[str, Any]] = [_root_shape(root)]
+    intro_motion: List[Dict[str, Any]] = [
+        {"target": root, "op": "appear", "duration": 0.4}
+    ]
+    for i, pos in enumerate(positions):
+        intro_shapes.append(_item_shape(f"node_{i}", x=pos["x"], y=pos["y"]))
+        intro_motion.append({"target": f"node_{i}", "op": "appear", "duration": 0.3})
+    known = {root}
+    known.update(s["id"] for s in intro_shapes)
     beats: List[Dict[str, Any]] = [
         {
             "narration": f"{spec.title or spec.algorithm} — {kind.title()}"[:300],
-            "shapes": [_root_shape(root)],
-            "motion": [{"target": root, "op": "appear", "duration": 0.4}],
+            "shapes": intro_shapes,
+            "motion": intro_motion,
             "camera": {"action": "reset"},
         }
     ]
-    known = {root}
     for step in spec.steps:
         m: List[Dict[str, Any]] = []
         shapes: List[Dict[str, Any]] = []
@@ -765,7 +925,7 @@ def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, 
         if step.action == "visit":
             idx = int(step.index or 0)
             sid = f"node_{idx}"
-            _ensure_planner_node(known, shapes, sid, idx)
+            _ensure_graph_node(known, shapes, sid, idx, positions)
             m.append(
                 {
                     "target": sid,
@@ -780,9 +940,9 @@ def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, 
             b = step.indices[1] if step.indices and len(step.indices) >= 2 else 1
             eid = f"edge_{a}_{b}"
             if eid not in known:
-                shapes.append(_edge_shape(eid))
+                shapes.append(_graph_edge_shape(eid, _pos(a), _pos(b)))
                 known.add(eid)
-            _ensure_planner_node(known, shapes, f"node_{b}", b)
+            _ensure_graph_node(known, shapes, f"node_{b}", b, positions)
             m.append(
                 {
                     "target": eid,
@@ -803,7 +963,7 @@ def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, 
         elif step.action == "relax_edge":
             idx = int(step.indices[0]) if step.indices else 0
             sid = f"node_{idx}"
-            _ensure_planner_node(known, shapes, sid, idx)
+            _ensure_graph_node(known, shapes, sid, idx, positions)
             narr = f"Relax {step.indices}"
             m.append({"target": sid, "op": "scale", "to": 1.05, "duration": 0.25})
         else:
@@ -899,7 +1059,8 @@ def plan_backtrack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
 
     def _ensure(sid: str, shapes: List[Dict[str, Any]], pos: int) -> None:
         if sid not in known:
-            shapes.append(_item_shape(sid, x=(pos % 8) * 80.0 - 280.0, y=0.0))
+            p = _tree_pos(pos)
+            shapes.append(_item_shape(sid, x=p["x"], y=p["y"]))
             known.add(sid)
 
     for step in spec.steps:
