@@ -1,0 +1,128 @@
+"""SQL implementation of ClassroomRepository (Supabase/PostgreSQL only)."""
+
+import uuid
+
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
+
+from app.models.orm import ClassroomEnrollmentORM, ClassroomORM, CourseORM
+from app.ports.classroom_repository import ClassroomRepository
+
+_ALLOWED_ROLES = ("student", "ta")
+
+
+class DuplicateInviteCodeError(ValueError):
+    """Raised when a classroom invite_code collides (unique constraint).
+
+    Subclasses ValueError so the API layer can translate it to a 409
+    Conflict without importing SQLAlchemy error types.
+    """
+
+
+class SqlClassroomRepository(ClassroomRepository):
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def create_classroom(
+        self,
+        *,
+        course_id: str,
+        owner_id: str,
+        name: str,
+        invite_code: str,
+        term: Optional[str] = None,
+        schedule: Optional[str] = None,
+    ) -> ClassroomORM:
+        orm = ClassroomORM(
+            id=uuid.uuid4().hex,
+            course_id=course_id,
+            owner_id=owner_id,
+            name=name,
+            invite_code=invite_code,
+            term=term,
+            schedule=schedule,
+        )
+        self.session.add(orm)
+        try:
+            await self.session.commit()
+        except IntegrityError as exc:
+            await self.session.rollback()
+            if "uq_classrooms_invite_code" in str(exc.orig) or "invite_code" in str(
+                exc.orig
+            ):
+                raise DuplicateInviteCodeError(
+                    f"invite code {invite_code!r} already exists"
+                ) from exc
+            raise
+        return orm
+
+    async def list_owned_by_professor(self, owner_id: str) -> list[ClassroomORM]:
+        result = await self.session.execute(
+            select(ClassroomORM)
+            .where(ClassroomORM.owner_id == owner_id)
+            .order_by(ClassroomORM.name)
+        )
+        return list(result.scalars().all())
+
+    async def list_for_ta(self, user_id: str) -> list[ClassroomORM]:
+        result = await self.session.execute(
+            select(ClassroomORM)
+            .join(
+                ClassroomEnrollmentORM,
+                ClassroomEnrollmentORM.classroom_id == ClassroomORM.id,
+            )
+            .where(
+                ClassroomEnrollmentORM.user_id == user_id,
+                ClassroomEnrollmentORM.role == "ta",
+            )
+            .order_by(ClassroomORM.name)
+        )
+        return list(result.scalars().all())
+
+    async def enroll(
+        self, *, classroom_id: str, user_id: str, role: str
+    ) -> ClassroomEnrollmentORM:
+        if role not in _ALLOWED_ROLES:
+            raise ValueError(f"role must be one of {_ALLOWED_ROLES}, got {role!r}")
+        result = await self.session.execute(
+            select(ClassroomEnrollmentORM).where(
+                ClassroomEnrollmentORM.classroom_id == classroom_id,
+                ClassroomEnrollmentORM.user_id == user_id,
+            )
+        )
+        existing = result.scalar_one_or_none()
+        if existing is not None:
+            existing.role = role
+            await self.session.commit()
+            return existing
+        orm = ClassroomEnrollmentORM(
+            id=uuid.uuid4().hex,
+            classroom_id=classroom_id,
+            user_id=user_id,
+            role=role,
+        )
+        self.session.add(orm)
+        try:
+            await self.session.commit()
+        except IntegrityError:
+            # Lost a concurrent enroll race: re-read the winner and apply role.
+            await self.session.rollback()
+            result = await self.session.execute(
+                select(ClassroomEnrollmentORM).where(
+                    ClassroomEnrollmentORM.classroom_id == classroom_id,
+                    ClassroomEnrollmentORM.user_id == user_id,
+                )
+            )
+            winner = result.scalar_one()
+            winner.role = role
+            await self.session.commit()
+            return winner
+        return orm
+
+    async def set_course_owner(self, course_id: str, owner_id: str) -> None:
+        await self.session.execute(
+            update(CourseORM).where(CourseORM.id == course_id).values(owner_id=owner_id)
+        )
+        await self.session.commit()

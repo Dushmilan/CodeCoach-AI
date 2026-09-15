@@ -7,6 +7,7 @@ from app.core.config import get_settings, Settings
 from app.core.database import get_db
 from app.ports.question_repository import QuestionRepository
 from app.ports.course_repository import CourseRepository
+from app.ports.classroom_repository import ClassroomRepository
 from app.ports.progress_repository import ProgressRepository
 from app.ports.admin_repository import AdminRepository
 from app.ports.user_admin_repository import UserAdminRepository
@@ -22,6 +23,7 @@ from app.repositories.sql_review_repository import SqlReviewRepository
 from app.repositories.sql_rescue_repository import SqlRescueRepository
 from app.repositories.sql_question_repository import SqlQuestionRepository
 from app.repositories.sql_course_repository import SqlCourseRepository
+from app.repositories.sql_classroom_repository import SqlClassroomRepository
 from app.repositories.sql_progress_repository import SqlProgressRepository
 from app.repositories.sql_user_repository import SqlUserRepository
 from app.repositories.sql_admin_repository import SqlAdminRepository
@@ -58,6 +60,12 @@ async def get_course_repo(
     db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[CourseRepository, None]:
     yield SqlCourseRepository(db)
+
+
+async def get_classroom_repository(
+    db: AsyncSession = Depends(get_db),
+) -> AsyncGenerator[ClassroomRepository, None]:
+    yield SqlClassroomRepository(db)
 
 
 async def get_progress_repo(
