@@ -1,4 +1,9 @@
 import { http, HttpResponse } from "msw";
+import demoData from "@/data/instructor-demo.json";
+
+// Instructor live endpoints (Issue #159) — default stubs serve the committed
+// demo dataset in live shapes so pages render through the fetch path in
+// tests/Storybook. Tests override via server.use() for live/failure cases.
 
 export const handlers = [
   http.get("/api/questions/", () => {
@@ -144,6 +149,85 @@ export const handlers = [
       description: "A test lesson",
       content: "Lesson content",
       type: "theory",
+    });
+  }),
+  // Instructor demo (Issue #159, phase 2) — serves the committed demo dataset
+  // in tests/Storybook. Live mode calls the real /api/instructor/* backend.
+  http.get("/api/instructor/classrooms", () => {
+    return HttpResponse.json(
+      demoData.classrooms.map((c) => ({
+        id: c.id,
+        course_id: c.courseId,
+        owner_id: c.ownerId,
+        name: c.name,
+        invite_code: c.inviteCode,
+        term: c.term,
+        schedule: c.schedule,
+      })),
+    );
+  }),
+  http.get("/api/instructor/classrooms/:id", ({ params }) => {
+    const room = demoData.classrooms.find((c) => c.id === params.id);
+    if (!room) {
+      return HttpResponse.json(
+        { detail: "Classroom not found" },
+        { status: 404 },
+      );
+    }
+    const enrolled = demoData.enrollments.filter(
+      (e) => e.classroomId === room.id,
+    );
+    const students = enrolled.map((e) => {
+      const p = demoData.progress.find(
+        (r) => r.userId === e.userId && r.classroomId === room.id,
+      );
+      const completed = p?.completedLessons ?? 0;
+      return {
+        user_id: e.userId,
+        completed_lessons: completed,
+        completion_pct: Math.round((completed / room.totalLessons) * 100),
+        attempted: p?.attempted ?? 0,
+        solved: p?.solved ?? 0,
+      };
+    });
+    const total = students.length;
+    return HttpResponse.json({
+      classroom: {
+        id: room.id,
+        course_id: room.courseId,
+        owner_id: room.ownerId,
+        name: room.name,
+        invite_code: room.inviteCode,
+        term: room.term,
+        schedule: room.schedule,
+      },
+      analytics: {
+        total_students: total,
+        avg_completion: total
+          ? Math.round(
+              (students.reduce((s, x) => s + x.completion_pct, 0) / total) * 10,
+            ) / 10
+          : 0,
+        avg_solved: total
+          ? Math.round(
+              (students.reduce((s, x) => s + x.solved, 0) / total) * 100,
+            ) / 100
+          : 0,
+        students,
+      },
+    });
+  }),
+  http.get("/api/instructor/class-analytics", ({ request }) => {
+    const url = new URL(request.url);
+    const ids = (url.searchParams.get("user_ids") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return HttpResponse.json({
+      total_students: ids.length,
+      avg_completion: 0.0,
+      avg_solved: 0.0,
+      students: [],
     });
   }),
 ];

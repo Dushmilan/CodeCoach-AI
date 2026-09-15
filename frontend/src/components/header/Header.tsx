@@ -23,6 +23,12 @@ export function Header() {
 
   const isAdmin =
     isHydrated && isAuthenticated && !!user?.role && ['admin', 'super_admin'].includes(user.role);
+  const isProfessor =
+    isHydrated && isAuthenticated && !!user?.role && ['professor', 'admin', 'super_admin'].includes(user.role);
+  // Professors have their own dashboard; the Demonstrator link is TA-only
+  // (admins keep both). Mirrors the backend professor/ta permission matrix.
+  const isDemonstrator =
+    isHydrated && isAuthenticated && !!user?.role && ['ta', 'admin', 'super_admin'].includes(user.role);
 
   return (
     <>
@@ -57,6 +63,30 @@ export function Header() {
               <GraduationCap className="h-3 w-3" />
               Learn
             </Link>
+            {isProfessor && (
+              <Link
+                href="/professor"
+                data-testid="header-professor-link"
+                aria-label="Professor Dashboard"
+                title="Professor Dashboard"
+                className="px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 ring-1 ring-primary/20 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+              >
+                <GraduationCap className="h-3 w-3" />
+                Professor
+              </Link>
+            )}
+            {isDemonstrator && (
+              <Link
+                href="/demonstrator"
+                data-testid="header-demonstrator-link"
+                aria-label="Demonstrator Dashboard"
+                title="Demonstrator Dashboard"
+                className="px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 ring-1 ring-primary/20 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+              >
+                <LayoutDashboard className="h-3 w-3" />
+                Demonstrator
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 href="/admin"
@@ -164,8 +194,14 @@ export function Header() {
             { href: '/', label: 'Home', delay: 'delay-100' },
             { href: '/problems', label: 'Problems', delay: 'delay-115' },
             { href: '/learn', label: 'Learn', delay: 'delay-125' },
+            ...(isProfessor
+              ? [{ href: '/professor', label: 'Professor', delay: 'delay-135' as const, highlight: true as const }]
+              : []),
+            ...(isDemonstrator
+              ? [{ href: '/demonstrator', label: 'Demonstrator', delay: 'delay-140' as const, highlight: true as const }]
+              : []),
             ...(isAdmin
-              ? [{ href: '/admin', label: 'Admin Panel', delay: 'delay-135' as const, highlight: true as const }]
+              ? [{ href: '/admin', label: 'Admin Panel', delay: 'delay-145' as const, highlight: true as const }]
               : []),
           ].map((link) => (
             <Link

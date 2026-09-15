@@ -48,6 +48,31 @@ ADMIN_USERS = [
     },
 ]
 
+# Issue #159 (phase 2) — instructor logins for the professor + demonstrator
+# dashboards. Usernames match frontend/src/data/instructor-demo.json so the
+# demo dataset and real logins refer to the same identities. Dev-only
+# passwords, same convention as ADMIN_USERS above.
+INSTRUCTOR_SEED_USERS = [
+    {
+        "username": "professor.ada",
+        "email": "ada@university.edu",
+        "password": "professor123",
+        "role": "professor",
+    },
+    {
+        "username": "professor.grace",
+        "email": "grace@university.edu",
+        "password": "professor123",
+        "role": "professor",
+    },
+    {
+        "username": "demonstrator.turing",
+        "email": "alex@university.edu",
+        "password": "demonstrator123",
+        "role": "ta",
+    },
+]
+
 
 def _get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
@@ -64,7 +89,7 @@ def _get_database_url() -> str:
 async def seed(session: AsyncSession) -> None:
     now = datetime.now(timezone.utc)
 
-    for au in ADMIN_USERS:
+    for au in ADMIN_USERS + INSTRUCTOR_SEED_USERS:
         result = await session.execute(
             select(UserORM).where(UserORM.username == au["username"])
         )

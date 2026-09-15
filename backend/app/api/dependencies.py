@@ -7,6 +7,7 @@ from app.core.config import get_settings, Settings
 from app.core.database import get_db
 from app.ports.question_repository import QuestionRepository
 from app.ports.course_repository import CourseRepository
+from app.ports.classroom_repository import ClassroomRepository
 from app.ports.progress_repository import ProgressRepository
 from app.ports.admin_repository import AdminRepository
 from app.ports.user_admin_repository import UserAdminRepository
@@ -20,6 +21,7 @@ from app.repositories.sql_submission_repository import SqlSubmissionRepository
 from app.repositories.sql_review_repository import SqlReviewRepository
 from app.repositories.sql_question_repository import SqlQuestionRepository
 from app.repositories.sql_course_repository import SqlCourseRepository
+from app.repositories.sql_classroom_repository import SqlClassroomRepository
 from app.repositories.sql_progress_repository import SqlProgressRepository
 from app.repositories.sql_user_repository import SqlUserRepository
 from app.repositories.sql_admin_repository import SqlAdminRepository
@@ -29,6 +31,7 @@ from app.services.usage_service import UsageService
 from app.services.review_service import ReviewService
 from app.services.error_graph_service import ErrorGraphService
 from app.services.learning_analytics_service import LearningAnalyticsService
+from app.services.class_analytics_service import ClassAnalyticsService
 from app.services.memory_graph_service import MemoryGraphService
 from app.ports.code_executor import CodeExecutor
 from app.services.piston_service import PistonService
@@ -54,6 +57,12 @@ async def get_course_repo(
     db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[CourseRepository, None]:
     yield SqlCourseRepository(db)
+
+
+async def get_classroom_repository(
+    db: AsyncSession = Depends(get_db),
+) -> AsyncGenerator[ClassroomRepository, None]:
+    yield SqlClassroomRepository(db)
 
 
 async def get_progress_repo(
@@ -122,6 +131,13 @@ def get_analytics_service(
     return LearningAnalyticsService(repo)
 
 
+def get_class_analytics_service(
+    submissions: SubmissionRepository = Depends(get_submission_repo),
+    progress: ProgressRepository = Depends(get_progress_repo),
+) -> ClassAnalyticsService:
+    return ClassAnalyticsService(submissions=submissions, progress=progress)
+
+
 async def get_admin_repo(
     db: AsyncSession = Depends(get_db),
 ) -> AsyncGenerator[AdminRepository, None]:
@@ -154,6 +170,19 @@ async def get_course_admin_repo(
     )
 
     yield SqlCourseAdminRepository(db)
+
+
+def get_hierarchy_service(
+    users: UserAdminRepository = Depends(get_user_admin_repo),
+    classrooms: ClassroomRepository = Depends(get_classroom_repository),
+    courses: CourseRepository = Depends(get_course_repo),
+    analytics: ClassAnalyticsService = Depends(get_class_analytics_service),
+):
+    from app.services.hierarchy_service import HierarchyService
+
+    return HierarchyService(
+        users=users, classrooms=classrooms, courses=courses, analytics=analytics
+    )
 
 
 def get_workspace_service(

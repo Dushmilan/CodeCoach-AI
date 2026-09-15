@@ -18,3 +18,20 @@ class AnalyticsSignal(BaseModel):
 class AnalyticsSignalsResponse(BaseModel):
     signals: List[AnalyticsSignal]
     total: int
+
+
+class ClassStudentSummary(BaseModel):
+    """Per-student rollup over existing progress + submissions (read-only)."""
+
+    user_id: str
+    completed_lessons: int = 0
+    completion_pct: float = 0.0
+    attempted: int = 0
+    solved: int = 0
+
+
+class ClassAnalyticsResponse(BaseModel):
+    total_students: int = 0
+    avg_completion: float = 0.0
+    avg_solved: float = 0.0
+    students: List[ClassStudentSummary] = []

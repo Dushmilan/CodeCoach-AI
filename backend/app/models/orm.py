@@ -9,6 +9,7 @@ from sqlalchemy import (
     Date,
     ForeignKey,
     Index,
+    UniqueConstraint,
     text,
 )
 from sqlalchemy.orm import relationship, declarative_base
@@ -80,6 +81,12 @@ class CourseORM(Base):
     language = Column(String(50), nullable=False)
     icon = Column(String(50), default="code")
     order = Column(Integer, nullable=False)
+    owner_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    owner = relationship("UserORM", backref="owned_courses")
 
 
 class ModuleORM(Base):
@@ -127,6 +134,58 @@ class LessonORM(Base):
     language = Column(String(50), nullable=False)
     course = relationship("CourseORM", backref="lessons")
     module = relationship("ModuleORM", backref="lessons")
+
+
+class ClassroomORM(Base):
+    __tablename__ = "classrooms"
+    id = Column(String(36), primary_key=True)
+    course_id = Column(
+        String(36),
+        ForeignKey("courses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    owner_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    name = Column(String(255), nullable=False)
+    invite_code = Column(String(64), nullable=False)
+    term = Column(String(64), nullable=True)
+    schedule = Column(String(255), nullable=True)
+    course = relationship("CourseORM", backref="classrooms")
+    owner = relationship("UserORM", backref="classrooms")
+
+    __table_args__ = (
+        Index("ix_classrooms_owner", "owner_id"),
+        UniqueConstraint("invite_code", name="uq_classrooms_invite_code"),
+    )
+
+
+class ClassroomEnrollmentORM(Base):
+    __tablename__ = "classroom_enrollments"
+    id = Column(String(36), primary_key=True)
+    classroom_id = Column(
+        String(36),
+        ForeignKey("classrooms.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    role = Column(String(10), nullable=False, default="student")
+    classroom = relationship("ClassroomORM", backref="enrollments")
+    user = relationship("UserORM", backref="classroom_enrollments")
+
+    __table_args__ = (
+        Index("ix_enrollments_classroom", "classroom_id"),
+        Index("ix_enrollments_user", "user_id"),
+        UniqueConstraint(
+            "classroom_id", "user_id", name="uq_enrollment_classroom_user"
+        ),
+    )
 
 
 class CourseProgressORM(Base):

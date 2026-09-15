@@ -211,10 +211,16 @@ async def update_user(
 ):
     """Update user role or status (super-admins only)."""
     try:
-        if user_data.role and user_data.role not in ["user", "admin", "super_admin"]:
+        if user_data.role and user_data.role not in [
+            "user",
+            "professor",
+            "ta",
+            "admin",
+            "super_admin",
+        ]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid role. Must be 'user', 'admin', or 'super_admin'",
+                detail="Invalid role. Must be 'user', 'professor', 'ta', 'admin', or 'super_admin'",
             )
 
         if user_data.role:
