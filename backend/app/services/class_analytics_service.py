@@ -8,13 +8,11 @@ writes — pure aggregation for class-level views.
 
 from typing import List, Optional, Sequence
 
-from sqlalchemy import select
-
 from app.models.analytics_schemas import (
     ClassAnalyticsResponse,
     ClassStudentSummary,
 )
-from app.models.orm import ClassroomEnrollmentORM, ClassroomORM
+from app.models.orm import ClassroomORM
 from app.ports.classroom_repository import ClassroomRepository
 from app.ports.progress_repository import ProgressRepository
 from app.ports.submission_repository import SubmissionRepository
@@ -69,15 +67,14 @@ class ClassAnalyticsService:
             students=students,
         )
 
-    def _classroom_session(self, classrooms: Optional[ClassroomRepository] = None):
-        """Session behind the SQL classroom repo (port has no read methods)."""
+    def _classroom_repo(
+        self, classrooms: Optional[ClassroomRepository] = None
+    ) -> ClassroomRepository:
+        """Resolve the port — the service never touches the SQL session."""
         repo = classrooms if classrooms is not None else self._classrooms
         if repo is None:
             raise ValueError("classroom read requires a ClassroomRepository")
-        session = getattr(repo, "session", None)
-        if session is None:
-            raise ValueError("ClassroomRepository does not expose a session")
-        return session
+        return repo
 
     async def get_classroom(
         self,
@@ -86,12 +83,7 @@ class ClassAnalyticsService:
         classrooms: Optional[ClassroomRepository] = None,
     ) -> Optional[ClassroomORM]:
         """One room by id, or None (route maps None to 404)."""
-        session = self._classroom_session(classrooms)
-        return (
-            await session.execute(
-                select(ClassroomORM).where(ClassroomORM.id == classroom_id)
-            )
-        ).scalar_one_or_none()
+        return await self._classroom_repo(classrooms).get_classroom_by_id(classroom_id)
 
     async def classroom_overview(
         self,
@@ -107,24 +99,11 @@ class ClassAnalyticsService:
         aggregation itself delegates to class_overview, so the
         ClassAnalyticsResponse contract is unchanged.
         """
-        session = self._classroom_session(classrooms)
-        room = await self.get_classroom(classroom_id, classrooms=classrooms)
+        repo = self._classroom_repo(classrooms)
+        room = await repo.get_classroom_by_id(classroom_id)
         if room is None:
             raise ClassroomNotFoundError(f"unknown classroom {classroom_id!r}")
-        student_ids = list(
-            (
-                await session.execute(
-                    select(ClassroomEnrollmentORM.user_id)
-                    .where(
-                        ClassroomEnrollmentORM.classroom_id == classroom_id,
-                        ClassroomEnrollmentORM.role == "student",
-                    )
-                    .order_by(ClassroomEnrollmentORM.user_id)
-                )
-            )
-            .scalars()
-            .all()
-        )
+        student_ids = await repo.list_classroom_student_ids(classroom_id)
         overview = await self.class_overview(student_ids, total_lessons=total_lessons)
         return room, overview
 

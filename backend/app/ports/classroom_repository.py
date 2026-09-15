@@ -34,6 +34,20 @@ class ClassroomRepository(ABC):
         ...
 
     @abstractmethod
+    async def get_classroom_by_id(self, classroom_id: str) -> Optional[ClassroomORM]:
+        """Return one classroom by id, or None when unknown."""
+        ...
+
+    @abstractmethod
+    async def list_classroom_student_ids(self, classroom_id: str) -> list[str]:
+        """Return user ids enrolled with role='student', ordered by user id.
+
+        Unknown classroom ids yield an empty list. TAs are staff, not
+        students, so role='ta' enrollments are excluded.
+        """
+        ...
+
+    @abstractmethod
     async def enroll(
         self, *, classroom_id: str, user_id: str, role: str
     ) -> ClassroomEnrollmentORM:

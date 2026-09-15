@@ -8,7 +8,12 @@ import asyncio
 from datetime import datetime, timezone
 
 from app.models.course_schemas import CourseProgress
-from app.services.class_analytics_service import ClassAnalyticsService
+from app.models.orm import ClassroomORM
+from app.ports.classroom_repository import ClassroomRepository
+from app.services.class_analytics_service import (
+    ClassAnalyticsService,
+    ClassroomNotFoundError,
+)
 
 
 class FakeSubmissions:
@@ -84,3 +89,75 @@ def test_empty_roster_returns_zeroes():
     assert resp.total_students == 0
     assert resp.students == []
     assert resp.avg_completion == 0.0
+
+
+class StubClassrooms(ClassroomRepository):
+    """Port-only double: deliberately exposes no `session` attribute, so any
+    service reach-through to the SQL implementation fails loudly."""
+
+    def __init__(self, rooms, students_by_room):
+        assert not hasattr(self, "session")
+        self._rooms = rooms
+        self._students = students_by_room
+
+    async def create_classroom(self, **kwargs):
+        raise NotImplementedError
+
+    async def list_owned_by_professor(self, owner_id: str):
+        raise NotImplementedError
+
+    async def list_for_ta(self, user_id: str):
+        raise NotImplementedError
+
+    async def enroll(self, **kwargs):
+        raise NotImplementedError
+
+    async def set_course_owner(self, course_id: str, owner_id: str) -> None:
+        raise NotImplementedError
+
+    async def get_classroom_by_id(self, classroom_id: str):
+        return self._rooms.get(classroom_id)
+
+    async def list_classroom_student_ids(self, classroom_id: str):
+        return list(self._students.get(classroom_id, []))
+
+
+def _stub_service():
+    rooms = {
+        "room-1": ClassroomORM(
+            id="room-1",
+            course_id="course-1",
+            owner_id="prof-1",
+            name="CS101",
+            invite_code="CS101-A-2026",
+        )
+    }
+    subs = FakeSubmissions({"s1": [_sub(True), _sub(False)], "s2": [_sub(False)]})
+    progress = FakeProgress({"s1": ["l1", "l2", "l3", "l4", "l5", "l6"], "s2": ["l1"]})
+    classrooms = StubClassrooms(rooms, {"room-1": ["s1", "s2"]})
+    svc = ClassAnalyticsService(
+        submissions=subs, progress=progress, classrooms=classrooms
+    )
+    return svc, classrooms
+
+
+def test_classroom_overview_uses_port_only():
+    svc, classrooms = _stub_service()
+    assert not hasattr(classrooms, "session")
+    room, resp = asyncio.run(svc.classroom_overview("room-1"))
+    assert room.id == "room-1"
+    assert room.invite_code == "CS101-A-2026"
+    assert resp.total_students == 2
+    assert {s.user_id for s in resp.students} == {"s1", "s2"}
+    assert resp.students[0].attempted == 2
+    assert asyncio.run(svc.get_classroom("no-such-room")) is None
+
+
+def test_classroom_overview_unknown_id_raises_not_found():
+    svc, _ = _stub_service()
+    try:
+        asyncio.run(svc.classroom_overview("no-such-room"))
+    except ClassroomNotFoundError:
+        pass
+    else:
+        raise AssertionError("expected ClassroomNotFoundError")

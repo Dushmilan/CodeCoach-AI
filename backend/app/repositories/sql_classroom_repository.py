@@ -90,6 +90,23 @@ class SqlClassroomRepository(ClassroomRepository):
         )
         return list(result.scalars().all())
 
+    async def get_classroom_by_id(self, classroom_id: str) -> Optional[ClassroomORM]:
+        result = await self.session.execute(
+            select(ClassroomORM).where(ClassroomORM.id == classroom_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def list_classroom_student_ids(self, classroom_id: str) -> list[str]:
+        result = await self.session.execute(
+            select(ClassroomEnrollmentORM.user_id)
+            .where(
+                ClassroomEnrollmentORM.classroom_id == classroom_id,
+                ClassroomEnrollmentORM.role == "student",
+            )
+            .order_by(ClassroomEnrollmentORM.user_id)
+        )
+        return list(result.scalars().all())
+
     async def enroll(
         self, *, classroom_id: str, user_id: str, role: str
     ) -> ClassroomEnrollmentORM:
