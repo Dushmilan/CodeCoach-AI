@@ -5,5 +5,12 @@
   "remove_index:ix_generation_jobs_status",
   "remove_table:audit_logs",
   "remove_table:feature_flags",
-  "remove_table:generation_jobs"
+  "remove_table:generation_jobs",
+  "remove_table:classrooms",
+  "remove_table:classroom_enrollments",
+  "remove_column:None:courses",
+  "remove_fk:fk_courses_owner_id_users",
+  "remove_index:ix_classrooms_owner",
+  "remove_index:ix_enrollments_classroom",
+  "remove_index:ix_enrollments_user"
 ]
