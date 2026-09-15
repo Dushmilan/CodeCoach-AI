@@ -48,6 +48,16 @@ class ClassroomRepository(ABC):
         ...
 
     @abstractmethod
+    async def list_classroom_ta_ids(self, classroom_id: str) -> list[str]:
+        """Return user ids enrolled with role='ta', ordered by user id.
+
+        Unknown classroom ids yield an empty list. Mirrors
+        list_classroom_student_ids for the staff side of the roster
+        (Task 6 admin tree needs TA membership per room).
+        """
+        ...
+
+    @abstractmethod
     async def enroll(
         self, *, classroom_id: str, user_id: str, role: str
     ) -> ClassroomEnrollmentORM:

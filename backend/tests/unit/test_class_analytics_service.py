@@ -121,6 +121,9 @@ class StubClassrooms(ClassroomRepository):
     async def list_classroom_student_ids(self, classroom_id: str):
         return list(self._students.get(classroom_id, []))
 
+    async def list_classroom_ta_ids(self, classroom_id: str):
+        return []
+
 
 def _stub_service():
     rooms = {

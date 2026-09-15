@@ -354,6 +354,34 @@ async def test_list_classroom_student_ids_returns_only_students(db_session):
     assert await repo.list_classroom_student_ids("no-such-room") == []
 
 
+async def test_list_classroom_ta_ids_returns_only_tas(db_session):
+    await _seed_professor_course(db_session)
+    for uid, role in (("u-ta", "ta"), ("u-student", "user")):
+        db_session.add(
+            UserORM(
+                id=uid,
+                username=f"user-{uid}",
+                email=f"{uid}@e.edu",
+                hashed_password="x",
+                role=role,
+            )
+        )
+    await db_session.commit()
+    repo = _repo(db_session)
+    room = await repo.create_classroom(
+        course_id="c-1",
+        owner_id="u-prof",
+        name="CS101",
+        invite_code=f"INV-{uuid.uuid4().hex[:8]}",
+        term="Fall 2026",
+        schedule="Mon",
+    )
+    await repo.enroll(classroom_id=room.id, user_id="u-student", role="student")
+    await repo.enroll(classroom_id=room.id, user_id="u-ta", role="ta")
+    assert await repo.list_classroom_ta_ids(room.id) == ["u-ta"]
+    assert await repo.list_classroom_ta_ids("no-such-room") == []
+
+
 async def test_enroll_fk_violation_surfaces_instead_of_no_result(db_session):
     """A bad classroom_id must raise IntegrityError, never NoResultFound."""
     await _seed_professor_course(db_session)

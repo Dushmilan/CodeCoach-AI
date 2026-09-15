@@ -187,6 +187,19 @@ async def get_course_admin_repo(
     yield SqlCourseAdminRepository(db)
 
 
+def get_hierarchy_service(
+    users: UserAdminRepository = Depends(get_user_admin_repo),
+    classrooms: ClassroomRepository = Depends(get_classroom_repository),
+    courses: CourseRepository = Depends(get_course_repo),
+    analytics: ClassAnalyticsService = Depends(get_class_analytics_service),
+):
+    from app.services.hierarchy_service import HierarchyService
+
+    return HierarchyService(
+        users=users, classrooms=classrooms, courses=courses, analytics=analytics
+    )
+
+
 def get_workspace_service(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):

@@ -107,6 +107,17 @@ class SqlClassroomRepository(ClassroomRepository):
         )
         return list(result.scalars().all())
 
+    async def list_classroom_ta_ids(self, classroom_id: str) -> list[str]:
+        result = await self.session.execute(
+            select(ClassroomEnrollmentORM.user_id)
+            .where(
+                ClassroomEnrollmentORM.classroom_id == classroom_id,
+                ClassroomEnrollmentORM.role == "ta",
+            )
+            .order_by(ClassroomEnrollmentORM.user_id)
+        )
+        return list(result.scalars().all())
+
     async def enroll(
         self, *, classroom_id: str, user_id: str, role: str
     ) -> ClassroomEnrollmentORM:
