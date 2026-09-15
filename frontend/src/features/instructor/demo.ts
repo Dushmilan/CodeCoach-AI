@@ -1,5 +1,5 @@
 import demo from "@/data/instructor-demo.json";
-import { FetchClient } from "@/lib/fetch-client";
+import { FetchClient, HttpError } from "@/lib/fetch-client";
 
 export type InstructorRole = "professor" | "ta" | "admin" | "super_admin" | "user";
 
@@ -207,6 +207,25 @@ function mapAnalytics(a: LiveClassAnalytics): ClassAnalytics {
   };
 }
 
+// Demo fallback covers network/offline/5xx ONLY. Auth failures (401/403)
+// must never render fixture data as if it were the user's — callers surface
+// them via the existing empty/null gates (list renders empty, detail 404s).
+function isAuthFailure(e: unknown): boolean {
+  return e instanceof HttpError && (e.status === 401 || e.status === 403);
+}
+
+function emptyAnalytics(): ClassAnalytics {
+  return {
+    totalStudents: 0,
+    avgCompletion: 0,
+    avgSolved: 0,
+    students: [],
+    atRisk: [],
+    skillMastery: [],
+    signals: [],
+  };
+}
+
 async function fetchDetail(classroomId: string): Promise<LiveClassroomDetail> {
   return api.get<LiveClassroomDetail>(
     `/api/instructor/classrooms/${encodeURIComponent(classroomId)}`,
@@ -273,7 +292,8 @@ export async function getClassrooms(ownerId?: string): Promise<Classroom[]> {
     const mapped = rooms.map(mapClassroom);
     if (!ownerId) return mapped;
     return mapped.filter((c) => c.ownerId === ownerId);
-  } catch {
+  } catch (e) {
+    if (isAuthFailure(e)) return [];
     return demoClassrooms(ownerId);
   }
 }
@@ -282,7 +302,8 @@ export async function getClassroom(id: string): Promise<Classroom | null> {
   try {
     const detail = await fetchDetail(id);
     return mapClassroom(detail.classroom);
-  } catch {
+  } catch (e) {
+    if (isAuthFailure(e)) return null;
     return demoClassroom(id);
   }
 }
@@ -299,7 +320,8 @@ export async function getClassAnalytics(
   try {
     const detail = await fetchDetail(classroomId);
     return mapAnalytics(detail.analytics);
-  } catch {
+  } catch (e) {
+    if (isAuthFailure(e)) return emptyAnalytics();
     return demoClassAnalytics(classroomId);
   }
 }

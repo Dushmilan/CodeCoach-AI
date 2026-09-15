@@ -149,4 +149,50 @@ describe("instructor live API (Issue #159)", () => {
     expect(a.totalStudents).toBe(5);
     expect(a.skillMastery.length).toBeGreaterThan(0);
   });
+
+  it("falls back to the demo dataset on a 500", async () => {
+    server.use(
+      http.get("/api/instructor/classrooms", () =>
+        HttpResponse.json({ detail: "boom" }, { status: 500 }),
+      ),
+    );
+    const rooms = await getClassrooms();
+    expect(rooms.map((r) => r.id).sort()).toEqual([
+      "class-cs101-a",
+      "class-cs201-b",
+    ]);
+  });
+
+  it("never serves demo data on 403 — returns empty instead", async () => {
+    server.use(
+      http.get("/api/instructor/classrooms", () =>
+        HttpResponse.json({ detail: "Forbidden" }, { status: 403 }),
+      ),
+      http.get("/api/instructor/classrooms/:id", () =>
+        HttpResponse.json({ detail: "Forbidden" }, { status: 403 }),
+      ),
+    );
+    await expect(getClassrooms()).resolves.toEqual([]);
+    await expect(getClassroom("class-cs101-a")).resolves.toBeNull();
+    const a = await getClassAnalytics("class-cs101-a");
+    expect(a.totalStudents).toBe(0);
+    expect(a.students).toEqual([]);
+    expect(a.skillMastery).toEqual([]);
+  });
+
+  it("never serves demo data on 401 — returns empty instead", async () => {
+    server.use(
+      http.get("/api/instructor/classrooms", () =>
+        HttpResponse.json({ detail: "Not authenticated" }, { status: 401 }),
+      ),
+      http.get("/api/instructor/classrooms/:id", () =>
+        HttpResponse.json({ detail: "Not authenticated" }, { status: 401 }),
+      ),
+    );
+    await expect(getClassrooms()).resolves.toEqual([]);
+    await expect(getClassroom("class-cs101-a")).resolves.toBeNull();
+    const a = await getClassAnalytics("class-cs101-a");
+    expect(a.totalStudents).toBe(0);
+    expect(a.students).toEqual([]);
+  });
 });
