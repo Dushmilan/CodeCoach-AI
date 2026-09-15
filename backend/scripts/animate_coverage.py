@@ -13,18 +13,22 @@ Exits non-zero if any question fails to produce a valid animation.
 """
 
 import asyncio
+import logging
 import sys
 
 from sqlalchemy import select
 
 from app.core.database import async_session_maker
 from app.models.orm import QuestionORM
+from app.services.animation_validator import AnimationValidator
 from app.services.piston_service import PistonService
 from app.services.solution_animation_service import SolutionAnimationService
 from app.services.reference_solutions import (
     get_reference_solution,
     resolve_algorithm,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def main() -> int:
@@ -36,8 +40,11 @@ async def main() -> int:
         )
 
     service = SolutionAnimationService(executor=PistonService())
+    validator = AnimationValidator()
     results = []
     failures = []
+    warnings_by_family: dict = {}
+    total_warnings = 0
 
     for row in rows:
         question = {
@@ -66,6 +73,14 @@ async def main() -> int:
             results.append((row.id, row.title, family, "FAIL"))
         else:
             results.append((row.id, row.title, family, "OK"))
+            # Quality lint stays non-blocking: count warnings for CI
+            # visibility without failing the coverage run on them.
+            try:
+                count = len(validator.lint_quality(animation))
+            except Exception:  # noqa: BLE001 - lint must never break coverage
+                count = 0
+            warnings_by_family[family] = warnings_by_family.get(family, 0) + count
+            total_warnings += count
 
     by_family: dict = {}
     for _qid, _title, family, status in results:
@@ -81,6 +96,15 @@ async def main() -> int:
     total = len(results)
     print("-" * 72)
     print(f"TOTAL {total_ok}/{total} questions produce a validated animation")
+    for family in sorted(warnings_by_family):
+        logger.warning(
+            "Animation quality (%s): %d warnings", family, warnings_by_family[family]
+        )
+    logger.warning(
+        "Animation quality summary: %d warnings across %d questions",
+        total_warnings,
+        total,
+    )
     if failures:
         print("-" * 72)
         print("FAILURES:")

@@ -106,25 +106,39 @@ def resolve_complexity(entry: Dict[str, Any], algorithm: str) -> tuple:
 
 
 def downsample_steps(steps: list, limit: int = 96) -> list:
-    """Cap semantic steps preserving key events and original order."""
+    """Cap semantic steps preserving key events and original order.
+
+    The story skeleton is always kept: the first intro beat and the last
+    outro beat survive even when key events alone exceed the limit.
+    """
+    if limit <= 0:
+        return []
     if len(steps) <= limit:
         return list(steps)
     key = [s for s in steps if getattr(s, "action", None) in _DOWNSAMPLE_KEEP]
     if len(key) >= limit:
-        return key[:limit]
-    others = [s for s in steps if getattr(s, "action", None) not in _DOWNSAMPLE_KEEP]
-    budget = limit - len(key)
-    stride = max(1.0, len(others) / max(budget, 1))
-    sampled_ids = {
-        id(s)
-        for s in (
-            others[round(i * stride)]
-            for i in range(budget)
-            if round(i * stride) < len(others)
-        )
-    }
-    key_ids = {id(s) for s in key}
-    return [s for s in steps if id(s) in key_ids or id(s) in sampled_ids][:limit]
+        keep = key[:limit]
+    else:
+        others = [
+            s for s in steps if getattr(s, "action", None) not in _DOWNSAMPLE_KEEP
+        ]
+        budget = limit - len(key)
+        stride = max(1.0, len(others) / max(budget, 1))
+        sampled_ids = {
+            id(s)
+            for s in (
+                others[round(i * stride)]
+                for i in range(budget)
+                if round(i * stride) < len(others)
+            )
+        }
+        key_ids = {id(s) for s in key}
+        keep = [s for s in steps if id(s) in key_ids or id(s) in sampled_ids]
+    keep_ids = {id(s) for s in keep} | {id(steps[0]), id(steps[-1])}
+    ordered = [s for s in steps if id(s) in keep_ids]
+    if len(ordered) <= limit:
+        return ordered
+    return ordered[: limit - 1] + [steps[-1]]
 
 
 _EVENT_TO_ACTION = {
