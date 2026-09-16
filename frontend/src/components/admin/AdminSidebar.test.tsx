@@ -38,6 +38,20 @@ describe('AdminSidebar', () => {
     expect(screen.getByText('Curriculum')).toBeInTheDocument();
   });
 
+  it('shows Curriculum to professors but hides admin-only nav items', () => {
+    mocks.useAuth.mockReturnValue({
+      user: { username: 'prof', role: 'professor' },
+      isAuthenticated: true,
+      isLoading: false,
+      logout: vi.fn(),
+    });
+    render(<AdminSidebar open={false} onClose={vi.fn()} />);
+    expect(screen.getByText('Curriculum')).toBeInTheDocument();
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Users')).not.toBeInTheDocument();
+    expect(screen.queryByText('Questions')).not.toBeInTheDocument();
+  });
+
   it('does not render removed Analytics nav item', () => {
     render(<AdminSidebar open={false} onClose={vi.fn()} />);
     expect(screen.queryByText('Analytics')).not.toBeInTheDocument();

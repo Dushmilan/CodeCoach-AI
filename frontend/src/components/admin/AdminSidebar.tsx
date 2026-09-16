@@ -17,7 +17,7 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  permission?: "admin" | "super_admin";
+  permission?: "admin" | "super_admin" | "course_editor";
 }
 
 export default function AdminSidebar({
@@ -54,13 +54,15 @@ export default function AdminSidebar({
       title: "Curriculum",
       href: "/admin/curriculum",
       icon: Database,
-      permission: "admin",
+      permission: "course_editor",
     },
   ];
 
-  const hasPermission = (permission: "admin" | "super_admin" | undefined) => {
+  const hasPermission = (permission: "admin" | "super_admin" | "course_editor" | undefined) => {
     if (!permission) return true;
     if (permission === "super_admin") return user?.role === "super_admin";
+    if (permission === "course_editor")
+      return !!user?.role && ["professor", "admin", "super_admin"].includes(user.role);
     return !!user?.role && ["admin", "super_admin"].includes(user.role);
   };
 

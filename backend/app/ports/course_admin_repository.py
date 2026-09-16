@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class CourseAdminRepository(ABC):
@@ -7,7 +7,21 @@ class CourseAdminRepository(ABC):
     async def exists(self, entity_type: str, entity_id: str) -> bool: ...
 
     @abstractmethod
-    async def get_course_tree(self) -> Dict[str, Any]: ...
+    async def get_course_owner(self, course_id: str) -> Optional[str]:
+        """Owner user id of a course, or None when unknown/unowned."""
+
+    @abstractmethod
+    async def get_module_course(self, module_id: str) -> Optional[str]:
+        """Parent course id of a module, or None when unknown."""
+
+    @abstractmethod
+    async def get_lesson_course(self, lesson_id: str) -> Optional[str]:
+        """Parent course id of a lesson, or None when unknown."""
+
+    @abstractmethod
+    async def get_course_tree(
+        self, owner_id: Optional[str] = None
+    ) -> Dict[str, Any]: ...
 
     @abstractmethod
     async def delete_course(self, course_id: str) -> bool: ...
