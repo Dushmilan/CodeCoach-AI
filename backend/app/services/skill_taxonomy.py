@@ -171,7 +171,7 @@ SKILLS: List[Skill] = [
 ]
 
 # Question -> [(skill_slug, weight), ...]. Keys are question IDs from the
-# production question bank (seeded into Supabase); these drive skill
+# production question bank (seeded into PostgreSQL); these drive skill
 # attribution when a user solves a question. Weights per question sum to 1.
 #
 # Coverage contract: every live question id MUST appear here and every key

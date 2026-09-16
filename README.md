@@ -1,7 +1,7 @@
 # CodeCoach AI
 
 > **A private, AI-powered coding practice platform for university students.**
-> DSA practice, language curricula, and real-time AI coaching — all on a single Supabase/PostgreSQL database.
+> DSA practice, language curricula, and real-time AI coaching — all on a local-first PostgreSQL setup (one database per git branch, versioned promotion to live).
 
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](./frontend/package.json)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](./backend/requirements.txt)
@@ -26,7 +26,7 @@ You are a uni student joining this repo. Do this first:
    run the quality gates, open a PR that says `Closes #<number>`.
 
 ```bash
-cp .env.example .env          # fill GROQ_API_KEY, JWT_SECRET_KEY, DATABASE_URL, Supabase keys
+cp .env.example .env          # fill GROQ_API_KEY, JWT_SECRET_KEY, DATABASE_URL (local branch DB)
 docker compose up --build
 ```
 
@@ -39,8 +39,9 @@ docker compose up --build
 | Piston (code execution) | http://localhost:2000/api/v2/runtimes |
 | Redis | `localhost:6379` |
 
-> The compose stack runs `backend`, `frontend`, `redis`, `piston`.
-> PostgreSQL is external Supabase — there is no local Postgres for runtime.
+> The compose stack runs `backend`, `frontend`, `postgres`, `redis`, `piston`.
+> PostgreSQL runs locally — each git branch gets its own database
+> (`codecoach_<slug>`, see `backend/scripts/branch_db.py` + AGENTS.md).
 
 ---
 
@@ -72,7 +73,7 @@ docker compose up --build
 An AI-assisted coding practice platform for university students:
 
 - **DSA practice** — 107 live questions across a 26-skill taxonomy (21 roadmap buckets in
-  NeetCode order + 5 supporting skills), with Python, JavaScript, and Java starter code, seeded in Supabase.
+  NeetCode order + 5 supporting skills), with Python, JavaScript, and Java starter code, seeded in PostgreSQL.
 - **Language curriculum** — Python Fundamentals (5 modules, 36 lessons) plus C and Java
   (5 modules, 35 lessons each), served from `/learn`.
 - **AI coaching** — hint, review, explain, debug, freeform, and animate (six modes) via Groq,
@@ -110,7 +111,7 @@ Snapshot of what is actually in the code right now:
   skill graph now renders as SVG inside the **settings gear → skills tab** (guest-gated).
 - **Animation viewer:** timeline is locked to the **real animation duration** (not the demo loop);
   spec `animation.steps >= 3` enforced.
-- **Migrations head:** `b4c5d6e7f8a1` (Alembic, Supabase TEST project).
+- **Migrations head:** `b4c5d6e7f8a1` (Alembic; live schema moves via `alembic upgrade head` only).
 - **`pnpm dev:all`** boots Next.js + the `:9000` Motion Canvas viewer together (for animation/E2E work).
 
 Details per feature (Built / Partial / Planned) live in [Progress.md](./Progress.md) — this README
@@ -129,9 +130,9 @@ stays short on purpose.
 | **Animation** | Motion Canvas (Vite viewer on `:9000`) + `AnimationPlayer` |
 | **Code Execution** | Piston (self-hosted Docker, `PistonService` adapter) |
 | **AI Coach** | Groq (`openai/gpt-oss-120b` / `openai/gpt-oss-20b`, animate override) |
-| **Database** | Supabase PostgreSQL (async SQLAlchemy) — **the only database** |
+| **Database** | Local PostgreSQL (async SQLAlchemy), one database per git branch — **the only database** |
 | **Cache / Limits** | Redis 7 — rate/request tracking, learner-context, workspace (7d), course list (30s + lock), question detail, Piston runtimes |
-| **Auth** | JWT (python-jose), bcrypt, Supabase OAuth (Google) |
+| **Auth** | JWT (python-jose), bcrypt, username/password |
 | **Migrations** | Alembic (`backend/alembic/`) |
 | **Testing** | pytest (backend), Vitest + Testing Library + MSW (frontend), Playwright (E2E) |
 | **Deploy** | Docker Compose + Cloudflare Workers (OpenNext) |
@@ -152,7 +153,7 @@ backend/app/
                   rescue, review, animations + scene_planner, usage, submissions, course,
                   question_bank, workspace, learner_context, adapter_state_recovery …)
   ports/          Abstract interfaces (ABCs) — repositories, code executor, coaching provider
-  repositories/   SQLAlchemy impls (sql_*) — Supabase/PostgreSQL only
+  repositories/   SQLAlchemy impls (sql_*) — PostgreSQL only
   adapters/       Concrete adapters (code_wrappers, coaching_prompts, execution_adapter,
                   submit_grading_service, response parser, formatter)
   use_cases/      Single-responsibility validation (incl. the ANIMATION gate)
@@ -178,7 +179,7 @@ frontend/src/
 
 **Key decisions**
 
-- **Supabase/PostgreSQL is the single source of truth** — questions, courses/modules/lessons,
+- **PostgreSQL is the single source of truth** — questions, courses/modules/lessons,
   users, progress, submissions, coaching_interactions, execution_jobs, review_cards, rescue_queue,
   usage, and skill-graph state all live in PostgreSQL. The app never reads content from the
   filesystem at runtime. Committed JSON under `backend/data/courses/{c,java}/` is a transient
@@ -225,12 +226,12 @@ Tests use an isolated `codecoach_test` schema (`DATABASE_SEARCH_PATH`; per-worke
 - Docker + Docker Compose
 - Node 20+ and `pnpm` 9+ (frontend)
 - Python 3.11+ and `pip` (backend)
-- A Supabase project (PostgreSQL) and a Groq API key
+- A local PostgreSQL server and a Groq API key
 
 ### Quick start with Docker (recommended)
 
 ```bash
-cp .env.example .env          # fill GROQ_API_KEY, JWT_SECRET_KEY, DATABASE_URL, Supabase keys
+cp .env.example .env          # fill GROQ_API_KEY, JWT_SECRET_KEY, DATABASE_URL (local branch DB)
 docker compose up --build
 ```
 
@@ -246,7 +247,7 @@ python -m venv venv
 # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt -r tests/test_requirements.txt
 cp .env.example .env   # or rely on root .env via python-dotenv
-# Edit .env with GROQ_API_KEY and Supabase DATABASE_URL
+# Edit .env with GROQ_API_KEY and your local branch DATABASE_URL
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -255,7 +256,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 cd frontend
 pnpm install
-cp .env.example .env.local   # set NEXT_PUBLIC_API_URL, Supabase anon keys
+cp .env.example .env.local   # set NEXT_PUBLIC_API_URL
 pnpm dev                     # http://localhost:3000
 pnpm dev:all                 # Next.js + Motion Canvas viewer (:9000) together
 pnpm build && pnpm start     # production
@@ -289,7 +290,7 @@ source-of-truth, seed scripts, and test-schema behavior.
 
 ## Environment Variables
 
-> **Current TEST wiring is Supabase TEST DB + TEST OAuth. Production is NOT configured.**
+> **Current wiring is local-first: each branch works on its own PostgreSQL database; live is written only via the versioned `branch_db.py` promotion.**
 > See [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md).
 
 ### Backend (`.env` / process env — `backend/app/core/config.py`)
@@ -298,9 +299,9 @@ source-of-truth, seed scripts, and test-schema behavior.
 # Required
 GROQ_API_KEY=your_groq_api_key_here
 JWT_SECRET_KEY=your_jwt_secret_key                 # ≥32 chars, not committed
-DATABASE_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:6543/postgres?pgbouncer=true
-# Session-mode pooler for migrations/tooling (optional):
-# DIRECT_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_<branch-slug>
+# Live PostgreSQL (promotion target only — never daily work):
+# LIVE_DATABASE_URL=postgresql://user:password@live-host:5432/postgres
 
 # Optional (defaults shown)
 # GROQ_MODEL_EASY=openai/gpt-oss-20b
@@ -318,23 +319,16 @@ REDIS_TTL_CHAT=604800                              # 7d — per-question chat hi
 REDIS_TTL_LAST_EXEC=604800                         # 7d — last execution / submit snapshot
 WORKSPACE_CODE_MAX_BYTES=51200
 CHAT_HISTORY_MAX_MESSAGES=20
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_ANON_KEY=sb_publishable_...               # publishable key (public)
 PISTON_API_URL=http://localhost:2000/api/v2        # compose sets http://piston:2000/api/v2
 REDIS_URL=redis://redis:6379/0
 ENVIRONMENT=production                             # or testing / development
 ```
-
-> Supabase now issues `sb_publishable_...` (public) and `sb_secret_...` (server-only)
-> instead of legacy `anon`/`service_role` JWTs. Dashboard → **Settings → API Keys**.
 
 ### Frontend (`.env.local` / Docker build args)
 
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000         # browser-reachable API base (empty → same-origin /api rewrite)
 NEXT_PUBLIC_WS_URL=ws://localhost:8000
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 NEXT_PUBLIC_ANIMATION_VIEWER_URL=http://localhost:9000
 API_URL=http://backend:8000                        # server-side rewrite target (Docker network)
 ```
@@ -408,8 +402,8 @@ These are release-blocking. [AGENTS.md](./AGENTS.md) is the full version.
    validate input at boundaries, never log or commit secrets, degrade gracefully.
 2. **TDD always** — red (failing test) → green (smallest fix) → refactor.
    Bug fixes start with a regression test. Docs-only changes are the only exception.
-3. **Supabase is the only database** — no SQLite/MySQL/local Postgres for runtime.
-   Tests use the isolated `codecoach_test` schema only.
+3. **Local PostgreSQL is the only database** — no SQLite/MySQL. Each branch gets its
+   own database; tests use isolated schemas/dbs only.
 4. **Every question must be visualizable** — new questions need `examples[0].input`,
    a resolvable algorithm, a compilable family
    (`array/backtrack/stack/linked_list/tree/graph/grid/intervals`), and `animation.steps >= 3`.
@@ -474,7 +468,7 @@ Interactive docs at `/docs` (Swagger) and `/redoc`. Selected routes:
 | Area | Method & Path | Auth | Notes |
 |---|---|---|---|
 | **Health** | `GET /health`, `GET /health/` | — | Dependency checks (`questions_db`, `piston`, `redis`) |
-| **Auth** | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh` | — / Bearer | JWT + Supabase OAuth callback |
+| **Auth** | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh` | — / Bearer | JWT username/password |
 | **Questions** | `GET /api/questions`, `GET /api/questions/{id}`, `GET /api/questions/search?q=` | — | Paginated list + summary-column search |
 | **Run** | `POST /api/run` (+ `question_id` optional crash capture) | Optional | Piston; validation `POST /api/run/validate` |
 | **Submit** | `POST /api/submit` | Bearer | Grades + submission + SM-2 observe + adapter-state tracking |
@@ -510,7 +504,7 @@ CodeCoach-AI/
 │   │   ├── services/          # groq, piston, skill_graph, sm2, memory_graph, error_graph,
 │   │   │                      # rescue, review, animations + scene_planner, usage, submissions, course,
 │   │   │                      # question_bank, workspace, learner_context, adapter_state_recovery …
-│   │   ├── repositories/      # sql_* (Supabase/PostgreSQL only)
+│   │   ├── repositories/      # sql_* (PostgreSQL only)
 │   │   ├── ports/             # Abstract interfaces (ABCs)
 │   │   ├── models/            # Pydantic schemas + domain enums
 │   │   ├── core/              # database (async engine), config (get_settings), security (JWT/bcrypt)
@@ -533,7 +527,7 @@ CodeCoach-AI/
 │       └── e2e/               # Playwright specs (auth, settings, curriculum, code-execution, animate, viewer)
 ├── motion-canvas-lab/         # Motion Canvas project (viewer.html, scenes) — Vite on :9000
 ├── graphify-out/              # Code knowledge graph artifacts (graph.json, GRAPH_REPORT.md, wiki/)
-├── docker-compose.yml         # backend, frontend, redis, piston (Supabase external)
+├── docker-compose.yml         # backend, frontend, postgres, redis, piston
 ├── docker-compose.dev.yml     # dev override
 └── Makefile                   # test, lint, graphify shortcuts
 ```
@@ -543,17 +537,17 @@ CodeCoach-AI/
 ## Deployment
 
 - **Docker Compose (production):** `docker compose up -d --build` builds `pip install` /
-  `npm run build` into images. No volume mounts; `PistonService` + `Redis` + `Supabase` wired via env.
+  `npm run build` into images. No volume mounts; `PistonService` + `Redis` + `Postgres` wired via env.
 - **Cloudflare Workers (frontend):** OpenNext build — `NEXT_PUBLIC_*` must be set as build args,
   not runtime env.
-- **Supabase migrations:** `alembic upgrade head` against the pooler.
+- **Live migrations:** `alembic upgrade head` (live schema moves via migrations only).
 - **Health:** `GET /health` checks `questions_db`, `piston`, `redis`; Docker `HEALTHCHECK` gates `backend`.
 
 ---
 
 ## Security
 
-- Input validated at API boundaries (Pydantic); auth via JWT + bcrypt + Supabase OAuth; role-gated admin routes.
+- Input validated at API boundaries (Pydantic); auth via JWT + bcrypt; role-gated admin routes.
 - Rate limiting via in-process limiter (`middleware/rate_limit.py`) + `UsageService` token caps;
   429 → `Retry-After` + `X-Usage-*`.
 - Security headers: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`,
@@ -583,11 +577,11 @@ Short version — full status in [Progress.md](./Progress.md), ideas in [Ideas.m
 |---|---|
 | README (this page) | Onboarding + current state |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | How we work day-to-day (setup, branches, tests, conventions) |
-| [AGENTS.md](./AGENTS.md) | Mandatory rules (production, TDD, Supabase-only, worktrees, review) |
+| [AGENTS.md](./AGENTS.md) | Mandatory rules (production, TDD, local-first DB, worktrees, review) |
 | [Progress.md](./Progress.md) | Living status — kept in sync with code |
 | [Ideas.md](./Ideas.md) | Backlog — 9 numbered ideas + honourable mentions |
 | [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md) | Curriculum source-of-truth + seed scripts |
-| [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md) | TEST Supabase/OAuth wiring + verification |
+| [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md) | Local-first DB wiring + verification |
 | [backend/tests/README.md](./backend/tests/README.md) | How to run each backend test tier |
 
 - **Issues:** internal tracker only (no public GitHub Issues intake).

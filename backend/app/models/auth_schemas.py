@@ -56,10 +56,6 @@ class TokenData(BaseModel):
     user_id: Optional[str] = None
 
 
-class SupabaseAuthRequest(BaseModel):
-    access_token: str
-
-
 class UserInDB(BaseModel):
     id: str
     username: str

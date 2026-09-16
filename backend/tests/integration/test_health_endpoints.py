@@ -143,7 +143,7 @@ class TestHealthEndpoints:
     def test_health_check_db_probe_tolerates_slow_pooler(
         self, test_client: TestClient, monkeypatch
     ):
-        """The DB probe must tolerate Supabase pooler latency (~1.6s round
+        """The DB probe must tolerate PostgreSQL pooler latency (~1.6s round
         trip), not only sub-second local connections."""
         import asyncio
 
@@ -151,7 +151,7 @@ class TestHealthEndpoints:
 
         class _SlowSession:
             """Session whose connection establishment (__aenter__) is slow,
-            like the Supabase pooler round-trip."""
+            like the pooler round-trip."""
 
             async def __aenter__(self):
                 await asyncio.sleep(2.5)  # longer than a local round-trip

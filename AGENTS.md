@@ -54,7 +54,7 @@ first. The only way code enters this repo is red → green → refactor.
 
 **Hard rule — Do NOT skip.** Every question added to the bank must go through
 the **algorithm-to-animation loop** and cannot be shipped without a proven
-visualization. No question lands in Supabase without passing the loop.
+visualization. No question lands in the database without passing the loop.
 
 ```
 Problem → Solution Repository / Groq (optimal solution, algorithm, complexity, explanation)
@@ -264,7 +264,7 @@ The full suite must pass before any commit. Run the same gates CI runs.
 - Lint + format: `ruff check .` and `ruff format . --check`
 - Unit: `python -m pytest tests/unit`
 - Integration: `python -m pytest tests/integration` (needs `DATABASE_URL` pointed
-  at an isolated Supabase schema; see `tests/conftest.py`)
+  at the local PostgreSQL branch database; see `tests/conftest.py`)
 - Contract: `python -m pytest tests/contract` (OpenAPI response contracts)
 - Security: `python -m pytest tests/security`
 - Performance: `python -m pytest tests/performance`
@@ -303,14 +303,15 @@ Rules:
 
 ## Current Architecture (reference)
 
-- **Backend:** FastAPI + async SQLAlchemy against Supabase/PostgreSQL. Pydantic
+- **Backend:** FastAPI + async SQLAlchemy against local PostgreSQL branch
+  databases (promoted to hosted PostgreSQL via `branch_db.py`). Pydantic
   schemas, repository ports with `sql_*` implementations, service layer,
-  dependency-injected routes in `app/api/`. Auth via Supabase + JWT; code
+  dependency-injected routes in `app/api/`. Auth via username/password + JWT; code
   execution via Piston; AI coaching via Groq.
 - **Frontend:** Next.js 14 (App Router) + TypeScript + Tailwind, shadcn-style
-  components, Supabase client auth, Vitest + Testing Library + MSW for unit tests,
+  components, backend-JWT auth, Vitest + Testing Library + MSW for unit tests,
   Playwright for E2E. Cloudflare Workers deployment via OpenNext.
-- **Infra:** Docker Compose (backend, frontend, redis, piston), GitHub Actions CI
+- **Infra:** Docker Compose (backend, frontend, postgres, redis, piston), GitHub Actions CI
   running lint/format + all test tiers + coverage budget enforcement.
 - **Data:** working data lives in the local PostgreSQL branch databases;
   live data lives in the hosted PostgreSQL project and is written only via

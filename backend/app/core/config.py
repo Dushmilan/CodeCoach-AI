@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # No default — an unconfigured deployment must fail loudly rather than
     # hit the wrong database.
     DATABASE_URL: str = ""
-    # Optional Postgres schema used for tests (Supabase has one database).
+    # Optional Postgres schema used for tests (one database per server; tests isolate by schema).
     DATABASE_SEARCH_PATH: Optional[str] = None
 
     # Auth
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
                 "(postgresql:// or postgresql+...://, local or hosted); "
                 "got an unsupported scheme"
             )
-        # Bare `postgresql://` URLs (local server, Supabase, or pooler) map to
+        # Bare `postgresql://` URLs (local server or pooler) map to
         # psycopg2 by default in SQLAlchemy. The app is async, so force
         # the asyncpg driver.
         if self.DATABASE_URL.startswith("postgresql://"):
@@ -81,7 +81,7 @@ class Settings(BaseSettings):
             )
         return self
 
-    # Anonymous course-list cache (Supabase pooler ~1.5s per query on cold pool)
+    # Anonymous course-list cache (PostgreSQL pooler ~1.5s per query on cold pool)
     COURSE_LIST_TTL_SECONDS: int = 30
 
     # Piston

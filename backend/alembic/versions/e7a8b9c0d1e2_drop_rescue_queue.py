@@ -28,7 +28,7 @@ def upgrade() -> None:
     """Drop the rescue_queue table (idempotent for re-runs)."""
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
-        raise RuntimeError("Only Supabase/PostgreSQL is supported")
+        raise RuntimeError("Only PostgreSQL is supported")
 
     table_exists = bind.execute(
         sa.text("SELECT to_regclass('public.rescue_queue') IS NOT NULL")
@@ -46,7 +46,7 @@ def downgrade() -> None:
     """Recreate the rescue_queue table (exact shape from f2a3b4c5d6e7)."""
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
-        raise RuntimeError("Only Supabase/PostgreSQL is supported")
+        raise RuntimeError("Only PostgreSQL is supported")
 
     table_exists = bind.execute(
         sa.text("SELECT to_regclass('public.rescue_queue') IS NOT NULL")

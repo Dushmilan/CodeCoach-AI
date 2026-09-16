@@ -30,7 +30,7 @@ config = context.config
 settings = get_settings()
 db_url = os.getenv("DATABASE_URL", settings.DATABASE_URL)
 if db_url:
-    # Force the asyncpg driver, strip Supabase's `?pgbouncer=true` param (not a
+    # Force the asyncpg driver, strip PostgreSQL's `?pgbouncer=true` param (not a
     # real connection option), and escape `%` characters so the ConfigParser
     # (interpolation) accepts percent-encoded passwords.
     config.set_main_option(

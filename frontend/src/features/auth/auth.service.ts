@@ -13,10 +13,6 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface SupabaseAuthRequest {
-  access_token: string;
-}
-
 export interface TokenResponse {
   access_token: string;
   token_type: string;
@@ -35,10 +31,6 @@ export class AuthService {
 
   async register(data: RegisterRequest): Promise<TokenResponse> {
     return this.http.post<TokenResponse>("/api/auth/register", data);
-  }
-
-  async loginWithSupabase(data: SupabaseAuthRequest): Promise<TokenResponse> {
-    return this.http.post<TokenResponse>("/api/auth/supabase", data);
   }
 
   async refresh(): Promise<TokenResponse> {
@@ -63,30 +55,3 @@ export class AuthService {
 }
 
 export const authService = new AuthService(new FetchClient());
-
-/**
- * Start the Supabase Google OAuth flow (authorization-code + PKCE).
- *
- * Redirects the browser to the Supabase authorization endpoint; on success
- * Supabase redirects back to `<origin>/auth/callback` with a `code`, which
- * the callback page exchanges and hands to the backend for verification.
- */
-export async function signInWithGoogle(): Promise<void> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-    );
-  }
-
-  const { createBrowserClient } = await import("@supabase/ssr");
-  const supabase = createBrowserClient(supabaseUrl, supabaseKey);
-  const redirectTo = `${window.location.origin}/auth/callback`;
-
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo },
-  });
-  if (error) throw error;
-}

@@ -1,6 +1,6 @@
 """Service + SQL repository tests for the Personal Skill Graph.
 
-These exercise the real Supabase/PostgreSQL-backed repository (via the test_db
+These exercise the real PostgreSQL-backed repository (via the test_db
 fixture) with the deterministic rules engine and service orchestration.
 """
 

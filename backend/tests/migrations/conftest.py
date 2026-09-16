@@ -36,7 +36,7 @@ def _migration_url() -> str:
     if not _is_postgres(base):
         raise RuntimeError(
             f"Unsupported DATABASE_URL for migrations: {base} "
-            "(Supabase/PostgreSQL only)"
+            "(PostgreSQL only)"
         )
     # alembic/env.py drives migrations through an async engine, so force the
     # asyncpg driver (same as the app) for the migration runs.

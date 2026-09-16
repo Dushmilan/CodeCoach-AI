@@ -1,7 +1,7 @@
 {
   "meta": {
     "mode": "demo",
-    "note": "Frontend-only demo dataset for professor/demonstrator dashboards (Issue #159, phase 2). Not a runtime store — Supabase remains the only database. Live mode replaces these MSW/demo reads with /api/instructor/*.",
+    "note": "Frontend-only demo dataset for professor/demonstrator dashboards (Issue #159, phase 2). Not a runtime store — PostgreSQL remains the only database. Live mode replaces these MSW/demo reads with /api/instructor/*.",
     "verification": "Roles verifiable with seeded credentials (admin/admin123, superadmin/superadmin123, professor.ada/professor123, demonstrator.turing/demonstrator123 — see backend/scripts/seed_admin.py)."
   },
   "professors": [

@@ -27,7 +27,7 @@ def upgrade() -> None:
     """Create the review_cards table (idempotent for re-runs)."""
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
-        raise RuntimeError("Only Supabase/PostgreSQL is supported")
+        raise RuntimeError("Only PostgreSQL is supported")
 
     table_exists = bind.execute(
         sa.text("SELECT to_regclass('review_cards') IS NOT NULL")

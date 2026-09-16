@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 Base = declarative_base()
 
-# Supabase/PostgreSQL is the only database — JSONB everywhere.
+# PostgreSQL is the only database — JSONB everywhere.
 JSONType = JSONB()
 
 
@@ -303,7 +303,7 @@ class CoachingInteractionORM(Base):
     """Durable coaching intent (Groq adapter state machine).
 
     One row per coaching request: sent before the external call, then
-    completed/failed/timeout/rate_limited after. Supabase is the source of
+    completed/failed/timeout/rate_limited after. PostgreSQL is the source of
     truth; Redis remains a disposable cache.
     """
 

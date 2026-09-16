@@ -1,7 +1,7 @@
 """LearnerContextService — cached composition of skill graph + recent submissions for coach.
 
 Deep module: one public method get_context(user_id) covers all callers.
-Caching, truncation, and block formatting are internal details. Supabase remains
+Caching, truncation, and block formatting are internal details. PostgreSQL remains
 source of truth; Redis is disposable.
 """
 

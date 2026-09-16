@@ -1,6 +1,6 @@
 """Exact question-id → algorithm mapping for the curated animation catalog.
 
-Every question in the live 100-question Supabase inventory is pinned to one
+Every question in the live 100-question PostgreSQL inventory is pinned to one
 canonical algorithm by its stable id. This exact map runs before any keyword
 matching, so category names like "Binary Search" can never over-match a whole
 category again — each question is resolved deterministically.

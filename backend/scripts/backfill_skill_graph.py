@@ -6,7 +6,7 @@ synthesize idempotent LearningEvents (one per submission) and feed them
 through SkillGraphService. Existing learning_events are never duplicated —
 event id ``backfill:{submission.id}`` is deterministic.
 
-Idempotent, re-runnable, non-destructive. Supabase-only.
+Idempotent, re-runnable, non-destructive. PostgreSQL-only.
 
 Usage:
     DATABASE_URL=postgresql://... python scripts/backfill_skill_graph.py [--dry-run] [--user USER_ID]
@@ -36,7 +36,7 @@ def _get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
         raise SystemExit(
-            "ERROR: DATABASE_URL is required (Supabase/PostgreSQL connection string)"
+            "ERROR: DATABASE_URL is required (PostgreSQL connection string)"
         )
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)

@@ -25,7 +25,7 @@ def hash_content(*parts: str) -> str:
 
 
 class ExecutionAdapter(CodeExecutor):
-    """CodeExecutor with Supabase-backed state transitions."""
+    """CodeExecutor with PostgreSQL-backed state transitions."""
 
     def __init__(
         self,

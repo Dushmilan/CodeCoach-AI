@@ -1,7 +1,7 @@
 """In-memory SkillGraphRepository for local simulation and tests.
 
 This is NOT a production store — the AGENTS.md rules require runtime
-repositories to be SQL against Supabase. This fake exists so the deterministic
+repositories to be SQL against PostgreSQL. This fake exists so the deterministic
 engine and the learner-profile simulation can run locally without a database.
 """
 

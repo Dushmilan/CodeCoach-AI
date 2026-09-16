@@ -1,7 +1,7 @@
 """Integration: submit → skill graph → coach learner context with cache invalidation.
 
 Lightweight version: verifies wiring via dependency overrides and mocks, avoids
-heavy Supabase schema drops that stall the suite on the pooler.
+heavy PostgreSQL schema drops that stall the suite on the pooler.
 """
 
 import pytest

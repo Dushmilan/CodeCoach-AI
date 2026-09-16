@@ -85,7 +85,6 @@ jobs:
         run: |
           pytest tests/integration -v --cov=app --cov-report=xml:integration-coverage.xml --cov-append \
             --ignore=tests/integration/test_run_endpoints.py \
-            --ignore=tests/integration/test_auth_supabase.py \
             --ignore=tests/integration/test_database_sync.py \
             --maxfail=0
 

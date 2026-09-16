@@ -71,7 +71,7 @@ class TestPostgresOnlyDatabase:
         monkeypatch.setenv("ENVIRONMENT", "testing")
         monkeypatch.setenv(
             "DATABASE_URL",
-            "postgresql://postgres.ref.pooler.supabase.com:6543/postgres",
+            "postgresql://db.pooler.example.com:6543/postgres",
         )
         settings = get_settings()
         assert settings.DATABASE_URL.startswith("postgresql+asyncpg://")
@@ -82,7 +82,7 @@ class TestPostgresOnlyDatabase:
         monkeypatch.setenv("ENVIRONMENT", "testing")
         monkeypatch.setenv(
             "DATABASE_URL",
-            "postgresql+asyncpg://postgres.ref.supabase.co:5432/postgres",
+            "postgresql+asyncpg://db.example.com:5432/postgres",
         )
         settings = get_settings()
         assert settings.DATABASE_URL.startswith("postgresql+asyncpg://")

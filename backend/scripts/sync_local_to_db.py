@@ -9,7 +9,7 @@ database data is deleted.
 Usage:
     python scripts/sync_local_to_db.py [--url DATABASE_URL]
 
-Defaults to DATABASE_URL from the environment (PostgreSQL/Supabase, or local
+Defaults to DATABASE_URL from the environment (local or hosted
 when a legacy source is configured). Safe to re-run.
 """
 
@@ -36,7 +36,7 @@ from app.services.local_sync import sync  # noqa: E402
 
 
 def _strip_pgbouncer(url: str) -> str:
-    """Drop the Supabase transaction-pooler `?pgbouncer=true` param.
+    """Drop the PostgreSQL transaction-pooler `?pgbouncer=true` param.
 
     asyncpg would otherwise forward `pgbouncer` as an unknown connection kwarg.
     """
@@ -55,7 +55,7 @@ def _get_database_url() -> str:
     url = _strip_pgbouncer(os.getenv("DATABASE_URL"))
     if not url:
         raise SystemExit(
-            "ERROR: DATABASE_URL is required (Supabase/PostgreSQL connection "
+            "ERROR: DATABASE_URL is required (PostgreSQL connection "
             "string); no local fallback is allowed."
         )
     if url.startswith("postgresql://"):
@@ -90,7 +90,7 @@ async def main(database_url: str) -> int:
     print()
 
     engine_kwargs = {}
-    # Supabase pgbouncer poolers reuse prepared-statement names across
+    # PostgreSQL pgbouncer poolers reuse prepared-statement names across
     # connections; disable asyncpg's statement cache so DDL / DML does not hit
     # DuplicatePreparedStatementError.
     if database_url.startswith("postgresql"):
