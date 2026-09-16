@@ -6,7 +6,12 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm import (
+    ClassroomEnrollmentORM,
+    ClassroomORM,
+    CourseORM,
     LearningEventORM,
+    LessonORM,
+    ModuleORM,
     QuestionSkillORM,
     SkillORM,
     UserSkillStateORM,
@@ -158,3 +163,42 @@ class SqlSkillGraphRepository(SkillGraphRepository):
             delete(UserSkillStateORM).where(UserSkillStateORM.user_id == user_id)
         )
         await self.session.commit()
+
+    async def get_enrolled_programme_starters(
+        self, user_id: str, limit: int = 5
+    ) -> List[str]:
+        """Programme-order starter question IDs (Issue #186).
+
+        classroom_enrollments -> classrooms.course_id -> modules/lessons
+        ordered by course/module/lesson order. Read-only, PostgreSQL-only.
+        """
+        enroll_rows = await self.session.execute(
+            select(ClassroomORM.course_id)
+            .join(
+                ClassroomEnrollmentORM,
+                ClassroomEnrollmentORM.classroom_id == ClassroomORM.id,
+            )
+            .where(ClassroomEnrollmentORM.user_id == user_id)
+            .order_by(ClassroomORM.id)
+        )
+        course_ids = [r for r in enroll_rows.scalars().all() if r]
+        if not course_ids:
+            return []
+        lesson_rows = await self.session.execute(
+            select(LessonORM.question_id)
+            .join(ModuleORM, LessonORM.module_id == ModuleORM.id)
+            .join(CourseORM, LessonORM.course_id == CourseORM.id)
+            .where(
+                LessonORM.course_id.in_(course_ids),
+                LessonORM.question_id.is_not(None),
+            )
+            .order_by(CourseORM.order, ModuleORM.order, LessonORM.order)
+            .limit(limit * 4)
+        )
+        seen: List[str] = []
+        for qid in lesson_rows.scalars().all():
+            if qid and qid not in seen:
+                seen.append(qid)
+            if len(seen) >= limit:
+                break
+        return seen

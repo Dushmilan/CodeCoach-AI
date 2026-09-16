@@ -17,10 +17,11 @@ from app.models.skill_graph_schemas import (
     UserSkillState,
 )
 from app.ports.skill_graph_repository import SkillGraphRepository
-from app.models.skill_graph_schemas import SkillStatus, Trend
+from app.models.skill_graph_schemas import SkillStatus, Trend, RecommendationReason
 
 from app.services.skill_graph_rules import (
     apply_event,
+    cold_start_order,
     decay_state,
     mastery_for_status,
     recommend,
@@ -258,6 +259,13 @@ class SkillGraphService:
             limit=limit,
         )
 
+    async def get_enrolled_programme_starters(
+        self, user_id: str, limit: int = 5
+    ) -> List[str]:
+        return await self.repository.get_enrolled_programme_starters(
+            user_id, limit=limit
+        )
+
     async def get_recommended_questions(
         self,
         user_id: str,
@@ -270,6 +278,10 @@ class SkillGraphService:
         ``question_loader`` resolves a question ID to a full ``Question`` (or
         ``None``). Recommendations whose question cannot be resolved are
         skipped — the response never fabricates practice data.
+
+        Cold-start (Issue #186): when skill-graph recs resolve to nothing and
+        the user has no skill states, fall back to the enrolled programme's
+        starter questions in deterministic programme order.
         """
         recs = await self.get_recommendations(user_id, now=now, limit=limit)
         results: List[RecommendedQuestion] = []
@@ -289,6 +301,26 @@ class SkillGraphService:
                     question=question,
                 )
             )
+        if not results:
+            states = await self.repository.get_states(user_id)
+            if not states:
+                starter_ids = cold_start_order(
+                    await self.get_enrolled_programme_starters(user_id, limit=limit),
+                    limit=limit,
+                )
+                for question_id in starter_ids:
+                    question = await question_loader(question_id)
+                    if question is None:
+                        continue
+                    results.append(
+                        RecommendedQuestion(
+                            skill_slug="programme-start",
+                            skill_name="Programme Start",
+                            reason=RecommendationReason.NEW_SKILL,
+                            reason_text="Start your programme.",
+                            question=question,
+                        )
+                    )
         return results
 
     async def delete_history(self, user_id: str) -> None:

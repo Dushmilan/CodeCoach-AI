@@ -11,6 +11,21 @@ export default function ProfessorAnalyticsPage() {
     return <p className="text-sm text-muted-foreground">Loading analytics…</p>;
   }
 
+  if (classrooms.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Class Analytics</h1>
+        <p className="text-sm text-muted-foreground">No classrooms yet.</p>
+        <Link
+          href="/professor/classrooms"
+          className="inline-block text-xs font-medium text-primary hover:underline"
+        >
+          View classrooms
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>

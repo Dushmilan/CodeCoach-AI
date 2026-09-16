@@ -1,14 +1,13 @@
 """Groq API verification helpers — used by debug + admin endpoints."""
 
 import logging
-import os
 from typing import Any, Dict, List, Optional
 
 import httpx
 
-logger = logging.getLogger(__name__)
+from app.core.config import get_settings
 
-GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+logger = logging.getLogger(__name__)
 
 
 async def check_groq_status(
@@ -18,7 +17,9 @@ async def check_groq_status(
 
     Returns a diagnostic dict (never raises) suitable for debug/admin output.
     """
-    api_key = api_key or os.getenv("GROQ_API_KEY")
+    settings = get_settings()
+    api_key = api_key or settings.GROQ_API_KEY
+    base_url = settings.GROQ_BASE_URL
     result = {
         "api_key_present": False,
         "api_key_format_valid": False,
@@ -38,7 +39,7 @@ async def check_groq_status(
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(
-                f"{GROQ_BASE_URL}/models",
+                f"{base_url}/models",
                 headers={"Authorization": f"Bearer {api_key}"},
             )
         if response.status_code == 200:

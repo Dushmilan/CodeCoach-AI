@@ -5,6 +5,16 @@ import { AuthProvider, useAuth } from "./AuthProvider";
 import { authService } from "@/features/auth/auth.service";
 import { setAccessToken } from "@/lib/auth-session";
 
+const navMocks = vi.hoisted(() => ({
+  replace: vi.fn(),
+  pathname: "/",
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: navMocks.replace }),
+  usePathname: () => navMocks.pathname,
+}));
+
 function TestComponent() {
   const { user, token, isAuthenticated, isLoading, login, register, logout } =
     useAuth();
@@ -49,6 +59,8 @@ describe("AuthProvider", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     setAccessToken(null);
+    navMocks.replace.mockClear();
+    navMocks.pathname = "/";
   });
 
   afterEach(() => {
@@ -160,5 +172,51 @@ describe("AuthProvider", () => {
     });
     expect(logoutSpy).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem("auth_token")).toBeNull();
+  });
+
+  it("logout from an admin page redirects to the admin sign-in", async () => {
+    navMocks.pathname = "/admin/users";
+    vi.spyOn(authService, "refresh").mockResolvedValue({
+      access_token: "valid_jwt",
+      token_type: "bearer",
+      expires_in: 1800,
+      user: userFixture("testuser"),
+    });
+    vi.spyOn(authService, "logout").mockResolvedValue(undefined);
+
+    renderWithProvider();
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-status").textContent).toBe("Logged in");
+    });
+
+    await userEvent.click(screen.getByTestId("logout-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-status").textContent).toBe("Logged out");
+    });
+    expect(navMocks.replace).toHaveBeenCalledWith("/admin/login");
+  });
+
+  it("logout from a non-admin page redirects to the main sign-in", async () => {
+    navMocks.pathname = "/dashboard";
+    vi.spyOn(authService, "refresh").mockResolvedValue({
+      access_token: "valid_jwt",
+      token_type: "bearer",
+      expires_in: 1800,
+      user: userFixture("testuser"),
+    });
+    vi.spyOn(authService, "logout").mockResolvedValue(undefined);
+
+    renderWithProvider();
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-status").textContent).toBe("Logged in");
+    });
+
+    await userEvent.click(screen.getByTestId("logout-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-status").textContent).toBe("Logged out");
+    });
+    expect(navMocks.replace).toHaveBeenCalledWith("/login");
   });
 });

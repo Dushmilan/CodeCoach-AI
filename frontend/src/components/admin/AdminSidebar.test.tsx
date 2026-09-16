@@ -34,8 +34,31 @@ describe('AdminSidebar', () => {
     render(<AdminSidebar open={false} onClose={vi.fn()} />);
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Users')).toBeInTheDocument();
+    expect(screen.getByText('Professors')).toBeInTheDocument();
     expect(screen.getByText('Questions')).toBeInTheDocument();
     expect(screen.getByText('Curriculum')).toBeInTheDocument();
+  });
+
+  it('shows Curriculum to professors but hides admin-only nav items', () => {
+    mocks.useAuth.mockReturnValue({
+      user: { username: 'prof', role: 'professor' },
+      isAuthenticated: true,
+      isLoading: false,
+      logout: vi.fn(),
+    });
+    render(<AdminSidebar open={false} onClose={vi.fn()} />);
+    expect(screen.getByText('Curriculum')).toBeInTheDocument();
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Users')).not.toBeInTheDocument();
+    expect(screen.queryByText('Questions')).not.toBeInTheDocument();
+  });
+
+  it('links Professors to the admin hierarchy roster', () => {
+    render(<AdminSidebar open={false} onClose={vi.fn()} />);
+    expect(screen.getByText('Professors').closest('a')).toHaveAttribute(
+      'href',
+      '/admin/professors',
+    );
   });
 
   it('does not render removed Analytics nav item', () => {

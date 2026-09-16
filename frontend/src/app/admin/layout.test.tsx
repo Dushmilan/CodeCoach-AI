@@ -42,7 +42,7 @@ describe("admin layout guard conventions (Issue #180)", () => {
 
   it("denied panel links home and sign-in for wrong roles", () => {
     authState = {
-      user: { role: "professor" },
+      user: { role: "user", username: "stu" },
       isAuthenticated: true,
       isHydrated: true,
     };
@@ -52,7 +52,7 @@ describe("admin layout guard conventions (Issue #180)", () => {
       </AdminLayout>,
     );
     expect(screen.getByText("Access Denied")).toBeInTheDocument();
-    expect(screen.getByText("Back to home")).toBeInTheDocument();
+    expect(screen.getByText("Go home")).toBeInTheDocument();
     expect(screen.getByText("Go to sign-in")).toBeInTheDocument();
   });
 });

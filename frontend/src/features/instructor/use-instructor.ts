@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  getClassroom,
-  getClassrooms,
-  getClassAnalytics,
+  getClassroomDetail,
+  getClassroomsAnalytics,
   type ClassAnalytics,
   type Classroom,
 } from "./demo";
@@ -17,14 +16,10 @@ export function useClassrooms() {
   useEffect(() => {
     let live = true;
     (async () => {
-      const rooms = await getClassrooms();
+      const batch = await getClassroomsAnalytics();
       if (!live) return;
-      setClassrooms(rooms);
-      const pairs = await Promise.all(
-        rooms.map(async (c) => ({ id: c.id, a: await getClassAnalytics(c.id) })),
-      );
-      if (!live) return;
-      setAnalytics(Object.fromEntries(pairs.map((p) => [p.id, p.a])));
+      setClassrooms(batch.rooms);
+      setAnalytics(batch.analyticsById);
     })();
     return () => {
       live = false;
@@ -47,13 +42,10 @@ export function useClassroom(id: string) {
   useEffect(() => {
     let live = true;
     (async () => {
-      const room = await getClassroom(id);
+      const detail = await getClassroomDetail(id);
       if (!live) return;
-      setClassroom(room);
-      if (room) {
-        const a = await getClassAnalytics(id);
-        if (live) setAnalytics(a);
-      }
+      setClassroom(detail?.classroom ?? null);
+      setAnalytics(detail?.analytics ?? null);
     })();
     return () => {
       live = false;

@@ -2,64 +2,25 @@
 
 import { SettingsModal } from '@/components/settings/SettingsModal';
 import { useAuth } from '@/providers';
-import { isAdmin } from '@/lib/roles';
-import { roleHomePath, signInPathFor } from '@/lib/auth/roleHome';
 import { Menu, Moon, Settings, Sun, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
 import AdminSidebar from '@/components/admin/AdminSidebar';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isLoginPage = pathname === '/admin/login';
+function AdminContent({ children }: { children: React.ReactNode }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const { user, isAuthenticated, logout, isHydrated } = useAuth();
-  const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (isHydrated && !isAuthenticated && !isLoginPage) {
-      router.replace(signInPathFor(pathname));
-    }
-  }, [isHydrated, isAuthenticated, isLoginPage, pathname, router]);
-
-  if (!isHydrated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!isLoginPage && (!isAuthenticated || !isAdmin(user?.role))) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground">You need admin privileges to access this area.</p>
-          <Link href={roleHomePath(user?.role)} className="underline mt-4 inline-block">
-            Back to home
-          </Link>{" "}
-          <Link href={signInPathFor(pathname)} className="underline mt-4 inline-block ml-4">
-            Go to sign-in
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoginPage) {
-    return <>{children}</>;
-  }
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -150,5 +111,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <main className="p-6">{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/admin/login';
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+  return (
+    <RoleGuard
+      allowedRoles={['professor', 'admin', 'super_admin']}
+      loginHref="/admin/login"
+      deniedMessage="You need admin privileges to access this area."
+    >
+      <AdminContent>{children}</AdminContent>
+    </RoleGuard>
   );
 }

@@ -138,6 +138,49 @@ describe("instructor live API (Issue #159)", () => {
     expect(a.atRisk.map((s) => s.userId)).toEqual(["stu-live-02"]);
   });
 
+  it("maps live usernames onto roster rows (Issue #177)", async () => {
+    server.use(
+      http.get("/api/instructor/classrooms/:id", () =>
+        HttpResponse.json({
+          classroom: LIVE_ROOM,
+          analytics: {
+            total_students: 2,
+            avg_completion: 55.5,
+            avg_solved: 7.5,
+            students: [
+              {
+                user_id: "stu-live-01",
+                username: "mia.live",
+                completed_lessons: 20,
+                completion_pct: 80.0,
+                attempted: 20,
+                solved: 12,
+              },
+              {
+                user_id: "stu-live-02",
+                completed_lessons: 5,
+                completion_pct: 10.0,
+                attempted: 15,
+                solved: 3,
+              },
+            ],
+          },
+        }),
+      ),
+    );
+    const a = await getClassAnalytics("live-room-1");
+    expect(a.students[0]).toMatchObject({
+      userId: "stu-live-01",
+      username: "mia.live",
+      name: "mia.live",
+    });
+    // Missing username falls back to the user id so the roster keeps shape.
+    expect(a.students[1]).toMatchObject({
+      userId: "stu-live-02",
+      username: "stu-live-02",
+    });
+  });
+
   it("falls back to the demo dataset when the API is unreachable", async () => {
     useOfflineClassrooms();
     const rooms = await getClassrooms();
