@@ -1,22 +1,22 @@
 /** @type {import('next').NextConfig} */
 
+const { resolvePublicApiUrl } = require("./csp.js");
+
 // Rewrites are serialized into the build output at build time.
 //   - API_URL: server-side destination for the /api/* rewrite. In Docker this
 //     is the container-network URL (http://backend:8000); on Cloudflare it is
 //     the public backend URL baked into the Worker.
-//   - NEXT_PUBLIC_API_URL: inlined into the client bundle. In Docker this is
-//     the browser-reachable URL (http://localhost:8000); on Cloudflare it is
-//     the public backend URL used directly by the browser.
+//   - NEXT_PUBLIC_API_URL: inlined into the client bundle. Defaults to
+//     same-origin ('') so browser calls stay under CSP connect-src 'self'
+//     and ride the /api rewrite; cross-origin deployments set an https:
+//     origin explicitly. A hard-coded absolute http default would be
+//     blocked by connect-src on every request (see #172).
 const REWRITE_TARGET = process.env.API_URL || 'http://localhost:8000';
 
 const nextConfig = {
   skipTrailingSlashRedirect: true,
   env: {
-    // Preserve an explicit empty value (same-origin, CSP-safe); only
-    // fall back when the variable is unset. `||` would resurrect the
-    // hardcoded URL for empty strings and get blocked by connect-src.
-    NEXT_PUBLIC_API_URL:
-      process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000',
+    NEXT_PUBLIC_API_URL: resolvePublicApiUrl(process.env),
   },
   webpack: (config) => {
     config.cache = false;

@@ -17,9 +17,10 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 # Copy source code
 COPY . .
 
-# NOTE: browser-reachable API URLs are provided at runtime via docker-compose
-# (NEXT_PUBLIC_API_URL=http://localhost:8000). Do NOT bake a host URL into the
-# image; it cannot be overridden and breaks when the host port changes.
+# NOTE: the browser API base defaults to same-origin (NEXT_PUBLIC_API_URL
+# empty; /api rewrite proxies to the backend). Do NOT bake an absolute
+# plain-http URL into the image: CSP connect-src blocks it on every request,
+# and it cannot be overridden when the host port changes.
 
 # Expose port
 EXPOSE 3000
