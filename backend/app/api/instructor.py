@@ -73,6 +73,30 @@ async def list_classrooms(
     return [_room_out(room) for room in rooms]
 
 
+@router.get("/classrooms-analytics", response_model=list[ClassroomDetailOut])
+async def classrooms_analytics(
+    total_lessons: int = Query(default=10, ge=0),
+    repo: ClassroomRepository = Depends(get_classroom_repository),
+    service: ClassAnalyticsService = Depends(get_class_analytics_service),
+    current_user: UserResponse = Depends(require_instructor),
+):
+    """Batch analytics for the caller's own rooms in O(1) requests (Issue #179).
+
+    Professors see owned rooms, TAs assigned rooms; students get 403 from
+    ``require_instructor``. Figures identical to the detail endpoint.
+    """
+    if current_user.role == "ta":
+        rooms = await repo.list_for_ta(current_user.id)
+    else:
+        rooms = await repo.list_owned_by_professor(current_user.id)
+    by_room = await repo.list_classroom_student_ids_by_room([r.id for r in rooms])
+    overviews = await service.class_overviews(by_room, total_lessons=total_lessons)
+    return [
+        ClassroomDetailOut(classroom=_room_out(room), analytics=overviews[room.id])
+        for room in rooms
+    ]
+
+
 @router.get("/classrooms/{classroom_id}", response_model=ClassroomDetailOut)
 async def classroom_detail(
     classroom_id: str,

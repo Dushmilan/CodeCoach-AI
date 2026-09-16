@@ -47,6 +47,21 @@ class ClassroomRepository(ABC):
         """
         ...
 
+    async def list_classroom_student_ids_by_room(
+        self, classroom_ids: list[str]
+    ) -> dict[str, list[str]]:
+        """Return student ids per room in ONE round trip.
+
+        Keys cover every requested id (unknown rooms map to ``[]``);
+        role='ta' enrollments are excluded, mirroring
+        :meth:`list_classroom_student_ids`. The default loops for fakes;
+        the SQL implementation uses one IN query.
+        """
+        return {
+            classroom_id: await self.list_classroom_student_ids(classroom_id)
+            for classroom_id in classroom_ids
+        }
+
     @abstractmethod
     async def list_classroom_ta_ids(self, classroom_id: str) -> list[str]:
         """Return user ids enrolled with role='ta', ordered by user id.

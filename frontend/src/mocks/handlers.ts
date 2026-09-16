@@ -166,6 +166,54 @@ export const handlers = [
       })),
     );
   }),
+  http.get("/api/instructor/classrooms-analytics", () => {
+    return HttpResponse.json(
+      demoData.classrooms.map((room) => {
+        const enrolled = demoData.enrollments.filter(
+          (e) => e.classroomId === room.id,
+        );
+        const students = enrolled.map((e) => {
+          const p = demoData.progress.find(
+            (r) => r.userId === e.userId && r.classroomId === room.id,
+          );
+          const completed = p?.completedLessons ?? 0;
+          return {
+            user_id: e.userId,
+            completed_lessons: completed,
+            completion_pct: Math.round((completed / room.totalLessons) * 100),
+            attempted: p?.attempted ?? 0,
+            solved: p?.solved ?? 0,
+          };
+        });
+        const total = students.length;
+        return {
+          classroom: {
+            id: room.id,
+            course_id: room.courseId,
+            owner_id: room.ownerId,
+            name: room.name,
+            invite_code: room.inviteCode,
+            term: room.term,
+            schedule: room.schedule,
+          },
+          analytics: {
+            total_students: total,
+            avg_completion: total
+              ? Math.round(
+                  (students.reduce((s, x) => s + x.completion_pct, 0) / total) * 10,
+                ) / 10
+              : 0,
+            avg_solved: total
+              ? Math.round(
+                  (students.reduce((s, x) => s + x.solved, 0) / total) * 100,
+                ) / 100
+              : 0,
+            students,
+          },
+        };
+      }),
+    );
+  }),
   http.get("/api/instructor/classrooms/:id", ({ params }) => {
     const room = demoData.classrooms.find((c) => c.id === params.id);
     if (!room) {
