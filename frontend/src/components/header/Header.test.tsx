@@ -227,4 +227,30 @@ describe('Header', () => {
       expect(screen.queryByTestId('header-demonstrator-link')).not.toBeInTheDocument();
     });
   });
+
+  describe('dashboard nav link (moved out of settings gear menu)', () => {
+    it('shows dashboard link for authenticated user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '2', username: 'bob', email: 'b@a.com', created_at: '', is_active: true, role: 'user' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.getByTestId('header-dashboard-link')).toHaveAttribute('href', '/dashboard');
+    });
+
+    it('does not show dashboard link for guests', () => {
+      mockUseAuth.mockReturnValue({
+        user: null,
+        isAuthenticated: false,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.queryByTestId('header-dashboard-link')).not.toBeInTheDocument();
+    });
+  });
 });
