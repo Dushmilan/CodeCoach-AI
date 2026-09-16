@@ -15,7 +15,7 @@ Private AI-powered coding practice platform for university students. Practice co
 | Code Exec | Piston (self-hosted Docker container) |
 | AI Coach | Groq (LLaMA 3.3 70B versatile / LLaMA 3.1 8B instant) |
 | Testing | pytest (backend), Vitest (frontend) |
-| Infra | Docker Compose, Supabase PostgreSQL (async SQLAlchemy) + Redis |
+| Infra | Docker Compose, local PostgreSQL (async SQLAlchemy) + Redis |
 
 ## Architecture
 
@@ -32,7 +32,7 @@ backend/app/
   services/       Business logic (wraps ports, delegates to adapters)
     execution_result_formatter.py  Piston API response → uniform dict
     static_code_validator.py       Pre-flight code surface checks
-  repositories/   SQLAlchemy repositories (sql_*, Supabase/PostgreSQL only)
+  repositories/   SQLAlchemy repositories (sql_*, PostgreSQL only)
   api/            FastAPI route handlers (thin)
   models/         Pydantic schemas
   middleware/     Rate limiting

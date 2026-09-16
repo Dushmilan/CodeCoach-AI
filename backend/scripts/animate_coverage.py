@@ -1,6 +1,6 @@
 """Full-inventory animation coverage runner.
 
-Queries every question in the Supabase questions table, resolves its canonical
+Queries every question in the questions table, resolves its canonical
 algorithm, executes the traced optimal solution against examples[0].input in
 Piston, compiles the trace with the family compiler and validates the scene.
 

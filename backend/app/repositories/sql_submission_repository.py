@@ -11,7 +11,7 @@ from app.ports.submission_repository import SubmissionRepository
 
 
 class SqlSubmissionRepository(SubmissionRepository):
-    """PostgreSQL/Supabase implementation of the submission repository."""
+    """PostgreSQL/PostgreSQL implementation of the submission repository."""
 
     def __init__(self, session: AsyncSession):
         self.session = session

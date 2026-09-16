@@ -1,7 +1,7 @@
 """SEC-2 red tests: httpOnly refresh cookie + CSRF protection.
 
 These tests define the target behavior:
-- login/register/supabase set an httpOnly SameSite=Lax refresh cookie
+- login/register set an httpOnly SameSite=Lax refresh cookie
   AND a JS-readable csrf_token cookie, and return the csrf token in the body.
 - /api/auth/refresh reads the refresh token from the cookie (body fallback
   preserved for backward compatibility).

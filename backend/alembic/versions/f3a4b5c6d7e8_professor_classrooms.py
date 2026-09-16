@@ -72,7 +72,7 @@ def _constraint_exists(bind, table: str, name: str) -> bool:
 def upgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
-        raise RuntimeError("Only Supabase/PostgreSQL is supported")
+        raise RuntimeError("Only PostgreSQL is supported")
 
     if not _column_exists(bind, "courses", "owner_id"):
         op.add_column(
@@ -156,7 +156,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
-        raise RuntimeError("Only Supabase/PostgreSQL is supported")
+        raise RuntimeError("Only PostgreSQL is supported")
 
     if _table_exists(bind, "classroom_enrollments"):
         if _index_exists(bind, "ix_enrollments_user"):

@@ -1,6 +1,6 @@
 """alembic URL handling helpers.
 
-env.py must feed a Supabase-pooler `postgresql://` URL to the async engine and
+env.py must feed a PostgreSQL-pooler `postgresql://` URL to the async engine and
 to alembic's ConfigParser without tripping interpolation syntax on `%`
 characters (common in pooler passwords). These helpers are pure functions so
 they can be unit-tested without a database connection.

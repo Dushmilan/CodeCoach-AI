@@ -153,7 +153,7 @@ async def warm_coaching_context(
 
     Fire-and-forget: returns 202 immediately, populates
     ``codecoach:coach:ctx:{user}`` (+ skill/submission pieces) in the
-    background. Never returns skill data; Supabase stays source of truth.
+    background. Never returns skill data; PostgreSQL stays source of truth.
     """
     _ = request
     question_id = body.question_id if body else None

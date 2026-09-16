@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed the skill taxonomy + question-skill mappings into Supabase.
+"""Seed the skill taxonomy + question-skill mappings into PostgreSQL.
 
 Idempotent and re-runnable: upserts by natural key (skills.slug,
 question_skills.question_id+skill_slug), then prunes taxonomy-unknown rows
@@ -37,7 +37,7 @@ def _get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
         raise SystemExit(
-            "ERROR: DATABASE_URL is required (Supabase/PostgreSQL connection "
+            "ERROR: DATABASE_URL is required (PostgreSQL connection "
             "string); no local fallback is allowed."
         )
     if url.startswith("postgresql://"):
@@ -49,7 +49,7 @@ def _create_engine():
     """Engine honoring DATABASE_SEARCH_PATH (same convention as the app).
 
     Isolated-schema environments (tests, staging previews) set
-    DATABASE_SEARCH_PATH; production Supabase leaves it unset and defaults
+    DATABASE_SEARCH_PATH; production leaves it unset and defaults
     to the public schema.
     """
 

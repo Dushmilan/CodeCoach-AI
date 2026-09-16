@@ -1,7 +1,7 @@
 """Integration test: every question in the live inventory resolves to a
 curated animation algorithm and produces a validated scene.
 
-Requires the Supabase-backed DATABASE_URL (see tests/conftest.py); skipped
+Requires the PostgreSQL-backed DATABASE_URL (see tests/conftest.py); skipped
 when the database is unreachable OR the question inventory is not populated
 (<50 rows), so local/CI runs without the seeded schema stay green while the
 full environment asserts 100% coverage.
@@ -45,7 +45,7 @@ async def test_every_question_resolves_to_a_known_algorithm():
         rows = await _questions()
     except Exception as exc:  # noqa: BLE001
         if _db_unreachable(exc):
-            pytest.skip(f"Supabase unreachable: {exc}")
+            pytest.skip(f"PostgreSQL unreachable: {exc}")
         raise
 
     if len(rows) < 50:
@@ -72,7 +72,7 @@ async def test_all_questions_have_a_visual_family():
         rows = await _questions()
     except Exception as exc:  # noqa: BLE001
         if _db_unreachable(exc):
-            pytest.skip(f"Supabase unreachable: {exc}")
+            pytest.skip(f"PostgreSQL unreachable: {exc}")
         raise
 
     if len(rows) < 50:

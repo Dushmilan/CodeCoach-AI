@@ -1,6 +1,19 @@
 # Progress — CodeCoach AI
 
-> Last updated: September 04, 2026 (branch `docs/no-issue-docs-sync`, origin/main `51f7a02`) — audited against code.
+> Last updated: September 16, 2026 (branch `chore/168-local-postgres-branch-db`, issue #168) — local-first PostgreSQL; Supabase removed.
+>
+> ## Sep 16, 2026 — Local-first databases, Supabase removed (#168)
+> - Local PostgreSQL is the working main: one database per git branch
+>   (`codecoach_<slug>` via `backend/scripts/branch_db.py` init/pull/promote/status).
+>   Branch DB `codecoach_168_local_postgres_branch_db` holds the pulled curriculum
+>   (108 questions / 14 courses / 70 modules / 491 lessons) plus the seeded demo
+>   school (2 admins, 2 professors, 2 TAs, 15 students, 2 classrooms).
+> - Supabase fully removed: backend `POST /api/auth/supabase` + service method,
+>   frontend `@supabase/ssr`/`@supabase/supabase-js` + Google button + `/auth/callback`,
+>   compose/env key vars, docs. Auth is username/password JWT only.
+> - App runs against the branch DB (`backend/.env` → local URL; `/health` ok,
+>   admin login + `/api/questions` verified). Live promotion stays a separate
+>   confirmed step (upsert-only; verified identical 14/108/70/491 after run).
 
 This is the project's living status document. It is kept in sync with the code:
 if a section lists a feature as **Built**, that capability exists in the current

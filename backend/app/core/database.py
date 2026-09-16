@@ -12,7 +12,7 @@ from app.core.db_url import pooler_connect_args, strip_pgbouncer
 
 settings = get_settings()
 
-# Supabase transaction-pooler URLs carry a `?pgbouncer=true` param that
+# Transaction-pooler URLs carry a `?pgbouncer=true` param that
 # asyncpg/SQLAlchemy treat as an unknown connection option; drop it and keep
 # the rest of the query string (e.g. sslmode).
 _db_url = strip_pgbouncer(settings.DATABASE_URL)
@@ -27,16 +27,16 @@ if settings.DATABASE_SEARCH_PATH:
         "server_settings": {"search_path": settings.DATABASE_SEARCH_PATH}
     }
 
-# Supabase poolers reuse prepared-statement names across connections; disable
+# PostgreSQL poolers reuse prepared-statement names across connections; disable
 # asyncpg's statement cache so DDL / DML does not hit
 # DuplicatePreparedStatementError (mirrors tests/conftest.py).
-# Must apply in production as well — Supabase transaction pooler (pgbouncer)
+# Must apply in production as well — transaction pooler (pgbouncer)
 # is used in production and does not support prepared statements.
 if _db_url.startswith("postgresql"):
     _connect_args.setdefault("connect_args", {}).update(pooler_connect_args())
 
 # NullPool only for isolated test schemas (DATABASE_SEARCH_PATH). In dev
-# it forces a new TLS handshake to Supabase per-request (~5s), which is
+# it forces a new TLS handshake to the database host per-request (~5s), which is
 # the "Request Timeouts" seen in the UI. Pooled engine reuses connections.
 # Pool tuning args are only valid for pooled engines — NullPool rejects
 # pool_size / max_overflow / pool_timeout.

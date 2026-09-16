@@ -11,7 +11,7 @@ from app.services.redis_service import RedisCache
 logger = logging.getLogger(__name__)
 
 # Anonymous course list is identical for every visitor — cache it in Redis so
-# every backend replica shares one entry (avoids repeated Supabase roundtrips
+# every backend replica shares one entry (avoids repeated Postgres roundtrips
 # and intermittent 408s on a cold pool).
 _ANON_LIST_KEY = RedisCache.key("courses", "list", "anonymous")
 _ANON_LIST_LOCK_KEY = RedisCache.key("courses", "list", "anonymous", "lock")

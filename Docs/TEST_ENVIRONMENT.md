@@ -1,155 +1,88 @@
-# Test Environment — Database & OAuth
+# Test & Branch Environment — Database
 
-> ⚠️ **IMP — the current Supabase project is the TEST database, and the Google
-> OAuth integration is TEST OAuth. A production database is NOT configured yet.**
-> Last verified: 2026-08-15 (migration head re-verified Sep 04, 2026: `b4c5d6e7f8a1`).
+> Local-first PostgreSQL. Each git branch gets its own database
+> (`codecoach_<slug>` via `backend/scripts/branch_db.py`); live is written
+> only through the versioned promotion flow. The former hosted Supabase
+> project (and Google OAuth via Supabase) is decommissioned — see #168.
 
-This document is the source of truth for how the **test** environment is wired.
-Nothing here is production.
+This document is the source of truth for how environments are wired.
 
 ---
 
 ## 1. Environment matrix
 
-| | Test (current) | Production |
+| | Branch workspace (daily work) | Live |
 | --- | --- | --- |
-| Status | ✅ **Live now** | ❌ Not configured yet |
-| Supabase project ref | `qazpxjpcvsjbmgbzuxxp` | — |
-| Supabase URL | `https://qazpxjpcvsjbmgbzuxxp.supabase.co` | — |
-| DB role | `postgres` on that project | — |
+| Status | ✅ **Work here** | gated promotion only |
+| Database | local PostgreSQL `codecoach_<slug>` | hosted PostgreSQL |
 | `ENVIRONMENT` | `development` | `production` (fail-closed) |
-| App runtime | localhost (Docker Compose) | Cloudflare Workers + hosted backend (future) |
+| App runtime | localhost (Docker Compose or direct uvicorn) | hosted backend (future) |
 
-The app's `DATABASE_URL` / `DIRECT_URL` in `.env` **point at the test project**.
-Migrations are applied there (`alembic upgrade head`), and the dev stack reads
-and writes this test DB only.
+Create the branch database (schema comes from the ORM — single source of truth):
 
----
+```bash
+cd backend
+python scripts/branch_db.py init --url "postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_<slug>"
+```
 
-## 2. Where the credentials live
-
-Both files are **gitignored** — never commit them.
-
-| File | Used by |
-| --- | --- |
-| `.env` (repo root) | `docker-compose` (the running stack) |
-| `backend/.env` | `make dev-backend` (direct uvicorn runs) |
-
-Key variables:
+Point the app at it (`backend/.env` or root `.env`, both gitignored):
 
 ```
 ENVIRONMENT=development
-DATABASE_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:6543/postgres?pgbouncer=true
-DIRECT_URL=postgresql://postgres.<ref>.<region>.pooler.supabase.com:5432/postgres   # migrations
+DATABASE_URL=postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_<slug>
 JWT_SECRET_KEY=<random 64-hex>
 GROQ_API_KEY=gsk_...                      # AI coaching (real key)
-SUPABASE_URL=https://qazpxjpcvsjbmgbzuxxp.supabase.co
-NEXT_PUBLIC_SUPABASE_URL=https://qazpxjpcvsjbmgbzuxxp.supabase.co
-SUPABASE_ANON_KEY=sb_publishable_...      # same value in both *_ANON_KEY lines
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 PISTON_API_URL=http://piston:2000/api/v2
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_WS_URL=ws://localhost:8000
 ```
 
-### 2a. API key model (new Supabase key system)
+---
 
-Supabase replaced the old `anon` / `service_role` JWT keys with:
+## 2. Data flow (`backend/scripts/branch_db.py`)
 
-- **`sb_publishable_...`** — public, for browsers/clients. ✅ **Use this.**
-- **`sb_secret_...`** — privileged, server-only. ❌ Never in `.env`/frontend.
+| Command | Direction | Gate |
+| --- | --- | --- |
+| `pull --from <LIVE> --to <LOCAL>` | live → local (read-only SELECTs) | refuses non-localhost destinations |
+| `promote --from <LOCAL> --to <LIVE>` | local → live (upsert-only `merge()`) | refuses localhost targets AND requires `PROMOTE_TO_LIVE=YES-I-AM-SURE` |
+| `status --url <URL>` | read-only row counts | — |
 
-The old `eyJ...` `anon` key may still exist under **Settings → API Keys →
-Legacy API Keys**; the publishable key is its drop-in replacement.
-
-Where to find them: **Supabase Dashboard → project → ⚙️ Settings (bottom-left) →
-API Keys** (direct link: `https://supabase.com/dashboard/project/<ref>/settings/api-keys`).
+Copied tables, FK-safe order: `courses → questions → modules → lessons`.
+Course `owner_id` is nullable, so no users travel with the curriculum; demo
+users are created by the seed scripts, never copied.
 
 ---
 
-## 3. Google OAuth — TEST OAuth
+## 3. Auth
 
-### 3a. Flow
-
-```
-Login page (Continue with Google)
-  -> supabase.auth.signInWithOAuth({ provider: 'google', redirectTo: origin + '/auth/callback' })
-  -> GET {SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=...&redirect_uri=...
-  -> 302 to Google consent screen (accounts.google.com)
-  -> Google -> {SUPABASE_URL}/auth/v1/callback
-  -> Supabase 303 -> {origin}/auth/callback?code=...
-  -> callback page exchanges code (SDK, PKCE) -> loginWithSupabase(access_token)
-  -> POST /api/auth/supabase  (backend verifies via {SUPABASE_URL}/auth/v1/user)
-  -> user session created (auto-creates account on first Google sign-in)
-```
-
-### 3b. Registered URLs (verified)
-
-| Item | Value |
-| --- | --- |
-| Supabase project URL | `https://qazpxjpcvsjbmgbzuxxp.supabase.co` |
-| Authorization endpoint | `.../auth/v1/authorize` (legacy/SDK) and `.../auth/v1/oauth/authorize` (new OIDC) |
-| Token endpoint | `.../auth/v1/oauth/token` |
-| OIDC discovery | `.../auth/v1/.well-known/openid-configuration` |
-| JWKS | `.../auth/v1/.well-known/jwks.json` |
-| **Google redirect URI** (in Google Cloud Console) | `https://qazpxjpcvsjbmgbzuxxp.supabase.co/auth/v1/callback` |
-| App callback (dev) | `http://localhost:3000/auth/callback` (allowed in Supabase URL config) |
-
-The new OIDC endpoints require an OAuth `client_id` + `redirect_uri` (a
-separate, dashboard-registered OAuth application); the **SDK flow uses the
-legacy `/auth/v1/authorize` endpoint** with the publishable key, which is what
-the app's "Continue with Google" button uses.
-
-### 3c. Dashboard configuration (already done)
-
-- ✅ **Authentication → Providers → Google** → enabled (`google: True`)
-- ✅ Google OAuth Client ID/Secret registered (redirect URI above)
-- ✅ App redirect URLs allow `http://localhost:3000/auth/callback`
-- ✅ Email/password auth enabled (`email: True`)
-
-### 3d. Verification commands
-
-```bash
-# Provider status
-curl -H "apikey: $SUPABASE_ANON_KEY" https://qazpxjpcvsjbmgbzuxxp.supabase.co/auth/v1/settings
-# expect: "google": true
-
-# Authorize step redirects to Google (proves the chain is configured)
-curl -sI -H "apikey: $SUPABASE_ANON_KEY" \
-  "https://qazpxjpcvsjbmgbzuxxp.supabase.co/auth/v1/authorize?provider=google&redirect_to=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fcallback"
-# expect: HTTP 302 -> accounts.google.com
-
-# Backend accepts the key (bogus token => "Invalid Supabase token", not "not set")
-curl -X POST http://localhost:8000/api/auth/supabase -H "Content-Type: application/json" \
-  -d '{"access_token":"bogus"}'
-```
+Username/password only (bcrypt + HS256 JWT, `POST /api/auth/login|register|refresh`).
+The former Google-OAuth path (`POST /api/auth/supabase`, `/auth/callback`,
+`@supabase/ssr` + `@supabase/supabase-js`) was removed in #168 — no OAuth
+configuration exists anymore.
 
 ---
 
-## 4. Test database migrations
+## 4. Migrations
 
-The test DB is migrated to Alembic head:
-
-```
-alembic_version = b4c5d6e7f8a1
-```
-
-Apply/re-run (against the test project, session pooler):
+Live schema moves via Alembic only:
 
 ```bash
 cd backend
-export DATABASE_URL="$(grep '^DIRECT_URL=' .env | cut -d= -f2- | tr -d '\"')"
+export DATABASE_URL="<live session-pooler URL>"
 .venv/bin/alembic upgrade head
 ```
 
-**Never** run tests against the test project DB — the test suite uses a local
-Postgres (`postgres:16` on `127.0.0.1:5433` in the example below; `conftest.py`
-defaults to `127.0.0.1:5432` when `DATABASE_URL` is unset) and refuses non-local hosts
+Fresh branch databases do not need migrations — `branch_db.py init` builds the
+schema from the ORM metadata.
+
+**Never** run tests against live — the suite refuses non-local hosts
 (`backend/tests/db_guard.py`, overridable only with `ALLOW_PRODUCTION_TEST_DB=1`).
 
 Test isolation details (`backend/tests/conftest.py`):
-- Each run creates an isolated schema (`codecoach_test`, or `codecoach_test_gwN`
-  per xdist worker) set via `DATABASE_SEARCH_PATH`, and drops it afterwards.
+- Each run needs a reachable local PostgreSQL (`DATABASE_URL`; defaults to
+  `127.0.0.1:5432` when unset) and creates an isolated schema
+  (`codecoach_test`, or `codecoach_test_gwN` per xdist worker) set via
+  `DATABASE_SEARCH_PATH`, dropped afterwards.
 - Shared auth builders: `backend/tests/fixtures/auth_helpers.py`
   (`register_headers`, `register_user_headers`, `admin_headers`, `aregister_headers`).
 - Seed bank: 50 questions (5 hand-written + 45 generated) plus the 107 live ids
@@ -159,11 +92,8 @@ Test isolation details (`backend/tests/conftest.py`):
 
 ## 5. Gotchas / notes
 
-- **Free tier:** API keys and OAuth are available on the free plan — the
-  "API" section is now called **"API Keys"** in the dashboard.
-- Google OAuth app in **Testing mode** → your Google account must be listed as a
-  *test user* (Google Cloud Console → OAuth consent screen → Test users).
-- The publishable key is public by design — it is NOT a secret.
-- When production is eventually configured: create a *separate* Supabase
-  project, rotate `JWT_SECRET_KEY` + `GROQ_API_KEY`, and update every variable
-  in this doc for that project. Never copy test credentials to prod.
+- Passwords and keys live in the environment or gitignored `.env` / `.env.seed`
+  files (mode 0600) — never in desktop notes, chat logs, or committed files.
+- When live is eventually reconfigured: create the hosted PostgreSQL project,
+  rotate `JWT_SECRET_KEY` + `GROQ_API_KEY`, and update every variable in this
+  doc for that target. Never copy branch credentials to live.

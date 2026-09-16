@@ -1,5 +1,10 @@
 # CodeCoach-AI — Remaining Work Plan
 
+> SUPERSEDED (Sep 16, 2026, #168): local-first PostgreSQL replaced the hosted
+> Supabase project; Google OAuth via Supabase was removed. Supabase-referencing
+> items below are retired history — live writes now go through the versioned
+> `backend/scripts/branch_db.py` promotion. Original content preserved.
+>
 > Generated from `Docs/AUDIT_REPORT.md` + `Docs/REMEDIATION_PLAN_2026-08-15.md`,
 > verified against the codebase (Aug 15, 2026). Every code task follows TDD
 > (red → green → refactor), caveman-review on the staged diff, and a Docker

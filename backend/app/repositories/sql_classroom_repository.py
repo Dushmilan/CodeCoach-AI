@@ -1,4 +1,4 @@
-"""SQL implementation of ClassroomRepository (Supabase/PostgreSQL only)."""
+"""SQL implementation of ClassroomRepository (PostgreSQL only)."""
 
 import uuid
 

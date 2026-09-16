@@ -3,13 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginPage from './page';
 
 const mockUseAuth = vi.hoisted(() => vi.fn());
-const mockSignInWithGoogle = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
 
 vi.mock('@/providers/AuthProvider', () => ({ useAuth: mockUseAuth }));
-vi.mock('@/features/auth/auth.service', () => ({
-  signInWithGoogle: mockSignInWithGoogle,
-}));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush }) }));
 vi.mock('next/link', () => ({
   default: ({ children, ...props }: Record<string, unknown>) => (
@@ -33,31 +29,7 @@ describe('LoginPage', () => {
     mockUseAuth.mockReturnValue({
       login: vi.fn().mockResolvedValue({}),
     });
-    mockSignInWithGoogle.mockReset();
     mockPush.mockReset();
-  });
-
-  it('renders a Continue with Google button', () => {
-    render(<LoginPage />);
-    expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
-  });
-
-  it('starts the Supabase Google OAuth flow on click', async () => {
-    mockSignInWithGoogle.mockResolvedValue(undefined);
-    render(<LoginPage />);
-
-    fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
-
-    await waitFor(() => expect(mockSignInWithGoogle).toHaveBeenCalled());
-  });
-
-  it('shows an error when the Google flow fails', async () => {
-    mockSignInWithGoogle.mockRejectedValue(new Error('provider not enabled'));
-    render(<LoginPage />);
-
-    fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
-
-    expect(await screen.findByText('provider not enabled')).toBeInTheDocument();
   });
 
   it('redirects to /admin when admin user logs in', async () => {

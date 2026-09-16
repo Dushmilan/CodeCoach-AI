@@ -14,7 +14,7 @@ from app.services.redis_service import RedisCache
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-_DB_PROBE_TIMEOUT_S = 5.0  # must tolerate Supabase pooler round-trip (~1.6s)
+_DB_PROBE_TIMEOUT_S = 5.0  # must tolerate PostgreSQL pooler round-trip (~1.6s)
 
 
 async def db_reachable(timeout: float = _DB_PROBE_TIMEOUT_S) -> str:

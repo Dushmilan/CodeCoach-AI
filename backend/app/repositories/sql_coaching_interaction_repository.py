@@ -11,7 +11,7 @@ from app.ports.coaching_interaction_repository import CoachingInteractionReposit
 
 
 class SqlCoachingInteractionRepository(CoachingInteractionRepository):
-    """PostgreSQL/Supabase implementation of coaching interaction state."""
+    """PostgreSQL/PostgreSQL implementation of coaching interaction state."""
 
     def __init__(self, session: AsyncSession):
         self.session = session

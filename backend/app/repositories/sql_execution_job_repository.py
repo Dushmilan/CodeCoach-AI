@@ -11,7 +11,7 @@ from app.ports.execution_job_repository import ExecutionJobRepository
 
 
 class SqlExecutionJobRepository(ExecutionJobRepository):
-    """PostgreSQL/Supabase implementation of execution job state."""
+    """PostgreSQL/PostgreSQL implementation of execution job state."""
 
     def __init__(self, session: AsyncSession):
         self.session = session

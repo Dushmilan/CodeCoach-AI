@@ -1,7 +1,7 @@
 """Guard that prevents the test suite from running against non-local databases.
 
 The suite creates/drops an isolated schema and runs DDL at import time; running
-it against the production Supabase pooler (as `backend/.env` would) is dangerous
+it against the production PostgreSQL pooler (as `backend/.env` would) is dangerous
 and slow. This module is intentionally side-effect free so it can be unit-tested
 without triggering the conftest DB setup.
 """

@@ -4,7 +4,6 @@ import { Header } from '@/components/header/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/providers/AuthProvider';
-import { signInWithGoogle } from '@/features/auth/auth.service';
 import { motion } from 'framer-motion';
 import { Lock, LogIn, User } from 'lucide-react';
 import Link from 'next/link';
@@ -18,7 +17,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -57,18 +55,6 @@ export default function LoginPage() {
     [username, password, login, router],
   );
 
-  const handleGoogle = useCallback(async () => {
-    setError('');
-    setIsGoogleLoading(true);
-    try {
-      await signInWithGoogle();
-      // The browser is redirected to Supabase; no further action here.
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google sign-in failed');
-      setIsGoogleLoading(false);
-    }
-  }, []);
-
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">
       <Header />
@@ -95,25 +81,6 @@ export default function LoginPage() {
                 <p className="text-sm text-muted-foreground/60 mt-1.5">
                   Sign in to continue with CodeCoach AI
                 </p>
-              </div>
-
-              <div className="space-y-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleGoogle}
-                  disabled={isGoogleLoading}
-                  aria-label="Continue with Google"
-                >
-                  {isGoogleLoading ? 'Redirecting...' : 'Continue with Google'}
-                </Button>
-
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground/40">
-                  <span className="h-px flex-1 bg-white/[0.06]" />
-                  or
-                  <span className="h-px flex-1 bg-white/[0.06]" />
-                </div>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">

@@ -35,8 +35,7 @@ def _migration_url() -> str:
     ).replace("host.docker.internal", "127.0.0.1")
     if not _is_postgres(base):
         raise RuntimeError(
-            f"Unsupported DATABASE_URL for migrations: {base} "
-            "(Supabase/PostgreSQL only)"
+            f"Unsupported DATABASE_URL for migrations: {base} (PostgreSQL only)"
         )
     # alembic/env.py drives migrations through an async engine, so force the
     # asyncpg driver (same as the app) for the migration runs.
