@@ -18,6 +18,7 @@ export function InstructorSidebar({ base }: { base: "professor" | "demonstrator"
       ? [
           { title: "Overview", href: "/professor", icon: LayoutDashboard },
           { title: "Courses", href: "/professor/courses", icon: BookOpen },
+          { title: "Curriculum", href: "/professor/curriculum", icon: GraduationCap },
           { title: "Classrooms", href: "/professor/classrooms", icon: Users },
           { title: "Class Analytics", href: "/professor/analytics", icon: BarChart3 },
         ]

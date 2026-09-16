@@ -286,6 +286,52 @@ export function getCourses() {
   return db.courses;
 }
 
+export interface ProfessorCourse {
+  id: string;
+  title: string;
+  description?: string;
+  language?: string;
+  icon?: string;
+  order?: number;
+  owner_id?: string | null;
+}
+
+export interface ProfessorCourseTree {
+  courses: ProfessorCourse[];
+  modules: Array<Record<string, unknown>>;
+  lessons: Array<Record<string, unknown>>;
+}
+
+const EMPTY_PROFESSOR_TREE: ProfessorCourseTree = {
+  courses: [],
+  modules: [],
+  lessons: [],
+};
+
+export async function getProfessorCourseTree(): Promise<ProfessorCourseTree> {
+  try {
+    const tree = await api.get<ProfessorCourseTree>(
+      "/api/professor/courses/tree",
+    );
+    return {
+      courses: tree.courses ?? [],
+      modules: tree.modules ?? [],
+      lessons: tree.lessons ?? [],
+    };
+  } catch (e) {
+    if (isAuthFailure(e)) return { ...EMPTY_PROFESSOR_TREE };
+    return {
+      courses: [...db.courses] as ProfessorCourse[],
+      modules: [],
+      lessons: [],
+    };
+  }
+}
+
+export async function getProfessorCourses(): Promise<ProfessorCourse[]> {
+  return (await getProfessorCourseTree()).courses;
+}
+
 export async function getClassrooms(ownerId?: string): Promise<Classroom[]> {
   try {
     const rooms = await api.get<LiveClassroomOut[]>("/api/instructor/classrooms");
