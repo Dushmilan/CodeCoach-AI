@@ -6,6 +6,7 @@ exists per student: ``course_progress`` (via ``ProgressRepository``) and
 writes — pure aggregation for class-level views.
 """
 
+import logging
 from typing import List, Optional, Sequence
 
 from app.models.analytics_schemas import (
@@ -16,6 +17,9 @@ from app.models.orm import ClassroomORM
 from app.ports.classroom_repository import ClassroomRepository
 from app.ports.progress_repository import ProgressRepository
 from app.ports.submission_repository import SubmissionRepository
+from app.ports.user_repository import UserRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ClassroomNotFoundError(LookupError):
@@ -28,10 +32,12 @@ class ClassAnalyticsService:
         submissions: SubmissionRepository,
         progress: Optional[ProgressRepository] = None,
         classrooms: Optional[ClassroomRepository] = None,
+        users: Optional[UserRepository] = None,
     ):
         self._submissions = submissions
         self._progress = progress
         self._classrooms = classrooms
+        self._users = users
 
     async def class_overview(
         self,
@@ -39,6 +45,7 @@ class ClassAnalyticsService:
         *,
         total_lessons: int = 10,
     ) -> ClassAnalyticsResponse:
+        usernames = await self._usernames_by_id(list(user_ids))
         students: List[ClassStudentSummary] = []
         for user_id in user_ids:
             subs = await self._submissions.list_by_user(user_id, limit=1000)
@@ -52,6 +59,7 @@ class ClassAnalyticsService:
             students.append(
                 ClassStudentSummary(
                     user_id=user_id,
+                    username=usernames.get(user_id, user_id),
                     completed_lessons=completed,
                     completion_pct=round(pct, 1),
                     attempted=attempted,
@@ -109,6 +117,31 @@ class ClassAnalyticsService:
         student_ids = await repo.list_classroom_student_ids(classroom_id)
         overview = await self.class_overview(student_ids, total_lessons=total_lessons)
         return room, overview
+
+    async def _usernames_by_id(self, user_ids: List[str]) -> dict:
+        """One batch user lookup; unknown ids fall back to the raw user id.
+
+        User resolution is display-only — a users-port failure must never
+        take down the analytics payload, so resolve failures degrade to
+        user-id fallbacks.
+        """
+        if not user_ids or self._users is None:
+            return {}
+        try:
+            users = await self._users.list_by_ids(user_ids)
+        except Exception:
+            logger.warning(
+                "Class analytics user lookup failed; falling back to user ids",
+                exc_info=True,
+            )
+            return {}
+        names = {}
+        for user in users or []:
+            uid = getattr(user, "id", None)
+            uname = getattr(user, "username", None)
+            if uid and uname:
+                names[uid] = uname
+        return names
 
     async def _completed_lessons(self, user_id: str) -> int:
         if self._progress is None:

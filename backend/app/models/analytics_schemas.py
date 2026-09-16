@@ -24,6 +24,7 @@ class ClassStudentSummary(BaseModel):
     """Per-student rollup over existing progress + submissions (read-only)."""
 
     user_id: str
+    username: str = ""
     completed_lessons: int = 0
     completion_pct: float = 0.0
     attempted: int = 0

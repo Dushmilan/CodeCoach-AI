@@ -164,3 +164,68 @@ def test_classroom_overview_unknown_id_raises_not_found():
         pass
     else:
         raise AssertionError("expected ClassroomNotFoundError")
+
+
+class FakeUsers:
+    """Single-query user lookup double for Issue #177 (no N+1)."""
+
+    def __init__(self, by_id):
+        self._by_id = by_id
+        self.calls = 0
+
+    async def list_by_ids(self, user_ids):
+        self.calls += 1
+        return [self._by_id[uid] for uid in user_ids if uid in self._by_id]
+
+
+def _named_user(user_id, username):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(id=user_id, username=username)
+
+
+def test_class_overview_resolves_usernames():
+    subs = FakeSubmissions({"s1": [_sub(True)]})
+    progress = FakeProgress({"s1": ["l1"]})
+    users = FakeUsers({"s1": _named_user("s1", "mia")})
+    svc = ClassAnalyticsService(submissions=subs, progress=progress, users=users)
+    resp = asyncio.run(svc.class_overview(["s1"], total_lessons=10))
+    assert resp.students[0].username == "mia"
+    assert users.calls == 1
+
+
+def test_class_overview_username_falls_back_to_user_id():
+    subs = FakeSubmissions({"s1": [_sub(True)], "ghost": []})
+    progress = FakeProgress({})
+    users = FakeUsers({"s1": _named_user("s1", "mia")})
+    svc = ClassAnalyticsService(submissions=subs, progress=progress, users=users)
+    resp = asyncio.run(svc.class_overview(["s1", "ghost"], total_lessons=10))
+    by_id = {s.user_id: s for s in resp.students}
+    assert by_id["s1"].username == "mia"
+    assert by_id["ghost"].username == "ghost"
+
+
+class ExplodingUsers:
+    """Users port that always fails — analytics must degrade, not crash."""
+
+    async def list_by_ids(self, user_ids):
+        raise RuntimeError("users db down")
+
+
+def test_class_overview_user_lookup_failure_warns_and_falls_back(caplog):
+    import logging
+
+    subs = FakeSubmissions({"s1": [_sub(True)]})
+    progress = FakeProgress({"s1": ["l1"]})
+    svc = ClassAnalyticsService(
+        submissions=subs, progress=progress, users=ExplodingUsers()
+    )
+    with caplog.at_level(
+        logging.WARNING, logger="app.services.class_analytics_service"
+    ):
+        resp = asyncio.run(svc.class_overview(["s1"], total_lessons=10))
+    assert resp.students[0].username == "s1"
+    assert any(
+        "user" in rec.getMessage().lower() and "lookup" in rec.getMessage().lower()
+        for rec in caplog.records
+    )

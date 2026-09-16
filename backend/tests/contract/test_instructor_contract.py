@@ -37,6 +37,7 @@ OVERVIEW = ClassAnalyticsResponse(
     students=[
         ClassStudentSummary(
             user_id="s1",
+            username="ada.student",
             completed_lessons=6,
             completion_pct=60.0,
             attempted=2,
@@ -47,7 +48,14 @@ OVERVIEW = ClassAnalyticsResponse(
 
 ROOM_KEYS = {"id", "course_id", "owner_id", "name", "invite_code", "term", "schedule"}
 ANALYTICS_KEYS = {"total_students", "avg_completion", "avg_solved", "students"}
-STUDENT_KEYS = {"user_id", "completed_lessons", "completion_pct", "attempted", "solved"}
+STUDENT_KEYS = {
+    "user_id",
+    "username",
+    "completed_lessons",
+    "completion_pct",
+    "attempted",
+    "solved",
+}
 
 
 class _FakeClassrooms:

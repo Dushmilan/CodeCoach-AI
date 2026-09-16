@@ -64,6 +64,7 @@ interface LiveClassroomOut {
 
 interface LiveStudentSummary {
   user_id: string;
+  username?: string | null;
   completed_lessons: number;
   completion_pct: number;
   attempted: number;
@@ -172,12 +173,13 @@ function mapClassroom(room: LiveClassroomOut): Classroom {
 }
 
 function mapStudent(s: LiveStudentSummary): ClassStudent {
-  // Live rollups carry no display names — fall back to the user id so the
-  // roster keeps its shape without inventing data.
+  // Live rollups carry the display username when known — fall back to the
+  // user id so the roster keeps its shape without inventing data.
+  const username = s.username || s.user_id;
   return {
     userId: s.user_id,
-    username: s.user_id,
-    name: s.user_id,
+    username,
+    name: username,
     completedLessons: s.completed_lessons,
     completionPct: s.completion_pct,
     solved: s.solved,
