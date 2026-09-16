@@ -107,6 +107,32 @@ class SqlClassroomRepository(ClassroomRepository):
         )
         return list(result.scalars().all())
 
+    async def list_classroom_student_ids_by_room(
+        self, classroom_ids: list[str]
+    ) -> dict[str, list[str]]:
+        """One IN query for many rooms (Issue #179). Unknown ids -> []."""
+        ids = list(dict.fromkeys(classroom_ids))
+        grouped: dict[str, list[str]] = {cid: [] for cid in ids}
+        if not ids:
+            return grouped
+        result = await self.session.execute(
+            select(
+                ClassroomEnrollmentORM.classroom_id,
+                ClassroomEnrollmentORM.user_id,
+            )
+            .where(
+                ClassroomEnrollmentORM.classroom_id.in_(ids),
+                ClassroomEnrollmentORM.role == "student",
+            )
+            .order_by(
+                ClassroomEnrollmentORM.classroom_id,
+                ClassroomEnrollmentORM.user_id,
+            )
+        )
+        for classroom_id, user_id in result.all():
+            grouped[classroom_id].append(user_id)
+        return grouped
+
     async def list_classroom_ta_ids(self, classroom_id: str) -> list[str]:
         result = await self.session.execute(
             select(ClassroomEnrollmentORM.user_id)

@@ -8,7 +8,7 @@ from app.ports.question_admin_repository import QuestionAdminRepository
 from app.ports.course_admin_repository import CourseAdminRepository
 from app.ports.usage_repository import UsageRepository
 from app.ports.code_executor import CodeExecutor
-from app.api.auth_deps import require_admin, require_super_admin
+from app.api.auth_deps import require_admin, require_course_editor, require_super_admin
 from app.api.dependencies import (
     get_admin_repo,
     get_user_admin_repo,
@@ -68,6 +68,58 @@ async def _invalidate_question_caches(cache: Optional[RedisCache]) -> None:
     """Drop question caches after admin question mutations (detail/stats TTL 5m)."""
     if cache is not None:
         await cache.delete("codecoach:questions:*")
+
+
+_ADMIN_ROLES = ("admin", "super_admin")
+
+
+async def _require_course_ownership(
+    admin_repo: CourseAdminRepository,
+    course_id: str,
+    current_user: UserResponse,
+) -> None:
+    """Enforce professor ownership on one course (Issue #175).
+
+    Admins bypass. Missing courses fall through so routes emit 404;
+    existing but non-owned courses raise 403 for professors.
+    """
+    if current_user.role in _ADMIN_ROLES:
+        return
+    owner = await admin_repo.get_course_owner(course_id)
+    if owner == current_user.id:
+        return
+    if not await admin_repo.exists("course", course_id):
+        return  # Route maps the missing entity to 404.
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Insufficient permissions: not the course owner",
+    )
+
+
+async def _require_module_ownership(
+    admin_repo: CourseAdminRepository,
+    module_id: str,
+    current_user: UserResponse,
+) -> None:
+    if current_user.role in _ADMIN_ROLES:
+        return
+    course_id = await admin_repo.get_module_course(module_id)
+    if course_id is None:
+        return  # Route maps the missing entity to 404.
+    await _require_course_ownership(admin_repo, course_id, current_user)
+
+
+async def _require_lesson_ownership(
+    admin_repo: CourseAdminRepository,
+    lesson_id: str,
+    current_user: UserResponse,
+) -> None:
+    if current_user.role in _ADMIN_ROLES:
+        return
+    course_id = await admin_repo.get_lesson_course(lesson_id)
+    if course_id is None:
+        return  # Route maps the missing entity to 404.
+    await _require_course_ownership(admin_repo, course_id, current_user)
 
 
 # Dashboard and Analytics Endpoints
@@ -443,11 +495,30 @@ async def validate_question(
 @router.get("/courses/tree", response_model=dict)
 async def get_course_tree(
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
 ):
-    """Get courses tree structure (admins only)."""
+    """Get courses tree structure (professors see owned courses, admins all)."""
     try:
         tree = await admin_repo.get_course_tree()
+        if current_user.role not in _ADMIN_ROLES:
+            owned_ids = {
+                c["id"]
+                for c in tree.get("courses", [])
+                if c.get("owner_id") == current_user.id
+            }
+            tree = {
+                "courses": [c for c in tree.get("courses", []) if c["id"] in owned_ids],
+                "modules": [
+                    m
+                    for m in tree.get("modules", [])
+                    if m.get("course_id") in owned_ids
+                ],
+                "lessons": [
+                    les
+                    for les in tree.get("lessons", [])
+                    if les.get("course_id") in owned_ids
+                ],
+            }
         return tree
     except Exception as e:
         logger.error(f"Error fetching course tree: {e}")
@@ -461,11 +532,12 @@ async def get_course_tree(
 async def delete_course(
     course_id: str,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Delete a course (admins only)."""
+    """Delete a course (owner professor or admin)."""
     try:
+        await _require_course_ownership(admin_repo, course_id, current_user)
         success = await admin_repo.delete_course(course_id)
         if not success:
             raise HTTPException(
@@ -491,11 +563,12 @@ async def delete_course(
 async def delete_module(
     module_id: str,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Delete a module (admins only)."""
+    """Delete a module (owner professor or admin)."""
     try:
+        await _require_module_ownership(admin_repo, module_id, current_user)
         success = await admin_repo.delete_module(module_id)
         if not success:
             raise HTTPException(
@@ -519,11 +592,12 @@ async def delete_module(
 async def delete_lesson(
     lesson_id: str,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Delete a lesson (admins only)."""
+    """Delete a lesson (owner professor or admin)."""
     try:
+        await _require_lesson_ownership(admin_repo, lesson_id, current_user)
         success = await admin_repo.delete_lesson(lesson_id)
         if not success:
             raise HTTPException(
@@ -551,7 +625,7 @@ async def check_id_exists(
     entity_type: str,
     entity_id: str,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
 ):
     """Check if an entity ID already exists."""
     exists = await admin_repo.exists(entity_type, entity_id)
@@ -562,12 +636,14 @@ async def check_id_exists(
 async def create_course(
     data: CourseCreate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Create a new course (admins only)."""
+    """Create a new course (owner professor or admin)."""
     try:
-        result = await admin_repo.create_course(data.model_dump())
+        payload = data.model_dump()
+        payload["owner_id"] = current_user.id
+        result = await admin_repo.create_course(payload)
         logger.info(f"Course '{data.id}' created by {current_user.id}")
         await _invalidate_course_caches(cache)
         return result
@@ -586,14 +662,15 @@ async def update_course(
     course_id: str,
     data: CourseUpdate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Update a course (admins only)."""
+    """Update a course (owner professor or admin)."""
     try:
-        success = await admin_repo.update_course(
-            course_id, data.model_dump(exclude_none=True)
-        )
+        await _require_course_ownership(admin_repo, course_id, current_user)
+        payload = data.model_dump(exclude_none=True)
+        payload.pop("owner_id", None)
+        success = await admin_repo.update_course(course_id, payload)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
@@ -617,15 +694,18 @@ async def update_course(
 async def create_module(
     data: ModuleCreate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Create a new module (admins only)."""
+    """Create a new module (owner professor or admin)."""
     try:
+        await _require_course_ownership(admin_repo, data.course_id, current_user)
         result = await admin_repo.create_module(data.model_dump())
         logger.info(f"Module '{data.id}' created by {current_user.id}")
         await _invalidate_course_caches(cache)
         return result
+    except HTTPException:
+        raise
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
@@ -641,14 +721,16 @@ async def update_module(
     module_id: str,
     data: ModuleUpdate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Update a module (admins only)."""
+    """Update a module (owner professor or admin)."""
     try:
-        success = await admin_repo.update_module(
-            module_id, data.model_dump(exclude_none=True)
-        )
+        await _require_module_ownership(admin_repo, module_id, current_user)
+        payload = data.model_dump(exclude_none=True)
+        payload.pop("course_id", None)
+        payload.pop("id", None)
+        success = await admin_repo.update_module(module_id, payload)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Module not found"
@@ -670,15 +752,29 @@ async def update_module(
 async def create_lesson(
     data: LessonCreate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Create a new lesson (admins only)."""
+    """Create a new lesson (owner professor or admin)."""
     try:
+        await _require_course_ownership(admin_repo, data.course_id, current_user)
+        module_course = await admin_repo.get_module_course(data.module_id)
+        if module_course is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Module '{data.module_id}' does not exist",
+            )
+        if module_course != data.course_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Module does not belong to the given course",
+            )
         result = await admin_repo.create_lesson(data.model_dump())
         logger.info(f"Lesson '{data.id}' created by {current_user.id}")
         await _invalidate_course_caches(cache)
         return result
+    except HTTPException:
+        raise
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
@@ -694,14 +790,17 @@ async def update_lesson(
     lesson_id: str,
     data: LessonUpdate,
     admin_repo: CourseAdminRepository = Depends(get_course_admin_repo),
-    current_user: UserResponse = Depends(require_admin),
+    current_user: UserResponse = Depends(require_course_editor),
     cache: Optional[RedisCache] = Depends(get_redis_cache),
 ):
-    """Update a lesson (admins only)."""
+    """Update a lesson (owner professor or admin)."""
     try:
-        success = await admin_repo.update_lesson(
-            lesson_id, data.model_dump(exclude_none=True)
-        )
+        await _require_lesson_ownership(admin_repo, lesson_id, current_user)
+        payload = data.model_dump(exclude_none=True)
+        payload.pop("course_id", None)
+        payload.pop("module_id", None)
+        payload.pop("id", None)
+        success = await admin_repo.update_lesson(lesson_id, payload)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found"

@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
+from typing import List, Optional, Sequence
 from datetime import datetime, timezone
 
 from app.models.course_schemas import CourseProgress
@@ -39,6 +39,21 @@ class SqlProgressRepository(ProgressRepository):
             select(CourseProgressORM).where(CourseProgressORM.user_id == user_id)
         )
         return [self._orm_to_model(p) for p in result.scalars().all()]
+
+    async def get_all_progress_for_users(
+        self, user_ids: Sequence[str]
+    ) -> dict[str, List[CourseProgress]]:
+        """Batch progress rows per user in ONE IN query."""
+        ids = list(dict.fromkeys(user_ids))
+        if not ids:
+            return {}
+        result = await self.session.execute(
+            select(CourseProgressORM).where(CourseProgressORM.user_id.in_(ids))
+        )
+        grouped: dict[str, List[CourseProgress]] = {uid: [] for uid in ids}
+        for orm in result.scalars().all():
+            grouped[orm.user_id].append(self._orm_to_model(orm))
+        return grouped
 
     async def mark_lesson_complete(
         self, user_id: str, course_id: str, lesson_id: str

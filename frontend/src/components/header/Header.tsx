@@ -1,6 +1,7 @@
 'use client';
 
 import { SettingsModal } from '@/components/settings/SettingsModal';
+import { isAdmin as isAdminRole, isProfessor as isProfessorRole, isTA as isTARole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers';
 import { Code, GraduationCap, LayoutDashboard, Moon, Settings, Shield, Sun, User, X } from 'lucide-react';
@@ -22,13 +23,13 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isAdmin =
-    isHydrated && isAuthenticated && !!user?.role && ['admin', 'super_admin'].includes(user.role);
+    isHydrated && isAuthenticated && isAdminRole(user?.role);
   const isProfessor =
-    isHydrated && isAuthenticated && !!user?.role && ['professor', 'admin', 'super_admin'].includes(user.role);
+    isHydrated && isAuthenticated && isProfessorRole(user?.role);
   // Professors have their own dashboard; the Demonstrator link is TA-only
   // (admins keep both). Mirrors the backend professor/ta permission matrix.
   const isDemonstrator =
-    isHydrated && isAuthenticated && !!user?.role && ['ta', 'admin', 'super_admin'].includes(user.role);
+    isHydrated && isAuthenticated && isTARole(user?.role);
 
   return (
     <>
@@ -47,7 +48,7 @@ export function Header() {
             CodeCoach AI
           </Link>
 
-          {/* Desktop Nav — Dashboard moved to gear menu */}
+          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-0.5 ml-2">
             <Link
               href="/problems"
@@ -63,6 +64,18 @@ export function Header() {
               <GraduationCap className="h-3 w-3" />
               Learn
             </Link>
+            {isHydrated && isAuthenticated && (
+              <Link
+                href="/dashboard"
+                data-testid="header-dashboard-link"
+                aria-label="Dashboard"
+                title="Dashboard"
+                className="px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5"
+              >
+                <LayoutDashboard className="h-3 w-3" />
+                Dashboard
+              </Link>
+            )}
             {isProfessor && (
               <Link
                 href="/professor"
@@ -194,6 +207,9 @@ export function Header() {
             { href: '/', label: 'Home', delay: 'delay-100' },
             { href: '/problems', label: 'Problems', delay: 'delay-115' },
             { href: '/learn', label: 'Learn', delay: 'delay-125' },
+            ...(isHydrated && isAuthenticated
+              ? [{ href: '/dashboard', label: 'Dashboard', delay: 'delay-130' as const }]
+              : []),
             ...(isProfessor
               ? [{ href: '/professor', label: 'Professor', delay: 'delay-135' as const, highlight: true as const }]
               : []),
@@ -208,7 +224,13 @@ export function Header() {
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              data-testid={link.href === '/admin' ? 'header-admin-link-mobile' : undefined}
+              data-testid={
+                link.href === '/admin'
+                  ? 'header-admin-link-mobile'
+                  : link.href === '/dashboard'
+                    ? 'header-dashboard-link-mobile'
+                    : undefined
+              }
               className={cn(
                 'text-4xl font-light tracking-tight transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                 (link as { highlight?: boolean }).highlight

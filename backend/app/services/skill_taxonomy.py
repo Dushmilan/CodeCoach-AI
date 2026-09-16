@@ -298,11 +298,11 @@ _QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     "single-number": [("bit-manipulation", 0.9), ("arrays", 0.1)],
     "number-of-1-bits": [("bit-manipulation", 0.9), ("programming-fundamentals", 0.1)],
     "power-of-two": [("bit-manipulation", 0.8), ("programming-fundamentals", 0.2)],
-    "reverse-integer": [("bit-manipulation", 0.6), ("programming-fundamentals", 0.4)],
+    "reverse-integer": [("bit-manipulation", 0.5), ("math-geometry", 0.5)],
     "find-the-duplicate-number": [("two-pointers", 0.7), ("bit-manipulation", 0.3)],
     # --- Strings (bank-specific themed questions) ------------------------------------
     "happy-number": [("two-pointers", 0.6), ("hash-maps", 0.4)],
-    "longest-common-prefix": [("strings", 0.8), ("arrays", 0.2)],
+    "longest-common-prefix": [("strings", 0.5), ("tries", 0.5)],
     "c9d1a3f2-5b6e-4a7f-8c0d-1e2f3a4b5c6d": [
         ("strings", 0.8),
         ("programming-fundamentals", 0.2),

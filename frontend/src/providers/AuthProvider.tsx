@@ -6,12 +6,14 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 import { User, AuthState } from "@/types";
 import { authService, type TokenResponse } from "@/features/auth/auth.service";
 import { setAccessToken, setCsrfToken } from "@/lib/auth-session";
 import { showToast } from "@/components/ui/Toast";
+import { useRouter, usePathname } from "next/navigation";
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<TokenResponse>;
@@ -26,6 +28,12 @@ interface AuthContextType extends AuthState {
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
@@ -111,8 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCsrfToken(null);
         setAuth(null, null);
         showToast("Signed out", "info");
+        router.replace(
+          pathnameRef.current?.startsWith("/admin") ? "/admin/login" : "/login",
+        );
       });
-  }, [setAuth]);
+  }, [setAuth, router]);
 
   return (
     <AuthContext.Provider

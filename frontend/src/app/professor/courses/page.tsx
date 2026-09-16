@@ -19,7 +19,7 @@ export default function ProfessorCoursesPage() {
           </p>
         </div>
         <Link
-          href="/admin/curriculum"
+          href="/professor/curriculum"
           className="text-xs font-medium px-4 py-2 rounded-full bg-primary text-primary-foreground"
         >
           Create / edit in curriculum

@@ -57,6 +57,10 @@ STUDENT_KEYS = {
     "solved",
 }
 
+# Issue #176: legacy class-analytics roster scoping. Only "s1" belongs to
+# prof-ada's room; "outsider" belongs to nobody in scope.
+OWNED_STUDENT_IDS = ["s1"]
+
 
 class _FakeClassrooms:
     async def list_owned_by_professor(self, owner_id: str):
@@ -64,6 +68,9 @@ class _FakeClassrooms:
 
     async def list_for_ta(self, user_id: str):
         return [ROOM] if user_id == "ta-turing" else []
+
+    async def list_classroom_student_ids(self, classroom_id: str):
+        return list(OWNED_STUDENT_IDS) if classroom_id == ROOM.id else []
 
 
 class _FakeAnalytics:
@@ -76,6 +83,9 @@ class _FakeAnalytics:
         if classroom_id != ROOM.id:
             raise ClassroomNotFoundError(classroom_id)
         return ROOM, OVERVIEW
+
+    async def class_overview(self, roster, *, total_lessons=10):
+        return OVERVIEW
 
 
 def _professor():
@@ -131,3 +141,56 @@ class TestInstructorClassroomContract:
     def test_detail_unknown_id_is_404(self, client):
         resp = client.get("/api/instructor/classrooms/no-such-room")
         assert resp.status_code == 404, resp.text
+
+
+class TestLegacyClassAnalyticsScoping:
+    """Issue #176: legacy CSV roster must be ownership-scoped (shape + guard)."""
+
+    def test_owned_roster_returns_200_with_contract_shape(self, client):
+        resp = client.get("/api/instructor/class-analytics", params={"user_ids": "s1"})
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert set(body) == ANALYTICS_KEYS
+        assert set(body["students"][0]) == STUDENT_KEYS
+
+    def test_non_owned_roster_is_forbidden(self, client):
+        resp = client.get(
+            "/api/instructor/class-analytics", params={"user_ids": "outsider"}
+        )
+        assert resp.status_code == 403, resp.text
+
+    def test_non_owner_professor_is_forbidden(self):
+        async def _other():
+            return UserResponse(
+                id="prof-mallory",
+                username="professor.mallory",
+                email="mallory@university.example",
+                created_at="2025-01-01T00:00:00Z",
+                is_active=True,
+                role="professor",
+                plan="free",
+            )
+
+        app.dependency_overrides[get_current_user] = _other
+        app.dependency_overrides[get_classroom_repository] = lambda: _FakeClassrooms()
+        app.dependency_overrides[get_class_analytics_service] = lambda: _FakeAnalytics()
+        try:
+            with TestClient(app) as c:
+                resp = c.get(
+                    "/api/instructor/class-analytics", params={"user_ids": "s1"}
+                )
+        finally:
+            for dep in (
+                get_current_user,
+                get_classroom_repository,
+                get_class_analytics_service,
+            ):
+                app.dependency_overrides.pop(dep, None)
+        assert resp.status_code == 403, resp.text
+
+    def test_empty_roster_returns_200_empty_body(self, client):
+        resp = client.get("/api/instructor/class-analytics", params={"user_ids": ""})
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["total_students"] == 0
+        assert body["students"] == []

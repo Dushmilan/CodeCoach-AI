@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 
-from app.core.config import is_production
+from app.core.config import get_settings, is_production
 
 
 def _debug_enabled() -> bool:
@@ -39,5 +39,5 @@ async def get_environment_info() -> Dict[str, Any]:
             f"{sys.version_info.micro}"
         ),
         "working_directory": os.getcwd(),
-        "groq_api_key_present": bool(os.getenv("GROQ_API_KEY")),
+        "groq_api_key_present": bool(get_settings().GROQ_API_KEY),
     }
