@@ -98,6 +98,23 @@ async def require_instructor(
     return current_user
 
 
+async def require_course_editor(
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """Curriculum write gate (Issue #175): professors own courses.
+
+    Professors, admins, and super-admins may create/edit curriculum;
+    TAs and students are denied with 403 (paths unchanged).
+    Ownership scoping happens per-course in admin routes.
+    """
+    if current_user.role not in PROFESSOR_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions: professor role required",
+        )
+    return current_user
+
+
 def instructor_can_manage_roster(role: str) -> bool:
     """Roster add/remove (and TA assignment) is professor-only per #159 matrix."""
     return role in PROFESSOR_ROLES

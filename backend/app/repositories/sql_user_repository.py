@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import List, Optional, Sequence
 
 from app.models.auth_schemas import UserInDB
 from app.models.orm import UserORM
@@ -54,6 +54,14 @@ class SqlUserRepository(UserRepository):
         )
         orm = result.scalar_one_or_none()
         return self._orm_to_model(orm) if orm else None
+
+    async def list_by_ids(self, user_ids: Sequence[str]) -> List[UserInDB]:
+        """Single SELECT ... WHERE id IN (...) — never one query per id."""
+        ids = list(dict.fromkeys(user_ids))
+        if not ids:
+            return []
+        result = await self.session.execute(select(UserORM).where(UserORM.id.in_(ids)))
+        return [self._orm_to_model(orm) for orm in result.scalars().all()]
 
     async def add(self, user: UserInDB) -> None:
         orm = UserORM(

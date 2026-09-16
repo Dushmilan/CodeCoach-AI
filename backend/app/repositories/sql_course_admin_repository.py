@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update, delete, select
 
@@ -20,12 +20,15 @@ class SqlCourseAdminRepository(CourseAdminRepository):
         )
         return result.scalar_one_or_none() is not None
 
-    async def get_course_tree(self) -> Dict[str, Any]:
-        courses_result = await self.session.execute(
-            select(CourseORM).order_by(CourseORM.order)
-        )
+    async def get_course_tree(self, owner_id: Optional[str] = None) -> Dict[str, Any]:
+        courses_stmt = select(CourseORM).order_by(CourseORM.order)
+        if owner_id is not None:
+            courses_stmt = courses_stmt.where(CourseORM.owner_id == owner_id)
+        courses_result = await self.session.execute(courses_stmt)
         courses = []
+        owned_ids: list[str] = []
         for c in courses_result.scalars().all():
+            owned_ids.append(c.id)
             courses.append(
                 {
                     "id": c.id,
@@ -34,12 +37,18 @@ class SqlCourseAdminRepository(CourseAdminRepository):
                     "language": c.language,
                     "icon": c.icon,
                     "order": c.order,
+                    "owner_id": c.owner_id,
                 }
             )
 
-        modules_result = await self.session.execute(
-            select(ModuleORM).order_by(ModuleORM.order)
-        )
+        modules_stmt = select(ModuleORM).order_by(ModuleORM.order)
+        lessons_stmt = select(LessonORM).order_by(LessonORM.order)
+        if owner_id is not None:
+            if not owned_ids:
+                return {"courses": [], "modules": [], "lessons": []}
+            modules_stmt = modules_stmt.where(ModuleORM.course_id.in_(owned_ids))
+            lessons_stmt = lessons_stmt.where(LessonORM.course_id.in_(owned_ids))
+        modules_result = await self.session.execute(modules_stmt)
         modules = []
         for m in modules_result.scalars().all():
             modules.append(
@@ -52,9 +61,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
                 }
             )
 
-        lessons_result = await self.session.execute(
-            select(LessonORM).order_by(LessonORM.order)
-        )
+        lessons_result = await self.session.execute(lessons_stmt)
         lessons = []
         for les in lessons_result.scalars().all():
             lessons.append(
@@ -71,6 +78,24 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             )
 
         return {"courses": courses, "modules": modules, "lessons": lessons}
+
+    async def get_course_owner(self, course_id: str) -> Optional[str]:
+        result = await self.session.execute(
+            select(CourseORM.owner_id).where(CourseORM.id == course_id).limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_module_course(self, module_id: str) -> Optional[str]:
+        result = await self.session.execute(
+            select(ModuleORM.course_id).where(ModuleORM.id == module_id).limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_lesson_course(self, lesson_id: str) -> Optional[str]:
+        result = await self.session.execute(
+            select(LessonORM.course_id).where(LessonORM.id == lesson_id).limit(1)
+        )
+        return result.scalar_one_or_none()
 
     async def delete_course(self, course_id: str) -> bool:
         stmt = delete(CourseORM).where(CourseORM.id == course_id)
@@ -100,6 +125,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             language=data.get("language", ""),
             icon=data.get("icon", "code"),
             order=data.get("order", 1),
+            owner_id=data.get("owner_id"),
         )
         self.session.add(orm)
         await self.session.commit()
@@ -110,6 +136,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             "language": orm.language,
             "icon": orm.icon,
             "order": orm.order,
+            "owner_id": orm.owner_id,
         }
 
     async def update_course(self, course_id: str, data: Dict[str, Any]) -> bool:

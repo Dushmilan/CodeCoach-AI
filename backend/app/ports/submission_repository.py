@@ -20,6 +20,21 @@ class SubmissionRepository(ABC):
     ) -> Sequence[Submission]:
         """Return the user's most recent submissions, newest first."""
 
+    async def list_by_users(
+        self, user_ids: Sequence[str], *, limit: int = 1000
+    ) -> dict[str, Sequence[Submission]]:
+        """Return recent submissions per user in ONE round trip.
+
+        Keys cover every requested id (unknown users map to ``[]``); each
+        value is newest-first and capped at ``limit`` — identical figures to
+        calling :meth:`list_by_user` per id. The default loops for fakes;
+        the SQL implementation uses a single ROW_NUMBER() window query.
+        """
+        return {
+            user_id: await self.list_by_user(user_id, limit=limit)
+            for user_id in user_ids
+        }
+
     @abstractmethod
     async def count_attempts(self, user_id: str, question_id: str) -> int:
         """Return how many attempts the user has made on a question."""

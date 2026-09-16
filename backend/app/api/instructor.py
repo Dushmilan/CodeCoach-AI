@@ -73,6 +73,30 @@ async def list_classrooms(
     return [_room_out(room) for room in rooms]
 
 
+@router.get("/classrooms-analytics", response_model=list[ClassroomDetailOut])
+async def classrooms_analytics(
+    total_lessons: int = Query(default=10, ge=0),
+    repo: ClassroomRepository = Depends(get_classroom_repository),
+    service: ClassAnalyticsService = Depends(get_class_analytics_service),
+    current_user: UserResponse = Depends(require_instructor),
+):
+    """Batch analytics for the caller's own rooms in O(1) requests (Issue #179).
+
+    Professors see owned rooms, TAs assigned rooms; students get 403 from
+    ``require_instructor``. Figures identical to the detail endpoint.
+    """
+    if current_user.role == "ta":
+        rooms = await repo.list_for_ta(current_user.id)
+    else:
+        rooms = await repo.list_owned_by_professor(current_user.id)
+    by_room = await repo.list_classroom_student_ids_by_room([r.id for r in rooms])
+    overviews = await service.class_overviews(by_room, total_lessons=total_lessons)
+    return [
+        ClassroomDetailOut(classroom=_room_out(room), analytics=overviews[room.id])
+        for room in rooms
+    ]
+
+
 @router.get("/classrooms/{classroom_id}", response_model=ClassroomDetailOut)
 async def classroom_detail(
     classroom_id: str,
@@ -92,7 +116,11 @@ async def classroom_detail(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Classroom not found"
         )
-    if current_user.role in PROFESSOR_ROLES:
+    # Issue #178: admins sit above professors — bypass ownership so an admin
+    # can open any classroom detail (room + analytics) for drill-down.
+    if current_user.role in ("admin", "super_admin"):
+        pass
+    elif current_user.role in PROFESSOR_ROLES:
         if room.owner_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -121,9 +149,40 @@ async def class_analytics(
     user_ids: str = Query(default="", description="CSV roster of user IDs"),
     total_lessons: int = Query(default=10, ge=0),
     service: ClassAnalyticsService = Depends(get_class_analytics_service),
+    repo: ClassroomRepository = Depends(get_classroom_repository),
     current_user: UserResponse = Depends(require_instructor),
 ):
     roster = [u.strip() for u in user_ids.split(",") if u.strip()]
+    # Ownership scoping (#176): the legacy CSV roster must never expose
+    # students outside the caller's owned (professor roles) or assigned
+    # (TA) rooms. Resolve the allowed set first, then deny out-of-scope
+    # ids before any per-student progress/submission reads run.
+    if current_user.role == "ta":
+        rooms = await repo.list_for_ta(current_user.id)
+    else:
+        rooms = await repo.list_owned_by_professor(current_user.id)
+    allowed: set[str] = set()
+    for room in rooms:
+        allowed.update(await repo.list_classroom_student_ids(room.id))
+    if not roster:
+        return ClassAnalyticsResponse(
+            total_students=0,
+            avg_completion=0.0,
+            avg_solved=0.0,
+            students=[],
+        )
+    disallowed = [u for u in roster if u not in allowed]
+    if disallowed:
+        logger.warning(
+            "Blocked out-of-scope class-analytics request by instructor %s "
+            "for %d student(s)",
+            current_user.id,
+            len(disallowed),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized for requested students",
+        )
     try:
         return await service.class_overview(roster, total_lessons=total_lessons)
     except Exception:

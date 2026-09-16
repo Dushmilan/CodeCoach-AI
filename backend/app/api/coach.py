@@ -64,7 +64,7 @@ def get_coaching_provider(
     # Platform-owned key: clients never supply their own. The key is used
     # server-side to call Groq; per-user token usage is metered via the
     # injected UsageService.
-    api_key = os.getenv("GROQ_API_KEY")
+    api_key = get_settings().GROQ_API_KEY
     if not api_key:
         raise HTTPException(status_code=500, detail="Groq API key not configured")
     return GroqService(
