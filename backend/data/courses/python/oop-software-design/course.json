@@ -1,0 +1,8 @@
+{
+  "id": "oop-software-design",
+  "title": "Object-Oriented Programming and Software Design",
+  "description": "Learn how to design reliable, maintainable software. Cover classes and encapsulation, composition and inheritance, polymorphism and abstraction, core design principles such as SOLID, and a hands-on refactoring project. Concepts are taught in Python but apply to any object-oriented language.",
+  "language": "python",
+  "icon": "layers",
+  "order": 13
+}

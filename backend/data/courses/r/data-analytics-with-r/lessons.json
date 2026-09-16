@@ -1,0 +1,624 @@
+{
+  "items": [
+    {
+      "id": "da-workflow-questions",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-workflow",
+      "title": "From Question to Data",
+      "type": "theory",
+      "order": 1,
+      "content": "## From Question to Data\n\nEvery analytics project starts with a **question**, not with data. Before loading a single file, decide what decision the analysis will inform.\n\n### Turning a vague ask into a measurable question\n\nA stakeholder might say *\"sales are falling — look into it\"*. As an analyst you refine that into something answerable:\n\n| Vague ask                 | Measurable question                          |\n|---------------------------|----------------------------------------------|\n| \"Sales are falling\"       | \"Which product lines dropped the most in Q4?\" |\n| \"Our users seem unhappy\"  | \"Does the 2-star rating share exceed 10%?\"    |\n| \"One region underperforms\"| \"Is the West region's mean order value below the overall mean?\" |\n\n### Choosing metrics\n\nPick metrics you can actually compute from available data — counts, sums, means, rates, shares. Each metric should map back to the decision:\n\n```r\navg_order <- sum(revenue) / sum(orders)   # revenue per order\nchurn_rate <- churned_users / total_users # proportion who left\n```\n\n### The question drives everything\n\nThe question decides which columns matter, which groups to compare, and which statistical test fits. Changing the question changes the analysis — so write it down and confirm it before you start.\n\nA clear question gives you three things: a **target** (what you measure), a **scope** (which subset of data), and a **decision rule** (what result means what action).\n\n---\n\n**Next up:** getting data into R so you can start answering the question.",
+      "language": "r"
+    },
+    {
+      "id": "da-workflow-import",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-workflow",
+      "title": "Importing Data into R",
+      "type": "theory",
+      "order": 2,
+      "content": "## Importing Data into R\n\nAnalysis starts when data arrives in R. The workhorse is `read.csv()`, which turns a comma-separated file into a data frame.\n\n### Reading a CSV file\n\n```r\nsales <- read.csv(\"sales.csv\", stringsAsFactors = FALSE)\nhead(sales)       # first six rows\nstr(sales)        # column types\nsummary(sales)    # per-column stats\n```\n\n### Reading from a text string\n\nWhen your data lives in a character string — as in this course's exercises — `read.csv(text = ...)` parses it directly:\n\n```r\ntext <- \"product,revenue\nbooks,1200\ntoys,800\n\"\ndf <- read.csv(text = text, stringsAsFactors = FALSE)\n```\n\n### Reading raw lines\n\n`readLines()` pulls a file in as plain text, one string per line. You then parse each line yourself — the pattern used by the sandbox exercises:\n\n```r\nlines <- readLines(file(\"stdin\"), warn = FALSE)\nfirst <- strsplit(lines[1], \",\")[[1]]\n```\n\n### Inspect before you compute\n\nThe golden rule: **always inspect data right after loading**. `head()`, `str()`, `dim()`, `names()`, and `summary()` reveal wrong column types, stray separators, and missing values before they poison your analysis.\n\n- `dim(df)` — rows and columns.\n- `names(df)` — column names.\n- `nrow(df)` / `ncol(df)` — row and column counts.\n\n---\n\n**Next up:** keeping your analysis reproducible so others (and future you) can trust it.",
+      "language": "r"
+    },
+    {
+      "id": "da-workflow-repro",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-workflow",
+      "title": "Reproducible Analysis",
+      "type": "theory",
+      "order": 3,
+      "content": "## Reproducible Analysis\n\nA **reproducible** analysis produces the same result every time it is run. It is the difference between \"I found something\" and \"here is how I found it\".\n\n### The script is the source of truth\n\nKeep every step in a script, not in console sessions. A script documents the analysis and lets you re-run it on new data:\n\n```r\n# 01_load.R\nsales <- read.csv(\"data/sales.csv\")\n\n# 02_clean.R\nsales <- sales[!is.na(sales$revenue), ]\n\n# 03_report.R\nmean_revenue <- mean(sales$revenue)\ncat(\"Mean revenue:\", mean_revenue, \"\\n\")\n```\n\n### Pin the random seed\n\nRandomness breaks reproducibility. `set.seed()` makes `sample()` and other random functions repeatable:\n\n```r\nset.seed(42)\nsubset <- sample(1:nrow(df), size = 100)\n```\n\nRun it twice with the same seed and you get the same rows — critical for audits and debugging.\n\n### Structure a project\n\nA small, predictable layout helps every future reader:\n\n- `data/` — raw, untouched inputs.\n- `scripts/` — numbered analysis steps.\n- `output/` — charts and result tables.\n- `report/` — the write-up.\n\n### Comment the why, not the what\n\nCode says what it does; comments say why it does it. A one-line rationale above a non-obvious filter is worth ten lines of explanation later:\n\n```r\n# Only active accounts count toward retention\nactive <- df[df$status == \"active\", ]\n```\n\n---\n\n**Next up:** the end-to-end pipeline that ties import, wrangle, explore, analyze, and report together.",
+      "language": "r"
+    },
+    {
+      "id": "da-workflow-pipeline",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-workflow",
+      "title": "The Analytics Pipeline",
+      "type": "theory",
+      "order": 4,
+      "content": "## The Analytics Pipeline\n\nEvery analytics project follows the same five stages. Thinking of your work as a **pipeline** keeps each stage focused and makes it easy to fix a problem at exactly the step where it lives.\n\n### The five stages\n\n1. **Import** — get raw data into R (`read.csv`, `readLines`).\n2. **Wrangle** — clean, filter, group, join, and reshape into the shape analysis needs.\n3. **Explore** — distributions, outliers, and relationships (the EDA step).\n4. **Analyze** — compute statistics, build intervals, fit models, test hypotheses.\n5. **Report** — summarize findings and recommend actions.\n\n### Data flows forward\n\nEach stage consumes the previous stage's output:\n\n```r\nraw     <- read.csv(\"sales.csv\")            # 1 import\nclean   <- raw[!is.na(raw$revenue), ]       # 2 wrangle\nsummary(clean$revenue)                      # 3 explore\nt.test(clean$revenue, mu = 1000)            # 4 analyze\ncat(\"recommendation: keep SKU list\")        # 5 report\n```\n\n### Iterate, don't go one-way\n\nThe pipeline is not rigid. Exploration often reveals a wrangling mistake; a surprise in the report sends you back to the question. Plan to loop.\n\n### Why stage separation pays off\n\n- **Debugging:** an error names its stage, so you look in one place.\n- **Reuse:** the same wrangle block can feed three different analyses.\n- **Trust:** each stage can be checked on its own before moving on.\n\nThroughout this course the exercises mirror the pipeline: load data, wrangle it, explore it, run statistics, then report.\n\n---\n\n**Next up:** three exercises that put the first stage — importing and inspecting data — into practice.",
+      "language": "r"
+    },
+    {
+      "id": "da-workflow-ex-load",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-workflow",
+      "title": "Exercise: Load and Inspect a Dataset",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Load and Inspect a Dataset\n\nWrite a function `dataset_shape(input)` that receives CSV text with a **header row** and returns the number of **data rows** and the number of **columns**, joined by a space.\n\n### Sample\n\nInput:\n\n```text\nname,score\nAda,92\nLinus,57\nGrace,88\n```\n\nOutput:\n\n```text\n3 2\n```\n\nThere are three data rows and two columns (`name`, `score`).\n\n### How your code runs\n\nSplit the input into lines with `strsplit(input, \"\\n\")`, drop blank lines, count `length(lines) - 1` rows, and count the columns by splitting the header line on the comma.\n\n### Starter code\n\n```r\ndataset_shape <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  rows <- length(lines) - 1\n  cols <- length(strsplit(lines[1], \",\")[[1]])\n  return(paste(rows, cols))\n}\n```\n\nGood luck!",
+      "starter_code": "dataset_shape <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  rows <- length(lines) - 1\n  cols <- length(strsplit(lines[1], \",\")[[1]])\n  return(paste(rows, cols))\n}\n",
+      "test_cases": [
+        {
+          "input": "name,score\nAda,92\nLinus,57\nGrace,88\n",
+          "expected_output": "3 2",
+          "description": "Three rows, two columns"
+        },
+        {
+          "input": "product,price,qty\nA,10,2\nB,5,3\n",
+          "expected_output": "2 3",
+          "description": "Two rows, three columns"
+        },
+        {
+          "input": "x\n1\n2\n3\n",
+          "expected_output": "3 1",
+          "description": "Single column"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-workflow-ex-columns",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-workflow",
+      "title": "Exercise: Column Names",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Column Names\n\nWrite a function `column_names(input)` that receives CSV text and returns the **column names** (the header row) joined by spaces.\n\n### Sample\n\nInput:\n\n```text\nname,score,grade\nAda,92,A\n```\n\nOutput:\n\n```text\nname score grade\n```\n\n### How your code runs\n\nTake the first line of the input, split it on the comma with `strsplit(line, \",\")`, and join the pieces with `paste(..., collapse = \" \")`.\n\n### Starter code\n\n```r\ncolumn_names <- function(input) {\n  header <- strsplit(input, \"\\n\")[[1]][1]\n  return(paste(strsplit(header, \",\")[[1]], collapse = \" \"))\n}\n```\n\nGood luck!",
+      "starter_code": "column_names <- function(input) {\n  header <- strsplit(input, \"\\n\")[[1]][1]\n  return(paste(strsplit(header, \",\")[[1]], collapse = \" \"))\n}\n",
+      "test_cases": [
+        {
+          "input": "name,score,grade\nAda,92,A\n",
+          "expected_output": "name score grade",
+          "description": "Three columns"
+        },
+        {
+          "input": "a,b,c\n1,2,3\n",
+          "expected_output": "a b c",
+          "description": "Short names"
+        },
+        {
+          "input": "region,sales\nNorth,10\n",
+          "expected_output": "region sales",
+          "description": "Two columns"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-workflow-ex-rows",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-workflow",
+      "title": "Exercise: Rows Above a Threshold",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Rows Above a Threshold\n\nWrite a function `rows_above(input)` that receives CSV text (`name,score` rows) and returns the **count of rows whose score is 60 or above**.\n\n### Sample\n\nInput:\n\n```text\nname,score\nAda,92\nLinus,57\nGrace,88\n```\n\nOutput:\n\n```text\n2\n```\n\nAda (92) and Grace (88) pass; Linus (57) does not.\n\n### How your code runs\n\nDrop the header line, split each remaining row on the comma, convert the score with `as.numeric()`, and count rows where the score is `>= 60`.\n\n### Starter code\n\n```r\nrows_above <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  data <- lines[-1]\n  count <- 0\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    score <- as.numeric(parts[length(parts)])\n    if (!is.na(score) && score >= 60) {\n      count <- count + 1\n    }\n  }\n  return(as.character(count))\n}\n```\n\nGood luck!",
+      "starter_code": "rows_above <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  data <- lines[-1]\n  count <- 0\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    score <- as.numeric(parts[length(parts)])\n    if (!is.na(score) && score >= 60) {\n      count <- count + 1\n    }\n  }\n  return(as.character(count))\n}\n",
+      "test_cases": [
+        {
+          "input": "name,score\nAda,92\nLinus,57\nGrace,88\n",
+          "expected_output": "2",
+          "description": "Two pass"
+        },
+        {
+          "input": "name,score\nPat,60\nSam,59\n",
+          "expected_output": "1",
+          "description": "Boundary at 60"
+        },
+        {
+          "input": "name,score\nKim,30\nLee,20\n",
+          "expected_output": "0",
+          "description": "Nobody passes"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-wrangling-verbs",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-wrangling",
+      "title": "Wrangling Verbs in R",
+      "type": "theory",
+      "order": 1,
+      "content": "## Wrangling Verbs in R\n\nData wrangling is the work of getting data into the shape your analysis needs. The **tidyverse** made this intuitive with named verbs; base R achieves the same with subsetting and assignment.\n\n### The tidyverse verbs\n\n| Verb     | What it does          | Base R equivalent                       |\n|----------|-----------------------|-----------------------------------------|\n| `select` | keep columns          | `df[, c(\"a\", \"b\")]`                     |\n| `filter` | keep rows by condition| `df[df$score >= 60, ]`                  |\n| `mutate` | create/modify columns | `df$new <- df$a * 2`                    |\n| `arrange`| sort rows             | `df[order(df$score), ]`                 |\n| `summarise` | collapse to stats  | `mean(df$score)`                        |\n\n### Filtering rows\n\nKeep only the rows that satisfy a condition:\n\n```r\nclean <- df[df$status == \"active\", ]\ntop   <- df[df$score > 80 & df$age >= 18, ]\n```\n\n### Selecting and creating columns\n\n```r\ncols  <- df[, c(\"name\", \"score\")]\ndf$margin <- df$revenue - df$cost\n```\n\n### Arranging\n\n`order()` returns the indices that sort a column — feed them to `[`:\n\n```r\ndf[order(df$revenue, decreasing = TRUE), ]\n```\n\n### Wrangle in a pipeline\n\nStage each step so the output of one line feeds the next:\n\n```r\nclean <- df[df$status == \"active\", ]\nclean$revenue_per_order <- clean$revenue / clean$orders\nclean <- clean[order(-clean$revenue_per_order), ]\nhead(clean, 5)\n```\n\nClean, filter, and transform *before* you aggregate — garbage in, garbage out applies to every pipeline.\n\n---\n\n**Next up:** grouping rows and aggregating them into summaries.",
+      "language": "r"
+    },
+    {
+      "id": "da-wrangling-group",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-wrangling",
+      "title": "Grouping and Aggregation",
+      "type": "theory",
+      "order": 2,
+      "content": "## Grouping and Aggregation\n\nMost analyses compare groups: mean sales by region, total orders by product, churn by plan. This is **split-apply-combine** — split the data by group, apply a function, combine the results.\n\n### tapply: group by one factor\n\n`tapply(values, groups, function)` splits `values` by `groups` and applies the function to each piece:\n\n```r\ntapply(df$revenue, df$region, mean)\n```\n\n### aggregate: returns a neat table\n\n`aggregate()` is a friendlier sibling that returns a small data frame:\n\n```r\naggregate(revenue ~ region, data = df, FUN = mean)\n```\n\n### Manual grouping with a loop\n\nIn the sandbox exercises you accumulate sums and counts yourself, keeping **first-appearance order**:\n\n```r\ngroups <- c(); sums <- c(); counts <- c()\nfor (line in rows) {\n  parts <- strsplit(line, \",\")[[1]]\n  g <- parts[1]; v <- as.numeric(parts[2])\n  idx <- match(g, groups)\n  if (is.na(idx)) {\n    groups <- c(groups, g); sums <- c(sums, v); counts <- c(counts, 1)\n  } else {\n    sums[idx] <- sums[idx] + v; counts[idx] <- counts[idx] + 1\n  }\n}\nmeans <- sums / counts\n```\n\n### Choosing the aggregation\n\n- **Count** — `sum(counts)` or `length()` per group.\n- **Total** — `sum()` per group.\n- **Average** — `mean()` per group.\n- **Extreme** — `max()` / `min()` per group.\n\nAggregating before filtering is a classic bug: removing bad rows *after* the summary leaves their contribution baked in. Filter first, then group.\n\n---\n\n**Next up:** joining separate tables on a shared key.",
+      "language": "r"
+    },
+    {
+      "id": "da-wrangling-join",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-wrangling",
+      "title": "Joining Tables",
+      "type": "theory",
+      "order": 3,
+      "content": "## Joining Tables\n\nReal data lives across many tables — customers in one file, orders in another. **Joining** brings them together on a shared **key**.\n\n### merge(): the base R join\n\n```r\nmerged <- merge(customers, orders, by = \"customer_id\", all.x = TRUE)\n```\n\n- `by` — the key column(s) both tables share.\n- `all.x = TRUE` — keep every row from the first table (a *left join*).\n\n### The four join families\n\n| Join        | Keeps                              |\n|-------------|------------------------------------|\n| inner       | rows matching in **both** tables   |\n| left        | all rows from the left table       |\n| right       | all rows from the right table      |\n| full        | every row from both tables         |\n\n### Matching by hand\n\nIn the sandbox exercises you implement a lookup by hand: store keys from the second table, then `match()` the first table's keys into them:\n\n```r\nidx <- match(left_ids[i], right_ids)\nif (!is.na(idx)) {\n  result <- c(result, paste0(left_names[i], \":\", right_scores[idx]))\n}\n```\n\n### Join hygiene\n\n- **Check keys:** duplicate keys multiply rows (one-to-many).\n- **Check coverage:** unmatched keys become `NA` in outer joins — decide what that means.\n- **Verify cardinality:** row count after an inner join should make sense.\n\nJoins are where silent data loss happens: a wrong key matches nothing and your merged table quietly loses rows. Always compare row counts before and after.\n\n---\n\n**Next up:** reshaping data between wide and long layouts.",
+      "language": "r"
+    },
+    {
+      "id": "da-wrangling-reshape",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-wrangling",
+      "title": "Reshaping Data",
+      "type": "theory",
+      "order": 4,
+      "content": "## Reshaping Data\n\nThe same data can be laid out **wide** (one row per subject, repeated measurements across columns) or **long** (one row per measurement). Reshaping converts between them.\n\n### Wide vs long\n\n| Layout | Looks like                          | Good for                        |\n|--------|-------------------------------------|---------------------------------|\n| wide   | `region Q1 Q2 Q3 Q4`                | spreadsheets, many plotting libs|\n| long   | `region quarter value`              | grouping, aggregating, ggplot2  |\n\n### Wide to long in base R\n\nA pivot melts repeated columns into key-value pairs:\n\n```r\nlong <- data.frame(\n  region  = rep(df$region, 4),\n  quarter = rep(c(\"Q1\", \"Q2\", \"Q3\", \"Q4\"), each = nrow(df)),\n  value   = c(df$Q1, df$Q2, df$Q3, df$Q4)\n)\n```\n\n### Long to wide with aggregate\n\nTo go back, aggregate long data over the wide columns:\n\n```r\nwide <- aggregate(value ~ region + quarter, data = long, FUN = sum)\n```\n\n### Reshaping by hand\n\nIn the exercises you often collapse a wide row into one summary — e.g. summing four quarter columns into a yearly total:\n\n```r\nparts <- strsplit(line, \",\")[[1]]\ntotal <- sum(as.numeric(parts[-1]))\n```\n\n### When to reshape\n\n- Need a **per-category total**? Aggregate across the repeated columns.\n- Need to **group by quarter**? You need the long form.\n- Need to **plot by quarter**? Long form, almost always.\n\nReshaping mistakes (double-counting, wrong `each`/`rep`) are easy to make and hard to see. Total the numbers before and after reshaping — they must match.\n\n---\n\n**Next up:** three exercises — group extremes, joins, and wide-to-summary reshaping.",
+      "language": "r"
+    },
+    {
+      "id": "da-wrangling-ex-group",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-wrangling",
+      "title": "Exercise: Maximum by Group",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Maximum by Group\n\nWrite a function `max_by_group(input)` that reads `group,value` rows and returns, for each distinct group, its **maximum value** as `group:max` — one per line, in first-appearance order.\n\n### Sample\n\nInput:\n\n```text\nbooks,120\ntoys,90\nbooks,80\ntoys,150\nfood,60\n```\n\nOutput:\n\n```text\nbooks:120\ntoys:150\nfood:60\n```\n\n### How your code runs\n\nSplit each line on the comma, look the group up with `match()`, and keep the largest value seen so far. Join the result lines with `paste(..., collapse = \"\\n\")`.\n\n### Starter code\n\n```r\nmax_by_group <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  groups <- c()\n  maxs <- c()\n  for (line in lines) {\n    parts <- strsplit(line, \",\")[[1]]\n    g <- parts[1]\n    v <- as.numeric(parts[2])\n    idx <- match(g, groups)\n    if (is.na(idx)) {\n      groups <- c(groups, g)\n      maxs <- c(maxs, v)\n    } else if (v > maxs[idx]) {\n      maxs[idx] <- v\n    }\n  }\n  out <- c()\n  for (i in seq_along(groups)) {\n    out <- c(out, paste0(groups[i], \":\", maxs[i]))\n  }\n  return(paste(out, collapse = \"\\n\"))\n}\n```\n\nGood luck!",
+      "starter_code": "max_by_group <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  groups <- c()\n  maxs <- c()\n  for (line in lines) {\n    parts <- strsplit(line, \",\")[[1]]\n    g <- parts[1]\n    v <- as.numeric(parts[2])\n    idx <- match(g, groups)\n    if (is.na(idx)) {\n      groups <- c(groups, g)\n      maxs <- c(maxs, v)\n    } else if (v > maxs[idx]) {\n      maxs[idx] <- v\n    }\n  }\n  out <- c()\n  for (i in seq_along(groups)) {\n    out <- c(out, paste0(groups[i], \":\", maxs[i]))\n  }\n  return(paste(out, collapse = \"\\n\"))\n}\n",
+      "test_cases": [
+        {
+          "input": "books,120\ntoys,90\nbooks,80\ntoys,150\nfood,60\n",
+          "expected_output": "books:120\ntoys:150\nfood:60",
+          "description": "Three groups"
+        },
+        {
+          "input": "a,5\na,3\nb,8\n",
+          "expected_output": "a:5\nb:8",
+          "description": "Two groups"
+        },
+        {
+          "input": "solo,42\n",
+          "expected_output": "solo:42",
+          "description": "Single group"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-wrangling-ex-join",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-wrangling",
+      "title": "Exercise: Join Two Tables",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Join Two Tables\n\nWrite a function `join_tables(input)` that receives two tables separated by a **blank line**.\n\n- Table 1: `id,name` rows.\n- Table 2: `id,score` rows.\n\nReturn each name from table 1 with its score from table 2, as `name:score`, joined by spaces, in table 1 order. Rows in table 1 with no matching id are omitted.\n\n### Sample\n\nInput:\n\n```text\n1,Ada\n2,Linus\n3,Grace\n\n1,92\n2,57\n3,88\n```\n\nOutput:\n\n```text\nAda:92 Linus:57 Grace:88\n```\n\n### How your code runs\n\nSplit the input on a double newline (`strsplit(input, \"\\n\\n\")`) to separate the two tables, store table 2's keys, and `match()` each table-1 key.\n\n### Starter code\n\n```r\njoin_tables <- function(input) {\n  parts <- strsplit(input, \"\\n\\n\")[[1]]\n  left_lines <- strsplit(parts[1], \"\\n\")[[1]]\n  right_lines <- strsplit(parts[2], \"\\n\")[[1]]\n  left_ids <- c()\n  left_names <- c()\n  for (line in left_lines) {\n    if (nchar(trimws(line)) == 0) next\n    p <- strsplit(line, \",\")[[1]]\n    left_ids <- c(left_ids, p[1])\n    left_names <- c(left_names, p[2])\n  }\n  right_ids <- c()\n  right_scores <- c()\n  for (line in right_lines) {\n    if (nchar(trimws(line)) == 0) next\n    p <- strsplit(line, \",\")[[1]]\n    right_ids <- c(right_ids, p[1])\n    right_scores <- c(right_scores, as.numeric(p[2]))\n  }\n  out <- c()\n  for (i in seq_along(left_ids)) {\n    idx <- match(left_ids[i], right_ids)\n    if (!is.na(idx)) {\n      out <- c(out, paste0(left_names[i], \":\", right_scores[idx]))\n    }\n  }\n  return(paste(out, collapse = \" \"))\n}\n```\n\nGood luck!",
+      "starter_code": "join_tables <- function(input) {\n  parts <- strsplit(input, \"\\n\\n\")[[1]]\n  left_lines <- strsplit(parts[1], \"\\n\")[[1]]\n  right_lines <- strsplit(parts[2], \"\\n\")[[1]]\n  left_ids <- c()\n  left_names <- c()\n  for (line in left_lines) {\n    if (nchar(trimws(line)) == 0) next\n    p <- strsplit(line, \",\")[[1]]\n    left_ids <- c(left_ids, p[1])\n    left_names <- c(left_names, p[2])\n  }\n  right_ids <- c()\n  right_scores <- c()\n  for (line in right_lines) {\n    if (nchar(trimws(line)) == 0) next\n    p <- strsplit(line, \",\")[[1]]\n    right_ids <- c(right_ids, p[1])\n    right_scores <- c(right_scores, as.numeric(p[2]))\n  }\n  out <- c()\n  for (i in seq_along(left_ids)) {\n    idx <- match(left_ids[i], right_ids)\n    if (!is.na(idx)) {\n      out <- c(out, paste0(left_names[i], \":\", right_scores[idx]))\n    }\n  }\n  return(paste(out, collapse = \" \"))\n}\n",
+      "test_cases": [
+        {
+          "input": "1,Ada\n2,Linus\n3,Grace\n\n1,92\n2,57\n3,88\n",
+          "expected_output": "Ada:92 Linus:57 Grace:88",
+          "description": "All keys match"
+        },
+        {
+          "input": "1,Ada\n2,Linus\n\n1,92\n2,57\n",
+          "expected_output": "Ada:92 Linus:57",
+          "description": "Two pairs"
+        },
+        {
+          "input": "1,Ada\n2,Linus\n3,Grace\n\n1,92\n3,88\n",
+          "expected_output": "Ada:92 Grace:88",
+          "description": "One key missing"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-wrangling-ex-reshape",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-wrangling",
+      "title": "Exercise: Quarterly Totals",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Quarterly Totals\n\nWrite a function `quarterly_total(input)` that reads CSV text with a header `region,Q1,Q2,Q3,Q4` and returns, for each region, its **yearly total** as `region:total`, one per line, in first-appearance order.\n\n### Sample\n\nInput:\n\n```text\nregion,Q1,Q2,Q3,Q4\nNorth,10,20,30,40\nSouth,5,10,15,20\n```\n\nOutput:\n\n```text\nNorth:100\nSouth:50\n```\n\n### How your code runs\n\nDrop the header, split each row on the comma, sum the four quarter values with `sum(as.numeric(parts[-1]))`, and accumulate per region.\n\n### Starter code\n\n```r\nquarterly_total <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  data <- lines[-1]\n  regions <- c()\n  totals <- c()\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    region <- parts[1]\n    total <- sum(as.numeric(parts[-1]))\n    idx <- match(region, regions)\n    if (is.na(idx)) {\n      regions <- c(regions, region)\n      totals <- c(totals, total)\n    } else {\n      totals[idx] <- totals[idx] + total\n    }\n  }\n  out <- c()\n  for (i in seq_along(regions)) {\n    out <- c(out, paste0(regions[i], \":\", totals[i]))\n  }\n  return(paste(out, collapse = \"\\n\"))\n}\n```\n\nGood luck!",
+      "starter_code": "quarterly_total <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  data <- lines[-1]\n  regions <- c()\n  totals <- c()\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    region <- parts[1]\n    total <- sum(as.numeric(parts[-1]))\n    idx <- match(region, regions)\n    if (is.na(idx)) {\n      regions <- c(regions, region)\n      totals <- c(totals, total)\n    } else {\n      totals[idx] <- totals[idx] + total\n    }\n  }\n  out <- c()\n  for (i in seq_along(regions)) {\n    out <- c(out, paste0(regions[i], \":\", totals[i]))\n  }\n  return(paste(out, collapse = \"\\n\"))\n}\n",
+      "test_cases": [
+        {
+          "input": "region,Q1,Q2,Q3,Q4\nNorth,10,20,30,40\nSouth,5,10,15,20\n",
+          "expected_output": "North:100\nSouth:50",
+          "description": "Two regions"
+        },
+        {
+          "input": "region,Q1,Q2,Q3,Q4\nA,1,1,1,1\nB,2,2,2,2\n",
+          "expected_output": "A:4\nB:8",
+          "description": "Repeated rows"
+        },
+        {
+          "input": "region,Q1,Q2,Q3,Q4\nWest,10,10,10,10\n",
+          "expected_output": "West:40",
+          "description": "Single region"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-eda-distributions",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-eda",
+      "title": "Exploring Distributions",
+      "type": "theory",
+      "order": 1,
+      "content": "## Exploring Distributions\n\nA **distribution** describes how often each value of a variable occurs. Understanding it is the heart of exploratory data analysis (EDA).\n\n### The three questions about any distribution\n\n1. **Where is the center?** — the typical value (`mean`, `median`).\n2. **How spread out is it?** — `sd`, range, IQR.\n3. **What is the shape?** — symmetric, skewed, peaked, multi-modal.\n\n### Look before you summarize\n\nA histogram reveals what numbers alone hide:\n\n```r\nhist(df$revenue, breaks = 20, col = \"lightblue\", main = \"Revenue\")\n```\n\n- Symmetric distributions look like a bell around the center.\n- **Right-skewed** distributions have a long tail of big values; the mean sits above the median.\n- Two peaks suggest two subpopulations mixed together.\n\n### The summary() shortcut\n\n```r\nsummary(df$revenue)\n```\n\ngives min, 1st quartile, median, mean, 3rd quartile, max — enough to sketch any distribution quickly.\n\n### Distribution checks catch data problems\n\n- A surprise peak at zero often means \"not measured\", not \"zero\".\n- A long tail may hide a handful of extreme (or erroneous) values.\n- A bimodal shape means you should analyze groups separately.\n\n### Always pair number and shape\n\nThe mean of `c(1, 2, 3, 4, 5, 6, 7, 8, 9, 100)` is 14.5 — but a histogram shows that's a lie about the typical value. Distributions force you to see the whole picture, not just the summary.\n\n---\n\n**Next up:** spotting and handling the outliers that distributions reveal.",
+      "language": "r"
+    },
+    {
+      "id": "da-eda-outliers",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-eda",
+      "title": "Detecting Outliers",
+      "type": "theory",
+      "order": 2,
+      "content": "## Detecting Outliers\n\nAn **outlier** is a value that stands apart from the rest. Outliers can be real signal (a blockbuster sale) or data errors (a misplaced decimal). EDA is where you decide which.\n\n### The IQR fence rule\n\nThe box plot's rule flags values outside the fences:\n\n```r\nq1    <- quantile(x, 0.25)\nq3    <- quantile(x, 0.75)\niqr   <- q3 - q1\nlower <- q1 - 1.5 * iqr\nupper <- q3 + 1.5 * iqr\noutliers <- x[x < lower | x > upper]\n```\n\nAnything below `lower` or above `upper` is drawn as a dot beyond the whiskers.\n\n### Look with a box plot\n\n```r\nboxplot(df$revenue, horizontal = TRUE, main = \"Revenue\")\n```\n\nOne glance shows the median line, the box (middle 50%), the whiskers, and any dots beyond.\n\n### What to do with outliers\n\n| Situation                     | Action                                    |\n|-------------------------------|-------------------------------------------|\n| Typo / sensor error           | fix or drop the value                     |\n| Real but rare (a mega-deal)   | keep it, report it separately             |\n| Extreme value skewing means   | prefer the median or use a robust measure |\n\n### Don't delete silently\n\nRemoving outliers changes the answer. Document how many you removed and why, and — for a sanity check — compute key statistics with and without them.\n\n### The z-score alternative\n\nA value's z-score is how many standard deviations it is from the mean:\n\n```r\nz <- (x - mean(x)) / sd(x)   # |z| >= 3 is a common cutoff\n```\n\nThe IQR rule is more robust because it ignores extreme values when defining the fences, whereas the mean and `sd` used by z-scores are themselves pulled by outliers.\n\n---\n\n**Next up:** measuring how two variables move together — correlation.",
+      "language": "r"
+    },
+    {
+      "id": "da-eda-correlation",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-eda",
+      "title": "Correlation Between Variables",
+      "type": "theory",
+      "order": 3,
+      "content": "## Correlation Between Variables\n\n**Correlation** measures how two numeric variables move together. It is a first probe for relationships before you model them.\n\n### The correlation coefficient\n\n`cor(x, y)` returns **Pearson's r**, always between -1 and 1:\n\n```r\ncor(df$ad_spend, df$revenue)\n```\n\n- `r` near **+1** — strong positive: as one rises, so does the other.\n- `r` near **-1** — strong negative: as one rises, the other falls.\n- `r` near **0** — no linear relationship.\n\n### Always plot the scatter too\n\n```r\nplot(df$ad_spend, df$revenue, pch = 19, col = \"steelblue\")\n```\n\nCorrelation only captures **linear** patterns. A perfect U-shaped curve can have `r = 0` while the relationship is clearly real. The scatter reveals curves and clusters that `r` cannot.\n\n### Sensitivity to outliers\n\nA single extreme point can dominate `r`. Check the scatter before trusting the number.\n\n### Correlation is not causation\n\nIce-cream sales and drowning incidents are strongly correlated — because both rise with warm weather. Correlated variables may both be driven by a third cause, or the direction of influence may run opposite to what you assume.\n\n### Correlation vs slope\n\nCorrelation and regression slope move together (both positive or both negative), but they are not the same: slope depends on the units and scale of the variables, while `r` is unit-free. You'll meet the slope in the statistics module.\n\n---\n\n**Next up:** pulling everything into a compact statistical summary of the data.",
+      "language": "r"
+    },
+    {
+      "id": "da-eda-summary",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-eda",
+      "title": "Summary Statistics in Practice",
+      "type": "theory",
+      "order": 4,
+      "content": "## Summary Statistics in Practice\n\nSummary statistics condense a whole column into a few numbers. Used well, they are a fast EDA pass over many variables at once.\n\n### The five-number summary\n\n`summary()` prints min, 1st quartile, median, mean, 3rd quartile, and max:\n\n```r\nsummary(df$price)\n```\n\n| Statistic | Question it answers        |\n|-----------|----------------------------|\n| min / max | the range of the data      |\n| median    | the middle (robust center) |\n| mean      | the arithmetic average     |\n| Q1 / Q3   | spread of the middle 50%   |\n\n### Summarize many columns at once\n\n```r\nsummary(df[, c(\"price\", \"quantity\", \"revenue\")])\n```\n\nOne command summarizes your whole numeric table — a fast scan for weird values, missing data, and scale differences.\n\n### Summaries by group\n\nAverages hide differences between groups. Compare them explicitly:\n\n```r\ntapply(df$revenue, df$region, summary)\n```\n\nNow you can see, at a glance, that the West region's median revenue is half the East's — a fact the overall mean buries.\n\n### Sanity-check with summaries\n\n- A **mean below the median** suggests left skew; above suggests right skew.\n- A **max far above Q3** hints at outliers worth investigating.\n- **NA counts** from `sum(is.na(x))` tell you how much data is missing.\n\n### From summary to action\n\nSummaries are not the end — they are the beginning. A suspicious summary sends you back to the plot; a striking one sends you forward to the statistics. Keep the loop tight.\n\n---\n\n**Next up:** three exercises — spread, correlation, and a full profile report.",
+      "language": "r"
+    },
+    {
+      "id": "da-eda-ex-spread",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-eda",
+      "title": "Exercise: Measures of Spread",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Measures of Spread\n\nWrite a function `spread_measures(input)` that reads numbers (one per line) and returns three measures of spread joined by spaces, each rounded to 2 decimal places: the **range** (max - min), the **variance**, and the **standard deviation**.\n\n### Sample\n\nInput:\n\n```text\n1\n2\n3\n4\n5\n```\n\nOutput:\n\n```text\n4 2.5 1.58\n```\n\n### How your code runs\n\nConvert the lines with `as.numeric()`, drop `NA`s, then compute `max(x) - min(x)`, `var(x)`, and `sd(x)`. Round each with `round(x, 2)` and join with `paste()`.\n\n### Starter code\n\n```r\nspread_measures <- function(input) {\n  nums <- as.numeric(strsplit(input, \"\\n\")[[1]])\n  nums <- nums[!is.na(nums)]\n  rng <- round(max(nums) - min(nums), 2)\n  varv <- round(var(nums), 2)\n  sdv <- round(sd(nums), 2)\n  return(paste(rng, varv, sdv))\n}\n```\n\nGood luck!",
+      "starter_code": "spread_measures <- function(input) {\n  nums <- as.numeric(strsplit(input, \"\\n\")[[1]])\n  nums <- nums[!is.na(nums)]\n  rng <- round(max(nums) - min(nums), 2)\n  varv <- round(var(nums), 2)\n  sdv <- round(sd(nums), 2)\n  return(paste(rng, varv, sdv))\n}\n",
+      "test_cases": [
+        {
+          "input": "1\n2\n3\n4\n5\n",
+          "expected_output": "4 2.5 1.58",
+          "description": "Sequential values"
+        },
+        {
+          "input": "4\n8\n15\n16\n23\n42\n",
+          "expected_output": "38 182 13.49",
+          "description": "Classic data set"
+        },
+        {
+          "input": "10\n10\n10\n",
+          "expected_output": "0 0 0",
+          "description": "No spread"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-eda-ex-corr",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-eda",
+      "title": "Exercise: Correlation Between Columns",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Correlation Between Columns\n\nWrite a function `column_corr(input)` that reads CSV text with a header `x,y` and returns the **correlation** between the two columns, rounded to 2 decimal places.\n\n### Sample\n\nInput:\n\n```text\nx,y\n1,2\n2,4\n3,6\n4,8\n5,10\n```\n\nOutput:\n\n```text\n1\n```\n\n### How your code runs\n\nDrop the header line, split each row on the comma, collect the two numeric columns, and compute `cor(xs, ys)`.\n\n### Starter code\n\n```r\ncolumn_corr <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  data <- lines[-1]\n  xs <- c()\n  ys <- c()\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    xs <- c(xs, as.numeric(parts[1]))\n    ys <- c(ys, as.numeric(parts[2]))\n  }\n  return(as.character(round(cor(xs, ys), 2)))\n}\n```\n\nGood luck!",
+      "starter_code": "column_corr <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  data <- lines[-1]\n  xs <- c()\n  ys <- c()\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    xs <- c(xs, as.numeric(parts[1]))\n    ys <- c(ys, as.numeric(parts[2]))\n  }\n  return(as.character(round(cor(xs, ys), 2)))\n}\n",
+      "test_cases": [
+        {
+          "input": "x,y\n1,2\n2,4\n3,6\n4,8\n5,10\n",
+          "expected_output": "1",
+          "description": "Perfect positive"
+        },
+        {
+          "input": "x,y\n1,5\n2,4\n3,3\n4,2\n5,1\n",
+          "expected_output": "-1",
+          "description": "Perfect negative"
+        },
+        {
+          "input": "x,y\n1,3\n2,1\n3,5\n4,2\n5,4\n",
+          "expected_output": "0.3",
+          "description": "Weak relationship"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-eda-ex-profile",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-eda",
+      "title": "Exercise: Column Profile Report",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Column Profile Report\n\nWrite a function `column_profile(input)` that reads CSV text with a two-column header (e.g. `height,weight`) and returns a two-line profile, one line per column, in the format:\n\n```text\nname:min=VALUE mean=VALUE max=VALUE\n```\n\nEach statistic is rounded to 2 decimal places.\n\n### Sample\n\nInput:\n\n```text\nheight,weight\n150,50\n160,55\n170,60\n180,70\n```\n\nOutput:\n\n```text\nheight:min=150 mean=165 max=180\nweight:min=50 mean=58.75 max=70\n```\n\n### How your code runs\n\nUse the header names for the labels, then compute `min()`, `mean()`, and `max()` for each numeric column. Join the two lines with `paste(line1, line2, sep = \"\\n\")`.\n\n### Starter code\n\n```r\ncolumn_profile <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  header <- strsplit(lines[1], \",\")[[1]]\n  data <- lines[-1]\n  a <- c()\n  b <- c()\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    a <- c(a, as.numeric(parts[1]))\n    b <- c(b, as.numeric(parts[2]))\n  }\n  line1 <- paste0(header[1], \":min=\", round(min(a), 2), \" mean=\", round(mean(a), 2), \" max=\", round(max(a), 2))\n  line2 <- paste0(header[2], \":min=\", round(min(b), 2), \" mean=\", round(mean(b), 2), \" max=\", round(max(b), 2))\n  return(paste(line1, line2, sep = \"\\n\"))\n}\n```\n\nGood luck!",
+      "starter_code": "column_profile <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  header <- strsplit(lines[1], \",\")[[1]]\n  data <- lines[-1]\n  a <- c()\n  b <- c()\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    a <- c(a, as.numeric(parts[1]))\n    b <- c(b, as.numeric(parts[2]))\n  }\n  line1 <- paste0(header[1], \":min=\", round(min(a), 2), \" mean=\", round(mean(a), 2), \" max=\", round(max(a), 2))\n  line2 <- paste0(header[2], \":min=\", round(min(b), 2), \" mean=\", round(mean(b), 2), \" max=\", round(max(b), 2))\n  return(paste(line1, line2, sep = \"\\n\"))\n}\n",
+      "test_cases": [
+        {
+          "input": "height,weight\n150,50\n160,55\n170,60\n180,70\n",
+          "expected_output": "height:min=150 mean=165 max=180\nweight:min=50 mean=58.75 max=70",
+          "description": "Two clean columns"
+        },
+        {
+          "input": "score,time\n70,1.5\n80,2\n90,2.5\n",
+          "expected_output": "score:min=70 mean=80 max=90\ntime:min=1.5 mean=2 max=2.5",
+          "description": "Decimals in second column"
+        },
+        {
+          "input": "x,y\n1,10\n2,20\n",
+          "expected_output": "x:min=1 mean=1.5 max=2\ny:min=10 mean=15 max=20",
+          "description": "Two rows"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-statistics-sampling",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-statistics",
+      "title": "Sampling from Data",
+      "type": "theory",
+      "order": 1,
+      "content": "## Sampling from Data\n\nAnalyzing a full population is expensive or impossible, so analysts work with **samples** and generalize to the population. Sampling is where that generalization starts.\n\n### Drawing a sample in R\n\n```r\nset.seed(7)\nrows <- sample(1:nrow(df), size = 100)\nsample_df <- df[rows, ]\n```\n\n`sample()` picks rows at random. `set.seed()` makes the pick reproducible.\n\n### Why sample size matters\n\nA larger sample gives a more precise estimate of the population. The **standard error** captures this — it shrinks as the sample grows:\n\n```r\nse <- sd(x) / sqrt(length(x))\n```\n\nDouble the sample size and the standard error drops by a factor of `sqrt(2)`.\n\n### A sample must be representative\n\nA sample that over-represents one group quietly lies. Classic failure modes:\n\n- **Convenience sampling** — asking whoever is nearby, not whoever is relevant.\n- **Self-selection** — only the most interested people respond.\n- **Non-response** — the people who don't answer differ from those who do.\n\n### Bias beats noise\n\nA large biased sample is worse than a small unbiased one — you get a precise estimate of the wrong number. Random selection is the guard against systematic bias.\n\n### The honest report\n\nEvery analysis that generalizes from a sample should say so: *\"n = 120 orders sampled from 3,000\"* tells the reader exactly how much weight the numbers can carry.\n\n---\n\n**Next up:** turning a sample into a range of plausible values — confidence intervals.",
+      "language": "r"
+    },
+    {
+      "id": "da-statistics-intervals",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-statistics",
+      "title": "Confidence Intervals",
+      "type": "theory",
+      "order": 2,
+      "content": "## Confidence Intervals\n\nA sample mean is a single guess at the population mean. A **confidence interval** turns that guess into a range of plausible values.\n\n### The ingredients\n\n```r\nn  <- length(x)\nm  <- mean(x)\nse <- sd(x) / sqrt(n)      # standard error\nmargin <- 1.96 * se        # 95% margin of error\nlower <- m - margin\nupper <- m + margin\n```\n\n### What the interval means\n\nIf you repeated the sampling many times and built a 95% interval each time, about 95% of those intervals would contain the true population mean. It is **not** \"95% of the data lies here\" — it is a statement about the estimation procedure, not the data.\n\n### The 1.96 multiplier\n\nFor a normal-ish distribution, 95% of a distribution sits within 1.96 standard deviations of its center. The multiplier changes with the confidence level:\n\n| Confidence | Multiplier |\n|------------|------------|\n| 90%        | 1.645      |\n| 95%        | 1.96       |\n| 99%        | 2.576      |\n\n### Wider data, wider interval\n\nMore spread (`sd`) widens the interval; more data (`n`) narrows it. The interval summarizes both the uncertainty and how much the sample can tell you.\n\n### Interval vs single number\n\nA point estimate hides uncertainty; an interval exposes it. \"Mean order value is $48\" sounds definitive. \"Mean order value is $48, with a 95% interval of $41-$55\" tells a manager how much to trust the number.\n\n---\n\n**Next up:** deciding whether the data contradicts a claim — hypothesis testing.",
+      "language": "r"
+    },
+    {
+      "id": "da-statistics-tests",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-statistics",
+      "title": "Hypothesis Testing Basics",
+      "type": "theory",
+      "order": 3,
+      "content": "## Hypothesis Testing Basics\n\nA **hypothesis test** formalizes the question *\"is the difference we see real, or could it be chance?\"*\n\n### The two hypotheses\n\n- **Null hypothesis (H0):** nothing special — the parameter equals a stated value.\n- **Alternative hypothesis (Ha):** the parameter differs from that value.\n\nFor example: a store claims the average order is $60. H0 says mean = 60; Ha says it isn't.\n\n### The test statistic\n\nMeasure how far the data sits from H0 in standard-error units:\n\n```r\nz <- (mean(x) - claimed_value) / (sd(x) / sqrt(length(x)))\n```\n\nA big `|z|` means the data is far from the claim relative to its own uncertainty — evidence against H0.\n\n### The p-value idea\n\nThe p-value is the probability of seeing data this extreme if H0 were true. Small p-value → surprising under H0 → evidence against it.\n\n### A working decision rule\n\nIn this course's exercises you use a simple threshold: if `|z| >= 2` (roughly a 5% threshold for the z-test), call the difference **\"reject\"** the claim; otherwise **\"not enough evidence\"**.\n\n```r\nif (abs(z) >= 2) {\n  verdict <- \"reject\"\n} else {\n  verdict <- \"not enough evidence\"\n}\n```\n\n### What tests can't tell you\n\n- A non-significant result is not proof H0 is true — just weak evidence.\n- A significant result does not mean the effect is practically important.\n- Small samples rarely reject; huge samples reject everything — size matters when reading tests.\n\n---\n\n**Next up:** fitting a straight line to two variables — regression basics.",
+      "language": "r"
+    },
+    {
+      "id": "da-statistics-regression",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-statistics",
+      "title": "Regression Basics",
+      "type": "theory",
+      "order": 4,
+      "content": "## Regression Basics\n\n**Regression** fits a line that best describes how one variable depends on another. It turns correlation into a usable model.\n\n### The regression line\n\n```r\nfit <- lm(y ~ x, data = df)\ncoef(fit)\n```\n\nproduces an **intercept** (the predicted `y` when `x = 0`) and a **slope** (the change in `y` for a one-unit increase in `x`).\n\n### Slope by hand\n\nYou do not need `lm()` to get the slope for a simple two-variable model:\n\n```r\nslope <- cov(x, y) / var(x)\nintercept <- mean(y) - slope * mean(x)\n```\n\nThe slope is the covariance scaled by the variance of `x`. Prediction is then:\n\n```r\npredicted <- intercept + slope * new_x\n```\n\n### Interpreting the slope\n\nFor ad spend and revenue, a slope of `3.2` means each additional dollar of ad spend is associated with about $3.20 more revenue in the data.\n\n### Reading residuals\n\nThe difference between the actual `y` and the predicted `y` is the **residual**. Small residuals mean the line fits well; a systematic pattern in residuals (curves, fans) means a straight line is the wrong model.\n\n### Regression and correlation\n\nThey are cousins: both describe linear association, and their signs always match. But slope is in the variables' units (`$` per `$`), while correlation `r` is unit-free between -1 and 1.\n\n### The caution\n\nA strong fitted line on observed data is not proof of causation, and predicting far outside the observed `x` range (extrapolation) is risky.\n\n---\n\n**Next up:** three exercises — standard error, a group-vs-threshold test, and regression slope.",
+      "language": "r"
+    },
+    {
+      "id": "da-statistics-ex-se",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-statistics",
+      "title": "Exercise: Standard Error",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Standard Error\n\nWrite a function `standard_error(input)` that reads numbers (one per line) and returns the **mean** and the **standard error** (`sd(x) / sqrt(n)`), joined by a space, each rounded to 2 decimal places.\n\n### Sample\n\nInput:\n\n```text\n4\n8\n15\n16\n23\n42\n```\n\nOutput:\n\n```text\n18 5.51\n```\n\nMean = 18; standard error = `sd / sqrt(6)` = 5.51.\n\n### How your code runs\n\nDrop `NA`s, then compute `mean(x)` and `sd(x) / sqrt(length(x))`. Round both with `round(x, 2)`.\n\n### Starter code\n\n```r\nstandard_error <- function(input) {\n  nums <- as.numeric(strsplit(input, \"\\n\")[[1]])\n  nums <- nums[!is.na(nums)]\n  n <- length(nums)\n  m <- round(mean(nums), 2)\n  se <- round(sd(nums) / sqrt(n), 2)\n  return(paste(m, se))\n}\n```\n\nGood luck!",
+      "starter_code": "standard_error <- function(input) {\n  nums <- as.numeric(strsplit(input, \"\\n\")[[1]])\n  nums <- nums[!is.na(nums)]\n  n <- length(nums)\n  m <- round(mean(nums), 2)\n  se <- round(sd(nums) / sqrt(n), 2)\n  return(paste(m, se))\n}\n",
+      "test_cases": [
+        {
+          "input": "4\n8\n15\n16\n23\n42\n",
+          "expected_output": "18 5.51",
+          "description": "Classic data set"
+        },
+        {
+          "input": "1\n2\n3\n4\n5\n",
+          "expected_output": "3 0.71",
+          "description": "Sequential values"
+        },
+        {
+          "input": "10\n10\n10\n",
+          "expected_output": "10 0",
+          "description": "No spread"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-statistics-ex-test",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-statistics",
+      "title": "Exercise: Compare a Group to a Threshold",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Compare a Group to a Threshold\n\nWrite a function `group_vs_threshold(input)` that receives a **threshold** on the first line and a column of numbers below it, and tests whether the group differs from the threshold.\n\nCompute the z-statistic `z = (mean - threshold) / (sd / sqrt(n))`. If `abs(z) >= 2` return `\"reject\"`, otherwise return `\"not enough evidence\"`.\n\n### Sample\n\nInput:\n\n```text\n60\n70\n72\n74\n76\n78\n```\n\nOutput:\n\n```text\nreject\n```\n\n### How your code runs\n\nThe mean (74) is far from the threshold (60) relative to the standard error, so the claim is rejected.\n\n### Starter code\n\n```r\ngroup_vs_threshold <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  threshold <- as.numeric(lines[1])\n  nums <- as.numeric(lines[-1])\n  nums <- nums[!is.na(nums)]\n  n <- length(nums)\n  m <- mean(nums)\n  se <- sd(nums) / sqrt(n)\n  z <- (m - threshold) / se\n  if (abs(z) >= 2) {\n    return(\"reject\")\n  }\n  return(\"not enough evidence\")\n}\n```\n\nGood luck!",
+      "starter_code": "group_vs_threshold <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  threshold <- as.numeric(lines[1])\n  nums <- as.numeric(lines[-1])\n  nums <- nums[!is.na(nums)]\n  n <- length(nums)\n  m <- mean(nums)\n  se <- sd(nums) / sqrt(n)\n  z <- (m - threshold) / se\n  if (abs(z) >= 2) {\n    return(\"reject\")\n  }\n  return(\"not enough evidence\")\n}\n",
+      "test_cases": [
+        {
+          "input": "60\n70\n72\n74\n76\n78\n",
+          "expected_output": "reject",
+          "description": "Clearly above threshold"
+        },
+        {
+          "input": "50\n50\n51\n52\n",
+          "expected_output": "not enough evidence",
+          "description": "Small deviation"
+        },
+        {
+          "input": "70\n65\n68\n70\n72\n75\n",
+          "expected_output": "not enough evidence",
+          "description": "Mean equals threshold"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-statistics-ex-reg",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-statistics",
+      "title": "Exercise: Regression Slope",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Regression Slope\n\nWrite a function `regression_slope(input)` that reads CSV text with a header `x,y` and returns the **regression slope** of `y` on `x`, rounded to 2 decimal places.\n\nSlope = `cov(x, y) / var(x)`.\n\n### Sample\n\nInput:\n\n```text\nx,y\n1,2\n2,4\n3,6\n4,8\n5,10\n```\n\nOutput:\n\n```text\n2\n```\n\n### How your code runs\n\nDrop the header, collect the two columns, then compute `cov(xs, ys) / var(xs)`.\n\n### Starter code\n\n```r\nregression_slope <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  data <- lines[-1]\n  xs <- c()\n  ys <- c()\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    xs <- c(xs, as.numeric(parts[1]))\n    ys <- c(ys, as.numeric(parts[2]))\n  }\n  slope <- cov(xs, ys) / var(xs)\n  return(as.character(round(slope, 2)))\n}\n```\n\nGood luck!",
+      "starter_code": "regression_slope <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  data <- lines[-1]\n  xs <- c()\n  ys <- c()\n  for (line in data) {\n    parts <- strsplit(line, \",\")[[1]]\n    xs <- c(xs, as.numeric(parts[1]))\n    ys <- c(ys, as.numeric(parts[2]))\n  }\n  slope <- cov(xs, ys) / var(xs)\n  return(as.character(round(slope, 2)))\n}\n",
+      "test_cases": [
+        {
+          "input": "x,y\n1,2\n2,4\n3,6\n4,8\n5,10\n",
+          "expected_output": "2",
+          "description": "Rising line"
+        },
+        {
+          "input": "x,y\n1,5\n2,4\n3,3\n4,2\n5,1\n",
+          "expected_output": "-1",
+          "description": "Falling line"
+        },
+        {
+          "input": "x,y\n0,1\n2,5\n4,9\n6,13\n8,17\n",
+          "expected_output": "2",
+          "description": "Offset line"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-project-choose",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-project",
+      "title": "Choosing a Dataset",
+      "type": "theory",
+      "order": 1,
+      "content": "## Choosing a Dataset\n\nA good analysis starts with a dataset that can actually answer the question. Choosing well saves hours of forcing the wrong data through the pipeline.\n\n### Start from the question, then find data\n\nWrite the question first, list what you need to measure, then hunt for data with those columns. Working backwards from \"here's a cool file\" usually ends in analysis that answers nothing.\n\n### The checklist\n\n- **Relevant** — does it contain the variables in your question?\n- **Granular** — is the level of detail right (per order, not per quarter)?\n- **Recent** — is the time window the question is about?\n- **Complete** — how much is missing, and does missingness cluster?\n- **Trustworthy** — who collected it, and how?\n\n### Tidy vs raw\n\nKeep raw data untouched in `data/` and write scripts that transform it. If a cleaning decision is wrong, you can re-run the pipeline — but only if the original is still there.\n\n### Small beats big for learning\n\nFor practice, a small, clean dataset (a few dozen rows) is better than a giant messy one. You can see every value and check your work by hand before scaling up to real-world size.\n\n### Document the source\n\nNote where the data came from, when you got it, and any assumptions. A future reader (or auditor) needs to reproduce both your data and your logic.\n\n---\n\n**Next up:** running a disciplined analysis once the dataset is chosen.",
+      "language": "r"
+    },
+    {
+      "id": "da-project-analyze",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-project",
+      "title": "Analyzing with a Plan",
+      "type": "theory",
+      "order": 2,
+      "content": "## Analyzing with a Plan\n\nAn analysis without a plan wanders. Following the pipeline — import, wrangle, explore, analyze, report — keeps every step purposeful.\n\n### Write the plan as comments first\n\n```r\n# 1. Import sales data\n# 2. Drop rows with missing revenue\n# 3. Compare mean revenue by region\n# 4. Recommend the region to double down on\n```\n\nFilling in the code under each comment is far easier than writing free-form.\n\n### Sanity-check at every stage\n\n- After import: do `dim()` and `names()` match expectations?\n- After wrangle: did row counts change for the reason you expected?\n- After analyze: are the numbers in a plausible range?\n\nA single `head()` at the right moment catches most disasters early.\n\n### Keep steps auditable\n\nPrefer many small, clearly named steps over one giant expression. If a result surprises you, you can bisect: run the pipeline up to each stage and see where the surprise enters.\n\n### Compare, don't just describe\n\nDescriptions (\"mean is 42\") rarely drive decisions. Comparisons do: \"mean is 42, vs 30 for the other group\". Build every analysis around a comparison that maps to the question.\n\n### Record decisions\n\nNote the judgment calls: which threshold you used, which outliers you kept, which metric you chose. Analysts are judged on the journey as much as the destination.\n\n---\n\n**Next up:** turning analysis results into a report that people can act on.",
+      "language": "r"
+    },
+    {
+      "id": "da-project-report",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-project",
+      "title": "Reporting Recommendations",
+      "type": "theory",
+      "order": 3,
+      "content": "## Reporting Recommendations\n\nAnalysis is finished when someone can act on it. The report is the bridge between numbers and decisions.\n\n### Structure for busy readers\n\n1. **The bottom line first** — the recommendation in one sentence.\n2. **The evidence** — the numbers and comparisons that support it.\n3. **The caveats** — limitations and what could change the answer.\n\n### Write the answer, then the method\n\nManagers want the recommendation, then enough method to trust it. Reserve deep technical detail for an appendix.\n\n### Make numbers concrete\n\n- \"Mean order value rose 12%\" is good.\n- \"Mean order value rose 12%, from $42 to $47, driven by the West region\" is actionable.\n- Pair every claim with its evidence: *\"West mean $47 vs East $38 (n = 240 orders, 95% CI $44-$50)\"*.\n\n### State assumptions\n\nEvery analysis rests on assumptions — the metric chosen, the outliers removed, the time window. List them so a decision maker can see what the answer depends on.\n\n### A recommendation template\n\n```text\nRecommendation: <do this>\nBecause: <statistic> compared with <comparison>\nCaveat: <what could change the answer>\n```\n\n### Honesty over polish\n\nA report that buries a weak result is worse than no report. If the data says \"not enough evidence\", say so — a wrong confident answer costs more than an honest uncertain one.\n\n---\n\n**Next up:** the pitfalls that quietly ruin otherwise good analyses.",
+      "language": "r"
+    },
+    {
+      "id": "da-project-pitfalls",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-project",
+      "title": "Common Pitfalls",
+      "type": "theory",
+      "order": 4,
+      "content": "## Common Pitfalls\n\nMost analytics failures are not math errors — they are judgment errors that survive perfect arithmetic. Knowing them is half the defense.\n\n### Cleaning traps\n\n- **Aggregating before filtering** — bad rows baked into group totals.\n- **Ignoring NAs** — `mean(x)` silently returns `NA`; always decide the missing policy.\n- **Silent outliers** — deleting values without recording it changes every downstream number.\n\n### Interpretation traps\n\n- **Correlation is not causation** — a third variable, or reverse direction, may explain the link.\n- **Over-generalizing samples** — a convenience sample can't speak for a population.\n- **Extrapolation** — a line fitted on 0-10 predicts poorly at 100.\n\n### The aggregate fallacy\n\nAverages hide splits. Two groups with opposite trends can combine into a flat overall mean. Always compare subgroups before trusting the headline number.\n\n### Confirmation bias\n\nWe favor results that fit expectations. Guard by pre-committing to the decision rule — write down *before* seeing results what evidence would change your conclusion.\n\n### Numeric precision theater\n\nReporting \"mean = 42.1379\" when the data is noisy is false confidence. Round sensibly and report uncertainty (`42`, 95% CI `39-45`).\n\n### The fix is process\n\nScripts, seeds, sanity checks, and written assumptions don't make analysis glamorous — they make it correct and repeatable.\n\n---\n\n**Next up:** the capstone exercises — a segment comparison, imputation, and a final recommendation.",
+      "language": "r"
+    },
+    {
+      "id": "da-project-ex-segment",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-project",
+      "title": "Exercise: Segment Comparison",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Segment Comparison\n\nWrite a function `segment_compare(input)` that reads `segment,value` rows and returns:\n\n1. One line per distinct segment: `segment:mean` (mean rounded to 2 decimal places), in first-appearance order.\n2. A final line `best:SEGMENT` naming the segment with the highest mean.\n\n### Sample\n\nInput:\n\n```text\nA,10\nB,20\nA,30\nB,40\n```\n\nOutput:\n\n```text\nA:20\nB:30\nbest:B\n```\n\n### How your code runs\n\nAccumulate sums and counts per segment, compute the rounded means, then use `which.max()` on the means to find the best segment (ties go to the first appearance).\n\n### Starter code\n\n```r\nsegment_compare <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  segs <- c()\n  sums <- c()\n  counts <- c()\n  for (line in lines) {\n    parts <- strsplit(line, \",\")[[1]]\n    s <- parts[1]\n    v <- as.numeric(parts[2])\n    idx <- match(s, segs)\n    if (is.na(idx)) {\n      segs <- c(segs, s)\n      sums <- c(sums, v)\n      counts <- c(counts, 1)\n    } else {\n      sums[idx] <- sums[idx] + v\n      counts[idx] <- counts[idx] + 1\n    }\n  }\n  means <- round(sums / counts, 2)\n  out <- c()\n  for (i in seq_along(segs)) {\n    out <- c(out, paste0(segs[i], \":\", means[i]))\n  }\n  out <- c(out, paste0(\"best:\", segs[which.max(means)]))\n  return(paste(out, collapse = \"\\n\"))\n}\n```\n\nGood luck!",
+      "starter_code": "segment_compare <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  segs <- c()\n  sums <- c()\n  counts <- c()\n  for (line in lines) {\n    parts <- strsplit(line, \",\")[[1]]\n    s <- parts[1]\n    v <- as.numeric(parts[2])\n    idx <- match(s, segs)\n    if (is.na(idx)) {\n      segs <- c(segs, s)\n      sums <- c(sums, v)\n      counts <- c(counts, 1)\n    } else {\n      sums[idx] <- sums[idx] + v\n      counts[idx] <- counts[idx] + 1\n    }\n  }\n  means <- round(sums / counts, 2)\n  out <- c()\n  for (i in seq_along(segs)) {\n    out <- c(out, paste0(segs[i], \":\", means[i]))\n  }\n  out <- c(out, paste0(\"best:\", segs[which.max(means)]))\n  return(paste(out, collapse = \"\\n\"))\n}\n",
+      "test_cases": [
+        {
+          "input": "A,10\nB,20\nA,30\nB,40\n",
+          "expected_output": "A:20\nB:30\nbest:B",
+          "description": "Two segments"
+        },
+        {
+          "input": "X,5\nX,5\nX,5\nY,1\nY,1\nY,1\n",
+          "expected_output": "X:5\nY:1\nbest:X",
+          "description": "Clear winner"
+        },
+        {
+          "input": "solo,42\n",
+          "expected_output": "solo:42\nbest:solo",
+          "description": "Single segment"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-project-ex-impute",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-project",
+      "title": "Exercise: Missing Value Imputation",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Missing Value Imputation\n\nWrite a function `impute_mean(input)` that reads a column of numbers where some lines may be `NA` (or blank) and returns the **imputed column**: every missing value replaced by the mean of the non-missing values, rounded to 2 decimal places. Output the values joined by spaces.\n\n### Sample\n\nInput:\n\n```text\n4\nNA\n8\n```\n\nOutput:\n\n```text\n4 6 8\n```\n\nThe mean of `4` and `8` is `6`, so the `NA` becomes `6`.\n\n### How your code runs\n\nConvert with `as.numeric()` (failed lines become `NA`), compute `mean(nums, na.rm = TRUE)` rounded to 2, replace missing entries, then join with `paste(round(nums, 2), collapse = \" \")`.\n\n### Starter code\n\n```r\nimpute_mean <- function(input) {\n  nums <- as.numeric(strsplit(input, \"\\n\")[[1]])\n  m <- round(mean(nums, na.rm = TRUE), 2)\n  nums[is.na(nums)] <- m\n  return(paste(round(nums, 2), collapse = \" \"))\n}\n```\n\nGood luck!",
+      "starter_code": "impute_mean <- function(input) {\n  nums <- as.numeric(strsplit(input, \"\\n\")[[1]])\n  m <- round(mean(nums, na.rm = TRUE), 2)\n  nums[is.na(nums)] <- m\n  return(paste(round(nums, 2), collapse = \" \"))\n}\n",
+      "test_cases": [
+        {
+          "input": "4\nNA\n8\n",
+          "expected_output": "4 6 8",
+          "description": "One missing value"
+        },
+        {
+          "input": "1\n2\n\n4\n",
+          "expected_output": "1 2 2.33 4",
+          "description": "Blank line missing"
+        },
+        {
+          "input": "10\n10\n10\n",
+          "expected_output": "10 10 10",
+          "description": "No missing values"
+        }
+      ],
+      "language": "r"
+    },
+    {
+      "id": "da-project-ex-recommend",
+      "course_id": "data-analytics-with-r",
+      "module_id": "da-project",
+      "title": "Exercise: Final Recommendation",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Final Recommendation\n\nWrite a function `recommend(input)` that reads `product,rating` rows and returns a recommendation for the product with the **highest average rating**, formatted as:\n\n```text\nRECOMMEND:PRODUCT with MEAN\n```\n\nwhere MEAN is the average rounded to 2 decimal places. Ties go to the product that appears first.\n\n### Sample\n\nInput:\n\n```text\nomega,5\nalpha,3\nomega,4\nalpha,3\nomega,5\n```\n\nOutput:\n\n```text\nRECOMMEND:omega with 4.67\n```\n\n### How your code runs\n\nAccumulate rating sums and counts per product, compute the means, and pick the best with `which.max()`.\n\n### Starter code\n\n```r\nrecommend <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  prods <- c()\n  sums <- c()\n  counts <- c()\n  for (line in lines) {\n    parts <- strsplit(line, \",\")[[1]]\n    pr <- parts[1]\n    v <- as.numeric(parts[2])\n    idx <- match(pr, prods)\n    if (is.na(idx)) {\n      prods <- c(prods, pr)\n      sums <- c(sums, v)\n      counts <- c(counts, 1)\n    } else {\n      sums[idx] <- sums[idx] + v\n      counts[idx] <- counts[idx] + 1\n    }\n  }\n  means <- sums / counts\n  best <- which.max(means)\n  return(paste0(\"RECOMMEND:\", prods[best], \" with \", round(means[best], 2)))\n}\n```\n\nGood luck!",
+      "starter_code": "recommend <- function(input) {\n  lines <- strsplit(input, \"\\n\")[[1]]\n  lines <- lines[nchar(trimws(lines)) > 0]\n  prods <- c()\n  sums <- c()\n  counts <- c()\n  for (line in lines) {\n    parts <- strsplit(line, \",\")[[1]]\n    pr <- parts[1]\n    v <- as.numeric(parts[2])\n    idx <- match(pr, prods)\n    if (is.na(idx)) {\n      prods <- c(prods, pr)\n      sums <- c(sums, v)\n      counts <- c(counts, 1)\n    } else {\n      sums[idx] <- sums[idx] + v\n      counts[idx] <- counts[idx] + 1\n    }\n  }\n  means <- sums / counts\n  best <- which.max(means)\n  return(paste0(\"RECOMMEND:\", prods[best], \" with \", round(means[best], 2)))\n}\n",
+      "test_cases": [
+        {
+          "input": "omega,5\nalpha,3\nomega,4\nalpha,3\nomega,5\n",
+          "expected_output": "RECOMMEND:omega with 4.67",
+          "description": "Clear winner"
+        },
+        {
+          "input": "p1,9\np1,9\np2,8\np2,8\n",
+          "expected_output": "RECOMMEND:p1 with 9",
+          "description": "Higher average"
+        },
+        {
+          "input": "q,6\n",
+          "expected_output": "RECOMMEND:q with 6",
+          "description": "Single product"
+        }
+      ],
+      "language": "r"
+    }
+  ]
+}

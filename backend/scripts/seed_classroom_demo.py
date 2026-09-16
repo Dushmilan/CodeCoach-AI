@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""Seed demo professor-dashboard data (Issue #159, Task 4).
+"""Seed demo school data (Issue #159 Task 4, extended by Issue #166).
 
-Upserts professor.grace + professor.ada, assigns every course to an owner
-(course id/title containing ``data-structures`` → professor.grace, everything
-else → professor.ada), creates the 2 demo classrooms, enrolls the 8 temp
-students + demonstrator.turing (TA in both rooms), and mirrors the demo
-``completedLessons`` counts into ``course_progress``.
+Upserts admins + professor.grace + professor.ada + 2 TAs, assigns every
+course to an owner (course id/title containing ``data-structures`` →
+professor.grace, everything else → professor.ada), creates the 2 demo
+classrooms, enrolls the 15 temp students + both TAs (TA in both rooms), and
+mirrors deterministic ``completedLessons`` counts into ``course_progress``.
 
 Every write is select-then-insert/update, so re-runs change nothing.
 
-SAFETY: refuses to run unless ``ALLOW_DEMO_SEED=1`` AND
-``DATABASE_SEARCH_PATH=codecoach_test`` (isolated test schema only).
+Seed passwords resolve from the environment (``backend/.env.seed``,
+gitignored; see ``backend/.env.seed.example``) with dev defaults.
+
+SAFETY: refuses to run unless ``ALLOW_DEMO_SEED=1`` AND the target schema is
+the isolated test schema (``DATABASE_SEARCH_PATH=codecoach_test``) — or, for
+the explicitly authorized live run, the production schema
+(``DATABASE_SEARCH_PATH=public``) PLUS ``SEED_LIVE_CONFIRM=YES-I-AM-SURE``.
 Supabase/PostgreSQL is the only database — no local fallback.
 
 Usage:
@@ -55,13 +60,21 @@ TEMP_STUDENTS = [
     {"username": "ava", "password": "student123", "role": "user"},
     {"username": "noah", "password": "student123", "role": "user"},
     {"username": "zoe", "password": "student123", "role": "user"},
+    {"username": "lucas", "password": "student123", "role": "user"},
+    {"username": "emma", "password": "student123", "role": "user"},
+    {"username": "olivia", "password": "student123", "role": "user"},
     {"username": "eli", "password": "student123", "role": "user"},
     {"username": "ivy", "password": "student123", "role": "user"},
     {"username": "max", "password": "student123", "role": "user"},
+    {"username": "liam", "password": "student123", "role": "user"},
+    {"username": "sophia", "password": "student123", "role": "user"},
+    {"username": "ethan", "password": "student123", "role": "user"},
+    {"username": "ruby", "password": "student123", "role": "user"},
 ]
 
 # completedLessons counts from frontend/src/data/instructor-demo.json
-# ("progress" section). Stored as deterministic synthetic lesson ids
+# ("progress" section) for the original 8, deterministic variety for the
+# Issue #166 additions. Stored as deterministic synthetic lesson ids
 # (completed_lessons is schemaless JSONB with no FK — length is what matters).
 DEMO_COMPLETED_COUNT = {
     "mia": 30,
@@ -69,13 +82,22 @@ DEMO_COMPLETED_COUNT = {
     "ava": 18,
     "noah": 9,
     "zoe": 5,
+    "lucas": 17,
+    "emma": 11,
+    "olivia": 7,
     "eli": 21,
     "ivy": 12,
     "max": 4,
+    "liam": 14,
+    "sophia": 19,
+    "ethan": 6,
+    "ruby": 3,
 }
 
-CS101_STUDENTS = ("mia", "leo", "ava", "noah", "zoe")
-CS201_STUDENTS = ("eli", "ivy", "max")
+CS101_STUDENTS = ("mia", "leo", "ava", "noah", "zoe", "lucas", "emma", "olivia")
+CS201_STUDENTS = ("eli", "ivy", "max", "liam", "sophia", "ethan", "ruby")
+
+TA_USERNAMES = ("demonstrator.turing", "demonstrator.curie")
 
 # Demo courses from instructor-demo.json. Ensured (not blindly inserted) so the
 # two classrooms always have a valid course_id FK, even on an empty schema.
@@ -119,11 +141,14 @@ CLASSROOMS = [
 
 
 def _demo_seed_allowed() -> bool:
-    """True only with ALLOW_DEMO_SEED=1 AND the isolated test schema."""
-    return (
-        os.getenv("ALLOW_DEMO_SEED") == "1"
-        and os.getenv("DATABASE_SEARCH_PATH") == "codecoach_test"
-    )
+    """True for the isolated test schema, or for production only with an
+    explicit live-confirm secret (Issue #166 live run)."""
+    if os.getenv("ALLOW_DEMO_SEED") != "1":
+        return False
+    search_path = os.getenv("DATABASE_SEARCH_PATH")
+    if search_path == "codecoach_test":
+        return True
+    return search_path == "public" and os.getenv("SEED_LIVE_CONFIRM") == "YES-I-AM-SURE"
 
 
 def _owner_username_for_course(course_id: str, title: str | None) -> str:
@@ -150,7 +175,12 @@ async def _upsert_user(session: AsyncSession, entry: dict) -> UserORM:
         id=str(uuid.uuid4()),
         username=entry["username"],
         email=entry["email"],
-        hashed_password=seed_admin.hash_password(entry["password"]),
+        hashed_password=seed_admin.hash_password(
+            seed_admin.seed_password(
+                entry.get("password_env", "SEED_STUDENT_PASSWORD"),
+                entry["password"],
+            )
+        ),
         created_at=datetime.now(timezone.utc),
         is_active=1,
         role=entry["role"],
@@ -193,16 +223,25 @@ async def seed_demo(session: AsyncSession, *, allow: bool) -> dict[str, int]:
     if not allow:
         raise SystemExit(
             "ERROR: demo seed refused — set ALLOW_DEMO_SEED=1 and "
-            "DATABASE_SEARCH_PATH=codecoach_test."
+            "DATABASE_SEARCH_PATH=codecoach_test (test schema), or "
+            "DATABASE_SEARCH_PATH=public plus SEED_LIVE_CONFIRM=YES-I-AM-SURE "
+            "for the authorized live run."
         )
     repo = SqlClassroomRepository(session)
 
     users: dict[str, UserORM] = {}
+    admin_count = 0
+    for entry in seed_admin.ADMIN_USERS:
+        users[entry["username"]] = await _upsert_user(session, entry)
+        admin_count += 1
     professor_count = 0
+    ta_count = 0
     for entry in seed_admin.INSTRUCTOR_SEED_USERS:
         users[entry["username"]] = await _upsert_user(session, entry)
         if entry["role"] == "professor":
             professor_count += 1
+        elif entry["role"] == "ta":
+            ta_count += 1
     for spec in TEMP_STUDENTS:
         entry = {
             "username": spec["username"],
@@ -248,10 +287,13 @@ async def seed_demo(session: AsyncSession, *, allow: bool) -> dict[str, int]:
             role="student",
         )
         enrollments += 1
-    ta_id = users["demonstrator.turing"].id
+    ta_ids = [users[username].id for username in TA_USERNAMES]
     for invite_code in ("CS101-A-2026", "CS201-B-2026"):
-        await repo.enroll(classroom_id=rooms[invite_code].id, user_id=ta_id, role="ta")
-        enrollments += 1
+        for ta_id in ta_ids:
+            await repo.enroll(
+                classroom_id=rooms[invite_code].id, user_id=ta_id, role="ta"
+            )
+            enrollments += 1
 
     progress = 0
     for username, count in DEMO_COMPLETED_COUNT.items():
@@ -282,7 +324,9 @@ async def seed_demo(session: AsyncSession, *, allow: bool) -> dict[str, int]:
     await session.commit()
 
     return {
+        "admins": admin_count,
         "professors": professor_count,
+        "tas": ta_count,
         "courses_assigned": len(courses),
         "students": len(TEMP_STUDENTS),
         "enrollments": enrollments,
@@ -310,15 +354,18 @@ async def _main() -> None:
     if not _demo_seed_allowed():
         print(
             "ERROR: refusing to seed demo data — requires ALLOW_DEMO_SEED=1 and "
-            "DATABASE_SEARCH_PATH=codecoach_test (isolated test schema only).",
+            "DATABASE_SEARCH_PATH=codecoach_test (isolated test schema), or "
+            "DATABASE_SEARCH_PATH=public plus SEED_LIVE_CONFIRM=YES-I-AM-SURE "
+            "for the authorized live run.",
             file=sys.stderr,
         )
         raise SystemExit(1)
+    search_path = os.getenv("DATABASE_SEARCH_PATH", "codecoach_test")
     engine = create_async_engine(
         _database_url(),
         poolclass=NullPool,
         connect_args={
-            "server_settings": {"search_path": "codecoach_test"},
+            "server_settings": {"search_path": search_path},
             "statement_cache_size": 0,
         },
     )

@@ -1,0 +1,629 @@
+{
+  "items": [
+    {
+      "id": "ml-intro-what-is",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-intro",
+      "title": "What is Machine Learning?",
+      "type": "theory",
+      "content": "## What is Machine Learning?\n\n**Machine learning (ML)** is a field of artificial intelligence where programs learn patterns from data instead of following hand-written rules.\n\n### Traditional vs ML\n\n| Traditional programming | Machine learning           |\n|-------------------------|----------------------------|\n| Rules + data → answer   | Data + answers → rules     |\n| You write the logic     | The model learns the logic |\n| Fixed behavior          | Improves with more data    |\n\n### A concrete example\n\nSpam detection:\n\n- **Traditional:** hand-write rules (\"if the subject contains 'free' and 'prize', flag it\").\n- **ML:** show the model thousands of labeled emails; it learns which word patterns correlate with spam.\n\n### Key terms\n\n- **Features** — the input variables (`x`). E.g., email word counts, age, price.\n- **Labels** — the output we want to predict (`y`). E.g., spam/not-spam, house price.\n- **Model** — the learned function that maps features to labels.\n- **Training** — the process of adjusting the model to fit data.\n- **Inference / prediction** — using the trained model on new data.\n\n### Why ML now\n\n- Cheap computation and storage.\n- Massive datasets.\n- Powerful, open-source libraries (scikit-learn, TensorFlow, PyTorch).\n\n### The ML workflow\n\n1. **Collect data** — gather examples.\n2. **Clean & explore** — fix missing values, visualize.\n3. **Split** — training set (learn) + test set (evaluate).\n4. **Train** — fit a model to the training data.\n5. **Evaluate** — measure accuracy on the test set.\n6. **Deploy & monitor** — put it to work and watch for drift.\n\n---\n\n**Next up:** the types of machine learning.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "ml-intro-types",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-intro",
+      "title": "Types of Machine Learning",
+      "type": "theory",
+      "content": "## Types of Machine Learning\n\n### Supervised learning\n\nThe training data includes **labels**. The model learns to map features → label.\n\n- **Classification** — predict a category. Example: is this email spam?\n- **Regression** — predict a number. Example: what will the house sell for?\n\n```python\n# Classification target: 'spam' / 'ham'\n# Regression target: 450_000 (a dollar amount)\n```\n\n### Unsupervised learning\n\nThe training data has **no labels**. The model finds structure on its own.\n\n- **Clustering** — group similar items. Example: segment customers by behavior.\n- **Dimensionality reduction** — compress data while keeping structure.\n- **Anomaly detection** — find unusual examples.\n\n### Reinforcement learning\n\nAn agent learns by taking actions and receiving rewards/punishments. Used for games and robotics.\n\n### Summary table\n\n| Type        | Labels? | Goal                | Example              |\n|-------------|---------|---------------------|----------------------|\n| Supervised  | Yes     | Predict label       | Spam detection       |\n| Unsupervised| No      | Find structure      | Customer segments    |\n| Reinforcement| Delayed| Maximize reward     | Playing chess        |\n\n### Regression vs classification\n\n| Problem          | Output            | Example                 |\n|------------------|-------------------|-------------------------|\n| Classification   | Discrete class    | `yes` / `no`, `red`     |\n| Regression       | Continuous number | `42.5`, `120000`        |\n\n---\n\n**Next up:** features, labels, and datasets.",
+      "order": 2,
+      "language": "python"
+    },
+    {
+      "id": "ml-intro-features-labels",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-intro",
+      "title": "Features, Labels & Datasets",
+      "type": "theory",
+      "content": "## Features, Labels & Datasets\n\nA **dataset** is a table where each row is an example and each column is a feature (plus, in supervised learning, a label).\n\n### A tiny dataset\n\n| square_feet | bedrooms | price      |\n|-------------|----------|------------|\n| 1200        | 2        | 210000     |\n| 1800        | 3        | 310000     |\n| 900         | 1        | 150000     |\n\n- **Features:** `square_feet`, `bedrooms`.\n- **Label:** `price`.\n- **Examples:** 3 rows.\n\n### Feature types\n\n- **Numerical** — continuous or discrete numbers (`age`, `square_feet`).\n- **Categorical** — unordered labels (`red`, `blue`, `green`).\n- **Ordinal** — ordered categories (`low`, `medium`, `high`).\n\n### Feature matrices and label vectors\n\nConvention: `X` is the feature matrix (examples × features); `y` is the label vector.\n\n```python\nimport numpy as np\n\nX = np.array([[1200, 2], [1800, 3], [900, 1]])   # 3 examples, 2 features\ny = np.array([210000, 310000, 150000])           # 3 labels\n```\n\n### Data quality matters\n\nGarbage in, garbage out. Issues to watch:\n\n- **Missing values** — empty cells.\n- **Outliers** — extreme values that distort learning.\n- **Leakage** — the label accidentally appears as a feature.\n- **Skew** — some classes appear far more than others.\n\n---\n\n**Next up:** the ML workflow in detail.",
+      "order": 3,
+      "language": "python"
+    },
+    {
+      "id": "ml-intro-workflow",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-intro",
+      "title": "The ML Workflow: Train, Validate, Test",
+      "type": "theory",
+      "content": "## The ML Workflow: Train, Validate, Test\n\nSplitting data correctly is one of the most important habits in ML.\n\n### Why split?\n\nA model that memorizes training data (called **overfitting**) will fail on new data. We evaluate on data the model has never seen.\n\n### The three sets\n\n| Set      | Purpose                                   | Typical share |\n|----------|-------------------------------------------|---------------|\n| Train    | Fit the model                             | 70–80%        |\n| Validate | Tune hyperparameters and compare models   | 10–15%        |\n| Test     | Final, unbiased evaluation                | 10–15%        |\n\n### With scikit-learn\n\n```python\nfrom sklearn.model_selection import train_test_split\n\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42\n)\n```\n\n`random_state` makes the split reproducible.\n\n### Underfitting vs overfitting\n\n- **Underfitting** — the model is too simple and misses the pattern (high error everywhere).\n- **Overfitting** — the model is too complex and memorizes noise (great on train, poor on test).\n\n### The bias-variance tradeoff\n\n- High bias → underfitting, ignores data.\n- High variance → overfitting, chases noise.\n- The goal is a model that generalizes.\n\n---\n\n**Next up:** an exercise on the core ML concepts.",
+      "order": 4,
+      "language": "python"
+    },
+    {
+      "id": "ml-exercise-type-identifier",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-intro",
+      "title": "Exercise: Classify the ML Problem",
+      "type": "exercise",
+      "content": "## Exercise: Classify the ML Problem\n\nWrite a function `classify_problem(problem)` that returns the type of machine learning problem from its description.\n\nRules:\n\n- If the description contains `\"spam\"`, `\"cat\"`, or `\"disease\"` → return `\"classification\"`\n- If it contains `\"price\"`, `\"salary\"`, or `\"temperature\"` → return `\"regression\"`\n- If it contains `\"cluster\"` or `\"segment\"` → return `\"clustering\"`\n- Otherwise → return `\"unknown\"`\n\n### Sample\n\nInput:\n\n```text\nIs this email spam?\n```\n\nOutput:\n\n```text\nclassification\n```\n\n### Starter code\n\nComplete the `classify_problem` function using keyword checks on the lowercased description.\n\n### Skills you will use\n\n- String membership with `in`\n- `if`/`elif`/`else`\n- Lowercasing input\n\nGood luck!",
+      "order": 5,
+      "language": "python",
+      "starter_code": "def classify_problem(description: str) -> str:\n    text = description.lower()\n    # TODO: return one of \"classification\", \"regression\", \"clustering\", \"unknown\"\n    return \"unknown\"\n\n\ndef main():\n    problem = input()\n    print(classify_problem(problem))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "Is this email spam?\n",
+          "expected_output": "classification",
+          "description": "Spam detection"
+        },
+        {
+          "input": "Predict the house price\n",
+          "expected_output": "regression",
+          "description": "Price regression"
+        },
+        {
+          "input": "Cluster customers by behavior\n",
+          "expected_output": "clustering",
+          "description": "Customer clustering"
+        },
+        {
+          "input": "Play a board game\n",
+          "expected_output": "unknown",
+          "description": "Not covered"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-split-data",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-intro",
+      "title": "Exercise: Train/Test Split Ratio",
+      "type": "exercise",
+      "content": "## Exercise: Train/Test Split Ratio\n\nWrite a function `train_test_counts(total, test_ratio)` that returns the number of test examples and train examples as a tuple.\n\nThe number of test examples is `round(total * test_ratio)`. The train count is the remainder.\n\n### Sample\n\nInput:\n\n```text\n100 0.2\n```\n\nOutput:\n\n```text\n20 80\n```\n\n### Starter code\n\nComplete the function using Python's built-in `round()`.\n\n### Skills you will use\n\n- Functions with two parameters\n- `round()`\n- Returning tuples\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def train_test_counts(total: int, test_ratio: float) -> tuple:\n    test_count = round(total * test_ratio)\n    # TODO: compute train_count as the remainder\n    return test_count, train_count\n\n\ndef main():\n    total, ratio = input().split()\n    test_count, train_count = train_test_counts(int(total), float(ratio))\n    print(test_count, train_count)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "100 0.2\n",
+          "expected_output": "20 80",
+          "description": "Standard split"
+        },
+        {
+          "input": "1000 0.1\n",
+          "expected_output": "100 900",
+          "description": "10% test"
+        },
+        {
+          "input": "50 0.3\n",
+          "expected_output": "15 35",
+          "description": "30% test"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-feature-label",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-intro",
+      "title": "Exercise: Feature vs Label",
+      "type": "exercise",
+      "content": "## Exercise: Feature vs Label\n\nWrite a function `is_label(value)` that returns `\"label\"` if the value is a target column name from the list `{\"price\", \"spam\", \"survived\", \"score\"}` and `\"feature\"` otherwise.\n\n### Sample\n\nInput:\n\n```text\nprice\n```\n\nOutput:\n\n```text\nlabel\n```\n\n### Starter code\n\nComplete the function by checking membership in the label set.\n\n### Skills you will use\n\n- Sets\n- The `in` operator\n- Returning strings\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "LABELS = {\"price\", \"spam\", \"survived\", \"score\"}\n\n\ndef is_label(value: str) -> str:\n    # TODO: return \"label\" if value in LABELS, else \"feature\"\n    return \"feature\"\n\n\ndef main():\n    column = input()\n    print(is_label(column))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "price\n",
+          "expected_output": "label",
+          "description": "Price is a label"
+        },
+        {
+          "input": "square_feet\n",
+          "expected_output": "feature",
+          "description": "Square feet is a feature"
+        },
+        {
+          "input": "survived\n",
+          "expected_output": "label",
+          "description": "Survived is a label"
+        }
+      ]
+    },
+    {
+      "id": "ml-python-numpy",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-python-data",
+      "title": "NumPy: Arrays & Vectorized Math",
+      "type": "theory",
+      "content": "## NumPy: Arrays & Vectorized Math\n\nNumPy is the foundation of the scientific Python stack. It provides fast **ndarrays** with vectorized operations.\n\n### Creating arrays\n\n```python\nimport numpy as np\n\na = np.array([1, 2, 3])          # 1-D array\nm = np.array([[1, 2], [3, 4]])   # 2-D matrix\nz = np.zeros((2, 3))             # all zeros\no = np.ones((3,))                # all ones\nr = np.arange(10)                # 0..9\n```\n\n### Shape and dtype\n\n```python\nprint(a.shape)    # (3,)\nprint(m.shape)    # (2, 2)\nprint(m.dtype)    # int64\n```\n\n### Vectorized math\n\nNo explicit loops — operations apply element-wise:\n\n```python\na + 1          # [2, 3, 4]\na * 2          # [2, 4, 6]\na + a          # [2, 4, 6]\nnp.sqrt(a)     # element-wise sqrt\n```\n\n### Reduction operations\n\n```python\na.sum()        # 6\na.mean()       # 2.0\na.min()        # 1\na.max()        # 3\na.std()        # standard deviation\n```\n\n### Indexing and slicing\n\n```python\na[0]           # 1\nm[0, 1]        # 2\nm[:, 1]        # column 1: [2, 4]\nm[0, :]        # row 0: [1, 2]\n```\n\n### Boolean masks\n\n```python\nmask = a > 1\nprint(a[mask])        # [2, 3]\nprint(a[a % 2 == 0])  # even elements\n```\n\n---\n\n**Next up:** pandas — tabular data.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "ml-python-pandas",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-python-data",
+      "title": "pandas: Series and DataFrame",
+      "type": "theory",
+      "content": "## pandas: Series and DataFrame\n\npandas gives you **DataFrames** — labeled, tabular data structures perfect for datasets.\n\n### Creating a DataFrame\n\n```python\nimport pandas as pd\n\ndf = pd.DataFrame({\n    \"square_feet\": [1200, 1800, 900],\n    \"bedrooms\": [2, 3, 1],\n    \"price\": [210000, 310000, 150000],\n})\n```\n\n### Viewing data\n\n```python\ndf.head()      # first 5 rows\ndf.tail(3)     # last 3 rows\ndf.shape       # (rows, columns)\ndf.columns     # column names\ndf.info()      # dtypes and non-null counts\ndf.describe()  # summary statistics\n```\n\n### Selecting columns\n\n```python\ndf[\"price\"]        # a Series\ndf[[\"price\"]]      # a one-column DataFrame\ndf.square_feet     # attribute access (column)\n```\n\n### Selecting rows\n\n```python\ndf.iloc[0]         # row by integer position\ndf.loc[0]          # row by label/index\ndf[df[\"price\"] > 200000]   # boolean filter\n```\n\n### Common operations\n\n```python\ndf[\"price\"].mean()          # column mean\ndf[\"price\"].sum()           # column sum\ndf.isnull().sum()           # missing values per column\ndf.dropna()                 # drop rows with missing values\ndf[\"price_per_sqft\"] = df[\"price\"] / df[\"square_feet\"]   # new column\n```\n\n### Loading data\n\n```python\ndf = pd.read_csv(\"houses.csv\")\ndf.to_csv(\"clean.csv\", index=False)\n```\n\n---\n\n**Next up:** cleaning and exploring data.",
+      "order": 2,
+      "language": "python"
+    },
+    {
+      "id": "ml-python-cleaning",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-python-data",
+      "title": "Cleaning & Exploring Data",
+      "type": "theory",
+      "content": "## Cleaning & Exploring Data\n\nReal data is messy. Cleaning is often most of an ML project's time.\n\n### Checking for missing values\n\n```python\nimport pandas as pd\n\ndf.isnull().sum()           # missing count per column\ndf.isnull().sum().sum()     # total missing\n```\n\n### Handling missing values\n\n```python\ndf.dropna()                  # drop rows with any missing value\ndf.dropna(subset=[\"price\"])  # drop rows missing the label\ndf[\"age\"].fillna(df[\"age\"].mean())   # fill with the mean\ndf.fillna(0)                 # fill everything with 0\n```\n\n### Removing duplicates\n\n```python\ndf.drop_duplicates()\n```\n\n### Summary statistics\n\n```python\ndf.describe()\ndf[\"price\"].median()\ndf[\"price\"].value_counts()\n```\n\n### Correlation\n\n```python\ndf.corr()   # correlation matrix — helps spot strong features\n```\n\nA high correlation between a feature and the label suggests the feature is useful.\n\n### Detecting outliers\n\n```python\ndf[\"price\"].describe()   # check min/max for implausible values\n```\n\n### Simple visual exploration\n\n```python\nimport matplotlib.pyplot as plt\n\ndf[\"price\"].hist(bins=30)\nplt.show()\n```\n\n---\n\n**Next up:** the features and target split with scikit-learn.",
+      "order": 3,
+      "language": "python"
+    },
+    {
+      "id": "ml-python-features-target",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-python-data",
+      "title": "Features, Target & Preprocessing",
+      "type": "theory",
+      "content": "## Features, Target & Preprocessing\n\nMost models expect a numerical feature matrix `X` and a label vector `y`.\n\n### Separating features and target\n\n```python\nX = df[[\"square_feet\", \"bedrooms\"]]   # feature columns\ny = df[\"price\"]                       # target column\n```\n\n### Train/test split\n\n```python\nfrom sklearn.model_selection import train_test_split\n\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42\n)\n```\n\n### Handling categorical features\n\nscikit-learn models need numbers. Convert categories to numbers:\n\n```python\nfrom sklearn.preprocessing import OneHotEncoder\n\nencoder = OneHotEncoder(sparse_output=False)\nencoded = encoder.fit_transform(df[[\"city\"]])\n```\n\n### Scaling features\n\nAlgorithms that use distance (k-NN, SVM) need features on the same scale:\n\n```python\nfrom sklearn.preprocessing import StandardScaler\n\nscaler = StandardScaler()\nX_scaled = scaler.fit_transform(X)\n```\n\n`fit` learns the statistics on training data; `transform` applies them. Fit only on training data to avoid leakage.\n\n### Pipeline\n\nChain preprocessing and model:\n\n```python\nfrom sklearn.pipeline import Pipeline\n\npipe = Pipeline([\n    (\"scale\", StandardScaler()),\n    (\"model\", LinearRegression()),\n])\n```\n\n---\n\n**Next up:** Python-for-ML exercises.",
+      "order": 4,
+      "language": "python"
+    },
+    {
+      "id": "ml-exercise-numpy-stats",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-python-data",
+      "title": "Exercise: NumPy Stats",
+      "type": "exercise",
+      "content": "## Exercise: Stats with Python's statistics Module\n\nWrite a function `stats(numbers)` that takes a comma-separated string of numbers and returns the `mean`, `max`, and `min` as space-separated values with two decimals each.\n\nUse the standard library `statistics` module (it is available in the sandbox).\n\n### Sample\n\nInput:\n\n```text\n1,2,3,4,5\n```\n\nOutput:\n\n```text\n3.00 5.00 1.00\n```\n\n### Starter code\n\nComplete the function using `statistics.mean(...)`, `max(...)`, and `min(...)`.\n\n### Skills you will use\n\n- The `statistics` module\n- `max` / `min`\n- `f\"{x:.2f}\"` formatting\n\nGood luck!",
+      "order": 5,
+      "language": "python",
+      "starter_code": "import statistics\n\n\ndef stats(numbers: str) -> str:\n    values = [float(x) for x in numbers.split(\",\")]\n    # TODO: compute mean, max, min and format each to 2 decimals\n    return \"\"\n\n\ndef main():\n    numbers = input()\n    print(stats(numbers))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "1,2,3,4,5\n",
+          "expected_output": "3.00 5.00 1.00",
+          "description": "Basic stats"
+        },
+        {
+          "input": "10,10,10\n",
+          "expected_output": "10.00 10.00 10.00",
+          "description": "All equal"
+        },
+        {
+          "input": "0,-5,5\n",
+          "expected_output": "0.00 5.00 -5.00",
+          "description": "Negatives"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-normalize",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-python-data",
+      "title": "Exercise: Min-Max Normalize",
+      "type": "exercise",
+      "content": "## Exercise: Min-Max Normalize\n\nWrite a function `normalize(numbers)` that min-max normalizes a comma-separated list of numbers to the range `[0, 1]` and returns them rounded to 2 decimals.\n\nFormula: `(x - min) / (max - min)`. If `max == min`, return zeros.\n\n### Sample\n\nInput:\n\n```text\n10,20,30\n```\n\nOutput:\n\n```text\n0.00 0.50 1.00\n```\n\n### Starter code\n\nComplete the function.\n\n### Skills you will use\n\n- Min/max normalization\n- List comprehensions\n- `round`\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def normalize(numbers: str) -> str:\n    values = [float(x) for x in numbers.split(\",\")]\n    # TODO: min-max normalize each value to [0, 1], round to 2 decimals\n    return \"\"\n\n\ndef main():\n    numbers = input()\n    print(normalize(numbers))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "10,20,30\n",
+          "expected_output": "0.00 0.50 1.00",
+          "description": "Basic normalization"
+        },
+        {
+          "input": "5,5,5\n",
+          "expected_output": "0.00 0.00 0.00",
+          "description": "Constant values"
+        },
+        {
+          "input": "0,0,100\n",
+          "expected_output": "0.00 0.00 1.00",
+          "description": "Zero min"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-missing",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-python-data",
+      "title": "Exercise: Missing Value Report",
+      "type": "exercise",
+      "content": "## Exercise: Missing Value Report\n\nWrite a function `missing_report(header, rows)` that returns a list of column names that have any empty string `\"\"` values.\n\n`header` is a comma-separated string of column names; `rows` is a list of comma-separated data rows.\n\n### Sample\n\nInput (via stdin, first line header, then rows):\n\n```text\nname,age,city\nAlice,28,Paris\nBob,,London\n,35,Rome\n```\n\nOutput:\n\n```text\nname,age\n```\n\n### Starter code\n\nParse the CSV lines and build the report. Columns with at least one empty cell are listed in header order, comma-separated.\n\n### Skills you will use\n\n- `split(\",\")`\n- `zip` and column inspection\n- `join`\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "def missing_report(header: str, rows: list) -> str:\n    columns = header.split(\",\")\n    data = [row.split(\",\") for row in rows]\n    # TODO: find columns with any empty string \"\", return comma-joined\n    return \"\"\n\n\ndef main():\n    import sys\n    lines = sys.stdin.read().strip().splitlines()\n    header = lines[0]\n    rows = lines[1:]\n    print(missing_report(header, rows))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "name,age,city\nAlice,28,Paris\nBob,,London\n,35,Rome\n",
+          "expected_output": "name,age",
+          "description": "Two columns with gaps"
+        },
+        {
+          "input": "a,b,c\n1,2,3\n",
+          "expected_output": "",
+          "description": "No missing"
+        },
+        {
+          "input": "x,y\n,2\n,3\n",
+          "expected_output": "x",
+          "description": "Column x missing everywhere"
+        }
+      ]
+    },
+    {
+      "id": "ml-supervised-linear-regression",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-supervised",
+      "title": "Linear Regression",
+      "type": "theory",
+      "content": "## Linear Regression\n\n**Linear regression** predicts a continuous number with a straight-line (hyperplane) relationship between features and the target.\n\n### The model\n\nFor one feature:\n\n```\ny = w * x + b\n```\n\n- `w` — the **weight** (slope): how much `y` changes per unit `x`.\n- `b` — the **bias** (intercept).\n\n### Fitting with scikit-learn\n\n```python\nfrom sklearn.linear_model import LinearRegression\n\nmodel = LinearRegression()\nmodel.fit(X_train, y_train)\npredictions = model.predict(X_test)\n```\n\n### Reading the coefficients\n\n```python\nprint(model.coef_)    # weights (one per feature)\nprint(model.intercept_)   # bias\n```\n\n### Mean Squared Error\n\nThe most common regression loss: average of squared errors.\n\n```python\nfrom sklearn.metrics import mean_squared_error\n\nmse = mean_squared_error(y_test, predictions)\n```\n\nSmaller is better. Because MSE squares the errors, outliers are penalized heavily.\n\n### R-squared\n\n`R²` measures how much of the target's variance the model explains. `1.0` is perfect; `0.0` means no better than predicting the mean.\n\n```python\nmodel.score(X_test, y_test)\n```\n\n### Assumptions\n\n- Roughly linear relationship.\n- Features are not perfectly collinear.\n\n---\n\n**Next up:** classification with logistic regression.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "ml-supervised-logistic",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-supervised",
+      "title": "Logistic Regression for Classification",
+      "type": "theory",
+      "content": "## Logistic Regression for Classification\n\nDespite the name, **logistic regression** is a classifier. It outputs the probability of a class, then applies a threshold.\n\n### The sigmoid\n\nThe model feeds `w*x + b` through the sigmoid function to squash it into `(0, 1)`:\n\n```python\nimport math\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n```\n\n`p > 0.5` → class 1, else class 0.\n\n### Training\n\n```python\nfrom sklearn.linear_model import LogisticRegression\n\nmodel = LogisticRegression(max_iter=1000)\nmodel.fit(X_train, y_train)\n```\n\n### Predictions\n\n```python\nclasses = model.predict(X_test)          # 'spam' / 'ham'\nprobabilities = model.predict_proba(X_test)  # P(class) for each class\n```\n\n### Accuracy\n\n```python\nfrom sklearn.metrics import accuracy_score\n\naccuracy = accuracy_score(y_test, classes)\n```\n\n### Binary vs multi-class\n\n- **Binary:** two classes (spam/ham).\n- **Multi-class:** three or more (`red`, `green`, `blue`) — logistic regression generalizes via one-vs-rest.\n\n### When to use\n\nA great first baseline for classification. Fast, interpretable, works well with few features.\n\n---\n\n**Next up:** decision trees.",
+      "order": 2,
+      "language": "python"
+    },
+    {
+      "id": "ml-supervised-decision-trees",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-supervised",
+      "title": "Decision Trees",
+      "type": "theory",
+      "content": "## Decision Trees\n\nA **decision tree** makes predictions by asking a series of yes/no questions about the features.\n\n```\nsquare_feet <= 1000?\n├─ yes → price ~150000\n└─ no  → bedrooms <= 2?\n         ├─ yes → price ~210000\n         └─ no  → price ~310000\n```\n\n### Why trees are intuitive\n\nThe learned model is a set of human-readable rules — great for explainability.\n\n### Training\n\n```python\nfrom sklearn.tree import DecisionTreeClassifier\n\ntree = DecisionTreeClassifier(max_depth=5, random_state=42)\ntree.fit(X_train, y_train)\n```\n\n`max_depth` limits how deep the tree grows and helps prevent overfitting.\n\n### Overfitting danger\n\nTrees can grow until they perfectly memorize the training data. Controls:\n\n- `max_depth` — maximum depth.\n- `min_samples_split` — minimum samples to split a node.\n- `min_samples_leaf` — minimum samples per leaf.\n\n### Random forests\n\nA **random forest** trains many trees on random data subsets and averages their votes. Less overfitting, more robust:\n\n```python\nfrom sklearn.ensemble import RandomForestClassifier\n\nforest = RandomForestClassifier(n_estimators=100, random_state=42)\nforest.fit(X_train, y_train)\n```\n\n### Feature importance\n\n```python\nforest.feature_importances_   # which features mattered most\n```\n\n---\n\n**Next up:** k-nearest neighbors.",
+      "order": 3,
+      "language": "python"
+    },
+    {
+      "id": "ml-supervised-knn",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-supervised",
+      "title": "K-Nearest Neighbors",
+      "type": "theory",
+      "content": "## K-Nearest Neighbors\n\n**k-NN** classifies a new point by looking at the `k` closest training examples and taking a majority vote.\n\n### How it works\n\n1. Compute distance (usually Euclidean) to every training point.\n2. Keep the `k` nearest.\n3. Majority-vote their labels.\n\n### Training\n\n```python\nfrom sklearn.neighbors import KNeighborsClassifier\n\nknn = KNeighborsClassifier(n_neighbors=3)\nknn.fit(X_train, y_train)\n```\n\nk-NN is a **lazy** learner — \"training\" just stores the data.\n\n### Choosing k\n\n- Small `k` → sensitive to noise (overfitting).\n- Large `k` → smoother, but may blur boundaries (underfitting).\n- Odd `k` avoids tie votes in binary problems.\n\n### The scaling requirement\n\nk-NN uses distances, so features must be scaled to the same range:\n\n```python\nfrom sklearn.preprocessing import StandardScaler\n\nscaler = StandardScaler()\nX_scaled = scaler.fit_transform(X)\n```\n\n### When to use\n\nGood for small datasets with few features and clear local structure. Slow at prediction on large datasets (must scan all training data).\n\n---\n\n**Next up:** supervised-learning exercises.",
+      "order": 4,
+      "language": "python"
+    },
+    {
+      "id": "ml-exercise-sigmoid",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-supervised",
+      "title": "Exercise: Sigmoid Function",
+      "type": "exercise",
+      "content": "## Exercise: Sigmoid Function\n\nWrite a function `sigmoid(z)` that computes the logistic sigmoid `1 / (1 + e^(-z))`.\n\nPrint the result rounded to 4 decimal places.\n\n### Sample\n\nInput:\n\n```text\n0\n```\n\nOutput:\n\n```text\n0.5\n```\n\n### Starter code\n\nComplete the function using `math.exp`.\n\n### Skills you will use\n\n- `math.exp`\n- The sigmoid formula\n- Rounding to 4 decimals\n\nGood luck!",
+      "order": 5,
+      "language": "python",
+      "starter_code": "import math\n\n\ndef sigmoid(z: float) -> float:\n    # TODO: return 1 / (1 + exp(-z))\n    return 0.0\n\n\ndef main():\n    z = float(input())\n    print(f\"{sigmoid(z):.4f}\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "0\n",
+          "expected_output": "0.5000",
+          "description": "Sigmoid at 0"
+        },
+        {
+          "input": "2\n",
+          "expected_output": "0.8808",
+          "description": "Positive input"
+        },
+        {
+          "input": "-2\n",
+          "expected_output": "0.1192",
+          "description": "Negative input"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-mse",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-supervised",
+      "title": "Exercise: Mean Squared Error",
+      "type": "exercise",
+      "content": "## Exercise: Mean Squared Error\n\nWrite a function `mse(actual, predicted)` that computes the mean squared error between two comma-separated lists of numbers.\n\nFormula: `mean((a - p) ** 2 for each pair)`.\n\n### Sample\n\nInput:\n\n```text\n1,2,3\n1,2,3\n```\n\nOutput:\n\n```text\n0.00\n```\n\n### Starter code\n\nComplete the function.\n\n### Skills you will use\n\n- `zip`\n- List comprehensions\n- `sum` / `len`\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def mse(actual: str, predicted: str) -> float:\n    a = [float(x) for x in actual.split(\",\")]\n    p = [float(x) for x in predicted.split(\",\")]\n    # TODO: return mean((a_i - p_i)^2)\n    return 0.0\n\n\ndef main():\n    actual = input()\n    predicted = input()\n    print(f\"{mse(actual, predicted):.2f}\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "1,2,3\n1,2,3\n",
+          "expected_output": "0.00",
+          "description": "Perfect prediction"
+        },
+        {
+          "input": "1,2,3\n2,3,4\n",
+          "expected_output": "1.00",
+          "description": "Constant +1 offset"
+        },
+        {
+          "input": "0,0,0\n1,2,3\n",
+          "expected_output": "4.67",
+          "description": "Growing error"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-precision",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-supervised",
+      "title": "Exercise: Accuracy Score",
+      "type": "exercise",
+      "content": "## Exercise: Accuracy Score\n\nWrite a function `accuracy(actual, predicted)` that computes the fraction of matching labels between two comma-separated lists.\n\n### Sample\n\nInput:\n\n```text\nspam,ham,spam\nspam,ham,ham\n```\n\nOutput:\n\n```text\n0.67\n```\n\n### Starter code\n\nComplete the function and round to 2 decimals.\n\n### Skills you will use\n\n- `zip`\n- Comparing values\n- Division\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "def accuracy(actual: str, predicted: str) -> float:\n    a = actual.split(\",\")\n    p = predicted.split(\",\")\n    # TODO: return the fraction of matching positions\n    return 0.0\n\n\ndef main():\n    actual = input()\n    predicted = input()\n    print(f\"{accuracy(actual, predicted):.2f}\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "spam,ham,spam\nspam,ham,ham\n",
+          "expected_output": "0.67",
+          "description": "Two of three correct"
+        },
+        {
+          "input": "a,b,c\na,b,c\n",
+          "expected_output": "1.00",
+          "description": "All correct"
+        },
+        {
+          "input": "a,b\na,c\n",
+          "expected_output": "0.50",
+          "description": "Half correct"
+        }
+      ]
+    },
+    {
+      "id": "ml-unsupervised-clustering",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-unsupervised",
+      "title": "Clustering & K-Means",
+      "type": "theory",
+      "content": "## Clustering & K-Means\n\n**Clustering** finds groups in unlabeled data. **K-Means** is the classic algorithm.\n\n### The K-Means algorithm\n\n1. Pick `k` initial cluster centers.\n2. Assign each point to the nearest center.\n3. Recompute each center as the mean of its assigned points.\n4. Repeat until centers stop moving.\n\n### Using scikit-learn\n\n```python\nfrom sklearn.cluster import KMeans\n\nkmeans = KMeans(n_clusters=3, random_state=42, n_init=10)\nkmeans.fit(X)\n\nlabels = kmeans.labels_       # cluster id per point\ncenters = kmeans.cluster_centers_\n```\n\n### Choosing k\n\nMore clusters always reduce within-cluster distance, so we need a principled choice:\n\n- **Elbow method** — plot within-cluster sum of squares vs `k`; pick the elbow.\n- **Silhouette score** — measures how similar points are to their own cluster vs others (higher is better).\n\n```python\nfrom sklearn.metrics import silhouette_score\n\nscore = silhouette_score(X, kmeans.labels_)\n```\n\n### Normalizing features\n\nDistance-based clustering is sensitive to scale — always scale first:\n\n```python\nfrom sklearn.preprocessing import StandardScaler\n\nX_scaled = scaler.fit_transform(X)\n```\n\n### Applications\n\nCustomer segmentation, image compression, document grouping, anomaly detection.\n\n---\n\n**Next up:** dimensionality reduction.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "ml-unsupervised-pca",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-unsupervised",
+      "title": "Principal Component Analysis (PCA)",
+      "type": "theory",
+      "content": "## Principal Component Analysis (PCA)\n\n**PCA** reduces the number of features while preserving as much variance as possible. It finds the directions (principal components) along which data varies the most.\n\n### Intuition\n\nA 3-D point cloud might live on an almost-flat plane. PCA finds that plane and projects points onto it, reducing 3-D → 2-D with minimal information loss.\n\n### Using scikit-learn\n\n```python\nfrom sklearn.decomposition import PCA\n\npca = PCA(n_components=2)\nX_reduced = pca.fit_transform(X)\n```\n\n### Explained variance\n\n```python\nprint(pca.explained_variance_ratio_)   # share of variance per component\nprint(pca.explained_variance_ratio_.sum())  # total explained\n```\n\nChoosing `n_components` to explain ~95% of variance is a common rule.\n\n### Why PCA matters\n\n- **Visualization** — reduce to 2–3 dimensions to plot data.\n- **Speed** — fewer features = faster training.\n- **Noise reduction** — drop low-variance directions.\n- **Collinearity** — remove redundant correlated features.\n\n### Standardization before PCA\n\nPCA is variance-based, so scale features first:\n\n```python\nfrom sklearn.preprocessing import StandardScaler\nX_scaled = StandardScaler().fit_transform(X)\n```\n\n### PCA is unsupervised\n\nPCA does not use the labels — it only looks at feature variance.\n\n---\n\n**Next up:** anomaly detection and outlier hunting.",
+      "order": 2,
+      "language": "python"
+    },
+    {
+      "id": "ml-unsupervised-anomaly",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-unsupervised",
+      "title": "Anomaly Detection",
+      "type": "theory",
+      "content": "## Anomaly Detection\n\n**Anomaly detection** finds data points that look unusual — fraud, defects, intrusions.\n\n### Approaches\n\n- **Statistical** — points far from the mean (e.g., > 3 standard deviations).\n- **Distance-based** — points far from their neighbors (like reverse k-NN).\n- **Isolation Forest** — randomly isolates points; anomalies need fewer splits.\n\n### Z-score method\n\n```python\nimport numpy as np\n\nz = (values - np.mean(values)) / np.std(values)\nanomalies = values[np.abs(z) > 3]\n```\n\n### Isolation Forest\n\n```python\nfrom sklearn.ensemble import IsolationForest\n\nmodel = IsolationForest(contamination=0.1, random_state=42)\nis_anomaly = model.fit_predict(X)   # 1 = normal, -1 = anomaly\n```\n\n### Applications\n\nCredit-card fraud, network intrusion detection, manufacturing defects, server monitoring.\n\n### The contamination parameter\n\n`contamination` tells the model the expected fraction of anomalies. Set it from domain knowledge or a validation set.\n\n---\n\n**Next up:** unsupervised-learning exercises.",
+      "order": 3,
+      "language": "python"
+    },
+    {
+      "id": "ml-unsupervised-selection",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-unsupervised",
+      "title": "Choosing Between Algorithms",
+      "type": "theory",
+      "content": "## Choosing Between Algorithms\n\nThere's no single best ML algorithm — the right choice depends on your data.\n\n### Decision flowchart\n\n```\nHave labels?\n├─ Yes → Supervised\n│        ├─ Predicting a number? → regression\n│        │        ├─ Linear relationship → Linear Regression\n│        │        └─ Complex relationship → Random Forest\n│        └─ Predicting a class? → classification\n│                 ├─ Small data, interpretable → Logistic Regression\n│                 ├─ Tree-like rules → Decision Tree\n│                 ├─ Small dataset, local patterns → k-NN\n│                 └─ Robust & accurate → Random Forest\n└─ No → Unsupervised\n         ├─ Group similar items? → K-Means clustering\n         ├─ Compress/visualize? → PCA\n         └─ Find unusual items? → Isolation Forest\n```\n\n### Practical tips\n\n1. **Start simple** — linear/logistic baseline before fancier models.\n2. **Scale features** — required for distance-based methods.\n3. **Evaluate properly** — never tune on the test set.\n4. **Interpretability** — choose a simple model when explanations matter.\n\n### Bias considerations\n\nEvery model inherits biases from its data. Check for fairness and representativeness before deploying.\n\n---\n\n**Next up:** unsupervised-learning exercises.",
+      "order": 4,
+      "language": "python"
+    },
+    {
+      "id": "ml-exercise-euclidean",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-unsupervised",
+      "title": "Exercise: Euclidean Distance",
+      "type": "exercise",
+      "content": "## Exercise: Euclidean Distance\n\nWrite a function `distance(a, b)` that computes the Euclidean distance between two comma-separated points.\n\nFormula: `sqrt(sum((a_i - b_i)^2))`. Round to 2 decimals.\n\n### Sample\n\nInput:\n\n```text\n0,0\n3,4\n```\n\nOutput:\n\n```text\n5.00\n```\n\n### Starter code\n\nComplete the function using `math.sqrt`.\n\n### Skills you will use\n\n- `zip`\n- `sum`\n- `math.sqrt`\n\nGood luck!",
+      "order": 5,
+      "language": "python",
+      "starter_code": "import math\n\n\ndef distance(a: str, b: str) -> float:\n    p = [float(x) for x in a.split(\",\")]\n    q = [float(x) for x in b.split(\",\")]\n    # TODO: return sqrt(sum((p_i - q_i)^2))\n    return 0.0\n\n\ndef main():\n    a = input()\n    b = input()\n    print(f\"{distance(a, b):.2f}\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "0,0\n3,4\n",
+          "expected_output": "5.00",
+          "description": "3-4-5 triangle"
+        },
+        {
+          "input": "1,1\n1,1\n",
+          "expected_output": "0.00",
+          "description": "Same point"
+        },
+        {
+          "input": "0,0,0\n1,1,1\n",
+          "expected_output": "1.73",
+          "description": "Three dimensions"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-nearest-cluster",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-unsupervised",
+      "title": "Exercise: Nearest Cluster",
+      "type": "exercise",
+      "content": "## Exercise: Nearest Cluster\n\nWrite a function `nearest_cluster(point, centers)` that assigns a point to the nearest cluster center.\n\n`point` is a comma-separated pair. `centers` is a semicolon-separated list of center pairs, e.g. `\"0,0;5,5;10,0\"`. Return the 0-based index of the nearest center (ties → smallest index).\n\n### Sample\n\nInput:\n\n```text\n4,4\n0,0;5,5;10,0\n```\n\nOutput:\n\n```text\n1\n```\n\n### Starter code\n\nComplete the function using Euclidean distance.\n\n### Skills you will use\n\n- Parsing semicolon-separated data\n- Distance computation\n- Tracking the minimum\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def nearest_cluster(point: str, centers: str) -> int:\n    px, py = [float(x) for x in point.split(\",\")]\n    # TODO: compute distance to each center, return nearest index\n    return 0\n\n\ndef main():\n    point = input()\n    centers = input()\n    print(nearest_cluster(point, centers))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "4,4\n0,0;5,5;10,0\n",
+          "expected_output": "1",
+          "description": "Nearest to (5,5)"
+        },
+        {
+          "input": "0,0\n0,0;5,5\n",
+          "expected_output": "0",
+          "description": "Exact match first"
+        },
+        {
+          "input": "9,1\n0,0;5,5;10,0\n",
+          "expected_output": "2",
+          "description": "Nearest to (10,0)"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-zscore",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-unsupervised",
+      "title": "Exercise: Z-Score Anomaly",
+      "type": "exercise",
+      "content": "## Exercise: Z-Score Anomaly\n\nWrite a function `is_anomaly(values, target)` that returns `\"anomaly\"` if the target's z-score has absolute value greater than `2.0`, else `\"normal\"`.\n\n`values` is a comma-separated list of numbers; `target` is one of them.\n\n### Sample\n\nInput:\n\n```text\n1,2,3,4,50\n4\n```\n\nOutput:\n\n```text\nanomaly\n```\n\n### Starter code\n\nCompute `(target - mean) / std` and compare `abs(z) > 2.0`.\n\n### Skills you will use\n\n- Mean and standard deviation\n- Z-scores\n- `abs`\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "def is_anomaly(values: str, target: float) -> str:\n    nums = [float(x) for x in values.split(\",\")]\n    # TODO: compute z = (target - mean) / std, check abs(z) > 2.0\n    return \"normal\"\n\n\ndef main():\n    values = input()\n    target = float(input())\n    print(is_anomaly(values, target))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "1,2,3,4,5,6,7,8,9,10\n5\n",
+          "expected_output": "normal",
+          "description": "Uniform data"
+        },
+        {
+          "input": "1,2,3,4,5,6,7,8,9,100\n100\n",
+          "expected_output": "anomaly",
+          "description": "Far outlier"
+        },
+        {
+          "input": "10,12,14,16,18,20,22,24,26,28\n26\n",
+          "expected_output": "normal",
+          "description": "Near the mean"
+        }
+      ]
+    },
+    {
+      "id": "ml-eval-metrics",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-evaluation",
+      "title": "Classification Metrics: Accuracy, Precision, Recall",
+      "type": "theory",
+      "content": "## Classification Metrics: Accuracy, Precision, Recall\n\nAccuracy alone can mislead — especially with imbalanced classes.\n\n### The confusion matrix\n\n|                  | Predicted Yes | Predicted No |\n|------------------|---------------|--------------|\n| **Actual Yes**   | True Positive | False Negative |\n| **Actual No**    | False Positive| True Negative |\n\n### Key metrics\n\n- **Accuracy** — `(TP + TN) / all`. Fine when classes are balanced.\n- **Precision** — `TP / (TP + FP)`. Of the items we flagged, how many were right? High precision = few false alarms.\n- **Recall** — `TP / (TP + FN)`. Of the actual positives, how many did we find? High recall = few missed.\n- **F1-score** — harmonic mean of precision and recall. Good single number for imbalanced data.\n\n### With scikit-learn\n\n```python\nfrom sklearn.metrics import classification_report, precision_recall_fscore_support\n\nprint(classification_report(y_test, predictions))\n```\n\n### Imbalanced class trap\n\nIf 99% of emails are spam, a model that always predicts spam has 99% accuracy — but 0% recall for real email. This is why we look at precision/recall.\n\n### Choosing the tradeoff\n\n- **Spam filter** — prefer high precision (don't delete real email).\n- **Cancer screening** — prefer high recall (don't miss cases).\n\n---\n\n**Next up:** regression metrics.",
+      "order": 1,
+      "language": "python"
+    },
+    {
+      "id": "ml-eval-regression-metrics",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-evaluation",
+      "title": "Regression Metrics: MAE, MSE, RMSE",
+      "type": "theory",
+      "content": "## Regression Metrics: MAE, MSE, RMSE\n\nThree common ways to summarize regression errors.\n\n### Mean Absolute Error (MAE)\n\n```python\nfrom sklearn.metrics import mean_absolute_error\n\nmae = mean_absolute_error(y_test, predictions)\n```\n\nAverage absolute error. Interpretable — same units as the target.\n\n### Mean Squared Error (MSE)\n\n```python\nfrom sklearn.metrics import mean_squared_error\n\nmse = mean_squared_error(y_test, predictions)\n```\n\nAverages squared errors — penalizes large errors heavily.\n\n### Root Mean Squared Error (RMSE)\n\n```python\nimport numpy as np\nrmse = np.sqrt(mse)\n```\n\nBack in the target's units, so more interpretable than MSE.\n\n### Choosing a metric\n\n- **MAE** — robust to outliers; everyone understands it.\n- **RMSE** — punishes big mistakes; sensitive to outliers.\n- **R²** — proportion of variance explained; scale-free comparison.\n\n### Example\n\nPredictions off by `$10k` on average:\n\n- `MAE = 10000`\n- `MSE = 150_000_000` (sounds huge)\n- `RMSE = 12247` (back in dollars)\n\n---\n\n**Next up:** cross-validation.",
+      "order": 2,
+      "language": "python"
+    },
+    {
+      "id": "ml-eval-cross-validation",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-evaluation",
+      "title": "Cross-Validation",
+      "type": "theory",
+      "content": "## Cross-Validation\n\nCross-validation gives a more reliable performance estimate than one train/test split.\n\n### K-fold cross-validation\n\n1. Split data into `k` equal folds.\n2. For each fold: train on the other `k-1`, evaluate on this fold.\n3. Average the `k` scores.\n\n```python\nfrom sklearn.model_selection import cross_val_score\n\nscores = cross_val_score(model, X, y, cv=5, scoring=\"accuracy\")\nprint(scores.mean(), scores.std())\n```\n\n### Why k-fold\n\n- Every example is used for both training and evaluation.\n- More stable estimate than a single split.\n- Reduces the influence of a lucky/unlucky split.\n\n### Choosing k\n\n- `k=5` or `k=10` are standard.\n- Larger `k` → more training data per fold, higher cost.\n- **Leave-one-out** (`k=n`) is the extreme — rarely worth the cost.\n\n### Stratified k-fold\n\nFor classification, `StratifiedKFold` keeps class proportions in each fold:\n\n```python\nfrom sklearn.model_selection import StratifiedKFold\n\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\n```\n\n### The point\n\nCross-validation estimates **generalization** — how the model will do on new data. Use it to compare models and tune hyperparameters safely.\n\n---\n\n**Next up:** hyperparameter tuning.",
+      "order": 3,
+      "language": "python"
+    },
+    {
+      "id": "ml-eval-tuning",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-evaluation",
+      "title": "Hyperparameter Tuning with Grid Search",
+      "type": "theory",
+      "content": "## Hyperparameter Tuning with Grid Search\n\nHyperparameters are settings set **before** training (max depth, number of neighbors). Grid search tries combinations and picks the best via cross-validation.\n\n### GridSearchCV\n\n```python\nfrom sklearn.model_selection import GridSearchCV\nfrom sklearn.ensemble import RandomForestClassifier\n\nparam_grid = {\n    \"max_depth\": [3, 5, 10],\n    \"n_estimators\": [50, 100],\n}\n\ngrid = GridSearchCV(\n    RandomForestClassifier(random_state=42),\n    param_grid,\n    cv=5,\n    scoring=\"accuracy\",\n)\ngrid.fit(X_train, y_train)\n\nprint(grid.best_params_)   # best combination\nprint(grid.best_score_)    # best CV accuracy\n```\n\n### The cost\n\nGrid search evaluates every combination with cross-validation — `3 * 2 * 5` = 30 fits. Keep grids small.\n\n### Random search\n\nFor larger spaces, `RandomizedSearchCV` samples combinations randomly and often finds good results faster.\n\n### The right workflow\n\n1. **Tune only on training data** (via CV).\n2. **Never** touch the test set until the final evaluation.\n3. Compare models using the same folds.\n\n---\n\n**Next up:** putting it all together.",
+      "order": 4,
+      "language": "python"
+    },
+    {
+      "id": "ml-exercise-precision-recall",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-evaluation",
+      "title": "Exercise: Precision and Recall",
+      "type": "exercise",
+      "content": "## Exercise: Precision and Recall\n\nWrite a function `metrics(tp, fp, fn)` that returns precision and recall, each rounded to 2 decimals, space-separated.\n\n`tp`, `fp`, `fn` are space-separated counts on one line.\n\n### Sample\n\nInput:\n\n```text\n50 10 5\n```\n\nOutput:\n\n```text\n0.83 0.91\n```\n\n### Starter code\n\nComplete the function. Guard against division by zero (return `0.0`).\n\n### Skills you will use\n\n- Confusion-matrix math\n- Rounding\n- Zero-division handling\n\nGood luck!",
+      "order": 5,
+      "language": "python",
+      "starter_code": "def metrics(line: str) -> str:\n    tp, fp, fn = [int(x) for x in line.split()]\n    # TODO: precision = tp/(tp+fp), recall = tp/(tp+fn)\n    #       guard against division by zero, round to 2 decimals\n    return \"\"\n\n\ndef main():\n    line = input()\n    print(metrics(line))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "50 10 5\n",
+          "expected_output": "0.83 0.91",
+          "description": "Standard case"
+        },
+        {
+          "input": "0 0 5\n",
+          "expected_output": "0.00 0.00",
+          "description": "No true positives"
+        },
+        {
+          "input": "10 0 0\n",
+          "expected_output": "1.00 1.00",
+          "description": "Perfect"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-f1",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-evaluation",
+      "title": "Exercise: F1 Score",
+      "type": "exercise",
+      "content": "## Exercise: F1 Score\n\nWrite a function `f1(precision, recall)` that computes the F1 score (harmonic mean) and returns it rounded to 2 decimals.\n\n`precision` and `recall` are floats on one line. If both are `0`, return `0`.\n\n### Sample\n\nInput:\n\n```text\n0.8 0.6\n```\n\nOutput:\n\n```text\n0.69\n```\n\n### Starter code\n\nFormula: `2 * (p * r) / (p + r)`.\n\n### Skills you will use\n\n- Harmonic mean\n- Rounding\n- Zero handling\n\nGood luck!",
+      "order": 6,
+      "language": "python",
+      "starter_code": "def f1(line: str) -> str:\n    p, r = [float(x) for x in line.split()]\n    # TODO: return 2*p*r/(p+r), or 0 if both are 0, rounded to 2 decimals\n    return \"\"\n\n\ndef main():\n    line = input()\n    print(f1(line))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "0.8 0.6\n",
+          "expected_output": "0.69",
+          "description": "Standard F1"
+        },
+        {
+          "input": "1.0 1.0\n",
+          "expected_output": "1.00",
+          "description": "Perfect score"
+        },
+        {
+          "input": "0.0 0.0\n",
+          "expected_output": "0.00",
+          "description": "Zero case"
+        }
+      ]
+    },
+    {
+      "id": "ml-exercise-rmse",
+      "course_id": "intro-to-machine-learning",
+      "module_id": "ml-evaluation",
+      "title": "Exercise: RMSE",
+      "type": "exercise",
+      "content": "## Exercise: RMSE\n\nWrite a function `rmse(actual, predicted)` that computes the root mean squared error between two comma-separated lists.\n\n### Sample\n\nInput:\n\n```text\n1,2,3\n2,3,4\n```\n\nOutput:\n\n```text\n1.00\n```\n\n### Starter code\n\nCompute MSE then take the square root, rounded to 2 decimals.\n\n### Skills you will use\n\n- MSE\n- `math.sqrt`\n- Rounding\n\nGood luck!",
+      "order": 7,
+      "language": "python",
+      "starter_code": "import math\n\n\ndef rmse(actual: str, predicted: str) -> float:\n    a = [float(x) for x in actual.split(\",\")]\n    p = [float(x) for x in predicted.split(\",\")]\n    # TODO: return sqrt(mean((a_i - p_i)^2))\n    return 0.0\n\n\ndef main():\n    actual = input()\n    predicted = input()\n    print(f\"{rmse(actual, predicted):.2f}\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "1,2,3\n2,3,4\n",
+          "expected_output": "1.00",
+          "description": "Constant +1 offset"
+        },
+        {
+          "input": "0,0,0\n0,0,0\n",
+          "expected_output": "0.00",
+          "description": "Perfect"
+        },
+        {
+          "input": "1,2,3\n4,5,6\n",
+          "expected_output": "3.00",
+          "description": "Constant +3 offset"
+        }
+      ]
+    }
+  ]
+}

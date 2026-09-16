@@ -1,0 +1,8 @@
+{
+  "id": "backend-web-development",
+  "title": "Backend Web Development",
+  "description": "Go server-side: HTTP and the web, REST API design, persistence and databases, authentication and security, and finally a complete authenticated API in the style of FastAPI. Every concept is paired with runnable exercises in a Python sandbox plus a conceptual design capstone.",
+  "language": "python",
+  "icon": "server",
+  "order": 11
+}

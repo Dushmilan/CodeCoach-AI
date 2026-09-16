@@ -1,0 +1,624 @@
+{
+  "items": [
+    {
+      "id": "dsa-complexity-big-o",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-complexity",
+      "title": "Big-O Notation and Why It Matters",
+      "type": "theory",
+      "order": 1,
+      "content": "## Big-O Notation and Why It Matters\n\nBig-O notation describes how an algorithm's **runtime or memory grows** as the input size grows. It lets you compare algorithms by their *growth rate*, not by wall-clock time, which depends on hardware.\n\n### Reading Big-O\n\n| Notation | Name        | Example                         |\n|----------|-------------|---------------------------------|\n| `O(1)`   | constant    | indexing a list                 |\n| `O(log n)` | logarithmic | binary search                 |\n| `O(n)`   | linear      | a single pass through the input |\n| `O(n log n)` | linearithmic | efficient sorting            |\n| `O(n²)`  | quadratic   | nested loops over the input     |\n| `O(2ⁿ)`  | exponential | naive recursion                 |\n\n### Why n² beats n when n is small\n\nBig-O is about **large** inputs. A slow constant (`10n`) beats a fast quadratic (`n²`) once `n` grows past 10:\n\n```python\ndef linear(items):      # O(n)\n    total = 0\n    for x in items:\n        total += x\n    return total\n\ndef quadratic(items):   # O(n^2)\n    total = 0\n    for x in items:\n        for y in items:\n            total += x + y\n    return total\n```\n\n### Dropping constants\n\nWe keep only the dominant term and drop constant factors: `3n² + 5n + 20` is `O(n²)`.\n\n### A mental model\n\nIf `n` doubles:\n\n- `O(1)` stays the same.\n- `O(n)` doubles.\n- `O(n²)` quadruples.\n\nThat difference is why an `O(n²)` solution can take minutes where an `O(n)` solution takes milliseconds.\n\n### Space complexity\n\nBig-O also describes memory. Building a second copy of the input is `O(n)` space; an in-place algorithm is `O(1)`.\n\nAlways ask two questions before solving a problem: **What is the best possible time?** and **What is my solution's complexity?** Most interview and competition problems reward pushing from `O(n²)` down to `O(n)` or `O(n log n)`.\n\n---\n\n**Next up:** arrays — the data structure nearly every algorithm builds on.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-complexity-arrays",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-complexity",
+      "title": "Arrays: The Workhorse Data Structure",
+      "type": "theory",
+      "order": 2,
+      "content": "## Arrays: The Workhorse Data Structure\n\nAn **array** is a contiguous block of memory holding elements of the same type. Python's `list` is a dynamic array: it grows automatically while keeping the same guarantees.\n\n### Reading by index is O(1)\n\n```python\nscores = [70, 80, 90, 100]\nprint(scores[0])   # 70\nprint(scores[-1])  # 100\n```\n\nBecause elements sit side by side in memory, computing the address of element `i` is a single arithmetic step: `O(1)`.\n\n### Appending is amortized O(1)\n\n```python\nscores.append(110)   # usually O(1)\n```\n\nWhen the array fills, Python allocates a bigger block and copies — occasionally `O(n)`. On average, though, appends are constant time.\n\n### Inserting and deleting in the middle is O(n)\n\n```python\nscores.insert(1, 75)   # shifts everything after index 1\n```\n\nEvery element to the right must move, so insert and delete are `O(n)`. This is the classic array trade-off: **fast reads, slow middle edits**.\n\n### Slicing creates copies\n\n```python\nleft = scores[:2]      # new list of 2 elements\n```\n\nSlicing is `O(k)` for the number of elements copied.\n\n### Operations cheat sheet\n\n| Operation            | Complexity |\n|----------------------|------------|\n| index by position    | `O(1)`     |\n| append               | `O(1)` amortized |\n| insert / delete mid  | `O(n)`     |\n| search (unsorted)    | `O(n)`     |\n| search (sorted)      | `O(log n)` |\n\n### Choosing arrays\n\nUse arrays when:\n\n- You need fast random access.\n- The size is roughly known in advance.\n- You mostly append and read.\n\nWhen you need frequent middle insertions or deletions, a linked structure (next lesson's topic) or a deque may serve better.\n\n---\n\n**Next up:** prefix sums for instant range queries.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-complexity-prefix",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-complexity",
+      "title": "Prefix Sums and Range Queries",
+      "type": "theory",
+      "order": 3,
+      "content": "## Prefix Sums and Range Queries\n\nA **prefix sum** array stores the running total. Once built, it answers \"what is the sum of elements `i` through `j`?\" in `O(1)`.\n\n### Building a prefix array\n\n```python\nnums = [1, 2, 3, 4]\nprefix = [0]\nfor x in nums:\n    prefix.append(prefix[-1] + x)\n# prefix = [0, 1, 3, 6, 10]\n```\n\n`prefix[k]` is the sum of the first `k` elements.\n\n### Answering range queries\n\nThe sum of `nums[i]` through `nums[j]` (inclusive) is:\n\n```python\ndef range_sum(prefix, i, j):\n    return prefix[j + 1] - prefix[i]\n```\n\nFor `nums = [1, 2, 3, 4]`, the sum of indexes 1–2 (`2 + 3`) is `prefix[3] - prefix[1] = 6 - 1 = 5`.\n\n### Why it matters\n\nWithout prefix sums, each query walks the range: `O(n)` per query. With them, the precompute is `O(n)` and **every query is O(1)**:\n\n```python\nqueries = [(1, 3), (0, 2), (2, 3)]\nanswers = [range_sum(prefix, i, j) for i, j in queries]\n```\n\nIf you answer thousands of queries, this transforms a slow loop into instant lookups.\n\n### The general pattern\n\nThe prefix technique generalizes:\n\n- **Prefix products** for multiplicative ranges.\n- **Prefix minimums** for sliding minimums.\n- **2D prefix sums** for rectangle sums on a grid.\n\n### Checklist\n\n1. Precompute prefix sums once: `O(n)`.\n2. Replace every range-sum loop with two array reads.\n3. Total complexity: `O(n + q)` instead of `O(n × q)`.\n\nAnytime a problem asks for many range sums, range products, or range minimums, reach for a prefix array before you reach for a loop.\n\n---\n\n**Next up:** two pointers and sliding windows.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-complexity-two-pointers",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-complexity",
+      "title": "Two Pointers and Sliding Window",
+      "type": "theory",
+      "order": 4,
+      "content": "## Two Pointers and Sliding Window\n\nMany array problems become trivially fast with **two pointers**: keep two indices and move them intelligently. The classic example is **Two Sum on a sorted array**.\n\n### Two pointers on sorted input\n\n```python\ndef has_pair(nums, target):      # nums is sorted\n    left, right = 0, len(nums) - 1\n    while left < right:\n        total = nums[left] + nums[right]\n        if total == target:\n            return True\n        elif total < target:\n            left += 1\n        else:\n            right -= 1\n    return False\n```\n\nEach step shrinks the search space, so this is `O(n)` — much better than the `O(n²)` double loop.\n\n### The sliding window\n\nA **window** is a contiguous slice of the array. Slide its start or end to track a running property:\n\n```python\ndef max_k_sum(nums, k):\n    window = sum(nums[:k])\n    best = window\n    for i in range(k, len(nums)):\n        window += nums[i] - nums[i - k]\n        best = max(best, window)\n    return best\n```\n\nThe window \"slides\" by adding one element and dropping one, keeping the sum updated in `O(1)` per step — `O(n)` total.\n\n### Choosing the right tool\n\n| Pattern        | Best for                                       | Complexity |\n|----------------|------------------------------------------------|------------|\n| two pointers   | sorted arrays, pairs, partitioning             | `O(n)`     |\n| sliding window | contiguous subarrays with a constraint          | `O(n)`     |\n| nested loops   | tiny inputs, all pairs without constraints      | `O(n²)`    |\n\n### When two pointers won't work\n\n- Unsorted input with no room to pre-sort.\n- Windows that must shrink and grow while keeping a count (a hash map helps there).\n\n### The habit\n\nBefore writing a nested loop over an array, ask: *can a second pointer or a sliding window do this in one pass?* It is one of the highest-leverage speed-ups in all of algorithm design.\n\n---\n\n**Next up:** exercises — Two Sum, maximum subarray, and prefix-sum ranges.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-complexity-exercise-two-sum",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-complexity",
+      "title": "Exercise: Two Sum",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Two Sum\n\nWrite a function `solve(nums, target)` that returns the **indices** of two numbers that add up to `target`. You may assume exactly one solution exists, and you may not use the same element twice.\n\n### Worked sample\n\nInput:\n\n```text\n[2,7,11,15]\n9\n```\n\nOutput:\n\n```text\n[0,1]\n```\n\nBecause `nums[0] + nums[1] == 9`.\n\n### How your code runs\n\nThe runner parses the first input line as the list and the second as the target, then calls `solve(nums, target)`. Return the two indices as a list — list outputs serialize as compact JSON like `[0,1]`.\n\n### Think\n\nA hash map (`dict`) stores each number with its index as you scan. When you meet `num`, check whether `target - num` is already in the map. This runs in `O(n)`.\n\n### Starter code\n\n```python\ndef solve(nums, target):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    nums = json.loads(parts[0])\n    target = json.loads(parts[1])\n    result = solve(nums, target)\n    if isinstance(result, list):\n        print(json.dumps(result, separators=(\",\", \":\")))\n    else:\n        print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(nums, target):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    nums = json.loads(parts[0])\n    target = json.loads(parts[1])\n    result = solve(nums, target)\n    if isinstance(result, list):\n        print(json.dumps(result, separators=(\",\", \":\")))\n    else:\n        print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[2,7,11,15]\n9",
+          "expected_output": "[0,1]",
+          "description": "Classic pair"
+        },
+        {
+          "input": "[3,2,4]\n6",
+          "expected_output": "[1,2]",
+          "description": "Not the first two"
+        },
+        {
+          "input": "[3,3]\n6",
+          "expected_output": "[0,1]",
+          "description": "Duplicate values"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-complexity-exercise-max-subarray",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-complexity",
+      "title": "Exercise: Maximum Subarray",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Maximum Subarray\n\nWrite a function `solve(nums)` that returns the sum of the **contiguous subarray** with the largest sum (Kadane's algorithm).\n\n### Worked sample\n\nInput:\n\n```text\n[-2,1,-3,4,-1,2,1,-5,4]\n```\n\nOutput:\n\n```text\n6\n```\n\nThe best subarray is `[4,-1,2,1]`, which sums to `6`.\n\n### How your code runs\n\nThe runner parses the single input line as a list and calls `solve(nums)`. Return the maximum sum as an integer.\n\n### Think\n\nKeep two values as you scan: `current` — the best sum ending at the current element — and `best` — the best seen so far. For each element, either extend the current run (`current + num`) or start fresh (`num`).\n\n```python\ndef solve(nums):\n    best = current = nums[0]\n    for num in nums[1:]:\n        current = max(num, current + num)\n        best = max(best, current)\n    return best\n```\n\nThis is `O(n)`.\n\n### Starter code\n\n```python\ndef solve(nums):\n    best = current = nums[0]\n    for num in nums[1:]:\n        current = max(num, current + num)\n        best = max(best, current)\n    return best\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    nums = json.loads(raw)\n    print(solve(nums))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(nums):\n    best = current = nums[0]\n    for num in nums[1:]:\n        current = max(num, current + num)\n        best = max(best, current)\n    return best\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    nums = json.loads(raw)\n    print(solve(nums))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[-2,1,-3,4,-1,2,1,-5,4]",
+          "expected_output": "6",
+          "description": "Classic Kadane input"
+        },
+        {
+          "input": "[1]",
+          "expected_output": "1",
+          "description": "Single element"
+        },
+        {
+          "input": "[5,4,-1,7,8]",
+          "expected_output": "23",
+          "description": "Whole array is best"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-complexity-exercise-prefix-sum",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-complexity",
+      "title": "Exercise: Prefix Sum Range",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Prefix Sum Range\n\nWrite a function `solve(nums, start, end)` that returns the sum of `nums[start]` through `nums[end]` **inclusive**, using a prefix sum array for `O(1)` queries.\n\n### Worked sample\n\nInput:\n\n```text\n[1,2,3,4,5]\n1\n3\n```\n\nOutput:\n\n```text\n9\n```\n\nBecause `2 + 3 + 4 = 9`.\n\n### How your code runs\n\nThe runner parses each input line as a JSON value and calls `solve(nums, start, end)`. Return the range sum as an integer.\n\n### Think\n\nBuild `prefix` where `prefix[k]` is the sum of the first `k` elements. The answer is `prefix[end + 1] - prefix[start]`.\n\n```python\ndef solve(nums, start, end):\n    prefix = [0]\n    for num in nums:\n        prefix.append(prefix[-1] + num)\n    return prefix[end + 1] - prefix[start]\n```\n\n### Starter code\n\n```python\ndef solve(nums, start, end):\n    prefix = [0]\n    for num in nums:\n        prefix.append(prefix[-1] + num)\n    return prefix[end + 1] - prefix[start]\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    nums = json.loads(parts[0])\n    start = json.loads(parts[1])\n    end = json.loads(parts[2])\n    print(solve(nums, start, end))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(nums, start, end):\n    prefix = [0]\n    for num in nums:\n        prefix.append(prefix[-1] + num)\n    return prefix[end + 1] - prefix[start]\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    nums = json.loads(parts[0])\n    start = json.loads(parts[1])\n    end = json.loads(parts[2])\n    print(solve(nums, start, end))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[1,2,3,4,5]\n1\n3",
+          "expected_output": "9",
+          "description": "Middle range"
+        },
+        {
+          "input": "[10,20,30]\n0\n0",
+          "expected_output": "10",
+          "description": "Single index"
+        },
+        {
+          "input": "[1,2,3]\n0\n2",
+          "expected_output": "6",
+          "description": "Full array"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-linked-nodes",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-linked",
+      "title": "Nodes and Pointers",
+      "type": "theory",
+      "order": 1,
+      "content": "## Nodes and Pointers\n\nA **linked structure** is built from **nodes**, where each node holds a value and a **pointer** to the next node. Unlike an array, there is no contiguous block of memory — nodes can live anywhere, chained together by references.\n\n### A node in Python\n\n```python\nclass Node:\n    def __init__(self, value, next_node=None):\n        self.value = value\n        self.next = next_node\n\nhead = Node(1)\nhead.next = Node(2)\nhead.next.next = Node(3)\n```\n\n### The cost trade-off\n\n| Operation             | Array   | Linked list |\n|-----------------------|---------|-------------|\n| read by index         | `O(1)`  | `O(n)`      |\n| insert at head        | `O(n)`  | `O(1)`      |\n| delete at head        | `O(n)`  | `O(1)`      |\n| search                | `O(n)`  | `O(n)`      |\n\nLinked lists shine when you constantly insert or delete at the **front**, because no elements shift — you just rewire a pointer.\n\n### Traversal\n\nLinked structures have no indices. You walk the chain:\n\n```python\ndef traverse(head):\n    current = head\n    while current is not None:\n        print(current.value)\n        current = current.next\n```\n\n### Danger: lost references\n\nReordering nodes means updating pointers carefully:\n\n```python\nhead.next.next = head.next   # BAD — you just pointed node 2 at itself\n```\n\nA classic bug: saving the next node before re-pointing, so you do not lose the rest of the list.\n\n### Everywhere in CS\n\nNodes appear as linked lists, but the same \"value + pointer\" idea underlies trees (left/right child pointers), graphs (adjacency), and hash-map buckets. Once you can reason about chained nodes, all of these feel familiar.\n\n---\n\n**Next up:** recursion — the natural way to process nested structures.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-linked-recursion",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-linked",
+      "title": "Recursion: Divide and Conquer Thinking",
+      "type": "theory",
+      "order": 2,
+      "content": "## Recursion: Divide and Conquer Thinking\n\n**Recursion** is a function that calls itself. Every recursive function needs two parts: a **base case** that stops the recursion, and a **recursive case** that breaks the problem into a smaller version of itself.\n\n### Anatomy of a recursive function\n\n```python\ndef countdown(n):\n    if n <= 0:          # base case\n        return\n    print(n)\n    countdown(n - 1)    # recursive case — smaller input\n```\n\nEach call creates a new frame on the **call stack**, then unwinds when the base case is reached.\n\n### A mathematical example\n\n```python\ndef factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)\n```\n\n`factorial(4)` expands to `4 * factorial(3)` → `4 * (3 * factorial(2))` → `4 * (3 * (2 * 1))`.\n\n### The three laws\n\n1. **A base case** that ends the recursion.\n2. **A change of state** — each call moves toward the base case.\n3. **A call to itself** on the smaller input.\n\nIf you violate rule 2, you get infinite recursion (Python raises `RecursionError`).\n\n### Thinking recursively\n\nTo solve `f(n)`:\n\n- What is the trivial version I can answer directly? (base case)\n- How can I express `f(n)` in terms of `f(smaller)`? (recursive case)\n\n### When recursion shines\n\n- Trees and graphs — nested structures match recursion naturally.\n- Divide-and-conquer algorithms: merge sort, quicksort, binary search.\n- Backtracking problems: permutations, mazes, pathfinding.\n\n### When it struggles\n\nPython's default recursion limit is around 1000 frames. Deep recursion overflows the stack — that is when you convert to an explicit loop or use iteration instead.\n\n---\n\n**Next up:** stacks and queues — the workhorse containers.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-linked-stacks",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-linked",
+      "title": "Stacks and Queues",
+      "type": "theory",
+      "order": 3,
+      "content": "## Stacks and Queues\n\n**Stacks** and **queues** are restricted lists with strict rules about where you can add and remove items. These restrictions make them predictable and powerful.\n\n### Stack: last in, first out (LIFO)\n\nLike a stack of plates — you take the top plate first. Python lists make perfect stacks:\n\n```python\nstack = []\nstack.append(1)      # push\nstack.append(2)\ntop = stack.pop()    # pop -> 2\n```\n\nOperations: `push` and `pop`, both `O(1)`.\n\n**Uses:** the function call stack, undo/redo, matching brackets, expression evaluation, backtracking.\n\n### Queue: first in, first out (FIFO)\n\nLike a line at the checkout — first come, first served. Use `collections.deque`:\n\n```python\nfrom collections import deque\nqueue = deque()\nqueue.append(1)          # enqueue\nqueue.append(2)\nfirst = queue.popleft()  # dequeue -> 1\n```\n\nBoth `append` and `popleft` are `O(1)` — unlike `list.pop(0)` which shifts everything.\n\n### Matching brackets with a stack\n\n```python\ndef is_balanced(text):\n    stack = []\n    pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n    for ch in text:\n        if ch in \"([{\":\n            stack.append(ch)\n        elif ch in \")]}\":\n            if not stack or stack.pop() != pairs[ch]:\n                return False\n    return not stack\n```\n\n### Choosing a container\n\n| Need                               | Use         |\n|------------------------------------|-------------|\n| most recent item first             | stack       |\n| oldest item first                  | queue       |\n| push/pop at both ends              | deque       |\n| fast indexed access + append       | list        |\n\n### Implementation note\n\nYou can implement a stack with either an array or a linked list — both give `O(1)` push/pop. That is the elegant thing: the *interface* (LIFO/FIFO) is what matters, and the implementation just has to honor it.\n\n---\n\n**Next up:** recursion vs iteration — when to use which.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-linked-iteration",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-linked",
+      "title": "Recursion vs Iteration",
+      "type": "theory",
+      "order": 4,
+      "content": "## Recursion vs Iteration\n\nAnything you can do with recursion you can also do with a loop — and vice versa. Choosing between them is about clarity, stack limits, and performance.\n\n### The same problem, two ways\n\n```python\n# Iterative\ndef factorial_iter(n):\n    result = 1\n    for i in range(2, n + 1):\n        result *= i\n    return result\n\n# Recursive\ndef factorial_rec(n):\n    if n <= 1:\n        return 1\n    return n * factorial_rec(n - 1)\n```\n\n### Why iteration sometimes wins\n\n- **No stack risk.** Deep recursion hits Python's ~1000-frame limit and raises `RecursionError`.\n- **No overhead.** Each recursive call allocates a stack frame; loops reuse one frame.\n- **Easier to predict.** State lives in plain variables.\n\n### Why recursion sometimes wins\n\n- **Matches the structure.** Trees and graphs are naturally recursive; an iterative version needs a manual stack.\n- **Less code for branching problems.** Backtracking and divide-and-conquer read much more clearly as recursion.\n- **No bookkeeping.** The call stack remembers where you were for free.\n\n### Converting recursion to a loop\n\nRewrite recursion iteratively with an explicit stack:\n\n```python\ndef sum_range(n):\n    # iterative version of: if n == 0: return 0; return n + sum_range(n-1)\n    total = 0\n    for i in range(1, n + 1):\n        total += i\n    return total\n```\n\n### The practical rule\n\n- Tail-style linear recursion (factorial, sum) → prefer a loop.\n- Tree/graph traversal and divide-and-conquer → recursion is usually clearer and the depth is logarithmic anyway.\n\n### Memoization blurs the line\n\nCached recursion (dynamic programming) combines the clarity of recursion with near-iterative performance. You will see this pattern again in the final module.\n\n---\n\n**Next up:** exercises — factorial, Fibonacci, and recursive reversal.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-linked-exercise-factorial",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-linked",
+      "title": "Exercise: Factorial",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Factorial\n\nWrite a recursive function `solve(n)` that returns `n!` (the product of all integers from 1 to n). By definition, `0! = 1`.\n\n### Worked sample\n\nInput:\n\n```text\n5\n```\n\nOutput:\n\n```text\n120\n```\n\nBecause `5! = 5 × 4 × 3 × 2 × 1 = 120`.\n\n### How your code runs\n\nThe runner parses the input line as an integer and calls `solve(n)`. Return the factorial as an integer.\n\n### Think\n\nBase case: `n <= 1` returns `1`. Recursive case: `n * solve(n - 1)`.\n\n### Starter code\n\n```python\ndef solve(n):\n    if n <= 1:\n        return 1\n    return n * solve(n - 1)\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    n = int(raw)\n    print(solve(n))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(n):\n    if n <= 1:\n        return 1\n    return n * solve(n - 1)\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    n = int(raw)\n    print(solve(n))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "5",
+          "expected_output": "120",
+          "description": "Five"
+        },
+        {
+          "input": "0",
+          "expected_output": "1",
+          "description": "Zero by definition"
+        },
+        {
+          "input": "10",
+          "expected_output": "3628800",
+          "description": "Ten"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-linked-exercise-fibonacci",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-linked",
+      "title": "Exercise: Fibonacci",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Fibonacci\n\nWrite a function `solve(n)` that returns the **nth Fibonacci number** with `fib(0) = 0` and `fib(1) = 1`.\n\n### Worked sample\n\nInput:\n\n```text\n10\n```\n\nOutput:\n\n```text\n55\n```\n\nThe Fibonacci sequence is `0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, ...`.\n\n### How your code runs\n\nThe runner parses the input line as an integer and calls `solve(n)`. Return the Fibonacci number as an integer.\n\n### Think\n\nThe recursive definition is `fib(n) = fib(n-1) + fib(n-2)`, but plain recursion recomputes the same values many times. Prefer the iterative version: keep two variables and slide them forward — `O(n)` time.\n\n### Starter code\n\n```python\ndef solve(n):\n    if n <= 1:\n        return n\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    n = int(raw)\n    print(solve(n))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(n):\n    if n <= 1:\n        return n\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    n = int(raw)\n    print(solve(n))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "0",
+          "expected_output": "0",
+          "description": "Base case zero"
+        },
+        {
+          "input": "1",
+          "expected_output": "1",
+          "description": "Base case one"
+        },
+        {
+          "input": "10",
+          "expected_output": "55",
+          "description": "Tenth Fibonacci"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-linked-exercise-reverse",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-linked",
+      "title": "Exercise: Reverse a List Recursively",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Reverse a List Recursively\n\nWrite a recursive function `solve(nums)` that returns a **new list** with the elements in reverse order.\n\n### Worked sample\n\nInput:\n\n```text\n[1,2,3,4]\n```\n\nOutput:\n\n```text\n[4,3,2,1]\n```\n\n### How your code runs\n\nThe runner parses the input line as a list and calls `solve(nums)`. List outputs serialize as compact JSON like `[4,3,2,1]`.\n\n### Think\n\nBase case: an empty list reverses to itself. Recursive case: the reverse of `[first, *rest]` is the reverse of `rest` followed by `first`.\n\n```python\ndef solve(nums):\n    if not nums:\n        return []\n    return solve(nums[1:]) + [nums[0]]\n```\n\nNote this builds new lists — that is expected for this exercise, even though a loop would be more efficient.\n\n### Starter code\n\n```python\ndef solve(nums):\n    if not nums:\n        return []\n    return solve(nums[1:]) + [nums[0]]\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    nums = json.loads(raw)\n    result = solve(nums)\n    if isinstance(result, list):\n        print(json.dumps(result, separators=(\",\", \":\")))\n    else:\n        print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(nums):\n    if not nums:\n        return []\n    return solve(nums[1:]) + [nums[0]]\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    nums = json.loads(raw)\n    result = solve(nums)\n    if isinstance(result, list):\n        print(json.dumps(result, separators=(\",\", \":\")))\n    else:\n        print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[1,2,3,4]",
+          "expected_output": "[4,3,2,1]",
+          "description": "Four elements"
+        },
+        {
+          "input": "[7]",
+          "expected_output": "[7]",
+          "description": "Single element"
+        },
+        {
+          "input": "[1,2]",
+          "expected_output": "[2,1]",
+          "description": "Two elements"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-search-linear",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-search",
+      "title": "Linear Search",
+      "type": "theory",
+      "order": 1,
+      "content": "## Linear Search\n\n**Linear search** checks every element in order until it finds the target (or reaches the end). It is the simplest search algorithm and the only one that works on **unsorted** data.\n\n### Implementation\n\n```python\ndef linear_search(items, target):\n    for i, item in enumerate(items):\n        if item == target:\n            return i\n    return -1\n```\n\n### Complexity\n\n- Worst case: the target is last or absent → every element examined → `O(n)`.\n- Best case: the target is first → `O(1)`.\n- Average: `O(n)`.\n\nThere is no way around it for unsorted data: with no ordering to exploit, you must look at each candidate.\n\n### When to use linear search\n\n- The list is **unsorted** (sorting would cost `O(n log n)`).\n- The list is small — a linear scan is fast in practice.\n- You search only a few times, so the cost of sorting or hashing is not worth it.\n- The data is a stream you can only see once.\n\n### The n vs log n trade\n\n| Search     | Sorted? | Complexity |\n|------------|---------|------------|\n| linear     | no      | `O(n)`     |\n| binary     | yes     | `O(log n)` |\n\nIf you search many times, sorting once (`O(n log n)`) and then using binary search beats linear search for large `n`.\n\n### A common variant\n\nLinear search also covers *find the maximum* or *find the first element matching a condition* — any problem that must inspect every candidate. The pattern is identical: iterate, compare, remember the best.\n\nLinear search is rarely the headline algorithm, but it is the baseline every faster search is measured against.\n\n---\n\n**Next up:** binary search — exponentially faster on sorted data.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-search-binary",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-search",
+      "title": "Binary Search",
+      "type": "theory",
+      "order": 2,
+      "content": "## Binary Search\n\n**Binary search** finds a target in a **sorted** array by repeatedly halving the search range. Each step eliminates half the remaining elements, giving `O(log n)` time.\n\n### The core idea\n\n1. Look at the middle element.\n2. If it equals the target — done.\n3. If it is greater, the target must be in the left half.\n4. If it is smaller, the target must be in the right half.\n\n### Implementation\n\n```python\ndef binary_search(nums, target):\n    low, high = 0, len(nums) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if nums[mid] == target:\n            return mid\n        elif nums[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return -1\n```\n\n### Why log n\n\nEach comparison halves the search space. After `k` steps you have reduced `n` to `n / 2ᵏ`. Setting that equal to 1 gives `k = log₂(n)`.\n\nFor a million elements, linear search may need a million steps; binary search needs about 20.\n\n### The two classic bugs\n\n1. **Off-by-one in the loop condition.** `while low < high` drops the last element. Use `low <= high` for the \"found exact index\" version.\n2. **`mid` overflow.** `(low + high) // 2` is fine in Python; in other languages use `low + (high - low) // 2`.\n\n### Variants\n\n- First occurrence of a value.\n- Last occurrence.\n- Insertion point for a new value (`bisect` module does exactly this).\n- Search on the *answer space*: binary search the smallest valid answer when the check is monotonic.\n\n### Monotonicity is the key\n\nBinary search only works when the predicate is **monotonic** — once the condition becomes true, it stays true. That single property is what makes \"half the space is safe to discard.\"\n\n---\n\n**Next up:** selection sort and the family of simple sorts.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-search-basic-sorts",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-search",
+      "title": "Selection and Insertion Sort",
+      "type": "theory",
+      "order": 3,
+      "content": "## Selection and Insertion Sort\n\nThe simple sorts are easy to understand, easy to write, and too slow for big data — but they build intuition that merge sort and quicksort rely on.\n\n### Selection sort\n\nRepeatedly find the smallest element in the unsorted part and swap it into place:\n\n```python\ndef selection_sort(arr):\n    for i in range(len(arr)):\n        smallest = i\n        for j in range(i + 1, len(arr)):\n            if arr[j] < arr[smallest]:\n                smallest = j\n        arr[i], arr[smallest] = arr[smallest], arr[i]\n    return arr\n```\n\n- The outer loop runs `n` times; the inner scan is `n - i` → `O(n²)` always.\n- Swaps are minimal — at most `n - 1`.\n\n### Insertion sort\n\nBuild the sorted portion one element at a time, inserting each new element into its correct place:\n\n```python\ndef insertion_sort(arr):\n    for i in range(1, len(arr)):\n        current = arr[i]\n        j = i - 1\n        while j >= 0 and arr[j] > current:\n            arr[j + 1] = arr[j]\n            j -= 1\n        arr[j + 1] = current\n    return arr\n```\n\n- Worst case `O(n²)`, but **near-sorted input is nearly O(n)**.\n- Excellent for small arrays — Python's own sort uses it for tiny runs.\n\n### Comparing the two\n\n| Sort            | Best     | Average  | Worst    | Stable |\n|-----------------|----------|----------|----------|--------|\n| selection       | `O(n²)`  | `O(n²)`  | `O(n²)`  | no     |\n| insertion       | `O(n)`   | `O(n²)`  | `O(n²)`  | yes    |\n| merge           | `O(n log n)` | `O(n log n)` | `O(n log n)` | yes |\n\n*Stable* means equal elements keep their relative order — important when sorting on one key while preserving another.\n\n### The lesson\n\n`O(n²)` sorting is fine for a few dozen elements and hopeless for a million. That is why the next lesson's divide-and-conquer sorts exist.\n\n---\n\n**Next up:** merge sort — the O(n log n) breakthrough.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-search-divide-conquer",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-search",
+      "title": "Merge Sort and Beyond",
+      "type": "theory",
+      "order": 4,
+      "content": "## Merge Sort and Beyond\n\n**Merge sort** is the canonical divide-and-conquer sort: split the array, sort each half, then merge. It guarantees `O(n log n)` on every input.\n\n### Divide, conquer, combine\n\n```python\ndef merge_sort(arr):\n    if len(arr) <= 1:\n        return arr\n    mid = len(arr) // 2\n    left = merge_sort(arr[:mid])\n    right = merge_sort(arr[mid:])\n    return merge(left, right)\n\n\ndef merge(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i]); i += 1\n        else:\n            result.append(b[j]); j += 1\n    result.extend(a[i:])\n    result.extend(b[j:])\n    return result\n```\n\n### Why O(n log n)\n\nEach level of recursion touches all `n` elements during the merges, and there are `log n` levels. Hence `n log n`.\n\n### Space cost\n\n`merge` builds new lists, so merge sort uses `O(n)` extra memory. That is its main drawback versus in-place sorts.\n\n### The Python way\n\nFor real code you rarely hand-write sorts — Python's built-in sort is a hybrid (Timsort) that is `O(n log n)` worst case and near-`O(n)` on sorted data:\n\n```python\nsorted([5, 2, 9, 1])        # [1, 2, 5, 9]\ndata.sort()                 # in place\ndata.sort(key=len)          # sort by a key\ndata.sort(reverse=True)     # descending\n```\n\n### Beyond merge sort\n\n| Sort       | Average      | Worst       | Space | Notes                     |\n|------------|--------------|-------------|-------|---------------------------|\n| quicksort  | `O(n log n)` | `O(n²)`     | `O(log n)` | fast in practice, in place |\n| heapsort   | `O(n log n)` | `O(n log n)` | `O(1)` | in place, not stable      |\n| counting   | `O(n + k)`   | `O(n + k)`   | `O(k)` | only for small-range ints |\n\nThe pattern to internalize: **divide the problem, solve the pieces, combine the results** — it powers search, sort, and the tree algorithms coming next.\n\n---\n\n**Next up:** exercises — binary search, selection sort, and merging.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-search-exercise-binary",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-search",
+      "title": "Exercise: Binary Search",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Binary Search\n\nWrite a function `solve(nums, target)` that returns the index of `target` in the **sorted** list `nums`, or `-1` if it is absent.\n\n### Worked sample\n\nInput:\n\n```text\n[1,3,5,7,9]\n5\n```\n\nOutput:\n\n```text\n2\n```\n\n### How your code runs\n\nThe runner parses the first line as the list and the second as the target, then calls `solve(nums, target)`. Return the index as an integer.\n\n### Think\n\nUse `low` and `high` pointers, check the middle, and discard half the range each step. Remember the loop condition `low <= high` so the final element is not skipped.\n\n### Starter code\n\n```python\ndef solve(nums, target):\n    low, high = 0, len(nums) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if nums[mid] == target:\n            return mid\n        elif nums[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return -1\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    nums = json.loads(parts[0])\n    target = json.loads(parts[1])\n    print(solve(nums, target))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(nums, target):\n    low, high = 0, len(nums) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if nums[mid] == target:\n            return mid\n        elif nums[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return -1\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    nums = json.loads(parts[0])\n    target = json.loads(parts[1])\n    print(solve(nums, target))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[1,3,5,7,9]\n5",
+          "expected_output": "2",
+          "description": "Found in the middle"
+        },
+        {
+          "input": "[1,3,5]\n4",
+          "expected_output": "-1",
+          "description": "Not present"
+        },
+        {
+          "input": "[2]\n2",
+          "expected_output": "0",
+          "description": "Single element"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-search-exercise-selection-sort",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-search",
+      "title": "Exercise: Selection Sort",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Selection Sort\n\nWrite a function `solve(nums)` that returns `nums` sorted in ascending order **using selection sort** (do not call the built-in `sort`/`sorted`).\n\n### Worked sample\n\nInput:\n\n```text\n[5,2,9,1,5]\n```\n\nOutput:\n\n```text\n[1,2,5,5,9]\n```\n\n### How your code runs\n\nThe runner parses the input line as a list and calls `solve(nums)`. List outputs serialize as compact JSON like `[1,2,5,5,9]`.\n\n### Think\n\nFor each position `i`, scan the rest of the list for the smallest element and swap it into place. Copy the input first (`list(nums)`) so you do not mutate the caller's list.\n\n### Starter code\n\n```python\ndef solve(nums):\n    arr = list(nums)\n    for i in range(len(arr)):\n        smallest = i\n        for j in range(i + 1, len(arr)):\n            if arr[j] < arr[smallest]:\n                smallest = j\n        arr[i], arr[smallest] = arr[smallest], arr[i]\n    return arr\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    nums = json.loads(raw)\n    result = solve(nums)\n    if isinstance(result, list):\n        print(json.dumps(result, separators=(\",\", \":\")))\n    else:\n        print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(nums):\n    arr = list(nums)\n    for i in range(len(arr)):\n        smallest = i\n        for j in range(i + 1, len(arr)):\n            if arr[j] < arr[smallest]:\n                smallest = j\n        arr[i], arr[smallest] = arr[smallest], arr[i]\n    return arr\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    nums = json.loads(raw)\n    result = solve(nums)\n    if isinstance(result, list):\n        print(json.dumps(result, separators=(\",\", \":\")))\n    else:\n        print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[5,2,9,1,5]",
+          "expected_output": "[1,2,5,5,9]",
+          "description": "Duplicates preserved"
+        },
+        {
+          "input": "[3,2,1]",
+          "expected_output": "[1,2,3]",
+          "description": "Reverse sorted"
+        },
+        {
+          "input": "[1]",
+          "expected_output": "[1]",
+          "description": "Single element"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-search-exercise-merge",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-search",
+      "title": "Exercise: Merge Two Sorted Lists",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Merge Two Sorted Lists\n\nWrite a function `solve(a, b)` that merges two **already-sorted** lists into one sorted list.\n\n### Worked sample\n\nInput:\n\n```text\n[1,3,5]\n[2,4,6]\n```\n\nOutput:\n\n```text\n[1,2,3,4,5,6]\n```\n\n### How your code runs\n\nThe runner parses each input line as a list and calls `solve(a, b)`. List outputs serialize as compact JSON like `[1,2,3,4,5,6]`.\n\n### Think\n\nUse two indices and repeatedly append the smaller front element. When one list is exhausted, append the rest of the other. This merge is the heart of merge sort.\n\n### Starter code\n\n```python\ndef solve(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    result.extend(a[i:])\n    result.extend(b[j:])\n    return result\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    a = json.loads(parts[0])\n    b = json.loads(parts[1])\n    result = solve(a, b)\n    if isinstance(result, list):\n        print(json.dumps(result, separators=(\",\", \":\")))\n    else:\n        print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    result.extend(a[i:])\n    result.extend(b[j:])\n    return result\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    a = json.loads(parts[0])\n    b = json.loads(parts[1])\n    result = solve(a, b)\n    if isinstance(result, list):\n        print(json.dumps(result, separators=(\",\", \":\")))\n    else:\n        print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[1,3,5]\n[2,4,6]",
+          "expected_output": "[1,2,3,4,5,6]",
+          "description": "Interleaved"
+        },
+        {
+          "input": "[1,2]\n[]",
+          "expected_output": "[1,2]",
+          "description": "One empty"
+        },
+        {
+          "input": "[1,1,2]\n[1,2,3]",
+          "expected_output": "[1,1,1,2,2,3]",
+          "description": "Duplicates"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-trees-terminology",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-trees",
+      "title": "Tree Terminology",
+      "type": "theory",
+      "order": 1,
+      "content": "## Tree Terminology\n\nA **tree** is a connected, acyclic graph with a single **root**. Trees model hierarchies: file systems, HTML documents, organization charts, and search indexes.\n\n### The vocabulary\n\n| Term        | Meaning                                      |\n|-------------|----------------------------------------------|\n| root        | the topmost node, no parent                  |\n| node        | an element in the tree                       |\n| edge        | a connection between parent and child        |\n| parent      | a node directly above another                |\n| child       | a node directly below its parent             |\n| leaf        | a node with no children                      |\n| subtree     | a node and all of its descendants            |\n| depth       | number of edges from root to a node          |\n| height      | number of edges from a node down to a leaf   |\n\n### Representing a binary tree in code\n\nA **binary tree** has at most two children. A common compact encoding uses nested lists: `[value, left, right]` where a missing child is `None`.\n\n```python\ntree = [1, [2, None, None], [3, None, None]]\n```\n\n### Height and depth\n\n```python\ndef height(tree):\n    if not tree:\n        return 0\n    value, left, right = tree\n    return 1 + max(height(left), height(right))\n```\n\nA single-node tree has height 1; an empty one has height 0.\n\n### Properties worth memorizing\n\n- A tree with `n` nodes has exactly `n - 1` edges.\n- Every node except the root has exactly one parent.\n- Adding one edge to a tree creates a cycle; removing one edge splits it into two trees.\n\n### Balanced vs skewed\n\nA **balanced** tree keeps height near `log n` — that is what keeps operations fast. A **skewed** tree (every node one child) degenerates to a linked list with height `n`.\n\nTree structure determines performance everywhere it appears, so the first step is always identifying the shape.\n\n---\n\n**Next up:** traversing trees — preorder, inorder, and postorder.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-trees-traversal",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-trees",
+      "title": "Tree Traversals",
+      "type": "theory",
+      "order": 2,
+      "content": "## Tree Traversals\n\nA **traversal** visits every node in a tree exactly once. The three classic depth-first orders differ only in *when* you visit the current node.\n\n### The three orders\n\n```python\ndef preorder(tree):          # root, left, right\n    if not tree:\n        return []\n    value, left, right = tree\n    return [value] + preorder(left) + preorder(right)\n\ndef inorder(tree):           # left, root, right\n    if not tree:\n        return []\n    value, left, right = tree\n    return inorder(left) + [value] + inorder(right)\n\ndef postorder(tree):         # left, right, root\n    if not tree:\n        return []\n    value, left, right = tree\n    return postorder(left) + postorder(right) + [value]\n```\n\n### What each is good for\n\n| Order     | When you use it                              |\n|-----------|----------------------------------------------|\n| preorder  | copying a tree, prefix notation, serializing |\n| inorder   | reading a BST in sorted order                |\n| postorder | freeing nodes, postfix notation, computing size |\n\n### A worked example\n\nFor the tree `[1, [2, None, None], [3, None, None]]`:\n\n- preorder: `[1, 2, 3]`\n- inorder: `[2, 1, 3]`\n- postorder: `[2, 3, 1]`\n\n### Level-order (breadth-first)\n\nVisit nodes top to bottom, left to right, using a queue:\n\n```python\nfrom collections import deque\n\ndef level_order(root):\n    if not root:\n        return []\n    result = []\n    queue = deque([root])\n    while queue:\n        node = queue.popleft()\n        value, left, right = node\n        result.append(value)\n        if left:\n            queue.append(left)\n        if right:\n            queue.append(right)\n    return result\n```\n\n### Why order matters\n\nThe same tree printed in different orders is used to reconstruct trees, serialize them for storage, and evaluate arithmetic expressions. Choosing the right traversal is often half of a tree problem.\n\n---\n\n**Next up:** binary search trees — sorted data, logarithmic speed.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-trees-bst",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-trees",
+      "title": "Binary Search Trees",
+      "type": "theory",
+      "order": 3,
+      "content": "## Binary Search Trees\n\nA **binary search tree (BST)** is a binary tree with one ordering rule: every node's left subtree holds **smaller** values and its right subtree holds **larger** values. The rule makes search as fast as binary search on a sorted array.\n\n### The invariant\n\nFor every node `n`:\n\n- everything in `n.left` is `< n.value`\n- everything in `n.right` is `> n.value`\n\n### Searching\n\n```python\ndef search(node, target):\n    if not node:\n        return None\n    value, left, right = node\n    if target == value:\n        return node\n    elif target < value:\n        return search(left, target)\n    else:\n        return search(right, target)\n```\n\nEach step discards one entire subtree, so search is `O(log n)` — on a balanced tree.\n\n### Inorder gives sorted order\n\nBecause of the invariant, an **inorder traversal** visits values in ascending order:\n\n```python\ndef inorder_values(node):\n    if not node:\n        return []\n    value, left, right = node\n    return inorder_values(left) + [value] + inorder_values(right)\n```\n\n### Insertion\n\nWalk down comparing values; when you reach an empty spot, attach the new node there.\n\n### The fatal weakness\n\nIf values are inserted in sorted order, every node has only a right child and the tree is a **skewed** chain — search degrades to `O(n)`. Balanced variants (AVL trees, red-black trees) rebalance after each insertion to keep height `O(log n)`.\n\n### BST vs hash table\n\n| Operation | BST (balanced) | Hash table |\n|-----------|----------------|------------|\n| search    | `O(log n)`     | `O(1)` avg |\n| find min/max | `O(log n)`  | `O(n)`     |\n| sorted traversal | `O(n)`  | not directly |\n\nHash tables win on raw speed; BSTs win when you need **order** — sorted ranges, min/max, nearest neighbors.\n\n---\n\n**Next up:** graphs and breadth- and depth-first search.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-trees-graphs",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-trees",
+      "title": "Graphs and BFS/DFS",
+      "type": "theory",
+      "order": 4,
+      "content": "## Graphs and BFS/DFS\n\nA **graph** is a set of nodes connected by edges. Trees are a special case: connected, acyclic graphs. Graphs model networks, maps, social connections, and dependencies.\n\n### Representations\n\nThe **adjacency list** — a list of neighbors for each node — is the most common:\n\n```python\ngraph = [\n    [1, 2],      # node 0 connects to 1 and 2\n    [0, 3],      # node 1 connects to 0 and 3\n    [0],         # node 2 connects to 0\n    [1],         # node 3 connects to 1\n]\n```\n\n### Depth-first search (DFS)\n\nExplore as far as possible before backtracking. Use a stack — explicitly or via recursion:\n\n```python\ndef dfs(graph, start):\n    visited = set()\n    order = []\n\n    def visit(node):\n        if node in visited:\n            return\n        visited.add(node)\n        order.append(node)\n        for nxt in graph[node]:\n            visit(nxt)\n\n    visit(start)\n    return order\n```\n\n### Breadth-first search (BFS)\n\nExplore level by level. Use a queue:\n\n```python\nfrom collections import deque\n\ndef bfs(graph, start):\n    visited = {start}\n    order = []\n    queue = deque([start])\n    while queue:\n        node = queue.popleft()\n        order.append(node)\n        for nxt in graph[node]:\n            if nxt not in visited:\n                visited.add(nxt)\n                queue.append(nxt)\n    return order\n```\n\n### DFS vs BFS\n\n|              | DFS                          | BFS                          |\n|--------------|------------------------------|------------------------------|\n| structure    | stack / recursion            | queue                        |\n| best for     | path existence, mazes, backtracking | shortest path (unweighted), levels |\n| memory       | depth of search              | width of frontier            |\n| order        | go deep first                | go wide first                |\n\n### The one thing to remember\n\n**BFS finds the shortest path in an unweighted graph** because it explores all distance-1 nodes before distance-2 nodes. DFS cannot guarantee that.\n\nBoth traverse every reachable node in `O(V + E)` — that complexity bound underlies most graph problems.\n\n---\n\n**Next up:** exercises — heap parents, tree levels, and neighbor counts.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-trees-exercise-parent",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-trees",
+      "title": "Exercise: Parent in a Heap",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Parent in a Heap\n\nA binary heap stores a tree in a plain array. Node at index `i` has its parent at index `(i - 1) // 2` (for `i > 0`); the root at index `0` has no parent.\n\nWrite a function `solve(arr, i)` that returns the **value** of the parent of node at index `i`, or `-1` if the node is the root.\n\n### Worked sample\n\nInput:\n\n```text\n[3,9,20,15,7]\n2\n```\n\nOutput:\n\n```text\n3\n```\n\nThe node at index 2 (`20`) has parent at index `(2-1)//2 = 0`, whose value is `3`.\n\n### How your code runs\n\nThe runner parses the first line as the heap array and the second as the index, then calls `solve(arr, i)`. Return the parent value as an integer.\n\n### Think\n\nReturn `-1` for index `0`. Otherwise compute `parent_index = (i - 1) // 2` and return `arr[parent_index]`.\n\n### Starter code\n\n```python\ndef solve(arr, i):\n    if i <= 0:\n        return -1\n    return arr[(i - 1) // 2]\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    arr = json.loads(parts[0])\n    i = json.loads(parts[1])\n    print(solve(arr, i))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(arr, i):\n    if i <= 0:\n        return -1\n    return arr[(i - 1) // 2]\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    arr = json.loads(parts[0])\n    i = json.loads(parts[1])\n    print(solve(arr, i))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[3,9,20,15,7]\n2",
+          "expected_output": "3",
+          "description": "Parent of index 2"
+        },
+        {
+          "input": "[3,9,20,15,7]\n0",
+          "expected_output": "-1",
+          "description": "Root has no parent"
+        },
+        {
+          "input": "[3,9,20]\n1",
+          "expected_output": "3",
+          "description": "Parent of index 1"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-trees-exercise-levels",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-trees",
+      "title": "Exercise: Number of Levels",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Number of Levels\n\nWrite a function `solve(arr)` that returns the number of **levels** (height in nodes) in a complete binary tree stored as a flat array.\n\n### Worked sample\n\nInput:\n\n```text\n[1,2,3,4,5,6,7]\n```\n\nOutput:\n\n```text\n3\n```\n\nAn array of 7 elements forms a tree with levels `[1]`, `[2,3]`, `[4,5,6,7]` — three levels total.\n\n### How your code runs\n\nThe runner parses the input line as a list and calls `solve(arr)`. Return the number of levels as an integer.\n\n### Think\n\nFor `n` nodes, the number of complete levels is `floor(log2(n)) + 1`. With Python's `math` module: `math.log2(n)` for `n >= 1`.\n\n### Starter code\n\n```python\nimport math\n\n\ndef solve(arr):\n    n = len(arr)\n    return int(math.log2(n)) + 1\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    arr = json.loads(raw)\n    print(solve(arr))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "import math\n\n\ndef solve(arr):\n    n = len(arr)\n    return int(math.log2(n)) + 1\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    arr = json.loads(raw)\n    print(solve(arr))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[1,2,3,4,5,6,7]",
+          "expected_output": "3",
+          "description": "Seven nodes"
+        },
+        {
+          "input": "[1]",
+          "expected_output": "1",
+          "description": "Single node"
+        },
+        {
+          "input": "[1,2,3]",
+          "expected_output": "2",
+          "description": "Three nodes"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-trees-exercise-neighbors",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-trees",
+      "title": "Exercise: Count Neighbors",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Count Neighbors\n\nWrite a function `solve(adj, i)` that returns the number of **neighbors** (degree) of node `i` in an adjacency-list graph.\n\n### Worked sample\n\nInput:\n\n```text\n[[1,2],[0,3],[0],[1]]\n1\n```\n\nOutput:\n\n```text\n2\n```\n\nNode 1 connects to nodes `0` and `3`, so it has degree 2.\n\n### How your code runs\n\nThe runner parses the first line as the adjacency list and the second as the node index, then calls `solve(adj, i)`. Return the degree as an integer.\n\n### Think\n\nIn an adjacency list, `adj[i]` is already the list of node `i`'s neighbors. Its length is the degree.\n\n### Starter code\n\n```python\ndef solve(adj, i):\n    return len(adj[i])\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    adj = json.loads(parts[0])\n    i = json.loads(parts[1])\n    print(solve(adj, i))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(adj, i):\n    return len(adj[i])\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    parts = raw.split(\"\\n\")\n    adj = json.loads(parts[0])\n    i = json.loads(parts[1])\n    print(solve(adj, i))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[[1,2],[0,3],[0],[1]]\n1",
+          "expected_output": "2",
+          "description": "Two neighbors"
+        },
+        {
+          "input": "[[1,2],[0,3],[0],[1]]\n3",
+          "expected_output": "1",
+          "description": "Single neighbor"
+        },
+        {
+          "input": "[[],[0],[0]]\n0",
+          "expected_output": "0",
+          "description": "Isolated node"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-problems-method",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-problems",
+      "title": "The Problem-Solving Method",
+      "type": "theory",
+      "order": 1,
+      "content": "## The Problem-Solving Method\n\nGood algorithm design is a **process**, not a flash of inspiration. A structured method turns intimidating problems into a sequence of small, verifiable steps.\n\n### The four-phase loop\n\n1. **Understand** — restate the problem in your own words. What are the inputs, outputs, and edge cases?\n2. **Plan** — sketch an approach and its complexity before writing code.\n3. **Implement** — write the solution.\n4. **Verify** — test on examples, then on edge cases.\n\n### Understand: examples first\n\nBefore any code, build a small worked example by hand:\n\n```text\nInput:  [3, 1, 4, 1, 5]\nOutput: ?\n```\n\nHand-computing the answer forces you to pin down the exact rules — most bugs are misunderstanding the spec, not the code.\n\n### Plan: name the technique\n\nMap the problem to a known pattern:\n\n| You see...                          | Pattern          |\n|-------------------------------------|------------------|\n| pair sums in a sorted array         | two pointers     |\n| contiguous subarray sums            | prefix / sliding |\n| find in sorted data                 | binary search    |\n| shortest path in a graph            | BFS              |\n| \"can we reach / all paths\"          | DFS              |\n\n### Complexity as a filter\n\nEstimate `n` from the constraints, then choose a target:\n\n| n           | allowed complexity |\n|-------------|--------------------|\n| ≤ 20        | `O(2ⁿ)`, factorial |\n| ≤ 10³       | `O(n²)`            |\n| ≤ 10⁵       | `O(n log n)`       |\n| ≤ 10⁶+      | `O(n)` or better   |\n\n### Verify: edge cases first\n\nTest the embarrassing cases: empty input, one element, duplicates, negatives, and the maximum size. Solutions that pass examples but fail edge cases are the most common failure mode.\n\n### Write it small\n\nBreak the solution into functions with one job each. Small functions are easy to test and easy to explain — and explaining is how you confirm you truly understand the algorithm.\n\n---\n\n**Next up:** common patterns that recur across problems.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-problems-patterns",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-problems",
+      "title": "Common Patterns",
+      "type": "theory",
+      "order": 2,
+      "content": "## Common Patterns\n\nA small set of **patterns** solves an enormous fraction of algorithmic problems. Recognizing the pattern is more than half the battle.\n\n### 1. Sliding window\n\nFor contiguous subarray problems with a constraint, keep a window and slide it:\n\n```python\ndef longest_without_repeat(text):\n    seen = set()\n    left = longest = 0\n    for right, ch in enumerate(text):\n        while ch in seen:\n            seen.remove(text[left])\n            left += 1\n        seen.add(ch)\n        longest = max(longest, right - left + 1)\n    return longest\n```\n\n### 2. Two pointers\n\nSorted arrays and \"find a pair\" problems:\n\n```python\ndef has_pair_sum(nums, target):\n    left, right = 0, len(nums) - 1\n    while left < right:\n        total = nums[left] + nums[right]\n        if total == target:\n            return True\n        if total < target:\n            left += 1\n        else:\n            right -= 1\n    return False\n```\n\n### 3. Hash map lookup\n\nTurn \"is this present?\" from `O(n)` into `O(1)`. The two-sum solution from module 1 is the canonical example: store each value with its index as you go.\n\n### 4. Prefix / accumulate\n\nRange sums, running products, cumulative counts. Precompute once, query in `O(1)`.\n\n### 5. Frequency counting\n\nCount occurrences with a `dict` or `Counter`:\n\n```python\nfrom collections import Counter\n\ncounts = Counter(\"mississippi\")\nmost = counts.most_common(1)\n```\n\n### Choosing quickly\n\n1. Contiguous window → sliding window.\n2. Pair / triples in sorted data → two pointers.\n3. \"Has seen before\" → hash map.\n4. Many range queries → prefix array.\n5. Counts and frequencies → Counter.\n\nIf none fit, the next lessons introduce greedy and dynamic programming — the two ideas that cover almost everything left.\n\n---\n\n**Next up:** greedy algorithms — making the locally best choice.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-problems-greedy",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-problems",
+      "title": "Greedy Algorithms",
+      "type": "theory",
+      "order": 3,
+      "content": "## Greedy Algorithms\n\nA **greedy** algorithm makes the locally optimal choice at each step, hoping it leads to the globally optimal answer. When it works, it is simple and fast. When it does not, it silently returns a wrong answer.\n\n### The canonical example: best profit\n\nGiven daily prices, buy once and sell once later for maximum profit. The greedy insight: track the lowest price seen so far, and at each day compute the profit if you sell today:\n\n```python\ndef max_profit(prices):\n    lowest = prices[0]\n    best = 0\n    for price in prices[1:]:\n        if price < lowest:\n            lowest = price\n        else:\n            best = max(best, price - lowest)\n    return best\n```\n\nThis is `O(n)` — and it is correct because buying at the historical minimum is always optimal for a given sell day.\n\n### When greedy works\n\nGreedy is correct when the problem has **optimal substructure** *and* a **greedy choice property**: the locally best choice is part of some globally best solution. Classic examples:\n\n- Coin change with canonical denominations.\n- Interval scheduling (pick the earliest-finishing job).\n- Huffman coding.\n- Minimum spanning trees (Kruskal, Prim).\n\n### When greedy fails\n\nConsider \"find the max sum path in a grid by always moving to the larger neighbor\" — a local choice can steer you away from the global optimum. For counterexamples like this, use **dynamic programming** (next lesson).\n\n### How to test a greedy idea\n\n1. Write the greedy rule in one sentence.\n2. Build a counterexample by hand — try to construct input where the greedy choice is wrong.\n3. If you cannot, implement and verify against brute force on small inputs.\n\n### The mindset\n\nGreedy rewards confidence with simplicity. Ask: *if I make the best immediate choice, can that ever hurt me later?* If the answer is never, greedy is likely your fastest correct solution.\n\n---\n\n**Next up:** dynamic programming — caching overlapping subproblems.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-problems-dp",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-problems",
+      "title": "Introduction to Dynamic Programming",
+      "type": "theory",
+      "order": 4,
+      "content": "## Introduction to Dynamic Programming\n\n**Dynamic programming (DP)** solves problems by combining solutions to **overlapping subproblems** — and caching those solutions so each is computed once. It turns exponential recursion into polynomial time.\n\n### The classic: climbing stairs\n\nTo reach step `n`, you can come from step `n-1` (one step) or `n-2` (two steps), so:\n\n```python\ndef climb(n):\n    if n <= 2:\n        return n\n    a, b = 1, 2\n    for _ in range(3, n + 1):\n        a, b = b, a + b\n    return b\n```\n\nThe sequence `1, 2, 3, 5, 8, ...` is Fibonacci in disguise.\n\n### The two DP styles\n\n1. **Top-down (memoization):** recursion plus a cache.\n\n```python\ndef climb(n, memo=None):\n    if memo is None:\n        memo = {}\n    if n in memo:\n        return memo[n]\n    if n <= 2:\n        return n\n    memo[n] = climb(n - 1, memo) + climb(n - 2, memo)\n    return memo[n]\n```\n\n2. **Bottom-up (tabulation):** fill a table from small to large.\n\n```python\ndef climb(n):\n    if n <= 2:\n        return n\n    dp = [0] * (n + 1)\n    dp[1], dp[2] = 1, 2\n    for i in range(3, n + 1):\n        dp[i] = dp[i - 1] + dp[i - 2]\n    return dp[n]\n```\n\n### The DP recipe\n\n1. **Define the state** — what does `dp[i]` mean?\n2. **Find the recurrence** — how does `dp[i]` relate to smaller states?\n3. **Set base cases** — the values you know directly.\n4. **Choose the order** — fill bottom-up or memoize top-down.\n\n### When to reach for DP\n\n- The problem asks for *count*, *maximum*, or *minimum*.\n- It decomposes into overlapping subproblems (recursion recomputes the same inputs).\n- A greedy guess feels risky.\n\n### Complexity\n\nWith memoization, each subproblem is solved once: state count × work per state. Climbing stairs is `O(n)` time and `O(1)` (or `O(n)`) space.\n\n---\n\n**Next up:** final exercises — palindrome, climbing stairs, and max profit.",
+      "language": "python"
+    },
+    {
+      "id": "dsa-problems-exercise-palindrome",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-problems",
+      "title": "Exercise: Palindrome Check",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Palindrome Check\n\nWrite a function `solve(text)` that returns `True` if `text` reads the same forwards and backwards, otherwise `False`. Case and non-letter characters count.\n\n### Worked sample\n\nInput:\n\n```text\nracecar\n```\n\nOutput:\n\n```text\ntrue\n```\n\n### How your code runs\n\nThe runner passes the raw input text as a single argument to `solve(text)`. Return a boolean — bool outputs serialize as `true`/`false`.\n\n### Think\n\nCompare the string to its reverse: `text == text[::-1]`. The slicing `[::-1]` is a fast, idiomatic reverse.\n\n### Starter code\n\n```python\ndef solve(text):\n    return text == text[::-1]\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    result = solve(raw)\n    print(str(result).lower())\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(text):\n    return text == text[::-1]\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    result = solve(raw)\n    print(str(result).lower())\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "racecar",
+          "expected_output": "true",
+          "description": "Classic palindrome"
+        },
+        {
+          "input": "hello",
+          "expected_output": "false",
+          "description": "Not a palindrome"
+        },
+        {
+          "input": "abba",
+          "expected_output": "true",
+          "description": "Even-length palindrome"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-problems-exercise-stairs",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-problems",
+      "title": "Exercise: Climbing Stairs",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Climbing Stairs\n\nWrite a function `solve(n)` that returns the number of distinct ways to climb a staircase of `n` steps if you can take **1 or 2 steps** at a time.\n\n### Worked sample\n\nInput:\n\n```text\n3\n```\n\nOutput:\n\n```text\n3\n```\n\nThe ways for 3 steps: `1+1+1`, `1+2`, `2+1` — three total.\n\n### How your code runs\n\nThe runner parses the input line as an integer and calls `solve(n)`. Return the count as an integer.\n\n### Think\n\n`ways(n) = ways(n-1) + ways(n-2)` with `ways(1) = 1` and `ways(2) = 2`. Slide two variables forward — no recursion depth worries.\n\n### Starter code\n\n```python\ndef solve(n):\n    if n <= 2:\n        return n\n    a, b = 1, 2\n    for _ in range(3, n + 1):\n        a, b = b, a + b\n    return b\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    n = int(raw)\n    print(solve(n))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(n):\n    if n <= 2:\n        return n\n    a, b = 1, 2\n    for _ in range(3, n + 1):\n        a, b = b, a + b\n    return b\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    n = int(raw)\n    print(solve(n))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "2",
+          "expected_output": "2",
+          "description": "Two steps"
+        },
+        {
+          "input": "3",
+          "expected_output": "3",
+          "description": "Three steps"
+        },
+        {
+          "input": "10",
+          "expected_output": "89",
+          "description": "Ten steps"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "dsa-problems-exercise-max-profit",
+      "course_id": "data-structures-and-algorithms",
+      "module_id": "dsa-problems",
+      "title": "Exercise: Best Time to Buy and Sell",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Best Time to Buy and Sell\n\nWrite a function `solve(prices)` that returns the **maximum profit** from buying once and selling once later. If no profit is possible, return `0`.\n\n### Worked sample\n\nInput:\n\n```text\n[7,1,5,3,6,4]\n```\n\nOutput:\n\n```text\n5\n```\n\nBuy at `1` (day 2) and sell at `6` (day 5) for a profit of `5`.\n\n### How your code runs\n\nThe runner parses the input line as a list and calls `solve(prices)`. Return the profit as an integer.\n\n### Think\n\nTrack the lowest price seen so far. For each later price, the profit `price - lowest` is the best you could have done by selling today. Keep the maximum.\n\n### Starter code\n\n```python\ndef solve(prices):\n    lowest = prices[0]\n    best = 0\n    for price in prices[1:]:\n        if price < lowest:\n            lowest = price\n        else:\n            best = max(best, price - lowest)\n    return best\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    prices = json.loads(raw)\n    print(solve(prices))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(prices):\n    lowest = prices[0]\n    best = 0\n    for price in prices[1:]:\n        if price < lowest:\n            lowest = price\n        else:\n            best = max(best, price - lowest)\n    return best\n\n\ndef main():\n    import sys\n    import json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    prices = json.loads(raw)\n    print(solve(prices))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[7,1,5,3,6,4]",
+          "expected_output": "5",
+          "description": "Classic buy low sell high"
+        },
+        {
+          "input": "[7,6,4,3,1]",
+          "expected_output": "0",
+          "description": "Always falling"
+        },
+        {
+          "input": "[1,2,3,4,5]",
+          "expected_output": "4",
+          "description": "Always rising"
+        }
+      ],
+      "language": "python"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "intro-to-r",
+  "title": "Introduction to R",
+  "description": "Start your R journey from zero: the RStudio environment and base R syntax, vectors and data structures, control flow, functions and packages, data cleaning, and visualization with base R and ggplot2. Every concept is paired with hands-on exercises you can run right here.",
+  "language": "r",
+  "icon": "r",
+  "order": 6
+}

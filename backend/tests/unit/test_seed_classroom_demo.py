@@ -1,10 +1,11 @@
-"""Issue #159 Task 4: demo classroom seed — professors, course owners, temp students.
+"""Issue #159 Task 4 + Issue #166: full demo-school seed.
 
 Runs against an in-memory FakeSession (no database). The seed must:
 - refuse to run unless explicitly allowed (SystemExit),
-- upsert 2 professors + TA + 8 temp students,
+- upsert 2 admins + 2 professors + 2 TAs + 15 temp students,
 - assign every course to professor.ada except data-structures → professor.grace,
-- create 2 classrooms, 10 enrollments (8 student + 2 TA), 8 progress rows,
+- create 2 classrooms, 19 enrollments (15 student + 4 TA), 15 progress rows,
+- read seed passwords from the environment (.env.seed) with demo defaults,
 - be idempotent (second run changes nothing) and return an exact report dict.
 """
 
@@ -23,14 +24,23 @@ DEMO_COUNTS = {
     "ava": 18,
     "noah": 9,
     "zoe": 5,
+    "lucas": 17,
+    "emma": 11,
+    "olivia": 7,
     "eli": 21,
     "ivy": 12,
     "max": 4,
+    "liam": 14,
+    "sophia": 19,
+    "ethan": 6,
+    "ruby": 3,
 }
-CS101_STUDENTS = ("mia", "leo", "ava", "noah", "zoe")
-CS201_STUDENTS = ("eli", "ivy", "max")
+CS101_STUDENTS = ("mia", "leo", "ava", "noah", "zoe", "lucas", "emma", "olivia")
+CS201_STUDENTS = ("eli", "ivy", "max", "liam", "sophia", "ethan", "ruby")
 EXPECTED_REPORT_KEYS = {
+    "admins",
     "professors",
+    "tas",
     "courses_assigned",
     "students",
     "enrollments",
@@ -170,10 +180,22 @@ async def test_seed_demo_gate_requires_both_env_vars(monkeypatch):
 
     monkeypatch.delenv("ALLOW_DEMO_SEED", raising=False)
     monkeypatch.delenv("DATABASE_SEARCH_PATH", raising=False)
+    monkeypatch.delenv("SEED_LIVE_CONFIRM", raising=False)
     assert seed_classroom_demo._demo_seed_allowed() is False
     monkeypatch.setenv("ALLOW_DEMO_SEED", "1")
     assert seed_classroom_demo._demo_seed_allowed() is False
     monkeypatch.setenv("DATABASE_SEARCH_PATH", "codecoach_test")
+    assert seed_classroom_demo._demo_seed_allowed() is True
+
+
+async def test_seed_demo_gate_allows_live_only_with_explicit_confirm(monkeypatch):
+    import seed_classroom_demo
+
+    monkeypatch.setenv("ALLOW_DEMO_SEED", "1")
+    monkeypatch.setenv("DATABASE_SEARCH_PATH", "public")
+    monkeypatch.delenv("SEED_LIVE_CONFIRM", raising=False)
+    assert seed_classroom_demo._demo_seed_allowed() is False
+    monkeypatch.setenv("SEED_LIVE_CONFIRM", "YES-I-AM-SURE")
     assert seed_classroom_demo._demo_seed_allowed() is True
 
 
@@ -197,12 +219,38 @@ async def test_returns_exact_report_dict():
     report = await _seed(FakeSession())
     assert set(report) == EXPECTED_REPORT_KEYS
     assert report == {
+        "admins": 2,
         "professors": 2,
+        "tas": 2,
         "courses_assigned": 3,
-        "students": 8,
-        "enrollments": 10,
-        "progress": 8,
+        "students": 15,
+        "enrollments": 19,
+        "progress": 15,
     }
+
+
+async def test_seeds_admin_and_second_ta_identities():
+    session = FakeSession()
+    await _seed(session)
+    assert session.users["admin"].role == "admin"
+    assert session.users["superadmin"].role == "super_admin"
+    assert session.users["demonstrator.turing"].role == "ta"
+    assert session.users["demonstrator.curie"].role == "ta"
+    assert session.users["demonstrator.curie"].email == "curie@university.edu"
+
+
+async def test_seed_passwords_come_from_env_with_demo_defaults(monkeypatch):
+    import seed_admin
+
+    # Hermetic against a local .env.seed (loaded at import): unset first.
+    monkeypatch.delenv("SEED_STUDENT_PASSWORD", raising=False)
+    assert seed_admin.seed_password("SEED_STUDENT_PASSWORD", "student123") == (
+        "student123"
+    )
+    monkeypatch.setenv("SEED_STUDENT_PASSWORD", "custom-pw")
+    assert seed_admin.seed_password("SEED_STUDENT_PASSWORD", "student123") == (
+        "custom-pw"
+    )
 
 
 async def test_assigns_data_structures_to_grace_rest_to_ada():
@@ -223,7 +271,7 @@ async def test_enrollments_use_explicit_roles_and_demo_split():
     session = FakeSession()
     await _seed(session)
     enrolls = [o for o in session.added if isinstance(o, ClassroomEnrollmentORM)]
-    assert len(enrolls) == 10
+    assert len(enrolls) == 19
     cs101 = session.classrooms["CS101-A-2026"]
     cs201 = session.classrooms["CS201-B-2026"]
     assert {e.role for e in enrolls} == {"student", "ta"}
@@ -240,11 +288,11 @@ async def test_enrollments_use_explicit_roles_and_demo_split():
         assert len(mine) == 1
         assert mine[0].role == "student"
         assert mine[0].classroom_id == cs201.id
-    ta_id = session.users["demonstrator.turing"].id
-    ta_mine = by_user[ta_id]
-    assert len(ta_mine) == 2
-    assert all(e.role == "ta" for e in ta_mine)
-    assert {e.classroom_id for e in ta_mine} == {cs101.id, cs201.id}
+    for ta_username in ("demonstrator.turing", "demonstrator.curie"):
+        ta_mine = by_user[session.users[ta_username].id]
+        assert len(ta_mine) == 2
+        assert all(e.role == "ta" for e in ta_mine)
+        assert {e.classroom_id for e in ta_mine} == {cs101.id, cs201.id}
 
 
 async def test_temp_students_and_progress_mirror_demo_counts():
@@ -256,7 +304,7 @@ async def test_temp_students_and_progress_mirror_demo_counts():
         user = session.users[username]
         assert user.email == f"{username}@university.example"
     rows = [o for o in session.added if isinstance(o, CourseProgressORM)]
-    assert len(rows) == 8
+    assert len(rows) == 15
     cs101_course = session.classrooms["CS101-A-2026"].course_id
     cs201_course = session.classrooms["CS201-B-2026"].course_id
     for row in rows:

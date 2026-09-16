@@ -442,3 +442,25 @@ def test_professor_classrooms_tables_exist(
     assert not missing_indexes, f"missing indexes at head: {sorted(missing_indexes)}"
     missing_fks = EXPECTED_PROFESSOR_CLASSROOM_FKS - fks
     assert not missing_fks, f"missing foreign keys at head: {sorted(missing_fks)}"
+
+
+def test_questions_id_is_varchar_64_at_head(
+    alembic_config: Config, migration_url: str
+) -> None:
+    """Live-DB recovery (#166): the ORM declares questions.id String(64) but
+    the initial migration created VARCHAR(36), so the 100-question bank
+    (ids up to 46 chars) cannot sync. At head the column must be 64."""
+    _retry(lambda: command.upgrade(alembic_config, "head"), "upgrade head")
+
+    with _sync_engine(migration_url).connect() as conn:
+        max_len = conn.execute(
+            text(
+                "SELECT character_maximum_length FROM information_schema.columns "
+                "WHERE table_schema = 'public' "
+                "AND table_name = 'questions' "
+                "AND column_name = 'id'"
+            )
+        ).scalar_one()
+    assert max_len == 64, (
+        f"public.questions.id must be VARCHAR(64) at head, found {max_len}"
+    )
