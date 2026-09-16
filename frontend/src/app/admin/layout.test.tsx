@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import AdminLayout from "./layout";
 
 const replace = vi.fn();
-let authState = { user: null as null | { role: string }, isAuthenticated: false, isHydrated: true };
+let authState = { user: null as null | { role: string; username: string }, isAuthenticated: false, isHydrated: true };
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/admin/users",
