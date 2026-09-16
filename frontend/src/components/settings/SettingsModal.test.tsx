@@ -153,18 +153,24 @@ describe('SettingsModal', () => {
     expect(screen.getByText('Premium')).toBeInTheDocument();
   });
 
-  it('gear dashboard tab embeds the real skill graph via MSW, not just a link', async () => {
+  it('has no duplicate dashboard tab — skills is the single dashboard entry', () => {
+    render(<SettingsModal open onClose={() => {}} isAuthenticated />);
+    expect(screen.queryByTestId('settings-tab-dashboard')).toBeNull();
+    expect(screen.queryByTestId('settings-dashboard-tab')).toBeNull();
+    expect(screen.queryByTestId('settings-dashboard-open')).toBeNull();
+    expect(screen.getByTestId('settings-tab-skills')).toBeInTheDocument();
+  });
+
+  it('exposes exactly one dashboard entry point from the skills tab', async () => {
     setAccessToken('test-token');
     server.use(
       http.get('/api/skills/me/skills', () => HttpResponse.json(graphPayload)),
     );
     render(<SettingsModal open onClose={() => {}} isAuthenticated />);
-    fireEvent.click(screen.getByTestId('settings-tab-dashboard'));
-    expect(await screen.findByTestId('settings-dashboard-tab')).toBeInTheDocument();
-    expect(screen.getByTestId('settings-dashboard-open')).toBeInTheDocument();
-    // Real SkillGraph (no component mock): MSW-backed fetch renders the graph
-    expect(await screen.findByTestId('skill-graph')).toBeInTheDocument();
-    expect(await screen.findAllByTestId('skill-graph-node')).toHaveLength(2);
+    fireEvent.click(screen.getByTestId('settings-tab-skills'));
+    expect(await screen.findByTestId('settings-skills-tab')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-skills-open')).toHaveTextContent('Open Dashboard');
+    expect(screen.queryByTestId('settings-dashboard-open')).toBeNull();
   });
 
   it('gear skills tab renders the SVG graph', async () => {
@@ -191,21 +197,5 @@ describe('SettingsModal', () => {
     expect(await screen.findByTestId('settings-skills-tab')).toBeInTheDocument();
     expect(await screen.findByText(/preview — sign in to track progress/i)).toBeInTheDocument();
     expect(screen.queryByTestId('skill-graph')).toBeNull();
-  });
-
-  it('guest dashboard tab shows preview, never mounts the live skill graph', async () => {
-    server.use(
-      http.get('/api/skills/me/skills', () =>
-        HttpResponse.json({ detail: 'boom' }, { status: 500 }),
-      ),
-    );
-    render(<SettingsModal open onClose={() => {}} />);
-    fireEvent.click(screen.getByTestId('settings-tab-dashboard'));
-    expect(await screen.findByTestId('settings-dashboard-tab')).toBeInTheDocument();
-    expect(screen.getByTestId('settings-dashboard-open')).toBeInTheDocument();
-    // Guest-safe preview (boilerplate path), not the authed live graph
-    expect(await screen.findByText(/preview — sign in to track progress/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('skill-graph')).toBeNull();
-    expect(screen.queryByText(/request failed/i)).toBeNull();
   });
 });

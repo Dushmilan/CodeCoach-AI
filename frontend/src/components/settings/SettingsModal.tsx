@@ -5,7 +5,7 @@ import { SkillGraph } from '@/features/skill-graph/SkillGraph';
 import { FileText, LayoutDashboard, LogOut, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 interface SettingsModalProps { open: boolean; onClose: () => void; isAuthenticated?: boolean; onLogout?: () => void; plan?: string; }
-type Tab = 'settings' | 'dashboard' | 'skills';
+type Tab = 'settings' | 'skills';
 export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout, plan = 'free', }: SettingsModalProps) {
   const inputRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<Tab>('settings');
@@ -24,25 +24,12 @@ export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout
           <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04] ring-1 ring-white/5 mb-4" role="tablist">
             {[
               { id: 'settings' as Tab, label: 'Settings' },
-              { id: 'dashboard' as Tab, label: 'Dashboard' },
               { id: 'skills' as Tab, label: 'Skills' },
             ].map((t) => (
               <button key={t.id} role="tab" aria-selected={tab === t.id} data-testid={`settings-tab-${t.id}`} onClick={() => setTab(t.id)} className={`flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${tab === t.id ? 'bg-white text-black' : 'text-muted-foreground hover:text-foreground'}`}>{t.label}</button>
             ))}
           </div>
           <div ref={inputRef} tabIndex={-1} className="space-y-4">
-            {tab === 'dashboard' && (
-              <div className="space-y-3" data-testid="settings-dashboard-tab">
-                <div className="max-h-96 overflow-y-auto pr-1">
-                  {isAuthenticated ? (
-                    <SkillGraph />
-                  ) : (
-                    <SkillGraphInline isAuthenticated={isAuthenticated} />
-                  )}
-                </div>
-                <button onClick={() => { window.location.href = '/dashboard'; onClose(); }} data-testid="settings-dashboard-open" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white text-black px-4 py-1.5 text-xs font-medium hover:bg-white/90 transition-colors"><LayoutDashboard className="h-3.5 w-3.5" /> Open Dashboard</button>
-              </div>
-            )}
             {tab === 'skills' && (
               <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-4" data-testid="settings-skills-tab">
                 <p className="text-xs font-medium text-foreground/80 mb-1">Your Skill Graph</p>
@@ -54,7 +41,7 @@ export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout
                   )}
                 </div>
                 <p className="text-[11px] text-muted-foreground/60 leading-relaxed mb-3">{isAuthenticated ? 'Full mastery graph — open Dashboard for the larger map.' : 'Mastery per skill lives in the Dashboard as a graph — open Dashboard to see the full map. This preview is the boilerplate (all 22 skills).'}</p>
-                <button onClick={() => { window.location.href = '/dashboard'; onClose(); }} data-testid="settings-skills-open" className="inline-flex items-center gap-1.5 rounded-full bg-primary/90 text-primary-foreground px-4 py-1.5 text-xs font-medium hover:bg-primary transition-colors"><LayoutDashboard className="h-3.5 w-3.5" /> View graph in Dashboard</button>
+                <button onClick={() => { window.location.href = '/dashboard'; onClose(); }} data-testid="settings-skills-open" className="inline-flex items-center gap-1.5 rounded-full bg-primary/90 text-primary-foreground px-4 py-1.5 text-xs font-medium hover:bg-primary transition-colors"><LayoutDashboard className="h-3.5 w-3.5" /> Open Dashboard</button>
               </div>
             )}
             {tab === 'settings' && (
