@@ -92,7 +92,11 @@ async def classroom_detail(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Classroom not found"
         )
-    if current_user.role in PROFESSOR_ROLES:
+    # Issue #178: admins sit above professors — bypass ownership so an admin
+    # can open any classroom detail (room + analytics) for drill-down.
+    if current_user.role in ("admin", "super_admin"):
+        pass
+    elif current_user.role in PROFESSOR_ROLES:
         if room.owner_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

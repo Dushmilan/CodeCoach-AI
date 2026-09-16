@@ -1,6 +1,7 @@
 'use client';
 
 import { SettingsModal } from '@/components/settings/SettingsModal';
+import { isAdmin as isAdminRole, isProfessor as isProfessorRole, isTA as isTARole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers';
 import { Code, GraduationCap, LayoutDashboard, Moon, Settings, Shield, Sun, User, X } from 'lucide-react';
@@ -22,13 +23,13 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isAdmin =
-    isHydrated && isAuthenticated && !!user?.role && ['admin', 'super_admin'].includes(user.role);
+    isHydrated && isAuthenticated && isAdminRole(user?.role);
   const isProfessor =
-    isHydrated && isAuthenticated && !!user?.role && ['professor', 'admin', 'super_admin'].includes(user.role);
+    isHydrated && isAuthenticated && isProfessorRole(user?.role);
   // Professors have their own dashboard; the Demonstrator link is TA-only
   // (admins keep both). Mirrors the backend professor/ta permission matrix.
   const isDemonstrator =
-    isHydrated && isAuthenticated && !!user?.role && ['ta', 'admin', 'super_admin'].includes(user.role);
+    isHydrated && isAuthenticated && isTARole(user?.role);
 
   return (
     <>
