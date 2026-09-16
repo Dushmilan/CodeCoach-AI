@@ -257,8 +257,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 cd frontend
 pnpm install
 cp .env.example .env.local   # leave NEXT_PUBLIC_API_URL empty (same-origin; a plain-http absolute URL is blocked by CSP)
-pnpm dev                     # http://localhost:3000
+pnpm dev                     # http://localhost:3000 (app only, no viewer)
 pnpm dev:all                 # Next.js + Motion Canvas viewer (:9000) together
+                             # (installs viewer deps automatically on first run)
 pnpm build && pnpm start     # production
 ```
 
