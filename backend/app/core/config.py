@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     # Groq (primary AI provider for coaching)
     GROQ_API_KEY: Optional[str] = None
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     GROQ_MODEL_EASY: str = "openai/gpt-oss-20b"
     GROQ_MODEL_MEDIUM: str = "openai/gpt-oss-120b"
     GROQ_MODEL_HARD: str = "openai/gpt-oss-120b"

@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from typing import AsyncIterator, Dict, Any, Optional
 
 import httpx
@@ -9,6 +8,7 @@ from pydantic import ValidationError
 
 from app.adapters.coaching_prompts import PromptBuilder
 from app.adapters.coaching_response_parser import CoachingResponseParser
+from app.core.config import get_settings
 from app.ports.coaching_provider import CoachingProvider
 from app.services.animation_validator import AnimationValidator
 from app.services.redis_service import RedisCache, _content_hash
@@ -26,15 +26,6 @@ def _jsonable(value: Optional[Dict[str, Any]]) -> str:
 class GroqService(CoachingProvider):
     """Groq adapter for AI coaching (OpenAI-compatible chat completions)."""
 
-    BASE_URL = "https://api.groq.com/openai/v1"
-    DEFAULT_MODELS = {
-        "easy": "openai/gpt-oss-20b",
-        "medium": "openai/gpt-oss-120b",
-        "hard": "openai/gpt-oss-120b",
-        "stream": "openai/gpt-oss-20b",
-        "animate": "openai/gpt-oss-120b",
-    }
-
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -42,23 +33,27 @@ class GroqService(CoachingProvider):
         usage_recorder: Any = None,
         user_id: Optional[str] = None,
     ):
-        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        settings = get_settings()
+        self.api_key = api_key or settings.GROQ_API_KEY
         if not self.api_key:
-            logger.error("GROQ_API_KEY environment variable is required but not found")
-            raise ValueError("GROQ_API_KEY environment variable is required")
+            logger.error("GROQ_API_KEY is required but not found in settings")
+            raise ValueError("GROQ_API_KEY is required but not set")
 
         self.cache = cache
         self.usage_recorder = usage_recorder
         self.user_id = user_id
-        self.base_url = os.getenv("GROQ_BASE_URL", self.BASE_URL)
+        self.base_url = settings.GROQ_BASE_URL
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
 
         self.models = {
-            tier: os.getenv(f"GROQ_MODEL_{tier.upper()}", model)
-            for tier, model in self.DEFAULT_MODELS.items()
+            "easy": settings.GROQ_MODEL_EASY,
+            "medium": settings.GROQ_MODEL_MEDIUM,
+            "hard": settings.GROQ_MODEL_HARD,
+            "stream": settings.GROQ_MODEL_STREAM,
+            "animate": settings.GROQ_MODEL_ANIMATE,
         }
 
         self.parser = CoachingResponseParser()
