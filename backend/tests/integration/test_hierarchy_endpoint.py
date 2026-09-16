@@ -58,7 +58,6 @@ def _auth_as(user_id: str, username: str, role: str):
             created_at=datetime.now(timezone.utc),
             is_active=True,
             role=role,
-            plan="free",
         )
 
     app.dependency_overrides[get_current_user] = _ov

@@ -33,7 +33,6 @@ beforeEach(() => {
   mockGetCoachResponse.mockReset();
   mockGetUsage.mockReset();
   mockGetUsage.mockResolvedValue({
-    plan: "free",
     daily_remaining: 20,
     daily_limit: 20,
     period: "day",
@@ -280,7 +279,7 @@ describe("useCoaching", () => {
       expect(result.current.error).toBe(
         "You've reached your daily AI message limit.",
       );
-      expect(result.current.messages[1].content).toContain("Upgrade to Pro");
+      expect(result.current.messages[1].content).toContain("Try again tomorrow");
     });
 
     it("starts with limitReached false", () => {

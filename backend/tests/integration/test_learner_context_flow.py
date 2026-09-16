@@ -58,7 +58,7 @@ class CapturingProvider:
 
 
 @contextmanager
-def mock_auth(user_id="test-learner", username="learner", plan="premium"):
+def mock_auth(user_id="test-learner", username="learner"):
     from app.api.auth_deps import get_current_user
 
     async def override():
@@ -70,7 +70,6 @@ def mock_auth(user_id="test-learner", username="learner", plan="premium"):
             email="test@example.com",
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
-            plan=plan,
         )
 
     app.dependency_overrides[get_current_user] = override

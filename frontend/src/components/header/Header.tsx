@@ -263,7 +263,6 @@ export function Header() {
         onClose={() => setShowSettings(false)}
         isAuthenticated={isHydrated && isAuthenticated}
         onLogout={logout}
-        plan={user?.plan}
       />
     </>
   );

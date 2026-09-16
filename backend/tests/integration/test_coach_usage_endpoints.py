@@ -22,17 +22,8 @@ async def _register_user(async_client, username: str):
     return await aregister_headers(async_client, username)
 
 
-async def _register_premium_user(async_client, username: str):
-    uid, headers = await _register_user(async_client, username)
-    await _promote_premium(username)
-    return uid, headers
-
-
-async def _promote_premium(username: str) -> None:
-    """Set a registered user's plan to premium directly in the DB."""
-    from tests.db_helpers import set_plan
-
-    await set_plan(username, "premium")
+async def _register_user_plain(async_client, username: str):
+    return await _register_user(async_client, username)
 
 
 def _coaching_payload():
@@ -47,37 +38,26 @@ def _coaching_payload():
 
 
 @pytest.mark.usefixtures("test_env_vars")
-class TestUsageHeaders:
+class TestNoTokenCaps:
+    """Issue #184: token-cap enforcement removed; usage still recorded."""
+
     @pytest.mark.asyncio
-    async def test_coach_response_includes_usage_headers(self, async_client):
-        _, headers = await _register_premium_user(async_client, "usagehdr")
+    async def test_coach_response_has_no_token_cap_headers(self, async_client):
+        _, headers = await _register_user_plain(async_client, "usagehdr")
         response = await async_client.post(
             "/api/coach/", json=_coaching_payload(), headers=headers
         )
         assert response.status_code == 200
-        assert response.headers["X-Usage-Input"] == "0"
-        assert response.headers["X-Usage-Output"] == "0"
-        assert response.headers["X-Usage-Remaining-Input"] == "250000"
-        assert response.headers["X-Usage-Remaining-Output"] == "125000"
-        assert "X-Usage-Reset" in response.headers
+        assert "X-Usage-Remaining-Input" not in response.headers
+        assert "X-Usage-Remaining-Output" not in response.headers
 
     @pytest.mark.asyncio
-    async def test_coach_stream_includes_usage_headers(self, async_client):
-        _, headers = await _register_premium_user(async_client, "usagehdrs")
-        response = await async_client.post(
-            "/api/coach/stream", json=_coaching_payload(), headers=headers
-        )
-        assert response.status_code == 200
-        assert response.headers["X-Usage-Remaining-Input"] == "250000"
-
-
-@pytest.mark.usefixtures("test_env_vars")
-class TestDailyCaps:
-    @pytest.mark.asyncio
-    async def test_cap_exceeded_returns_429(self, async_client, test_db):
-        uid, headers = await _register_premium_user(async_client, "cappeduser")
+    async def test_high_token_usage_still_allowed_and_recorded(
+        self, async_client, test_db
+    ):
         from app.repositories.sql_usage_repository import SqlUsageRepository
 
+        uid, headers = await _register_user_plain(async_client, "biguser")
         repo = SqlUsageRepository(test_db)
         await repo.increment_daily(
             user_id=uid,
@@ -90,32 +70,9 @@ class TestDailyCaps:
         response = await async_client.post(
             "/api/coach/", json=_coaching_payload(), headers=headers
         )
-        assert response.status_code == 429
-        assert "token" in response.json()["detail"].lower()
-        assert response.headers["X-Usage-Remaining-Input"] == "0"
-        assert response.headers["X-Usage-Remaining-Output"] == "0"
-
-    @pytest.mark.asyncio
-    async def test_cap_exceeded_stream_returns_429(self, async_client, test_db):
-        uid, headers = await _register_premium_user(async_client, "cappedstream")
-        from app.repositories.sql_usage_repository import SqlUsageRepository
-
-        repo = SqlUsageRepository(test_db)
-        await repo.increment_daily(
-            user_id=uid,
-            usage_date=datetime.now(timezone.utc).date(),
-            input_tokens=999_999,
-            output_tokens=999_999,
-        )
-        await test_db.commit()
-
-        response = await async_client.post(
-            "/api/coach/stream", json=_coaching_payload(), headers=headers
-        )
-        assert response.status_code == 429
+        assert response.status_code == 200
 
 
-@pytest.mark.usefixtures("test_env_vars")
 class TestPerUserRateLimit:
     class FakeRedisCache:
         def __init__(self):
@@ -138,7 +95,7 @@ class TestPerUserRateLimit:
         app.dependency_overrides[get_redis_cache] = override_get_redis_cache
         monkeypatch.setenv("USER_RATE_LIMIT_PER_MINUTE", "1")
         try:
-            _, headers = await _register_premium_user(async_client, "ratelimited")
+            _, headers = await _register_user_plain(async_client, "ratelimited")
             first = await async_client.post(
                 "/api/coach/", json=_coaching_payload(), headers=headers
             )
@@ -154,7 +111,7 @@ class TestPerUserRateLimit:
     @pytest.mark.asyncio
     async def test_per_user_rate_limit_degrades_open_without_redis(self, async_client):
         # get_redis_cache returns None when Redis is disabled -> no 429
-        _, headers = await _register_premium_user(async_client, "noeredis")
+        _, headers = await _register_user_plain(async_client, "noeredis")
         for _ in range(3):
             response = await async_client.post(
                 "/api/coach/", json=_coaching_payload(), headers=headers
@@ -171,7 +128,7 @@ class TestAuthAndValidation:
 
     @pytest.mark.asyncio
     async def test_coaching_oversized_payload_422(self, async_client):
-        _, headers = await _register_premium_user(async_client, "oversized")
+        _, headers = await _register_user_plain(async_client, "oversized")
 
         cases = [
             {"problem": "x" * 20001},
@@ -220,8 +177,10 @@ class TestAuthAndValidation:
 @pytest.mark.usefixtures("test_env_vars")
 class TestUsageHeadersReflectUsage:
     @pytest.mark.asyncio
-    async def test_headers_reflect_existing_daily_usage(self, async_client, test_db):
-        uid, headers = await _register_premium_user(async_client, "useduser")
+    async def test_no_token_usage_headers_on_coach_response(
+        self, async_client, test_db
+    ):
+        uid, headers = await _register_user_plain(async_client, "useduser")
         from app.repositories.sql_usage_repository import SqlUsageRepository
 
         repo = SqlUsageRepository(test_db)
@@ -237,10 +196,8 @@ class TestUsageHeadersReflectUsage:
             "/api/coach/", json=_coaching_payload(), headers=headers
         )
         assert response.status_code == 200
-        assert response.headers["X-Usage-Input"] == "100"
-        assert response.headers["X-Usage-Output"] == "50"
-        assert response.headers["X-Usage-Remaining-Input"] == "249900"
-        assert response.headers["X-Usage-Remaining-Output"] == "124950"
+        assert "X-Usage-Input" not in response.headers
+        assert "X-Usage-Remaining-Input" not in response.headers
 
 
 async def _promote_user(test_db, username: str) -> None:

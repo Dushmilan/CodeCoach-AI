@@ -22,7 +22,6 @@ def mock_auth(user_id="warm-learner"):
             email="test@example.com",
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
-            plan="premium",
         )
 
     app.dependency_overrides[get_current_user] = override

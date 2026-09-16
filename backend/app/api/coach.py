@@ -32,7 +32,7 @@ from app.ports.coaching_provider import CoachingProvider
 from app.ports.code_executor import CodeExecutor
 from app.services.groq_service import GroqService
 from app.services.redis_service import RedisCache
-from app.services.usage_service import UsageService, check_caps, usage_headers
+from app.services.usage_service import UsageService
 from app.services.solution_animation_service import SolutionAnimationService
 from app.api.auth_deps import get_current_user
 from app.api.daily_limits import enforce_daily_request_cap
@@ -73,26 +73,6 @@ def get_coaching_provider(
         usage_recorder=usage_service,
         user_id=user.id,
     )
-
-
-async def check_daily_token_cap(
-    request: Request,
-    user: UserResponse = Depends(get_current_user),
-    usage_service: UsageService = Depends(get_usage_service),
-) -> None:
-    """Enforce daily per-user input/output token caps; set X-Usage-* headers."""
-    daily = await usage_service.get_daily_usage(user.id)
-    input_cap = int(os.getenv("DAILY_TOKEN_INPUT_CAP", "250000"))
-    output_cap = int(os.getenv("DAILY_TOKEN_OUTPUT_CAP", "125000"))
-    allowed, _, _ = check_caps(daily, input_cap, output_cap)
-    headers = usage_headers(daily, input_cap, output_cap)
-    request.state.usage_headers = headers
-    if not allowed:
-        raise HTTPException(
-            status_code=429,
-            detail="Daily token limit reached",
-            headers=headers,
-        )
 
 
 async def enforce_user_rate_limit(
@@ -196,7 +176,6 @@ async def get_coaching(
     coaching_request: CoachingRequest,
     provider: CoachingProvider = Depends(get_coaching_provider),
     user: UserResponse = Depends(get_current_user),
-    _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
     _daily_guard: None = Depends(enforce_daily_request_cap),
     learner_context: LearnerContextService = Depends(
@@ -317,7 +296,6 @@ async def get_coaching(
         logger.debug(f"Summary: {structured_data.get('summary', 'N/A')[:100]}...")
         logger.debug("==========================")
 
-        response.headers.update(getattr(request.state, "usage_headers", {}))
         response.headers.update(getattr(request.state, "daily_limit_headers", {}))
         response.headers["X-Surface"] = surface
 
@@ -369,7 +347,6 @@ async def get_animation(
     provider: CoachingProvider = Depends(get_coaching_provider),
     executor: CodeExecutor = Depends(get_executor),
     user: UserResponse = Depends(get_current_user),
-    _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
     _daily_guard: None = Depends(enforce_daily_request_cap),
 ):
@@ -419,7 +396,6 @@ async def get_animation(
                 detail="Failed to generate a valid animation for this problem.",
             )
 
-        response.headers.update(getattr(request.state, "usage_headers", {}))
         response.headers.update(getattr(request.state, "daily_limit_headers", {}))
 
         try:
@@ -507,7 +483,6 @@ async def get_coaching_stream(
     coaching_request: CoachingRequest,
     provider: CoachingProvider = Depends(get_coaching_provider),
     user: UserResponse = Depends(get_current_user),
-    _usage_guard: None = Depends(check_daily_token_cap),
     _rate_guard: None = Depends(enforce_user_rate_limit),
     _daily_guard: None = Depends(enforce_daily_request_cap),
 ):
@@ -580,7 +555,6 @@ async def get_coaching_stream(
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
     }
-    stream_headers.update(getattr(request.state, "usage_headers", {}))
     stream_headers.update(getattr(request.state, "daily_limit_headers", {}))
 
     return StreamingResponse(

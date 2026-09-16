@@ -142,15 +142,11 @@ describe('SettingsModal', () => {
     expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull();
   });
 
-  it('shows Free plan by default', () => {
+  it('shows Groq coaching info without any plan UI', () => {
     render(<SettingsModal {...defaultProps} />);
-    expect(screen.getByText('Your plan')).toBeInTheDocument();
-    expect(screen.getByText('Free')).toBeInTheDocument();
-  });
-
-  it('shows Premium plan when plan is premium', () => {
-    render(<SettingsModal {...defaultProps} plan="premium" />);
-    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(screen.getByText(/AI coaching powered by Groq/i)).toBeInTheDocument();
+    expect(screen.queryByText('Your plan')).toBeNull();
+    expect(screen.queryByText('Premium')).toBeNull();
   });
 
   it('gear dashboard tab embeds the real skill graph via MSW, not just a link', async () => {

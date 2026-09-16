@@ -35,12 +35,8 @@ class UserORM(Base):
     oauth_provider = Column(String(50), nullable=True)
     oauth_id = Column(String(255), nullable=True)
     role = Column(String(20), server_default="user", nullable=False)
-    plan = Column(String(20), server_default="free", nullable=False)
 
-    __table_args__ = (
-        Index("ix_users_role", "role"),
-        Index("ix_users_plan", "plan"),
-    )
+    __table_args__ = (Index("ix_users_role", "role"),)
 
 
 class QuestionORM(Base):

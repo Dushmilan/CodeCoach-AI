@@ -24,7 +24,6 @@ def mock_auth(user_id="test-id"):
             email="test@example.com",
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
-            plan="free",
         )
 
     app.dependency_overrides[get_current_user] = override_get_current_user
@@ -44,9 +43,9 @@ async def _seed_user_and_question(test_db, user_id="test-id"):
         text(
             "INSERT INTO users "
             "(id, username, email, hashed_password, created_at, is_active, "
-            " plan, role) "
+            " role) "
             "VALUES (:uid, 'testuser', 'test@example.com', 'x', :ts, 1, "
-            " 'free', 'user')"
+            " 'user')"
         ),
         {"uid": user_id, "ts": now},
     )

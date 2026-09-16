@@ -79,7 +79,6 @@ def _professor():
             created_at="2025-01-01T00:00:00Z",
             is_active=True,
             role="professor",
-            plan="free",
         )
 
     return _ov

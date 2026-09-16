@@ -16,7 +16,6 @@ from tests.fixtures.mock_coaching_provider import MockCoachingProvider
 def mock_auth(
     user_id: str = "test-id",
     username: str = "testuser",
-    plan: str = "premium",
 ):
     """Override auth dependency for testing."""
     from app.api.auth_deps import get_current_user
@@ -30,7 +29,6 @@ def mock_auth(
             email="test@example.com",
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
-            plan=plan,
         )
 
     app.dependency_overrides[get_current_user] = override_get_current_user
@@ -341,7 +339,7 @@ class TestCoachEndpoints:
             "difficulty": "easy",
         }
 
-        from app.api.auth_deps import require_premium, get_current_user
+        from app.api.auth_deps import get_current_user
         from app.models.auth_schemas import UserResponse
 
         async def override_auth_user():
@@ -351,16 +349,13 @@ class TestCoachEndpoints:
                 email="test@example.com",
                 is_active=True,
                 created_at="2025-01-01T00:00:00Z",
-                plan="premium",
             )
 
         app.dependency_overrides[get_current_user] = override_auth_user
-        app.dependency_overrides[require_premium] = override_auth_user
         try:
             response = await async_client.post("/api/coach/", json=coaching_request)
         finally:
             app.dependency_overrides.pop(get_current_user, None)
-            app.dependency_overrides.pop(require_premium, None)
 
         assert response.status_code == 200
         data = response.json()
@@ -368,8 +363,8 @@ class TestCoachEndpoints:
         assert data["mode"] == "review"
 
     def test_free_user_can_access_coaching(self, test_client: TestClient):
-        """Free-tier users get coaching — the quota gate, not the plan,
-        limits the feature (FREE_DAILY_REQUEST_CAP)."""
+        """All users get coaching — the flat daily quota gate
+        limits the feature (DAILY_REQUEST_CAP)."""
         coaching_request = {
             "problem": "Find the maximum element in an array",
             "code": "def max_element(arr):\n    return max(arr)",
@@ -379,7 +374,7 @@ class TestCoachEndpoints:
             "difficulty": "easy",
         }
 
-        with mock_auth(plan="free"):
+        with mock_auth():
             response = test_client.post("/api/coach/", json=coaching_request)
 
         assert response.status_code == 200
@@ -392,7 +387,7 @@ class TestCoachEndpoints:
     ):
         """A free user at the daily request cap gets 429 with quota headers,
         not 403 (plan gate) or 500."""
-        monkeypatch.setenv("FREE_DAILY_REQUEST_CAP", "2")
+        monkeypatch.setenv("DAILY_REQUEST_CAP", "2")
 
         from datetime import datetime, timezone
 
@@ -406,9 +401,9 @@ class TestCoachEndpoints:
             text(
                 "INSERT INTO users "
                 "(id, username, email, hashed_password, created_at, is_active, "
-                " plan, role) "
+                " role) "
                 "VALUES ('test-id', 'testuser', 'test@example.com', 'x', :ts, 1, "
-                " 'free', 'user')"
+                " 'user')"
             ),
             {"ts": now_utc},
         )
@@ -438,7 +433,7 @@ class TestCoachEndpoints:
             "difficulty": "easy",
         }
 
-        with mock_auth(plan="free"):
+        with mock_auth():
             response = await async_client.post("/api/coach/", json=coaching_request)
 
         assert response.status_code == 429
@@ -562,27 +557,18 @@ class TestAnimateEndpoint:
         assert response.status_code == 422
 
     def test_animate_free_user_gets_200(self, test_client: TestClient, test_env_vars):
-        """Animation is quota-gated, not plan-gated — free users may use it
+        """Animation is quota-gated — all users may use it
         up to their daily cap."""
-        with mock_auth(plan="free"):
-            response = test_client.post(
-                "/api/coach/animate", json=self._animate_request()
-            )
-        assert response.status_code == 200
-
-    def test_animate_usage_headers_set(self, test_client: TestClient, test_env_vars):
         with mock_auth():
             response = test_client.post(
                 "/api/coach/animate", json=self._animate_request()
             )
         assert response.status_code == 200
-        assert response.headers.get("x-usage-remaining-input") is not None
 
 
 @pytest.mark.usefixtures("test_env_vars")
-class TestCoachPremiumGating:
-    """Coach endpoints are quota-gated, not plan-gated: free users get
-    coaching up to their daily cap, premium users get a higher cap."""
+class TestCoachFlatQuotaGating:
+    """Coach endpoints are quota-gated under one flat daily cap."""
 
     def _coaching_request(self) -> dict:
         return {
@@ -595,23 +581,14 @@ class TestCoachPremiumGating:
         }
 
     def test_free_user_gets_coaching(self, test_client: TestClient, test_env_vars):
-        with mock_auth(plan="free"):
-            response = test_client.post("/api/coach/", json=self._coaching_request())
-
-        assert response.status_code == 200
-        assert "response" in response.json()
-
-    def test_premium_user_gets_200_on_coach(
-        self, test_client: TestClient, test_env_vars
-    ):
-        with mock_auth(plan="premium"):
+        with mock_auth():
             response = test_client.post("/api/coach/", json=self._coaching_request())
 
         assert response.status_code == 200
         assert "response" in response.json()
 
     def test_free_user_gets_stream(self, test_client: TestClient, test_env_vars):
-        with mock_auth(plan="free"):
+        with mock_auth():
             response = test_client.post(
                 "/api/coach/stream", json=self._coaching_request()
             )
@@ -619,14 +596,14 @@ class TestCoachPremiumGating:
         assert response.status_code == 200
 
     def test_free_user_gets_modes(self, test_client: TestClient, test_env_vars):
-        with mock_auth(plan="free"):
+        with mock_auth():
             response = test_client.get("/api/coach/modes")
 
         assert response.status_code == 200
         assert "modes" in response.json()
 
     def test_free_user_gets_languages(self, test_client: TestClient, test_env_vars):
-        with mock_auth(plan="free"):
+        with mock_auth():
             response = test_client.get("/api/coach/languages")
 
         assert response.status_code == 200

@@ -111,7 +111,7 @@ export function useCoaching(): CoachingFeature & { hydrateMessages: (msgs: ChatM
             id: (Date.now() + 1).toString(),
             role: "assistant",
             content: isRateLimited(err)
-              ? "You've reached your daily AI message limit. Upgrade to Pro for unlimited access."
+              ? "You've reached your daily AI message limit. Try again tomorrow."
               : "Sorry, I encountered an error. Please try again.",
             timestamp: new Date(),
           };

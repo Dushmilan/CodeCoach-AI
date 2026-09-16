@@ -15,7 +15,6 @@ describe("UsageService", () => {
   it("fetches /api/usage", async () => {
     const http = createMockHttp();
     const usage = {
-      plan: "free",
       daily_limit: 20,
       daily_used: 5,
       daily_remaining: 15,

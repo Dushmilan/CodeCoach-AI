@@ -72,7 +72,7 @@ export default function PrivacyPage() {
                   },
                   {
                     label: "AI usage:",
-                    text: "token usage is metered per account and capped by daily limits",
+                    text: "usage is capped by a daily limit",
                   },
                 ],
               },

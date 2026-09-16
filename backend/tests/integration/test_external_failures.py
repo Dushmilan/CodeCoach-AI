@@ -29,7 +29,6 @@ def mock_auth(user_id: str = "test-id", username: str = "testuser"):
             username=username,
             email="test@example.com",
             is_active=True,
-            plan="premium",
             created_at="2025-01-01T00:00:00Z",
         )
 

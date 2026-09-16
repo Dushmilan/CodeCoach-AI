@@ -78,10 +78,6 @@ async def promote_to_admin(username: str) -> None:
     await update_user("role='admin'", {}, username)
 
 
-async def set_plan(username: str, plan: str) -> None:
-    await update_user("plan=:p", {"p": plan}, username)
-
-
 def truncate_course_tables_sync() -> None:
     """Remove courses/modules/lessons created by admin curriculum tests."""
     import asyncio

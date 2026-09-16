@@ -14,7 +14,7 @@ consumed by `sync_local_to_db.py` only.
 | `courses`        | Course metadata (id, title, language, order)        |
 | `modules`        | Module metadata (course_id, title, order)           |
 | `lessons`        | Lesson content (theory/exercise, order, question link) |
-| `users`          | Accounts (auth, roles, plans)                       |
+| `users`          | Accounts (auth, roles)                              |
 | `course_progress`| Per-user progress                                   |
 | `submissions`    | Attempt history (incl. adapter-state status columns) |
 | `coaching_interactions`, `execution_jobs` | Adapter-state audit              |

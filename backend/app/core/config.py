@@ -27,13 +27,8 @@ class Settings(BaseSettings):
     GROQ_MODEL_STREAM: str = "openai/gpt-oss-20b"
     GROQ_MODEL_ANIMATE: str = "openai/gpt-oss-120b"
 
-    # Per-user token metering (daily caps)
-    DAILY_TOKEN_INPUT_CAP: int = 250_000
-    DAILY_TOKEN_OUTPUT_CAP: int = 125_000
-
-    # Per-plan daily request caps (number of AI calls per user per day)
-    FREE_DAILY_REQUEST_CAP: int = 20
-    PRO_DAILY_REQUEST_CAP: int = 500
+    # Flat daily request cap (number of AI calls per user per day, same for all)
+    DAILY_REQUEST_CAP: int = 20
 
     # Per-user request rate limit (requests per minute)
     USER_RATE_LIMIT_PER_MINUTE: int = 60

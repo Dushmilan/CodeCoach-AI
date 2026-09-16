@@ -4,9 +4,9 @@ import { SkillGraphInline } from '@/features/skill-graph/SkillGraphInline';
 import { SkillGraph } from '@/features/skill-graph/SkillGraph';
 import { FileText, LayoutDashboard, LogOut, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-interface SettingsModalProps { open: boolean; onClose: () => void; isAuthenticated?: boolean; onLogout?: () => void; plan?: string; }
+interface SettingsModalProps { open: boolean; onClose: () => void; isAuthenticated?: boolean; onLogout?: () => void; }
 type Tab = 'settings' | 'dashboard' | 'skills';
-export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout, plan = 'free', }: SettingsModalProps) {
+export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout, }: SettingsModalProps) {
   const inputRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<Tab>('settings');
   useEffect(() => { if (open) { setTimeout(() => inputRef.current?.focus(), 100); } else { setTab('settings'); } }, [open]);
@@ -60,10 +60,7 @@ export function SettingsModal({ open, onClose, isAuthenticated = false, onLogout
             {tab === 'settings' && (
               <>
                 <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-4">
-                  <div className="flex items-start gap-3"><Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" /><div><p className="text-xs font-medium text-foreground/80">AI coaching powered by Groq</p><p className="text-[10px] text-muted-foreground/60 mt-1 leading-relaxed">Coaching runs on the platform&apos;s Groq API key — no setup required. Token usage is metered per account with daily limits.</p></div></div>
-                </div>
-                <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-4">
-                  <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-medium text-foreground/80">Your plan</p><p className="text-[10px] text-muted-foreground/60 mt-1 leading-relaxed">{plan === 'premium' ? 'Premium — AI Coach and all features unlocked.' : 'Free — questions and curriculum included. AI Coach requires Premium.'}</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-primary">{plan === 'premium' ? 'Premium' : 'Free'}</span></div>
+                  <div className="flex items-start gap-3"><Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" /><div><p className="text-xs font-medium text-foreground/80">AI coaching powered by Groq</p><p className="text-[10px] text-muted-foreground/60 mt-1 leading-relaxed">Coaching runs on the platform&apos;s Groq API key — no setup required. Usage is capped by a daily limit.</p></div></div>
                 </div>
               </>
             )}

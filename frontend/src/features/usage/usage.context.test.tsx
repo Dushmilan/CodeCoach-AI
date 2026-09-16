@@ -14,7 +14,6 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 const sampleUsage = {
-  plan: "free",
   daily_limit: 20,
   daily_used: 6,
   daily_remaining: 14,
@@ -30,7 +29,7 @@ describe("useUsage", () => {
     const { result } = renderHook(() => useUsage());
     expect(result.current.usage).toBeNull();
     expect(result.current.limitReached).toBe(false);
-    expect(result.current.upgradeOpen).toBe(false);
+    expect("upgradeOpen" in result.current).toBe(false);
   });
 
   it("starts with null usage inside a provider", async () => {
@@ -53,13 +52,6 @@ describe("useUsage", () => {
     expect(result.current.limitReached).toBe(false);
   });
 
-  it("openUpgrade/closeUpgrade toggle the modal flag", () => {
-    const { result } = renderHook(() => useUsage(), { wrapper });
-    act(() => result.current.openUpgrade());
-    expect(result.current.upgradeOpen).toBe(true);
-    act(() => result.current.closeUpgrade());
-    expect(result.current.upgradeOpen).toBe(false);
-  });
 
   it("refreshUsage keeps last usage on failure", async () => {
     mockGetUsage
