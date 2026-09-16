@@ -25,7 +25,7 @@ def hash_content(*parts: str) -> str:
 
 
 class CoachingAdapter(CoachingProvider):
-    """CoachingProvider with Supabase-backed state transitions."""
+    """CoachingProvider with PostgreSQL-backed state transitions."""
 
     def __init__(
         self,

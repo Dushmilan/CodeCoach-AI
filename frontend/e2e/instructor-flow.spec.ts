@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 // Role-based post-login routing + header gating for professor/demonstrator
 // dashboards (Issue #159). Uses seeded instructor credentials from
-// backend/scripts/seed_admin.py against the isolated test Supabase schema.
+// backend/scripts/seed_admin.py against the isolated test schema.
 
 async function login(page: Page, username: string, password: string) {
   await page.goto('/login');

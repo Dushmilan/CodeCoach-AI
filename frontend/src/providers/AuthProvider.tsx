@@ -20,7 +20,6 @@ interface AuthContextType extends AuthState {
     email: string,
     password: string,
   ) => Promise<TokenResponse>;
-  loginWithSupabase: (accessToken: string) => Promise<TokenResponse>;
   logout: () => void;
 }
 
@@ -101,18 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [setAuth],
   );
 
-  const loginWithSupabase = useCallback(
-    async (accessToken: string) => {
-      const response = await authService.loginWithSupabase({
-        access_token: accessToken,
-      });
-      setCsrfToken(response.csrf_token ?? null);
-      setAuth(response.user, response.access_token);
-      return response;
-    },
-    [setAuth],
-  );
-
   const logout = useCallback(() => {
     // Best-effort: clear the httpOnly refresh cookie server-side first.
     authService
@@ -129,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, register, loginWithSupabase, logout }}
+      value={{ ...state, login, register, logout }}
     >
       {children}
     </AuthContext.Provider>

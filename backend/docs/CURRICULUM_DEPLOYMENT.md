@@ -1,6 +1,6 @@
 # Curriculum & Question Data Management
 
-The **database (PostgreSQL/Supabase) is the single source of truth** for
+The **database (PostgreSQL) is the single source of truth** for
 questions, courses, modules, lessons, exercises, starter code, and test cases.
 The application never reads content from the filesystem at runtime. Committed
 JSON under `backend/data/courses/{c,java}/` is a transient bootstrap source

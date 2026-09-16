@@ -33,10 +33,10 @@ def test_allows_pgbouncer_query_param():
     )
 
 
-def test_refuses_supabase_pooler_host():
+def test_refuses_remote_pooler_host():
     with pytest.raises(RuntimeError, match="non-local database host"):
         assert_test_db_allowed(
-            "postgresql://postgres.ref@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres"
+            "postgresql://postgres.ref@aws-1-ap-southeast-2.pooler.example.com:6543/postgres"
         )
 
 

@@ -178,6 +178,9 @@ async def test_refuses_without_allow_flag():
 async def test_seed_demo_gate_requires_both_env_vars(monkeypatch):
     import seed_classroom_demo
 
+    # Scoped to a REMOTE target: local branch databases are allowed by host
+    # (see test_seed_demo_gate_allows_local_branch_db below).
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@db.example.com:5432/x")
     monkeypatch.delenv("ALLOW_DEMO_SEED", raising=False)
     monkeypatch.delenv("DATABASE_SEARCH_PATH", raising=False)
     monkeypatch.delenv("SEED_LIVE_CONFIRM", raising=False)
@@ -188,9 +191,41 @@ async def test_seed_demo_gate_requires_both_env_vars(monkeypatch):
     assert seed_classroom_demo._demo_seed_allowed() is True
 
 
+async def test_seed_demo_gate_allows_local_branch_db(monkeypatch):
+    import seed_classroom_demo
+
+    monkeypatch.setenv("ALLOW_DEMO_SEED", "1")
+    monkeypatch.delenv("DATABASE_SEARCH_PATH", raising=False)
+    monkeypatch.delenv("SEED_LIVE_CONFIRM", raising=False)
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_x",
+    )
+    assert seed_classroom_demo._demo_seed_allowed() is True
+    monkeypatch.delenv("ALLOW_DEMO_SEED", raising=False)
+    assert seed_classroom_demo._demo_seed_allowed() is False
+
+
+async def test_resolve_search_path_prefers_explicit_local_default_public(monkeypatch):
+    import seed_classroom_demo
+
+    monkeypatch.setenv("DATABASE_SEARCH_PATH", "codecoach_test")
+    assert seed_classroom_demo._resolve_search_path() == "codecoach_test"
+    monkeypatch.delenv("DATABASE_SEARCH_PATH", raising=False)
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_x",
+    )
+    assert seed_classroom_demo._resolve_search_path() is None
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@db.example.com:5432/x")
+    assert seed_classroom_demo._resolve_search_path() == "codecoach_test"
+
+
 async def test_seed_demo_gate_allows_live_only_with_explicit_confirm(monkeypatch):
     import seed_classroom_demo
 
+    # Remote target: the local-host allowance must not apply here.
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@db.example.com:5432/x")
     monkeypatch.setenv("ALLOW_DEMO_SEED", "1")
     monkeypatch.setenv("DATABASE_SEARCH_PATH", "public")
     monkeypatch.delenv("SEED_LIVE_CONFIRM", raising=False)

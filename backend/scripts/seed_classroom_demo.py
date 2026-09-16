@@ -12,11 +12,12 @@ Every write is select-then-insert/update, so re-runs change nothing.
 Seed passwords resolve from the environment (``backend/.env.seed``,
 gitignored; see ``backend/.env.seed.example``) with dev defaults.
 
-SAFETY: refuses to run unless ``ALLOW_DEMO_SEED=1`` AND the target schema is
-the isolated test schema (``DATABASE_SEARCH_PATH=codecoach_test``) — or, for
-the explicitly authorized live run, the production schema
-(``DATABASE_SEARCH_PATH=public``) PLUS ``SEED_LIVE_CONFIRM=YES-I-AM-SURE``.
-Supabase/PostgreSQL is the only database — no local fallback.
+SAFETY: refuses to run unless ``ALLOW_DEMO_SEED=1`` AND the target is a local
+branch database — or the isolated test schema
+(``DATABASE_SEARCH_PATH=codecoach_test``) — or, for the explicitly authorized
+live run, the production schema (``DATABASE_SEARCH_PATH=public``) PLUS
+``SEED_LIVE_CONFIRM=YES-I-AM-SURE``.
+PostgreSQL is the only database — no remote fallback without confirmation.
 
 Usage:
     ALLOW_DEMO_SEED=1 DATABASE_SEARCH_PATH=codecoach_test \
@@ -29,7 +30,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -140,15 +141,36 @@ CLASSROOMS = [
 ]
 
 
+def _host(url: str) -> str:
+    return (urlparse(url).hostname or "").lower()
+
+
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
 def _demo_seed_allowed() -> bool:
-    """True for the isolated test schema, or for production only with an
-    explicit live-confirm secret (Issue #166 live run)."""
+    """True for local branch databases (by host), for the isolated test
+    schema, or for production only with an explicit live-confirm secret."""
     if os.getenv("ALLOW_DEMO_SEED") != "1":
         return False
+    if _host(os.getenv("DATABASE_URL", "")) in _LOCAL_HOSTS:
+        return True
     search_path = os.getenv("DATABASE_SEARCH_PATH")
     if search_path == "codecoach_test":
         return True
     return search_path == "public" and os.getenv("SEED_LIVE_CONFIRM") == "YES-I-AM-SURE"
+
+
+def _resolve_search_path() -> str | None:
+    """Explicit DATABASE_SEARCH_PATH wins; local branch databases use the
+    server default (public, None); remote targets keep the legacy
+    codecoach_test default."""
+    explicit = os.getenv("DATABASE_SEARCH_PATH")
+    if explicit:
+        return explicit
+    if _host(os.getenv("DATABASE_URL", "")) in _LOCAL_HOSTS:
+        return None
+    return "codecoach_test"
 
 
 def _owner_username_for_course(course_id: str, title: str | None) -> str:
@@ -338,10 +360,10 @@ def _database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
         raise SystemExit(
-            "ERROR: DATABASE_URL is required (Supabase/PostgreSQL connection "
-            "string); no local fallback is allowed."
+            "ERROR: DATABASE_URL is required (PostgreSQL connection "
+            "string); no remote fallback without confirmation."
         )
-    # Drop Supabase pooler params (?pgbouncer=true) — asyncpg rejects them as
+    # Drop pooler params (?pgbouncer=true) — asyncpg rejects them as
     # unknown connection kwargs.
     parts = urlsplit(url)
     url = urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
@@ -354,20 +376,20 @@ async def _main() -> None:
     if not _demo_seed_allowed():
         print(
             "ERROR: refusing to seed demo data — requires ALLOW_DEMO_SEED=1 and "
-            "DATABASE_SEARCH_PATH=codecoach_test (isolated test schema), or "
-            "DATABASE_SEARCH_PATH=public plus SEED_LIVE_CONFIRM=YES-I-AM-SURE "
-            "for the authorized live run.",
+            "a local branch database, DATABASE_SEARCH_PATH=codecoach_test "
+            "(isolated test schema), or DATABASE_SEARCH_PATH=public plus "
+            "SEED_LIVE_CONFIRM=YES-I-AM-SURE for the authorized live run.",
             file=sys.stderr,
         )
         raise SystemExit(1)
-    search_path = os.getenv("DATABASE_SEARCH_PATH", "codecoach_test")
+    search_path = _resolve_search_path()
+    connect_args: dict = {"statement_cache_size": 0}
+    if search_path is not None:
+        connect_args["server_settings"] = {"search_path": search_path}
     engine = create_async_engine(
         _database_url(),
         poolclass=NullPool,
-        connect_args={
-            "server_settings": {"search_path": search_path},
-            "statement_cache_size": 0,
-        },
+        connect_args=connect_args,
     )
     try:
         async with engine.begin() as conn:

@@ -212,7 +212,7 @@ class SqlQuestionRepository(QuestionRepository):
         return [r[0] for r in result.all()]
 
     async def get_company_tags(self) -> List[str]:
-        # JSONB array elements extracted via unnest (PostgreSQL/Supabase only).
+        # JSONB array elements extracted via unnest (PostgreSQL/PostgreSQL only).
         result = await self.session.execute(
             text("""
                 SELECT DISTINCT jsonb_array_elements_text(company_tags) as tag

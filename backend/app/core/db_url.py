@@ -10,7 +10,7 @@ from typing import Optional
 def normalize_db_url(url: Optional[str]) -> Optional[str]:
     """Force the asyncpg driver for ``postgresql://`` URLs.
 
-    Supabase/pooler URLs use the bare ``postgresql://`` scheme, which SQLAlchemy
+    Pooler URLs use the bare ``postgresql://`` scheme, which SQLAlchemy
     maps to psycopg2 by default. Async engines (the app plus alembic's
     ``run_async_migrations``) require the asyncpg driver.
     """
@@ -20,7 +20,7 @@ def normalize_db_url(url: Optional[str]) -> Optional[str]:
 
 
 def strip_pgbouncer(url: Optional[str]) -> Optional[str]:
-    """Drop the Supabase transaction-pooler ``?pgbouncer=true`` param.
+    """Drop the Transaction-pooler ``?pgbouncer=true`` param.
 
     asyncpg / SQLAlchemy would otherwise forward ``pgbouncer`` as an unknown
     connection kwarg and fail to connect. Any other query params are kept.
@@ -47,7 +47,7 @@ def escape_configparser(url: Optional[str]) -> Optional[str]:
 
 
 def pooler_connect_args() -> dict:
-    """asyncpg options required by Supabase's transaction pooler.
+    """asyncpg options required by the transaction pooler.
 
     Pgbouncer reuses prepared-statement names across connections; asyncpg's
     default statement cache then trips ``DuplicatePreparedStatementError``.

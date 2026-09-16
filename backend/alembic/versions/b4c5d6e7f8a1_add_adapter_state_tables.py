@@ -47,7 +47,7 @@ def _column_exists(bind, table: str, column: str) -> bool:
 def upgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
-        raise RuntimeError("Only Supabase/PostgreSQL is supported")
+        raise RuntimeError("Only PostgreSQL is supported")
 
     if not _table_exists(bind, "coaching_interactions"):
         op.create_table(

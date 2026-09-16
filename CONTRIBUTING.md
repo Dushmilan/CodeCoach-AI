@@ -29,8 +29,9 @@ Read [AGENTS.md](./AGENTS.md) first. The hard rules always apply:
 1. **Production-first engineering** — reliable, maintainable, observable, safe to operate.
 2. **TDD always** — every code change starts as a failing test (red → green → refactor).
    Docs-only changes are the only exception (say so explicitly in the PR).
-3. **Supabase is the only database** — no MySQL, SQLite, local/self-hosted Postgres,
-   or any other store. Tests use the isolated `codecoach_test` schema only.
+3. **Local PostgreSQL is the only database** — no MySQL, SQLite,
+   or any other store. Each branch gets its own database; tests use isolated
+   schemas/databases only.
 4. **Every question must be visualizable** — the `ANIMATION` validation gate is not
    skippable: `examples[0].input` must be traceable, the algorithm resolvable via
    `reference_solutions.py`, the family compilable
@@ -49,16 +50,17 @@ Read [AGENTS.md](./AGENTS.md) first. The hard rules always apply:
 - Node.js 20+ with `pnpm` 9+
 - Docker & Docker Compose
 - Git + `gh` CLI
-- A Supabase project (PostgreSQL) + Groq API key — see
+- A local PostgreSQL server + Groq API key — see
   [backend/docs/CURRICULUM_DEPLOYMENT.md](./backend/docs/CURRICULUM_DEPLOYMENT.md).
-  TEST wiring lives in [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md).
-  There is no local Postgres for runtime; tests use the isolated `codecoach_test`
-  schema via `DATABASE_URL` + `DATABASE_SEARCH_PATH`.
+  Branch-database wiring lives in [Docs/TEST_ENVIRONMENT.md](./Docs/TEST_ENVIRONMENT.md).
+  Each git branch gets its own database (`codecoach_<slug>` via
+  `backend/scripts/branch_db.py`); tests use isolated schemas via
+  `DATABASE_URL` + `DATABASE_SEARCH_PATH`.
 
 ### Quick start with Docker
 
 ```bash
-cp .env.example .env          # fill GROQ_API_KEY, JWT_SECRET_KEY, DATABASE_URL, Supabase keys
+cp .env.example .env          # fill GROQ_API_KEY, JWT_SECRET_KEY, DATABASE_URL (local branch DB)
 docker compose up --build
 ```
 
@@ -76,7 +78,7 @@ python -m venv venv
 # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt -r tests/test_requirements.txt
 cp .env.example .env
-# Edit .env with your Groq API key, JWT secret, and Supabase DATABASE_URL
+# Edit .env with your Groq API key, JWT secret, and local branch DATABASE_URL
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -86,8 +88,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 cd frontend
 pnpm install
 cp .env.example .env.local
-pnpm dev          # app only
+pnpm dev          # app only (no viewer)
 pnpm dev:all      # app + Motion Canvas viewer (:9000) together
+                  # (installs viewer deps automatically on first run)
 ```
 
 ### Piston (code execution)
@@ -218,7 +221,7 @@ Keep the whole suite green and respect the coverage budget
 - Module-level loggers (never `print()`)
 - `snake_case` functions/variables
 - FastAPI `Depends()` for dependency injection (`app/api/dependencies.py`)
-- Persistence behind `ports/` interfaces with `sql_*` implementations (Supabase only)
+- Persistence behind `ports/` interfaces with `sql_*` implementations (PostgreSQL only)
 - Every Piston language needs a code wrapper in `adapters/code_wrappers/`
 
 ### Frontend (TypeScript)
@@ -238,7 +241,7 @@ backend/app/
   use_cases/      # Validation logic (incl. ANIMATION gate)
   models/         # Pydantic schemas
   ports/          # Abstract interfaces
-  repositories/   # sql_* implementations (Supabase)
+  repositories/   # sql_* implementations (PostgreSQL)
   adapters/       # Concrete implementations
 
 frontend/src/

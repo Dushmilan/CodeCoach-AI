@@ -6,7 +6,6 @@ from typing import Optional
 from app.models.auth_schemas import (
     UserRegisterRequest,
     UserLoginRequest,
-    SupabaseAuthRequest,
     TokenResponse,
     UserResponse,
     RefreshRequest,
@@ -135,23 +134,6 @@ async def login(
 ):
     try:
         result = await auth_service.login(request)
-        return _issue_with_cookies(response, result)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-@router.post("/supabase", response_model=TokenResponse)
-async def login_with_supabase(
-    request: SupabaseAuthRequest,
-    response: Response,
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    try:
-        result = await auth_service.login_with_supabase(request.access_token)
         return _issue_with_cookies(response, result)
     except ValueError as e:
         raise HTTPException(

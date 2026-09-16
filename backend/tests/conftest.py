@@ -23,7 +23,7 @@ if _xdist_worker:
 
 
 def _strip_pgbouncer(url: str) -> str:
-    """Drop the Supabase transaction-pooler `?pgbouncer=true` param.
+    """Drop the Transaction-pooler `?pgbouncer=true` param.
 
     asyncpg / SQLAlchemy would otherwise forward `pgbouncer` as an unknown
     connection kwarg. Schema tooling talks to the session pooler directly, so
@@ -43,7 +43,7 @@ def _strip_pgbouncer(url: str) -> str:
 def _ensure_test_database() -> str:
     """Route tests to a dedicated `codecoach_test` schema.
 
-    Supabase exposes a single database, so isolation is a `codecoach_test`
+    PostgreSQL exposes one database per server, so isolation is a `codecoach_test`
     schema on the same server (set via `DATABASE_SEARCH_PATH`).
 
     Runs at import time so Settings() picks it up before app.main is loaded.
@@ -104,7 +104,7 @@ def _ensure_postgres_test_schema(base_url: str) -> str:
             poolclass=NullPool,
             connect_args={
                 "server_settings": {"search_path": _TEST_DB},
-                # Supabase poolers reuse prepared-statement names across
+                # PostgreSQL poolers reuse prepared-statement names across
                 # connections; disable asyncpg's statement cache so
                 # `create_all` does not hit DuplicatePreparedStatementError.
                 "statement_cache_size": 0,
@@ -154,7 +154,7 @@ def _test_engine_kwargs() -> dict:
         return {
             "connect_args": {
                 "server_settings": {"search_path": os.environ["DATABASE_SEARCH_PATH"]},
-                # Supabase poolers reuse prepared-statement names across
+                # PostgreSQL poolers reuse prepared-statement names across
                 # connections; disable asyncpg's statement cache so DDL / DML does
                 # not hit DuplicatePreparedStatementError.
                 "statement_cache_size": 0,
@@ -928,7 +928,7 @@ async def test_db():
 
     Cleans all tables before each test so tests do not interfere with each
     other or with the running application's database. Works on
-    PostgreSQL/Supabase (search_path points at the `codecoach_test` schema).
+    PostgreSQL/PostgreSQL (search_path points at the `codecoach_test` schema).
     """
     from sqlalchemy import text
     from sqlalchemy.ext.asyncio import (

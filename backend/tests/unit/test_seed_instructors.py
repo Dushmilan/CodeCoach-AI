@@ -26,3 +26,18 @@ def test_instructor_seeds_have_unique_login_identity():
     assert len({u["email"] for u in users}) == len(users)
     for u in users:
         assert u["password"], f"seed {u['username']} needs a dev password"
+
+
+def test_seed_admin_gate_allows_local_refuses_remote_without_confirm(monkeypatch):
+    import seed_admin
+
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_x",
+    )
+    monkeypatch.delenv("SEED_LIVE_CONFIRM", raising=False)
+    assert seed_admin._seed_allowed() is True
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@db.example.com:5432/x")
+    assert seed_admin._seed_allowed() is False
+    monkeypatch.setenv("SEED_LIVE_CONFIRM", "YES-I-AM-SURE")
+    assert seed_admin._seed_allowed() is True

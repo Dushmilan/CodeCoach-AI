@@ -12,7 +12,7 @@ from app.ports.review_repository import ReviewRepository
 
 
 class SqlReviewRepository(ReviewRepository):
-    """PostgreSQL/Supabase implementation of the review-card repository."""
+    """PostgreSQL/PostgreSQL implementation of the review-card repository."""
 
     def __init__(self, session: AsyncSession):
         self.session = session

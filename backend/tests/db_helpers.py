@@ -1,7 +1,7 @@
-"""PostgreSQL/Supabase DB helpers for tests.
+"""PostgreSQL/PostgreSQL DB helpers for tests.
 
 Several tests promote users / truncate tables by connecting to the DB
-directly. These helpers target the configured PostgreSQL/Supabase
+directly. These helpers target the configured PostgreSQL/PostgreSQL
 DATABASE_URL.
 """
 
@@ -22,7 +22,7 @@ def test_db_url() -> str:
 
 
 def strip_pgbouncer(url: str) -> str:
-    """Drop the Supabase transaction-pooler `?pgbouncer=true` param.
+    """Drop the Transaction-pooler `?pgbouncer=true` param.
 
     asyncpg / SQLAlchemy would otherwise forward `pgbouncer` as an unknown
     connection kwarg. Direct connections (schema tooling, tests) go through
@@ -49,7 +49,7 @@ def engine_kwargs() -> dict:
             "server_settings": {
                 "search_path": os.environ.get("DATABASE_SEARCH_PATH", "public")
             },
-            # Supabase poolers reuse prepared-statement names across
+            # PostgreSQL poolers reuse prepared-statement names across
             # connections; disable asyncpg's statement cache so DDL / DML does
             # not hit DuplicatePreparedStatementError.
             "statement_cache_size": 0,

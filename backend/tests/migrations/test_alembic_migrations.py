@@ -5,7 +5,7 @@ Runs against the isolated per-suite schema. These tests are purely sync
 pytest-asyncio's auto loop management.
 
 Back-to-back create/drop of the same table can transiently fail on the
-pooler backed by Supabase, so migration ops are wrapped in a bounded retry —
+pooler, so migration ops are wrapped in a bounded retry —
 the same resilience pattern recommended for CI migration jobs.
 """
 

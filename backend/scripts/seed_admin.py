@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Seed admin and super_admin users into the database.
 
-The app is fully DB-backed (PostgreSQL/Supabase primary); this script writes
+The app is fully DB-backed (local PostgreSQL branch database or hosted live);
+this script writes
 directly to the ``users`` table instead of the legacy ``data/users.json`` file.
 
 Seed passwords resolve from the environment (``backend/.env.seed``, gitignored;
@@ -17,6 +18,9 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
+
+from dotenv import load_dotenv
 
 from dotenv import load_dotenv
 
@@ -110,8 +114,8 @@ def _get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
         raise SystemExit(
-            "ERROR: DATABASE_URL is required (Supabase/PostgreSQL connection "
-            "string); no local fallback is allowed."
+            "ERROR: DATABASE_URL is required (PostgreSQL connection "
+            "string); no remote fallback without confirmation."
         )
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
@@ -148,7 +152,24 @@ async def seed(session: AsyncSession) -> None:
     await session.commit()
 
 
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def _seed_allowed() -> bool:
+    """Admin seeds carry login-capable accounts: allow local branch databases
+    by host; remote targets need the explicit live-confirm secret."""
+    url = os.getenv("DATABASE_URL", "")
+    if (urlparse(url).hostname or "").lower() in _LOCAL_HOSTS:
+        return True
+    return os.getenv("SEED_LIVE_CONFIRM") == "YES-I-AM-SURE"
+
+
 async def _main() -> None:
+    if not _seed_allowed():
+        raise SystemExit(
+            "ERROR: refusing to seed admin users into a remote database "
+            "without SEED_LIVE_CONFIRM=YES-I-AM-SURE."
+        )
     engine = create_async_engine(_get_database_url(), poolclass=NullPool)
     try:
         async with async_sessionmaker(
