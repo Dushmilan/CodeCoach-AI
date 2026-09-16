@@ -70,27 +70,46 @@ Problem → Solution Repository / Groq (optimal solution, algorithm, complexity,
 - **Student code is separate:** animation never reads `student code` — it always visualizes the **optimal solution**. `ANIMATION` validates the optimal path, not the submission.
 - **Where enforced:** `QuestionValidatorService.get_use_case_order()` includes `ANIMATION` last; `POST /api/questions` (admin) and `scripts/sync_local_to_db.py` must call `full_validate` and reject on `ANIMATION` error. Add new questions only with a green `ANIMATION` beat count (`animation.steps >=3`).
 
-## MANDATORY: Supabase Is the Only Database
+## MANDATORY: Local-First PostgreSQL with Per-Branch Databases
 
-**Hard rule — Do NOT skip.** Supabase (managed PostgreSQL) is the ONLY database
-used by this application. No other database may be introduced, connected,
-migrated, or shipped — for production, development, or tests.
+**Hard rule — Do NOT skip.** A local PostgreSQL server is the working main
+database. Live is written only through the versioned promotion flow below —
+never ad hoc.
 
-- **Allowed:** Supabase-hosted PostgreSQL (`postgresql://` / `postgresql+asyncpg://`
-  against the Supabase project). Migrations and schema live on Supabase.
-- **Forbidden:** MySQL, MariaDB, SQLite, local/self-hosted PostgreSQL, DynamoDB,
-  MongoDB, or any other store. Do not add new `mysql://` / `sqlite://` URLs,
-  drivers, or dialect branches. Legacy MySQL-compatibility code paths are dead
-  weight and must be removed, not extended.
-- **Forbidden as runtime stores:** local JSON files, filesystem directories,
-  in-memory caches that persist business data. Runtime repositories are SQL-only
-  (`app/repositories/`) against Supabase.
-- **Tests:** use an isolated Supabase schema (e.g. `codecoach_test`) pointed at
-  by `DATABASE_URL` + `DATABASE_SEARCH_PATH`. Tests never read/write the
-  production schema.
+- **Working main (local):** docker `postgres:16-alpine`, `127.0.0.1:5432`,
+  user `codecoach` (container `codecoach-local`). Holds the working data.
+- **One database per git branch:** every branch gets its own scratch database
+  named `codecoach_<slug>` (e.g. `codecoach_168_local_postgres_branch_db`),
+  derived by `scripts/branch_db.py::branch_db_name`. Implementation is built
+  and tested against the branch database first; only confirmed work is
+  promoted to live.
+- **Allowed engines:** PostgreSQL only — local working copies and the hosted
+  live project, both via `postgresql://` / `postgresql+asyncpg://`.
+  MySQL, MariaDB, SQLite, DynamoDB, MongoDB, or any other store remain
+  forbidden. No new `mysql://` / `sqlite://` URLs, drivers, or dialect
+  branches. JSONB columns require PostgreSQL (local or hosted).
+- **Schema:** fresh branch databases are created from the ORM
+  `Base.metadata` (single source of truth, `branch_db.py init`). Alembic
+  remains the version control for schema change; live schema moves via
+  `alembic upgrade head` only.
+- **Data flow (`backend/scripts/branch_db.py`):**
+  - `pull --from <LIVE> --to <LOCAL>` — read-only SELECTs of
+    `courses → questions → modules → lessons` (FK-safe order; course
+    `owner_id` is nullable so no users travel with the curriculum).
+    REFUSES any non-localhost destination.
+  - `promote --from <LOCAL> --to <LIVE>` — upsert-only (`merge()`,
+    idempotent, never deletes). REFUSES localhost targets AND requires
+    `PROMOTE_TO_LIVE=YES-I-AM-SURE`. Runs only as an explicitly confirmed
+    step, after the branch database is verified.
+  - `status --url <URL>` — read-only row counts.
+- **Secrets:** `DATABASE_URL` / `LOCAL_ADMIN_PASSWORD` come from the
+  environment or gitignored `backend/.env.seed` (mode 0600). Passwords are
+  NEVER written to desktop notes, chat logs, or committed files — manifests
+  reference the env var, never the value.
+- **Tests:** conftest needs a reachable PostgreSQL at import (`DATABASE_URL`);
+  point it at the branch database. Tests never read/write the live database.
 - **Seeding / bootstrap:** one-off scripts write to the database, never to
-  runtime files. Local JSON is at most a transient bootstrap source and is
-  deleted after the sync (see `backend/scripts/sync_local_to_db.py`).
+  runtime files. Data dumps are transient, gitignored, and never committed.
 
 ## MANDATORY: Graphify-First Codebase Exploration
 
@@ -293,8 +312,9 @@ Rules:
   Playwright for E2E. Cloudflare Workers deployment via OpenNext.
 - **Infra:** Docker Compose (backend, frontend, redis, piston), GitHub Actions CI
   running lint/format + all test tiers + coverage budget enforcement.
-- **Data:** questions, courses/modules/lessons, users, progress, usage/rate-limit
-  events, and admin data all live in Supabase. See `backend/docs/CURRICULUM_DEPLOYMENT.md`.
+- **Data:** working data lives in the local PostgreSQL branch databases;
+  live data lives in the hosted PostgreSQL project and is written only via
+  the versioned `branch_db.py` promotion. See `backend/docs/CURRICULUM_DEPLOYMENT.md`.
 
 **Historical session notes** from older phases have been removed from this file;
 if you need the project's changelog and status, see `Progress.md` and `Ideas.md`.

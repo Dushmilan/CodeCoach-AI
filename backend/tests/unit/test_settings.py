@@ -44,7 +44,7 @@ class TestSettings:
         assert get_settings() is not get_settings()
 
 
-class TestSupabaseOnlyDatabase:
+class TestPostgresOnlyDatabase:
     def test_missing_database_url_is_rejected(self, monkeypatch):
         from app.core.config import get_settings
 
@@ -53,6 +53,17 @@ class TestSupabaseOnlyDatabase:
         monkeypatch.setenv("DATABASE_URL", "")
         with pytest.raises(ValueError, match="DATABASE_URL is required"):
             get_settings()
+
+    def test_local_postgres_url_is_accepted(self, monkeypatch):
+        from app.core.config import get_settings
+
+        monkeypatch.setenv("ENVIRONMENT", "testing")
+        monkeypatch.setenv(
+            "DATABASE_URL",
+            "postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_x",
+        )
+        settings = get_settings()
+        assert settings.DATABASE_URL.startswith("postgresql+asyncpg://")
 
     def test_postgres_url_forces_asyncpg_driver(self, monkeypatch):
         from app.core.config import get_settings
@@ -81,7 +92,7 @@ class TestSupabaseOnlyDatabase:
 
         monkeypatch.setenv("ENVIRONMENT", "testing")
         monkeypatch.setenv("DATABASE_URL", "mysql+aiomysql://u:p@host:3306/db")
-        with pytest.raises(ValueError, match="Supabase/PostgreSQL"):
+        with pytest.raises(ValueError, match="PostgreSQL"):
             get_settings()
 
     def test_sqlite_url_is_rejected(self, monkeypatch):
@@ -89,5 +100,5 @@ class TestSupabaseOnlyDatabase:
 
         monkeypatch.setenv("ENVIRONMENT", "testing")
         monkeypatch.setenv("DATABASE_URL", "sqlite:///local.db")
-        with pytest.raises(ValueError, match="Supabase/PostgreSQL"):
+        with pytest.raises(ValueError, match="PostgreSQL"):
             get_settings()

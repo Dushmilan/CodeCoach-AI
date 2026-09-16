@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     # Environment (fail-closed: unset = production for security gates)
     ENVIRONMENT: str = "production"
 
-    # Database (Supabase/PostgreSQL is the ONLY database). No default — an
-    # unconfigured deployment must fail loudly rather than hit a local DB.
+    # Database (PostgreSQL only — local working copy or hosted live).
+    # No default — an unconfigured deployment must fail loudly rather than
+    # hit the wrong database.
     DATABASE_URL: str = ""
     # Optional Postgres schema used for tests (Supabase has one database).
     DATABASE_SEARCH_PATH: Optional[str] = None
@@ -52,25 +53,27 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
-    def _require_supabase_only_database(self):
-        # Supabase/PostgreSQL is the only allowed database. Anything else (or a
-        # missing value) is a misconfiguration and must fail loudly at startup
-        # instead of silently falling back to a legacy driver (MySQL/SQLite/etc).
+    def _require_postgres_database(self):
+        # PostgreSQL is the only allowed database (local working copy or
+        # hosted live). Anything else (or a missing value) is a
+        # misconfiguration and must fail loudly at startup instead of
+        # silently falling back to a legacy driver (MySQL/SQLite/etc).
         if not self.DATABASE_URL:
             raise ValueError(
-                "DATABASE_URL is required (Supabase/PostgreSQL connection string)"
+                "DATABASE_URL is required (PostgreSQL connection string: "
+                "local working copy or hosted live)"
             )
         supported = self.DATABASE_URL.startswith(
             "postgresql:"
         ) or self.DATABASE_URL.startswith("postgresql+")
         if not supported:
             raise ValueError(
-                "DATABASE_URL must point at Supabase/PostgreSQL "
-                "(postgresql:// or postgresql+...://); "
+                "DATABASE_URL must point at PostgreSQL "
+                "(postgresql:// or postgresql+...://, local or hosted); "
                 "got an unsupported scheme"
             )
-        # Supabase/pooler URLs use the bare `postgresql://` scheme, which
-        # SQLAlchemy maps to psycopg2 by default. The app is async, so force
+        # Bare `postgresql://` URLs (local server, Supabase, or pooler) map to
+        # psycopg2 by default in SQLAlchemy. The app is async, so force
         # the asyncpg driver.
         if self.DATABASE_URL.startswith("postgresql://"):
             self.DATABASE_URL = self.DATABASE_URL.replace(
