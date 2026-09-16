@@ -22,8 +22,6 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
-from dotenv import load_dotenv
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import bcrypt  # noqa: E402
