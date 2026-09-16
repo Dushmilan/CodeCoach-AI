@@ -88,8 +88,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 cd frontend
 pnpm install
 cp .env.example .env.local
-pnpm dev          # app only
+pnpm dev          # app only (no viewer)
 pnpm dev:all      # app + Motion Canvas viewer (:9000) together
+                  # (installs viewer deps automatically on first run)
 ```
 
 ### Piston (code execution)

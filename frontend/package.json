@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev:all": "pnpm --dir ../motion-canvas-lab install --prefer-offline",
     "dev:all": "concurrently -k -n frontend,viewer \"next dev\" \"pnpm --dir ../motion-canvas-lab dev --port 9000 --strictPort\"",
     "build": "next build",
     "start": "next start",
