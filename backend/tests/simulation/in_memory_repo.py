@@ -63,3 +63,8 @@ class InMemorySkillGraphRepository(SkillGraphRepository):
         self._events = {k: v for k, v in self._events.items() if v.user_id != user_id}
         self._events_by_user.pop(user_id, None)
         self._states.pop(user_id, None)
+
+    async def get_enrolled_programme_starters(
+        self, user_id: str, limit: int = 5
+    ) -> List[str]:
+        return []
