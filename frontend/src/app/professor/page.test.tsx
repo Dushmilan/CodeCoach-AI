@@ -36,45 +36,34 @@ describe("ProfessorOverviewPage", () => {
 
   it("reads classrooms from the live API", async () => {
     server.use(
-      http.get("/api/instructor/classrooms", () =>
+      http.get("/api/instructor/classrooms-analytics", () =>
         HttpResponse.json([
           {
-            id: "live-room-1",
-            course_id: "python-fundamentals",
-            owner_id: "prof-ada-01",
-            name: "Live CS101",
-            invite_code: "LIVE-2026",
-            term: "Fall 2026",
-            schedule: "Mon/Wed 10:00",
+            classroom: {
+              id: "live-room-1",
+              course_id: "python-fundamentals",
+              owner_id: "prof-ada-01",
+              name: "Live CS101",
+              invite_code: "LIVE-2026",
+              term: "Fall 2026",
+              schedule: "Mon/Wed 10:00",
+            },
+            analytics: {
+              total_students: 1,
+              avg_completion: 50,
+              avg_solved: 4,
+              students: [
+                {
+                  user_id: "stu-live-01",
+                  completed_lessons: 18,
+                  completion_pct: 50,
+                  attempted: 20,
+                  solved: 4,
+                },
+              ],
+            },
           },
         ]),
-      ),
-      http.get("/api/instructor/classrooms/:id", () =>
-        HttpResponse.json({
-          classroom: {
-            id: "live-room-1",
-            course_id: "python-fundamentals",
-            owner_id: "prof-ada-01",
-            name: "Live CS101",
-            invite_code: "LIVE-2026",
-            term: "Fall 2026",
-            schedule: "Mon/Wed 10:00",
-          },
-          analytics: {
-            total_students: 1,
-            avg_completion: 50,
-            avg_solved: 4,
-            students: [
-              {
-                user_id: "stu-live-01",
-                completed_lessons: 18,
-                completion_pct: 50,
-                attempted: 20,
-                solved: 4,
-              },
-            ],
-          },
-        }),
       ),
     );
     render(<ProfessorOverviewPage />);

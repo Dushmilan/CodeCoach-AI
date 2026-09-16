@@ -20,24 +20,6 @@ class SqlCourseAdminRepository(CourseAdminRepository):
         )
         return result.scalar_one_or_none() is not None
 
-    async def get_course_owner(self, course_id: str) -> Optional[str]:
-        result = await self.session.execute(
-            select(CourseORM.owner_id).where(CourseORM.id == course_id).limit(1)
-        )
-        return result.scalar_one_or_none()
-
-    async def get_module_course(self, module_id: str) -> Optional[str]:
-        result = await self.session.execute(
-            select(ModuleORM.course_id).where(ModuleORM.id == module_id).limit(1)
-        )
-        return result.scalar_one_or_none()
-
-    async def get_lesson_course(self, lesson_id: str) -> Optional[str]:
-        result = await self.session.execute(
-            select(LessonORM.course_id).where(LessonORM.id == lesson_id).limit(1)
-        )
-        return result.scalar_one_or_none()
-
     async def get_course_tree(self, owner_id: Optional[str] = None) -> Dict[str, Any]:
         courses_stmt = select(CourseORM).order_by(CourseORM.order)
         if owner_id is not None:
@@ -79,9 +61,7 @@ class SqlCourseAdminRepository(CourseAdminRepository):
                 }
             )
 
-        lessons_result = await self.session.execute(
-            select(LessonORM).order_by(LessonORM.order)
-        )
+        lessons_result = await self.session.execute(lessons_stmt)
         lessons = []
         for les in lessons_result.scalars().all():
             lessons.append(
@@ -98,6 +78,24 @@ class SqlCourseAdminRepository(CourseAdminRepository):
             )
 
         return {"courses": courses, "modules": modules, "lessons": lessons}
+
+    async def get_course_owner(self, course_id: str) -> Optional[str]:
+        result = await self.session.execute(
+            select(CourseORM.owner_id).where(CourseORM.id == course_id).limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_module_course(self, module_id: str) -> Optional[str]:
+        result = await self.session.execute(
+            select(ModuleORM.course_id).where(ModuleORM.id == module_id).limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_lesson_course(self, lesson_id: str) -> Optional[str]:
+        result = await self.session.execute(
+            select(LessonORM.course_id).where(LessonORM.id == lesson_id).limit(1)
+        )
+        return result.scalar_one_or_none()
 
     async def delete_course(self, course_id: str) -> bool:
         stmt = delete(CourseORM).where(CourseORM.id == course_id)

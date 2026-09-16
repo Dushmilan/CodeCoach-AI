@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { isAdmin, isProfessor } from "@/lib/roles";
 import { useAuth } from "@/providers";
 import { useTheme } from "next-themes";
 
 import {
   LayoutDashboard,
   Users,
+  GraduationCap,
   FileText,
   Database,
 } from "lucide-react";
@@ -45,6 +47,12 @@ export default function AdminSidebar({
       permission: "admin",
     },
     {
+      title: "Professors",
+      href: "/admin/professors",
+      icon: GraduationCap,
+      permission: "admin",
+    },
+    {
       title: "Questions",
       href: "/admin/questions",
       icon: FileText,
@@ -62,8 +70,8 @@ export default function AdminSidebar({
     if (!permission) return true;
     if (permission === "super_admin") return user?.role === "super_admin";
     if (permission === "course_editor")
-      return !!user?.role && ["professor", "admin", "super_admin"].includes(user.role);
-    return !!user?.role && ["admin", "super_admin"].includes(user.role);
+      return isProfessor(user?.role);
+    return isAdmin(user?.role);
   };
 
   const filteredNavItems = navItems.filter((item) =>

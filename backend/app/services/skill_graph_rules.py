@@ -350,3 +350,19 @@ def _weakest_missing_prerequisite(
         ):
             return prereq
     return None
+
+
+def cold_start_order(question_ids: List[str], limit: int = 5) -> List[str]:
+    """Deterministic programme-order starter list (Issue #186).
+
+    Pure helper: dedupe preserving programme order, skip empties, cap.
+    No ML — ordering comes from the enrolled programme query.
+    """
+    seen: List[str] = []
+    for qid in question_ids:
+        if not qid or qid in seen:
+            continue
+        seen.append(qid)
+        if len(seen) >= limit:
+            break
+    return seen

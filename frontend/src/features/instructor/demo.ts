@@ -232,6 +232,50 @@ async function fetchDetail(classroomId: string): Promise<LiveClassroomDetail> {
   );
 }
 
+export interface ClassroomsAnalyticsBatch {
+  rooms: Classroom[];
+  analyticsById: Record<string, ClassAnalytics>;
+}
+
+export async function getClassroomsAnalytics(): Promise<ClassroomsAnalyticsBatch> {
+  try {
+    const rows = await api.get<LiveClassroomDetail[]>(
+      "/api/instructor/classrooms-analytics",
+    );
+    const rooms = rows.map((r) => mapClassroom(r.classroom));
+    const analyticsById: Record<string, ClassAnalytics> = {};
+    for (const r of rows) {
+      analyticsById[r.classroom.id] = mapAnalytics(r.analytics);
+    }
+    return { rooms, analyticsById };
+  } catch (e) {
+    if (isAuthFailure(e)) return { rooms: [], analyticsById: {} };
+    const rooms = demoClassrooms();
+    const analyticsById: Record<string, ClassAnalytics> = {};
+    for (const c of rooms) {
+      analyticsById[c.id] = demoClassAnalytics(c.id);
+    }
+    return { rooms, analyticsById };
+  }
+}
+
+export async function getClassroomDetail(
+  classroomId: string,
+): Promise<{ classroom: Classroom; analytics: ClassAnalytics } | null> {
+  try {
+    const detail = await fetchDetail(classroomId);
+    return {
+      classroom: mapClassroom(detail.classroom),
+      analytics: mapAnalytics(detail.analytics),
+    };
+  } catch (e) {
+    if (isAuthFailure(e)) return null;
+    const room = demoClassroom(classroomId);
+    if (!room) return null;
+    return { classroom: room, analytics: demoClassAnalytics(classroomId) };
+  }
+}
+
 function demoClassrooms(ownerId?: string): Classroom[] {
   if (!ownerId) return db.classrooms;
   return db.classrooms.filter((c) => c.ownerId === ownerId);
@@ -284,6 +328,52 @@ export function getProfessors() {
 
 export function getCourses() {
   return db.courses;
+}
+
+export interface ProfessorCourse {
+  id: string;
+  title: string;
+  description?: string;
+  language?: string;
+  icon?: string;
+  order?: number;
+  owner_id?: string | null;
+}
+
+export interface ProfessorCourseTree {
+  courses: ProfessorCourse[];
+  modules: Array<Record<string, unknown>>;
+  lessons: Array<Record<string, unknown>>;
+}
+
+const EMPTY_PROFESSOR_TREE: ProfessorCourseTree = {
+  courses: [],
+  modules: [],
+  lessons: [],
+};
+
+export async function getProfessorCourseTree(): Promise<ProfessorCourseTree> {
+  try {
+    const tree = await api.get<ProfessorCourseTree>(
+      "/api/professor/courses/tree",
+    );
+    return {
+      courses: tree.courses ?? [],
+      modules: tree.modules ?? [],
+      lessons: tree.lessons ?? [],
+    };
+  } catch (e) {
+    if (isAuthFailure(e)) return { ...EMPTY_PROFESSOR_TREE };
+    return {
+      courses: [...db.courses] as ProfessorCourse[],
+      modules: [],
+      lessons: [],
+    };
+  }
+}
+
+export async function getProfessorCourses(): Promise<ProfessorCourse[]> {
+  return (await getProfessorCourseTree()).courses;
 }
 
 export async function getClassrooms(ownerId?: string): Promise<Classroom[]> {

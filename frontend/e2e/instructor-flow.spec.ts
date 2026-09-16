@@ -38,4 +38,11 @@ test.describe('Instructor role flow', () => {
     await expect(page.getByTestId('roster-table')).toBeVisible();
     await expect(page.getByText('At risk')).toBeVisible();
   });
+
+  test('professor analytics page renders class aggregates', async ({ page }) => {
+    await login(page, 'professor.ada', 'professor123');
+    await expect(page).toHaveURL('/professor', { timeout: 15000 });
+    await page.goto('/professor/analytics');
+    await expect(page.getByRole('heading', { name: 'Class Analytics' })).toBeVisible();
+  });
 });

@@ -1,8 +1,15 @@
 import pytest
-import os
 from contextlib import contextmanager
+from types import SimpleNamespace
 from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi.testclient import TestClient
+
+
+def _settings_double(api_key):
+    return SimpleNamespace(
+        GROQ_API_KEY=api_key,
+        GROQ_BASE_URL="https://api.groq.com/openai/v1",
+    )
 
 
 @contextmanager
@@ -27,8 +34,14 @@ class TestDebugGroqStatus:
             "object": "list",
             "data": [{"id": "openai/gpt-oss-120b", "active": True}],
         }
-        with _mock_httpx_get(200, body) as _:
-            os.environ["GROQ_API_KEY"] = "gsk_" + "x" * 40
+        settings = _settings_double("gsk_" + "x" * 40)
+        with (
+            _mock_httpx_get(200, body),
+            patch(
+                "app.services.groq_verification.get_settings",
+                return_value=settings,
+            ),
+        ):
             response = test_client.get("/debug/groq-status")
 
             assert response.status_code == 200
@@ -39,27 +52,38 @@ class TestDebugGroqStatus:
             assert "openai/gpt-oss-120b" in data["models"]
 
     def test_groq_status_missing_key(self, test_client: TestClient, test_env_vars):
-        if "GROQ_API_KEY" in os.environ:
-            del os.environ["GROQ_API_KEY"]
-
-        response = test_client.get("/debug/groq-status")
+        settings = _settings_double(None)
+        with patch(
+            "app.services.groq_verification.get_settings",
+            return_value=settings,
+        ):
+            response = test_client.get("/debug/groq-status")
         assert response.status_code == 200
         data = response.json()
         assert data["valid"] is False
         assert "not set" in (data.get("error") or "")
 
     def test_groq_status_invalid_format(self, test_client: TestClient, test_env_vars):
-        os.environ["GROQ_API_KEY"] = "short"
-
-        response = test_client.get("/debug/groq-status")
+        settings = _settings_double("short")
+        with patch(
+            "app.services.groq_verification.get_settings",
+            return_value=settings,
+        ):
+            response = test_client.get("/debug/groq-status")
         assert response.status_code == 200
         data = response.json()
         assert data["api_key_present"] is True
         assert data["api_key_format_valid"] is False
 
     def test_groq_status_unauthorized(self, test_client: TestClient, test_env_vars):
-        with _mock_httpx_get(401) as _:
-            os.environ["GROQ_API_KEY"] = "gsk_" + "x" * 40
+        settings = _settings_double("gsk_" + "x" * 40)
+        with (
+            _mock_httpx_get(401),
+            patch(
+                "app.services.groq_verification.get_settings",
+                return_value=settings,
+            ),
+        ):
             response = test_client.get("/debug/groq-status")
 
             assert response.status_code == 200
@@ -70,11 +94,16 @@ class TestDebugGroqStatus:
 
 @pytest.mark.usefixtures("test_env_vars")
 class TestDebugEnvironment:
-    def test_environment_info(self, test_client: TestClient, test_env_vars):
-        os.environ["GROQ_API_KEY"] = "gsk_" + "x" * 40
-        os.environ["ENVIRONMENT"] = "testing"
-
-        response = test_client.get("/debug/environment")
+    def test_environment_info(
+        self, test_client: TestClient, test_env_vars, monkeypatch
+    ):
+        monkeypatch.setenv("ENVIRONMENT", "testing")
+        settings = _settings_double("gsk_" + "x" * 40)
+        with patch(
+            "app.api.debug.get_settings",
+            return_value=settings,
+        ):
+            response = test_client.get("/debug/environment")
         assert response.status_code == 200
         data = response.json()
         assert "environment" in data
@@ -85,10 +114,12 @@ class TestDebugEnvironment:
         assert data["groq_api_key_present"] is True
 
     def test_environment_no_key(self, test_client: TestClient, test_env_vars):
-        if "GROQ_API_KEY" in os.environ:
-            del os.environ["GROQ_API_KEY"]
-
-        response = test_client.get("/debug/environment")
+        settings = _settings_double(None)
+        with patch(
+            "app.api.debug.get_settings",
+            return_value=settings,
+        ):
+            response = test_client.get("/debug/environment")
         assert response.status_code == 200
         data = response.json()
         assert data["groq_api_key_present"] is False

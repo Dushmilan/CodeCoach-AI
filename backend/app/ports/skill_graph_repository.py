@@ -40,3 +40,8 @@ class SkillGraphRepository(ABC):
 
     @abstractmethod
     async def delete_user_history(self, user_id: str) -> None: ...
+
+    @abstractmethod
+    async def get_enrolled_programme_starters(
+        self, user_id: str, limit: int = 5
+    ) -> List[str]: ...

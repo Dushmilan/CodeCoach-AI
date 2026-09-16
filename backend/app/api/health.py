@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, Request
 from datetime import datetime, timedelta, timezone
 import asyncio
 import logging
-import os
 from typing import Optional
 from sqlalchemy import text
 
 from app.api.dependencies import get_redis_cache, get_usage_repo
+from app.core.config import get_settings
 from app.core.database import async_session_maker, get_db
 from app.ports.usage_repository import UsageRepository
 from app.services.redis_service import RedisCache
@@ -58,7 +58,7 @@ async def health_check(request: Request):
             "rate_limiting": "enabled" if rate_limiting_enabled else "disabled",
         },
         "dependencies": {
-            "groq": "configured" if os.getenv("GROQ_API_KEY") else "not_configured",
+            "groq": "configured" if get_settings().GROQ_API_KEY else "not_configured",
             "piston_api": "configured",
             "questions_db": await db_reachable(),
         },
