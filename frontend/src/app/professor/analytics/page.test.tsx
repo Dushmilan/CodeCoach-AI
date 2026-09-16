@@ -20,7 +20,7 @@ describe("ProfessorAnalyticsPage (Issue #176)", () => {
   });
 
   it("shows an empty-state with a classrooms link when the professor owns no rooms", async () => {
-    server.use(http.get("/api/instructor/classrooms", () => HttpResponse.json([])));
+    server.use(http.get("/api/instructor/classrooms-analytics", () => HttpResponse.json([])));
     render(<ProfessorAnalyticsPage />);
     expect(
       await screen.findByText(/no classrooms yet/i),
