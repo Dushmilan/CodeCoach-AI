@@ -52,7 +52,6 @@ class TestAdminRateLimitAnalytics:
                 "id": "admin-1",
                 "username": "pattern_admin",
                 "email": "admin@example.com",
-                "plan": "pro",
                 "role": "admin",
                 "is_active": True,
             }
@@ -109,7 +108,6 @@ class TestAdminAbuseReport:
                 "id": "admin-1",
                 "username": "abuse_admin",
                 "email": "abuse@example.com",
-                "plan": "pro",
                 "role": "admin",
                 "is_active": True,
             }

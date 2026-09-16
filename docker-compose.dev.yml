@@ -15,8 +15,6 @@ services:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - PISTON_API_URL=http://piston:2000/api/v2
-      - DAILY_TOKEN_INPUT_CAP=${DAILY_TOKEN_INPUT_CAP:-250000}
-      - DAILY_TOKEN_OUTPUT_CAP=${DAILY_TOKEN_OUTPUT_CAP:-125000}
       - USER_RATE_LIMIT_PER_MINUTE=${USER_RATE_LIMIT_PER_MINUTE:-60}
     # The app is fully DB-backed; no local data volume is mounted.
     depends_on:

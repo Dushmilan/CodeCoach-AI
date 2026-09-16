@@ -217,9 +217,11 @@ class TestAuthServiceRegister:
             await service.register(request)
 
 
-class TestAuthServicePlanPropagation:
+class TestAuthServiceNoPlan:
+    """Issue #184: user payloads carry no plan tier."""
+
     @pytest.mark.asyncio
-    async def test_register_returns_free_plan(self, mock_repo):
+    async def test_register_returns_user_without_plan(self, mock_repo):
         service = AuthService(repository=mock_repo)
         request = UserRegisterRequest(
             username="newuser", email="new@test.com", password="secure123"
@@ -227,10 +229,11 @@ class TestAuthServicePlanPropagation:
 
         result = await service.register(request)
 
-        assert result.user.plan == "free"
+        assert not hasattr(result.user, "plan")
+        assert result.user.role == "user"
 
     @pytest.mark.asyncio
-    async def test_login_returns_user_plan(self, mock_repo):
+    async def test_login_preserves_role_without_plan(self, mock_repo):
         user = UserInDB(
             id="user-1",
             username="testuser",
@@ -238,7 +241,7 @@ class TestAuthServicePlanPropagation:
             hashed_password=hash_password("correctpass"),
             created_at=datetime.now(timezone.utc),
             is_active=True,
-            plan="premium",
+            role="professor",
         )
         mock_repo.get_by_username = AsyncMock(return_value=user)
         service = AuthService(repository=mock_repo)
@@ -246,10 +249,11 @@ class TestAuthServicePlanPropagation:
 
         result = await service.login(request)
 
-        assert result.user.plan == "premium"
+        assert not hasattr(result.user, "plan")
+        assert result.user.role == "professor"
 
     @pytest.mark.asyncio
-    async def test_get_current_user_returns_plan(self, mock_repo):
+    async def test_get_current_user_has_no_plan(self, mock_repo):
         user = UserInDB(
             id="user-1",
             username="testuser",
@@ -257,7 +261,7 @@ class TestAuthServicePlanPropagation:
             hashed_password="hash",
             created_at=datetime.now(timezone.utc),
             is_active=True,
-            plan="premium",
+            role="professor",
         )
         mock_repo.get_by_id = AsyncMock(return_value=user)
         service = AuthService(repository=mock_repo)
@@ -265,7 +269,8 @@ class TestAuthServicePlanPropagation:
         token, _ = create_access_token(TokenData(user_id="user-1", username="testuser"))
         result = await service.get_current_user(token)
 
-        assert result.plan == "premium"
+        assert not hasattr(result, "plan")
+        assert result.role == "professor"
 
 
 class TestAuthServiceLogin:

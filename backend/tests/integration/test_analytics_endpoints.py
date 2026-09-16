@@ -19,7 +19,6 @@ def mock_auth():
             email="test@example.com",
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
-            plan="free",
         )
 
     app.dependency_overrides[get_current_user] = _ov
@@ -32,8 +31,8 @@ def mock_auth():
 async def _seed_user_q(test_db):
     await test_db.execute(
         text(
-            "INSERT INTO users (id, username, email, hashed_password, created_at, is_active, plan, role) "
-            "VALUES (:u, 'testuser', 'test@example.com', 'x', :ts, 1, 'free', 'user') ON CONFLICT DO NOTHING"
+            "INSERT INTO users (id, username, email, hashed_password, created_at, is_active, role) "
+            "VALUES (:u, 'testuser', 'test@example.com', 'x', :ts, 1, 'user') ON CONFLICT DO NOTHING"
         ),
         {"u": USER, "ts": NOW},
     )

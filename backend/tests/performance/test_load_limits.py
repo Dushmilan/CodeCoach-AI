@@ -19,7 +19,7 @@ from app.main import app
 @contextmanager
 def mock_auth(user_id: str = "test-id", username: str = "testuser"):
     """Override auth dependencies for testing (run + coach endpoints)."""
-    from app.api.auth_deps import get_current_user, require_premium
+    from app.api.auth_deps import get_current_user
     from app.api.coach import get_coaching_provider
     from tests.fixtures.mock_coaching_provider import MockCoachingProvider
 
@@ -32,17 +32,14 @@ def mock_auth(user_id: str = "test-id", username: str = "testuser"):
             email="test@example.com",
             is_active=True,
             created_at="2025-01-01T00:00:00Z",
-            plan="premium",
         )
 
     app.dependency_overrides[get_current_user] = override_get_current_user
-    app.dependency_overrides[require_premium] = override_get_current_user
     app.dependency_overrides[get_coaching_provider] = MockCoachingProvider
     try:
         yield
     finally:
         app.dependency_overrides.pop(get_current_user, None)
-        app.dependency_overrides.pop(require_premium, None)
         app.dependency_overrides.pop(get_coaching_provider, None)
 
 

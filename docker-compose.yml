@@ -16,8 +16,6 @@ services:
       - PISTON_API_URL=http://piston:2000/api/v2
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
-      - DAILY_TOKEN_INPUT_CAP=${DAILY_TOKEN_INPUT_CAP:-250000}
-      - DAILY_TOKEN_OUTPUT_CAP=${DAILY_TOKEN_OUTPUT_CAP:-125000}
       - USER_RATE_LIMIT_PER_MINUTE=${USER_RATE_LIMIT_PER_MINUTE:-60}
     extra_hosts:
       - "host.docker.internal:host-gateway"

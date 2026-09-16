@@ -202,7 +202,7 @@ frontend/src/
 
 | Table | Purpose |
 |---|---|
-| `users` | Accounts (auth, roles `user`/`admin`, plans `free`/`pro`, refresh tokens, OAuth) |
+| `users` | Accounts (auth, roles `user`/`admin`, refresh tokens, OAuth) |
 | `questions` | Bank (difficulty, category, starter_code JSON, test_cases, hints, company_tags GIN) |
 | `courses`, `modules`, `lessons` | Curriculum (language, order, theory/exercise, linked question) |
 | `course_progress` | Per-user lesson progress (continue-where-you-left-off) |
@@ -310,8 +310,6 @@ DATABASE_URL=postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_<branch-s
 # GROQ_MODEL_HARD=openai/gpt-oss-120b
 # GROQ_MODEL_STREAM=openai/gpt-oss-20b
 # GROQ_MODEL_ANIMATE=openai/gpt-oss-120b
-DAILY_TOKEN_INPUT_CAP=250000
-DAILY_TOKEN_OUTPUT_CAP=125000
 USER_RATE_LIMIT_PER_MINUTE=60
 COACH_WARM_ENABLED=true
 COURSE_LIST_TTL_SECONDS=30

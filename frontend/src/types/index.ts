@@ -257,7 +257,6 @@ export interface User {
   created_at: string;
   is_active: boolean;
   role?: string;
-  plan?: string;
 }
 
 export interface AuthState {

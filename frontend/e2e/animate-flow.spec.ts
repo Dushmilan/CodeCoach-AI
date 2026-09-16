@@ -121,7 +121,6 @@ async function mockPremiumAndAnimate(page: Page, username: string, email: string
         created_at: new Date().toISOString(),
         is_active: true,
         role: 'user',
-        plan: 'premium',
       }),
     }),
   );
@@ -244,7 +243,6 @@ test.describe('AI Animate flow', () => {
           created_at: new Date().toISOString(),
           is_active: true,
           role: 'user',
-          plan: 'premium',
         }),
       }),
     );

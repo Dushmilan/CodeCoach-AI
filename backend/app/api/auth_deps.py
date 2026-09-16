@@ -150,14 +150,3 @@ async def require_csrf(request: Request) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="CSRF token missing or invalid",
         )
-
-
-async def require_premium(
-    current_user: UserResponse = Depends(get_current_user),
-):
-    if current_user.plan != "premium":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Premium feature — upgrade required",
-        )
-    return current_user

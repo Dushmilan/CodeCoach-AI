@@ -1,4 +1,4 @@
-"""Per-plan daily request limit enforcement.
+"""Daily request limit enforcement (Issue #184: single flat policy, no tiers).
 
 `enforce_daily_request_cap` is a FastAPI dependency (middleware for the coach
 routes) that reserves a request slot against the user's daily quota using an
@@ -29,19 +29,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def cap_for_plan(plan: str) -> int:
-    """Return the daily request cap for a user plan (paid plans get a high cap).
-
-    Premium (the paywalled coach tier from PR #89) is treated as paid, so it
-    bypasses the free daily cap in practice: the guard only becomes a
-    secondary safety net against runaway usage for paid users.
-    """
+def daily_cap() -> int:
+    """Return the single flat daily request cap for every user."""
     from app.core.config import get_settings
 
-    settings = get_settings()
-    if plan in ("pro", "premium"):
-        return settings.PRO_DAILY_REQUEST_CAP
-    return settings.FREE_DAILY_REQUEST_CAP
+    return get_settings().DAILY_REQUEST_CAP
 
 
 def _reset_at(now: datetime) -> datetime:
@@ -49,7 +41,7 @@ def _reset_at(now: datetime) -> datetime:
 
 
 def daily_limit_headers(
-    cap: int, remaining: int, plan: str, now: Optional[datetime] = None
+    cap: int, remaining: int, now: Optional[datetime] = None
 ) -> dict:
     """Build X-RateLimit-* headers plus request-remaining usage header."""
     now = now or datetime.now(timezone.utc)
@@ -58,7 +50,6 @@ def daily_limit_headers(
         "X-RateLimit-Limit": str(cap),
         "X-RateLimit-Remaining": str(max(0, remaining)),
         "X-RateLimit-Reset": str(int(reset.timestamp())),
-        "X-RateLimit-Policy": plan,
         "X-Usage-Remaining-Requests": str(max(0, remaining)),
     }
 
@@ -69,11 +60,11 @@ async def enforce_daily_request_cap(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
     usage_repo: UsageRepository = Depends(get_usage_repo),
 ) -> None:
-    """Reserve one daily request slot; raise 429 when the plan cap is hit."""
-    cap = cap_for_plan(user.plan)
+    """Reserve one daily request slot; raise 429 when the flat cap is hit."""
+    cap = daily_cap()
     service = DailyLimitService(cache=cache, repo=usage_repo)
     allowed, remaining = await service.consume(user.id, cap)
-    request.state.daily_limit_headers = daily_limit_headers(cap, remaining, user.plan)
+    request.state.daily_limit_headers = daily_limit_headers(cap, remaining)
     if not allowed:
         await _record_denial(usage_repo, request, user, "daily_cap")
         headers = dict(request.state.daily_limit_headers)
@@ -108,13 +99,12 @@ async def get_usage(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
     usage_repo: UsageRepository = Depends(get_usage_repo),
 ) -> dict:
-    """Return the authenticated user's current plan usage and daily quota."""
-    cap = cap_for_plan(user.plan)
+    """Return the authenticated user's daily quota usage."""
+    cap = daily_cap()
     service = DailyLimitService(cache=cache, repo=usage_repo)
     now = datetime.now(timezone.utc)
     remaining = await service.remaining(user.id, cap, now=now)
     return {
-        "plan": user.plan,
         "daily_limit": cap,
         "daily_used": max(0, cap - remaining),
         "daily_remaining": remaining,

@@ -116,19 +116,11 @@ describe('SettingsModal', () => {
     expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull();
   });
 
-  it('shows Free plan by default', async () => {
-    const user = userEvent.setup();
+  it('shows Groq coaching info with no plan UI', async () => {
     render(<SettingsModal {...defaultProps} />);
-    await user.click(screen.getByTestId('settings-tab-plan'));
-    expect(screen.getByText('Your plan')).toBeInTheDocument();
-    expect(screen.getByText('Free')).toBeInTheDocument();
-  });
-
-  it('shows Premium plan when plan is premium', async () => {
-    const user = userEvent.setup();
-    render(<SettingsModal {...defaultProps} plan="premium" />);
-    await user.click(screen.getByTestId('settings-tab-plan'));
-    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(screen.getByText(/AI coaching powered by Groq/i)).toBeInTheDocument();
+    expect(screen.queryByText('Your plan')).toBeNull();
+    expect(screen.queryByText('Premium')).toBeNull();
   });
 
   it('renders a vertical settings nav with content pane', async () => {
@@ -137,14 +129,11 @@ describe('SettingsModal', () => {
     const tablist = screen.getByRole('tablist');
     expect(tablist).toHaveAttribute('aria-orientation', 'vertical');
     expect(screen.getByTestId('settings-tab-general')).toBeInTheDocument();
-    expect(screen.getByTestId('settings-tab-plan')).toBeInTheDocument();
+    expect(screen.queryByTestId('settings-tab-plan')).toBeNull();
     expect(screen.getByTestId('settings-tab-account')).toBeInTheDocument();
     expect(screen.getByRole('tabpanel')).toBeInTheDocument();
     // Groq info lives in the default General pane
     expect(screen.getByText(/AI coaching powered by Groq/i)).toBeInTheDocument();
-    // Switch to Plan pane
-    await user.click(screen.getByTestId('settings-tab-plan'));
-    expect(screen.getByText('Your plan')).toBeInTheDocument();
     // Switch to Account pane — privacy + sign-out live there
     await user.click(screen.getByTestId('settings-tab-account'));
     expect(screen.getByRole('button', { name: /privacy policy/i })).toBeInTheDocument();
@@ -168,11 +157,9 @@ describe('SettingsModal', () => {
     general.focus();
     expect(general).toHaveFocus();
     await user.keyboard('{ArrowDown}');
-    expect(screen.getByTestId('settings-tab-plan')).toHaveFocus();
-    await user.keyboard('{ArrowDown}');
     expect(screen.getByTestId('settings-tab-account')).toHaveFocus();
     await user.keyboard('{ArrowUp}');
-    expect(screen.getByTestId('settings-tab-plan')).toHaveFocus();
+    expect(screen.getByTestId('settings-tab-general')).toHaveFocus();
   });
 
   it('account pane holds privacy and sign out for authenticated users', async () => {

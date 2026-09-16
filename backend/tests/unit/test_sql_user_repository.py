@@ -130,31 +130,13 @@ class TestSqlUserRepository:
         await repo.session.rollback()
 
     @pytest.mark.asyncio
-    async def test_add_and_get_plan_defaults_to_free(self, repo, sample_user):
+    async def test_add_and_get_user_has_no_plan(self, repo, sample_user):
         await repo.add(sample_user)
         await repo.session.commit()
 
         fetched = await repo.get_by_id(sample_user.id)
         assert fetched is not None
-        assert fetched.plan == "free"
-
-    @pytest.mark.asyncio
-    async def test_add_and_get_premium_plan_roundtrip(self, repo):
-        premium_user = UserInDB(
-            id=str(uuid.uuid4()),
-            username="premiumuser",
-            email="premium@example.com",
-            hashed_password="hash",
-            created_at=datetime.now(timezone.utc),
-            is_active=True,
-            plan="premium",
-        )
-        await repo.add(premium_user)
-        await repo.session.commit()
-
-        fetched = await repo.get_by_id(premium_user.id)
-        assert fetched is not None
-        assert fetched.plan == "premium"
+        assert not hasattr(fetched, "plan")
 
     @pytest.mark.asyncio
     async def test_inactive_user(self, repo):
@@ -174,16 +156,7 @@ class TestSqlUserRepository:
         assert fetched.is_active is False
 
     @pytest.mark.asyncio
-    async def test_new_user_defaults_to_free_plan(self, repo, sample_user):
-        await repo.add(sample_user)
-        await repo.session.commit()
-
-        fetched = await repo.get_by_id(sample_user.id)
-        assert fetched is not None
-        assert fetched.plan == "free"
-
-    @pytest.mark.asyncio
-    async def test_plan_round_trips(self, repo):
+    async def test_role_round_trips_without_plan(self, repo):
         user = UserInDB(
             id=str(uuid.uuid4()),
             username="prouser",
@@ -191,14 +164,15 @@ class TestSqlUserRepository:
             hashed_password="hash",
             created_at=datetime.now(timezone.utc),
             is_active=True,
-            plan="pro",
+            role="professor",
         )
         await repo.add(user)
         await repo.session.commit()
 
         fetched = await repo.get_by_id(user.id)
         assert fetched is not None
-        assert fetched.plan == "pro"
+        assert fetched.role == "professor"
+        assert not hasattr(fetched, "plan")
 
     @pytest.mark.asyncio
     async def test_list_by_ids_batch_lookup(self, repo):

@@ -101,7 +101,6 @@ function AdminContent({ children }: { children: React.ReactNode }) {
                 onClose={() => setSettingsOpen(false)}
                 isAuthenticated={isAuthenticated}
                 onLogout={logout}
-                plan={user?.plan}
               />
             </div>
           </div>

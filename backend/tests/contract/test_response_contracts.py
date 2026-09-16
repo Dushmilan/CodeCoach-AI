@@ -174,7 +174,6 @@ def auth_and_deps():
             username="contractuser",
             email="contract@test.com",
             is_active=True,
-            plan="premium",
             created_at="2025-01-01T00:00:00Z",
         )
 
