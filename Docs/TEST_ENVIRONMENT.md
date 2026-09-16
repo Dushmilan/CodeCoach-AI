@@ -33,7 +33,7 @@ DATABASE_URL=postgresql://codecoach:codecoach@127.0.0.1:5432/codecoach_<slug>
 JWT_SECRET_KEY=<random 64-hex>
 GROQ_API_KEY=gsk_...                      # AI coaching (real key)
 PISTON_API_URL=http://piston:2000/api/v2
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_WS_URL=ws://localhost:8000
 ```
 

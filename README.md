@@ -256,7 +256,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 cd frontend
 pnpm install
-cp .env.example .env.local   # set NEXT_PUBLIC_API_URL
+cp .env.example .env.local   # leave NEXT_PUBLIC_API_URL empty (same-origin; a plain-http absolute URL is blocked by CSP)
 pnpm dev                     # http://localhost:3000 (app only, no viewer)
 pnpm dev:all                 # Next.js + Motion Canvas viewer (:9000) together
                              # (installs viewer deps automatically on first run)
@@ -328,7 +328,7 @@ ENVIRONMENT=production                             # or testing / development
 ### Frontend (`.env.local` / Docker build args)
 
 ```
-NEXT_PUBLIC_API_URL=http://localhost:8000         # browser-reachable API base (empty → same-origin /api rewrite)
+NEXT_PUBLIC_API_URL=                               # empty = same-origin /api rewrite (default, CSP-safe)
 NEXT_PUBLIC_WS_URL=ws://localhost:8000
 NEXT_PUBLIC_ANIMATION_VIEWER_URL=http://localhost:9000
 API_URL=http://backend:8000                        # server-side rewrite target (Docker network)

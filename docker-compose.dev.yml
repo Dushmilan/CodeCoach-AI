@@ -39,9 +39,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # NEXT_PUBLIC_API_URL is inlined into the client bundle and must be a
-      # browser-reachable URL (host port), NOT the Docker-internal hostname.
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # NEXT_PUBLIC_API_URL defaults to empty = same-origin (browser calls
+      # /api/* on :3000, CSP-safe). The rewrite target below must be the
+      # Docker-internal backend hostname, NOT localhost.
+      - API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
       - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
     volumes:
       - ./frontend:/app
