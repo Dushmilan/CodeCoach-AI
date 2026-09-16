@@ -74,8 +74,17 @@ class SqlAdminRepository(AdminRepository):
     async def exists(self, entity_type: str, entity_id: str) -> bool:
         return await self._courses.exists(entity_type, entity_id)
 
-    async def get_course_tree(self) -> Dict[str, Any]:
-        return await self._courses.get_course_tree()
+    async def get_course_tree(self, owner_id: Optional[str] = None) -> Dict[str, Any]:
+        return await self._courses.get_course_tree(owner_id=owner_id)
+
+    async def get_course_owner(self, course_id: str) -> Optional[str]:
+        return await self._courses.get_course_owner(course_id)
+
+    async def get_module_course(self, module_id: str) -> Optional[str]:
+        return await self._courses.get_module_course(module_id)
+
+    async def get_lesson_course(self, lesson_id: str) -> Optional[str]:
+        return await self._courses.get_lesson_course(lesson_id)
 
     async def delete_course(self, course_id: str) -> bool:
         return await self._courses.delete_course(course_id)

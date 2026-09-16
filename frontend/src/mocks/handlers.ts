@@ -230,4 +230,7 @@ export const handlers = [
       students: [],
     });
   }),
+  http.get("/api/professor/courses/tree", () => {
+    return HttpResponse.json({ courses: [], modules: [], lessons: [] });
+  }),
 ];
