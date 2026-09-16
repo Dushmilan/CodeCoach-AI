@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { isAdmin } from "@/lib/roles";
+import { isAdmin, isProfessor } from "@/lib/roles";
 import { useAuth } from "@/providers";
 import { useTheme } from "next-themes";
 
@@ -19,7 +19,7 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  permission?: "admin" | "super_admin";
+  permission?: "admin" | "super_admin" | "course_editor";
 }
 
 export default function AdminSidebar({
@@ -62,13 +62,15 @@ export default function AdminSidebar({
       title: "Curriculum",
       href: "/admin/curriculum",
       icon: Database,
-      permission: "admin",
+      permission: "course_editor",
     },
   ];
 
-  const hasPermission = (permission: "admin" | "super_admin" | undefined) => {
+  const hasPermission = (permission: "admin" | "super_admin" | "course_editor" | undefined) => {
     if (!permission) return true;
     if (permission === "super_admin") return user?.role === "super_admin";
+    if (permission === "course_editor")
+      return isProfessor(user?.role);
     return isAdmin(user?.role);
   };
 

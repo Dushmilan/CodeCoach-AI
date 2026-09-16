@@ -124,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <RoleGuard
-      allowedRoles={['admin', 'super_admin']}
+      allowedRoles={['professor', 'admin', 'super_admin']}
       loginHref="/admin/login"
       deniedMessage="You need admin privileges to access this area."
     >

@@ -30,6 +30,7 @@ interface Course {
   language?: string;
   icon?: string;
   order?: number;
+  owner_id?: string | null;
 }
 interface Module {
   id: string;
