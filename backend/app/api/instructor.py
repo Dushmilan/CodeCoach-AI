@@ -121,9 +121,40 @@ async def class_analytics(
     user_ids: str = Query(default="", description="CSV roster of user IDs"),
     total_lessons: int = Query(default=10, ge=0),
     service: ClassAnalyticsService = Depends(get_class_analytics_service),
+    repo: ClassroomRepository = Depends(get_classroom_repository),
     current_user: UserResponse = Depends(require_instructor),
 ):
     roster = [u.strip() for u in user_ids.split(",") if u.strip()]
+    # Ownership scoping (#176): the legacy CSV roster must never expose
+    # students outside the caller's owned (professor roles) or assigned
+    # (TA) rooms. Resolve the allowed set first, then deny out-of-scope
+    # ids before any per-student progress/submission reads run.
+    if current_user.role == "ta":
+        rooms = await repo.list_for_ta(current_user.id)
+    else:
+        rooms = await repo.list_owned_by_professor(current_user.id)
+    allowed: set[str] = set()
+    for room in rooms:
+        allowed.update(await repo.list_classroom_student_ids(room.id))
+    if not roster:
+        return ClassAnalyticsResponse(
+            total_students=0,
+            avg_completion=0.0,
+            avg_solved=0.0,
+            students=[],
+        )
+    disallowed = [u for u in roster if u not in allowed]
+    if disallowed:
+        logger.warning(
+            "Blocked out-of-scope class-analytics request by instructor %s "
+            "for %d student(s)",
+            current_user.id,
+            len(disallowed),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized for requested students",
+        )
     try:
         return await service.class_overview(roster, total_lessons=total_lessons)
     except Exception:
