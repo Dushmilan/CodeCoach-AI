@@ -161,6 +161,67 @@ class SqlSubmissionRepository(SubmissionRepository):
         )
         return [self._orm_to_schema(o) for o in result.scalars().all()]
 
+    async def list_by_users(
+        self, user_ids: Sequence[str], *, limit: int = 1000
+    ) -> dict[str, Sequence[Submission]]:
+        """Batch newest-first submissions per user in ONE window query."""
+        ids = list(dict.fromkeys(user_ids))
+        if not ids:
+            return {}
+        from sqlalchemy import func
+
+        rn = func.row_number().over(
+            partition_by=SubmissionORM.user_id,
+            order_by=SubmissionORM.created_at.desc(),
+        )
+        inner = (
+            select(SubmissionORM, rn.label("rn"))
+            .where(SubmissionORM.user_id.in_(ids))
+            .subquery()
+        )
+        result = await self.session.execute(
+            select(inner).where(inner.c.rn <= limit).order_by(inner.c.created_at.desc())
+        )
+        grouped: dict[str, list[Submission]] = {uid: [] for uid in ids}
+        for row in result.mappings().all():
+            orm_kwargs = {
+                col: row[col]
+                for col in (
+                    "id",
+                    "user_id",
+                    "question_id",
+                    "code",
+                    "language",
+                    "passed",
+                    "error_signature",
+                    "attempt_index",
+                    "status",
+                    "idempotency_key",
+                    "execution_job_id",
+                    "request_id",
+                    "created_at",
+                )
+                if col in row
+            }
+            grouped[row["user_id"]].append(
+                Submission(
+                    id=orm_kwargs["id"],
+                    user_id=orm_kwargs["user_id"],
+                    question_id=orm_kwargs["question_id"],
+                    code=orm_kwargs["code"],
+                    language=orm_kwargs["language"],
+                    passed=orm_kwargs["passed"],
+                    error_signature=orm_kwargs.get("error_signature"),
+                    attempt_index=orm_kwargs["attempt_index"],
+                    status=orm_kwargs.get("status") or "graded",
+                    idempotency_key=orm_kwargs.get("idempotency_key"),
+                    execution_job_id=orm_kwargs.get("execution_job_id"),
+                    request_id=orm_kwargs.get("request_id"),
+                    created_at=orm_kwargs["created_at"],
+                )
+            )
+        return grouped
+
     async def count_attempts(self, user_id: str, question_id: str) -> int:
         result = await self.session.execute(
             select(func.count(SubmissionORM.id)).where(
