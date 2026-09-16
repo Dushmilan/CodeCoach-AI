@@ -11,7 +11,9 @@ import {
   Users,
   FileText,
   Database,
+  GraduationCap,
 } from "lucide-react";
+import { isAdmin } from "@/lib/roles";
 
 interface NavItem {
   title: string;
@@ -56,12 +58,18 @@ export default function AdminSidebar({
       icon: Database,
       permission: "admin",
     },
+    {
+      title: "Professors",
+      href: "/admin/professors",
+      icon: GraduationCap,
+      permission: "admin",
+    },
   ];
 
   const hasPermission = (permission: "admin" | "super_admin" | undefined) => {
     if (!permission) return true;
     if (permission === "super_admin") return user?.role === "super_admin";
-    return !!user?.role && ["admin", "super_admin"].includes(user.role);
+    return isAdmin(user?.role);
   };
 
   const filteredNavItems = navItems.filter((item) =>

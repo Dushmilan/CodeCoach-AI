@@ -1,13 +1,24 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Header } from "@/components/header/Header";
 import { InstructorSidebar } from "@/components/instructor/InstructorSidebar";
+import { isInstructor } from "@/lib/roles";
+import { roleHomePath, signInPathFor } from "@/lib/auth/roleHome";
 import { useAuth } from "@/providers";
-
-const ALLOWED = ["ta", "professor", "admin", "super_admin"];
 
 export default function DemonstratorLayout({ children }: { children: React.ReactNode }) {
   const { user, isHydrated, isAuthenticated } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
+      router.replace(signInPathFor(pathname));
+    }
+  }, [isHydrated, isAuthenticated, pathname, router]);
 
   if (!isHydrated) {
     return (
@@ -17,7 +28,7 @@ export default function DemonstratorLayout({ children }: { children: React.React
     );
   }
 
-  if (!isAuthenticated || !ALLOWED.includes(user?.role ?? "")) {
+  if (!isAuthenticated || !isInstructor(user?.role)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -25,6 +36,12 @@ export default function DemonstratorLayout({ children }: { children: React.React
           <p className="text-muted-foreground">
             You need demonstrator privileges to access this area.
           </p>
+          <Link href={roleHomePath(user?.role)} className="underline mt-4 inline-block">
+            Back to home
+          </Link>{" "}
+          <Link href={signInPathFor(pathname)} className="underline mt-4 inline-block ml-4">
+            Go to sign-in
+          </Link>
         </div>
       </div>
     );

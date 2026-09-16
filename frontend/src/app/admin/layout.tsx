@@ -2,10 +2,12 @@
 
 import { SettingsModal } from '@/components/settings/SettingsModal';
 import { useAuth } from '@/providers';
+import { isAdmin } from '@/lib/roles';
+import { roleHomePath, signInPathFor } from '@/lib/auth/roleHome';
 import { Menu, Moon, Settings, Sun, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -16,12 +18,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout, isHydrated } = useAuth();
+  const router = useRouter();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated && !isLoginPage) {
+      router.replace(signInPathFor(pathname));
+    }
+  }, [isHydrated, isAuthenticated, isLoginPage, pathname, router]);
 
   if (!isHydrated) {
     return (
@@ -31,12 +40,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (!isLoginPage && (!isAuthenticated || !['admin', 'super_admin'].includes(user?.role ?? ''))) {
+  if (!isLoginPage && (!isAuthenticated || !isAdmin(user?.role))) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
           <p className="text-muted-foreground">You need admin privileges to access this area.</p>
+          <Link href={roleHomePath(user?.role)} className="underline mt-4 inline-block">
+            Back to home
+          </Link>{" "}
+          <Link href={signInPathFor(pathname)} className="underline mt-4 inline-block ml-4">
+            Go to sign-in
+          </Link>
         </div>
       </div>
     );
