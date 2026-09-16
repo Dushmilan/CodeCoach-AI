@@ -134,8 +134,11 @@ def get_analytics_service(
 def get_class_analytics_service(
     submissions: SubmissionRepository = Depends(get_submission_repo),
     progress: ProgressRepository = Depends(get_progress_repo),
+    users: UserRepository = Depends(get_user_repo),
 ) -> ClassAnalyticsService:
-    return ClassAnalyticsService(submissions=submissions, progress=progress)
+    return ClassAnalyticsService(
+        submissions=submissions, progress=progress, users=users
+    )
 
 
 async def get_admin_repo(

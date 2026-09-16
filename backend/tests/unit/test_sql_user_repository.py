@@ -199,3 +199,36 @@ class TestSqlUserRepository:
         fetched = await repo.get_by_id(user.id)
         assert fetched is not None
         assert fetched.plan == "pro"
+
+    @pytest.mark.asyncio
+    async def test_list_by_ids_batch_lookup(self, repo):
+        """Issue #177: one SELECT ... WHERE id IN (...) — no N+1."""
+        first = UserInDB(
+            id=str(uuid.uuid4()),
+            username="batchmia",
+            email="batchmia@example.com",
+            hashed_password="hash",
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
+        )
+        second = UserInDB(
+            id=str(uuid.uuid4()),
+            username="batchleo",
+            email="batchleo@example.com",
+            hashed_password="hash",
+            created_at=datetime.now(timezone.utc),
+            is_active=True,
+        )
+        await repo.add(first)
+        await repo.add(second)
+        await repo.session.commit()
+
+        rows = await repo.list_by_ids([first.id, second.id])
+        assert {u.id for u in rows} == {first.id, second.id}
+        assert {u.username for u in rows} == {"batchmia", "batchleo"}
+
+        # Duplicate ids collapse to one row per user; unknown ids are ignored.
+        dupes = await repo.list_by_ids([first.id, first.id, "no-such-user"])
+        assert [u.id for u in dupes] == [first.id]
+
+        assert await repo.list_by_ids([]) == []
