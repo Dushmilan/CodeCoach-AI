@@ -93,13 +93,14 @@ def test_head_drops_rescue_queue(alembic_config: Config, migration_url: str) -> 
 def test_drop_rescue_queue_downgrade_restores_original_shape(
     alembic_config: Config, migration_url: str
 ) -> None:
+    # Pinned to the drop revision (not "head") so later migrations stacking on
+    # top cannot break the reversibility assertion.
+    drop_rev = "e7a8b9c0d1e2"
     script = ScriptDirectory.from_config(alembic_config)
-    heads = script.get_heads()
-    assert len(heads) == 1
-    parent = script.get_revision(heads[0]).down_revision
-    assert parent is not None, "migration head must have a parent revision"
+    parent = script.get_revision(drop_rev).down_revision
+    assert parent is not None, "drop migration must have a parent revision"
 
-    command.upgrade(alembic_config, "head")
+    command.upgrade(alembic_config, drop_rev)
     command.downgrade(alembic_config, parent)
     assert _table_present(migration_url), (
         f"downgrade to {parent} did not restore rescue_queue"
@@ -107,7 +108,7 @@ def test_drop_rescue_queue_downgrade_restores_original_shape(
     assert _columns(migration_url) == EXPECTED_COLUMNS
     assert EXPECTED_INDEXES <= _indexes(migration_url)
 
-    command.upgrade(alembic_config, "head")
+    command.upgrade(alembic_config, drop_rev)
     assert not _table_present(migration_url), (
-        "re-upgrade to head did not drop rescue_queue again"
+        "re-upgrade to the drop revision did not drop rescue_queue again"
     )

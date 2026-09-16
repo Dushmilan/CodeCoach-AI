@@ -1,0 +1,694 @@
+{
+  "items": [
+    {
+      "id": "oop-classes-objects",
+      "course_id": "oop-software-design",
+      "module_id": "oop-classes",
+      "title": "Objects, State, and Behavior",
+      "type": "theory",
+      "order": 1,
+      "content": "## Objects, State, and Behavior\n\nObject-oriented programming (OOP) models a program as a collection of **objects**. An object bundles two things:\n\n- **State** — the data the object holds (its *attributes* or *fields*).\n- **Behavior** — the operations the object can perform (its *methods*).\n\nA **class** is the blueprint; an **object** is a concrete instance of that blueprint.\n\n```python\nclass Dog:\n    def __init__(self, name, age):\n        self.name = name\n        self.age = age\n\n    def describe(self):\n        return f\"{self.name} is {self.age} years old\"\n```\n\nCreating an object instantiates the class:\n\n```python\nmilo = Dog(\"Milo\", 3)\nprint(milo.describe())   # Milo is 3 years old\n```\n\n`milo` is an object of type `Dog`. It has its own `name` and `age`, separate from any other `Dog` you create.\n\n### Why objects?\n\n| Procedural thinking            | Object thinking                    |\n|--------------------------------|------------------------------------|\n| Data and functions are separate | Data and its behavior live together |\n| Functions operate on globals    | Methods operate on their own state  |\n| Caller must track every piece   | Each object manages its own data    |\n\nObjects reduce the amount of information you must keep in your head at once: the object guarantees its own invariants, and callers only work with its public methods.\n\n---\n\n**Next up:** constructors — how objects get their initial state.",
+      "language": "python"
+    },
+    {
+      "id": "oop-classes-constructors",
+      "course_id": "oop-software-design",
+      "module_id": "oop-classes",
+      "title": "Constructors and `__init__`",
+      "type": "theory",
+      "order": 2,
+      "content": "## Constructors and `__init__`\n\nA **constructor** sets up a new object's initial state. In Python the constructor is the special method `__init__`, which Python calls automatically right after an object is created.\n\n```python\nclass Account:\n    def __init__(self, owner, balance):\n        self.owner = owner\n        self.balance = balance\n```\n\n```python\nacc = Account(\"Ada\", 100)\nprint(acc.owner)    # Ada\nprint(acc.balance)  # 100\n```\n\n### Defaults in constructors\n\nConstructor parameters can have defaults so callers can omit them:\n\n```python\nclass Timer:\n    def __init__(self, seconds=0):\n        self.seconds = seconds\n\nt = Timer()        # seconds = 0\nt2 = Timer(60)     # seconds = 60\n```\n\n### Validating in the constructor\n\nThe constructor is the right place to enforce invariants — rules that must always hold:\n\n```python\nclass BankAccount:\n    def __init__(self, owner, balance):\n        if balance < 0:\n            raise ValueError(\"balance cannot be negative\")\n        self.owner = owner\n        self.balance = balance\n```\n\nFailing fast in `__init__` prevents an object from ever existing in an invalid state, which removes whole classes of bugs downstream.\n\n### The `self` parameter\n\nThe first parameter of every instance method, conventionally named `self`, refers to the object being operated on. Python passes it automatically:\n\n```python\nacc.deposit(50)      # Python calls Account.deposit(acc, 50)\n```\n\n---\n\n**Next up:** encapsulation — controlling access to an object's data.",
+      "language": "python"
+    },
+    {
+      "id": "oop-classes-encapsulation",
+      "course_id": "oop-software-design",
+      "module_id": "oop-classes",
+      "title": "Encapsulation and Access Control",
+      "type": "theory",
+      "order": 3,
+      "content": "## Encapsulation and Access Control\n\n**Encapsulation** is the practice of hiding an object's internal details and only exposing a controlled interface. The object's state should only change through its methods, so the object can keep its own data consistent.\n\nPython has no hard `private` keyword, but conventions communicate intent:\n\n| Convention  | Meaning                                        |\n|-------------|------------------------------------------------|\n| `name`      | Public attribute — safe to use externally      |\n| `_name`     | Protected — internal by convention             |\n| `__name`    | Name-mangled — discouraged to touch outside    |\n\n```python\nclass Thermostat:\n    def __init__(self, target=21):\n        self._target = target\n        self._running = False\n\n    def turn_on(self):\n        self._running = True\n\n    def set_target(self, value):\n        if 5 <= value <= 35:\n            self._target = value\n```\n\nThe `_target` and `_running` attributes are *internal*. Outside code calls `turn_on()` and `set_target()` instead of poking the fields directly, so invalid values like `set_target(100)` are rejected.\n\n### Why hide internals?\n\n1. **Protection** — callers cannot break invariants.\n2. **Freedom to change** — the internal representation can change without breaking callers.\n3. **Clarity** — the public methods document the intended use.\n\n### Methods that mutate vs methods that report\n\nKeep a clear split between methods that change state and methods that only read it:\n\n```python\ndef deposit(self, amount):      # mutates\n    self._balance += amount\n\ndef balance(self):              # reports\n    return self._balance\n```\n\nEncapsulation is the first line of defense for reliable software: data stays consistent because nobody can reach around the interface.\n\n---\n\n**Next up:** making objects readable with `__str__` and friends.",
+      "language": "python"
+    },
+    {
+      "id": "oop-classes-magic-methods",
+      "course_id": "oop-software-design",
+      "module_id": "oop-classes",
+      "title": "Magic Methods: `__str__`, `__repr__`, and More",
+      "type": "theory",
+      "order": 4,
+      "content": "## Magic Methods: `__str__`, `__repr__`, and More\n\nPython lets classes customize how they behave with built-in operations through **magic methods** (double-underscore methods). They are never called by name directly — Python invokes them behind the scenes.\n\n### Human-readable output: `__str__`\n\n```python\nclass Point:\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def __str__(self):\n        return f\"Point({self.x}, {self.y})\"\n\n    def __add__(self, other):\n        return Point(self.x + other.x, self.y + other.y)\n```\n\n```python\np1 = Point(1, 2)\np2 = Point(3, 4)\nprint(p1)        # Point(1, 2)  — uses __str__\nprint(p1 + p2)   # Point(4, 6)  — uses __add__\n```\n\n### Common magic methods\n\n| Method     | Trigger               | Purpose                          |\n|------------|-----------------------|----------------------------------|\n| `__init__` | `MyClass(...)`        | Build initial state              |\n| `__str__`  | `str(obj)`, `print()` | Friendly, human-readable string  |\n| `__repr__` | `repr(obj)`           | Unambiguous string for developers|\n| `__len__`  | `len(obj)`            | Return a length                  |\n| `__eq__`   | `a == b`              | Define value equality            |\n| `__lt__`   | `a < b`               | Define ordering                  |\n\n### A readable object is a debuggable object\n\nImplementing `__str__` turns a cryptic `<__main__.Account object at 0x7f...>` into `Account(Ada, 100)`. That pays off every single time you inspect an object while debugging.\n\n```python\nclass Account:\n    def __init__(self, owner, balance):\n        self.owner = owner\n        self.balance = balance\n\n    def __str__(self):\n        return f\"Account({self.owner}, {self.balance})\"\n```\n\n---\n\n**Next up:** your first exercises — a Rectangle class, a BankAccount, and a Stack.",
+      "language": "python"
+    },
+    {
+      "id": "oop-classes-exercise-rectangle",
+      "course_id": "oop-software-design",
+      "module_id": "oop-classes",
+      "title": "Exercise: Rectangle Class",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Rectangle Class\n\nWrite a class `Rectangle` with:\n\n- `__init__(width, height)` storing both dimensions.\n- `area()` returning `width * height`.\n- `perimeter()` returning `2 * (width + height)`.\n\nThen write `solve(w, h)` that builds a `Rectangle(w, h)` and returns the string `\"{area} {perimeter}\"`.\n\n### Sample\n\nInput:\n\n```text\n3\n4\n```\n\nOutput:\n\n```text\n12 14\n```\n\n### How your code runs\n\nThe harness calls `solve(w, h)` with the two numbers. `solve` creates the object and returns a single string. Note that the instance parameter of the methods is named `_self` — Python lets you call it anything; the sandbox uses `_self` so the method signatures stay stable when wrapped.\n\n### Starter code\n\n```python\ndef solve(w, h):\n    rect = Rectangle(w, h)\n    return f\"{rect.area()} {rect.perimeter()}\"\n\nclass Rectangle:\n    def __init__(_self, width, height):\n        _self.width = width\n        _self.height = height\n\n    def area(_self):\n        return _self.width * _self.height\n\n    def perimeter(_self):\n        return 2 * (_self.width + _self.height)\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    lines = data.splitlines()\n    w = int(lines[0].strip())\n    h = int(lines[1].strip())\n    print(solve(w, h))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(w, h):\n    rect = Rectangle(w, h)\n    return f\"{rect.area()} {rect.perimeter()}\"\n\nclass Rectangle:\n    def __init__(_self, width, height):\n        _self.width = width\n        _self.height = height\n\n    def area(_self):\n        return _self.width * _self.height\n\n    def perimeter(_self):\n        return 2 * (_self.width + _self.height)\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    lines = data.splitlines()\n    w = int(lines[0].strip())\n    h = int(lines[1].strip())\n    print(solve(w, h))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "3\n4",
+          "expected_output": "12 14",
+          "description": "3 by 4 rectangle"
+        },
+        {
+          "input": "5\n6",
+          "expected_output": "30 22",
+          "description": "5 by 6 rectangle"
+        },
+        {
+          "input": "1\n1",
+          "expected_output": "1 4",
+          "description": "Unit square"
+        },
+        {
+          "input": "10\n2",
+          "expected_output": "20 24",
+          "description": "Wide rectangle"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-classes-exercise-bank-account",
+      "course_id": "oop-software-design",
+      "module_id": "oop-classes",
+      "title": "Exercise: Bank Account Simulation",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Bank Account Simulation\n\nWrite a class `BankAccount` with:\n\n- `__init__(owner, balance)` storing both.\n- `deposit(amount)` adding to the balance.\n- `withdraw(amount)` removing from the balance **only if enough funds exist**; otherwise it must leave the balance unchanged.\n\nThen write `solve(account)` that receives a JSON object describing an account and a list of operations, and returns the final balance.\n\n```json\n{\"owner\": \"Ada\", \"balance\": 100, \"operations\": [[\"deposit\", 50], [\"withdraw\", 30]]}\n```\n\n### Sample\n\nInput (one line):\n\n```text\n{\"owner\":\"Ada\",\"balance\":100,\"operations\":[[\"deposit\",50],[\"withdraw\",30]]}\n```\n\nOutput:\n\n```text\n120\n```\n\n### How your code runs\n\nThe harness parses the JSON object and calls `solve(account)`. Inside `solve`, build a `BankAccount` and apply every `[op, amount]` pair.\n\n### Starter code\n\n```python\ndef solve(account):\n    acc = BankAccount(account[\"owner\"], account[\"balance\"])\n    for op, amount in account[\"operations\"]:\n        if op == \"deposit\":\n            acc.deposit(amount)\n        elif op == \"withdraw\":\n            acc.withdraw(amount)\n    return acc.balance\n\nclass BankAccount:\n    def __init__(_self, owner, balance):\n        _self.owner = owner\n        _self.balance = balance\n\n    def deposit(_self, amount):\n        _self.balance += amount\n\n    def withdraw(_self, amount):\n        if amount <= _self.balance:\n            _self.balance -= amount\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    account = json.loads(data)\n    print(solve(account))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(account):\n    acc = BankAccount(account[\"owner\"], account[\"balance\"])\n    for op, amount in account[\"operations\"]:\n        if op == \"deposit\":\n            acc.deposit(amount)\n        elif op == \"withdraw\":\n            acc.withdraw(amount)\n    return acc.balance\n\nclass BankAccount:\n    def __init__(_self, owner, balance):\n        _self.owner = owner\n        _self.balance = balance\n\n    def deposit(_self, amount):\n        _self.balance += amount\n\n    def withdraw(_self, amount):\n        if amount <= _self.balance:\n            _self.balance -= amount\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    account = json.loads(data)\n    print(solve(account))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "{\"owner\":\"Ada\",\"balance\":100,\"operations\":[[\"deposit\",50],[\"withdraw\",30]]}",
+          "expected_output": "120",
+          "description": "Deposit then withdraw"
+        },
+        {
+          "input": "{\"owner\":\"Bob\",\"balance\":10,\"operations\":[[\"withdraw\",20]]}",
+          "expected_output": "10",
+          "description": "Withdraw refused when overdrawn"
+        },
+        {
+          "input": "{\"owner\":\"Cy\",\"balance\":0,\"operations\":[[\"deposit\",100],[\"deposit\",50]]}",
+          "expected_output": "150",
+          "description": "Two deposits"
+        },
+        {
+          "input": "{\"owner\":\"Dan\",\"balance\":500,\"operations\":[[\"withdraw\",500]]}",
+          "expected_output": "0",
+          "description": "Exact balance withdrawal"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-classes-exercise-stack",
+      "course_id": "oop-software-design",
+      "module_id": "oop-classes",
+      "title": "Exercise: Stack Class",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Stack Class\n\nWrite a class `Stack` implementing a last-in-first-out container:\n\n- `push(value)` — add a value on top.\n- `pop()` — remove and discard the top value (ignore if empty).\n- `peek()` — return the top value without removing it.\n\nThen write `solve(commands)` that receives a JSON list of commands such as `[[\"push\",5],[\"push\",7],[\"pop\"]]` and returns the stack contents from **bottom to top** as a list.\n\n### Sample\n\nInput (one line):\n\n```text\n[[\"push\",5],[\"push\",7],[\"pop\"]]\n```\n\nOutput:\n\n```text\n[5]\n```\n\n### How your code runs\n\nThe harness parses the JSON array and calls `solve(commands)`. Process each `[\"push\", value]` or `[\"pop\"]` entry, then return the current stack contents.\n\n### Starter code\n\n```python\ndef solve(commands):\n    stack = Stack()\n    for command in commands:\n        if command[0] == \"push\":\n            stack.push(command[1])\n        elif command[0] == \"pop\":\n            stack.pop()\n    return stack.items\n\nclass Stack:\n    def __init__(_self):\n        _self.items = []\n\n    def push(_self, value):\n        _self.items.append(value)\n\n    def pop(_self):\n        if _self.items:\n            _self.items.pop()\n\n    def peek(_self):\n        if _self.items:\n            return _self.items[-1]\n        return None\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    commands = json.loads(data)\n    print(json.dumps(solve(commands), separators=(\",\", \":\")))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(commands):\n    stack = Stack()\n    for command in commands:\n        if command[0] == \"push\":\n            stack.push(command[1])\n        elif command[0] == \"pop\":\n            stack.pop()\n    return stack.items\n\nclass Stack:\n    def __init__(_self):\n        _self.items = []\n\n    def push(_self, value):\n        _self.items.append(value)\n\n    def pop(_self):\n        if _self.items:\n            _self.items.pop()\n\n    def peek(_self):\n        if _self.items:\n            return _self.items[-1]\n        return None\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    commands = json.loads(data)\n    print(json.dumps(solve(commands), separators=(\",\", \":\")))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[[\"push\",5],[\"push\",7],[\"pop\"]]",
+          "expected_output": "[5]",
+          "description": "Push push pop"
+        },
+        {
+          "input": "[[\"push\",1],[\"push\",2],[\"push\",3]]",
+          "expected_output": "[1,2,3]",
+          "description": "Three pushes"
+        },
+        {
+          "input": "[[\"pop\"],[\"push\",9]]",
+          "expected_output": "[9]",
+          "description": "Pop from empty then push"
+        },
+        {
+          "input": "[[\"push\",4],[\"pop\"],[\"pop\"]]",
+          "expected_output": "[]",
+          "description": "Push then pop everything"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-inheritance-reuse",
+      "course_id": "oop-software-design",
+      "module_id": "oop-inheritance",
+      "title": "Code Reuse Through Inheritance",
+      "type": "theory",
+      "order": 1,
+      "content": "## Code Reuse Through Inheritance\n\n**Inheritance** lets a new class (the *subclass*) reuse the behavior of an existing class (the *superclass*). The subclass automatically gets the superclass's methods and attributes, then adds or changes what it needs.\n\n```python\nclass Animal:\n    def __init__(self, name):\n        self.name = name\n\n    def speak(self):\n        return \"...\"\n\nclass Dog(Animal):\n    def speak(self):\n        return \"Woof!\"\n```\n\n`Dog` inherits `__init__` and the `name` attribute, but overrides `speak`:\n\n```python\nd = Dog(\"Milo\")\nprint(d.name)      # Milo   (inherited)\nprint(d.speak())   # Woof!  (overridden)\n```\n\n### The \"is-a\" test\n\nUse inheritance when the relationship is truly **is-a**: a `Dog` *is an* `Animal`. Before subclassing, ask whether the subclass is genuinely a special case of the superclass.\n\n### What gets reused\n\n- **Attributes** — `self.name` works in `Dog` without redefining it.\n- **Methods** — any method not overridden is inherited as-is.\n- **Constructors** — if the subclass defines no `__init__`, it inherits the parent's.\n\n```python\nclass LoudDog(Dog):\n    def speak(self):\n        return \"WOOF! WOOF!\"\n\nprint(LoudDog(\"Rex\").name)    # Rex — inherited all the way down\n```\n\nInheritance is the most direct form of code reuse: write behavior once in the base class, and every subclass benefits.\n\n---\n\n**Next up:** overriding methods and calling `super()`.",
+      "language": "python"
+    },
+    {
+      "id": "oop-inheritance-override",
+      "course_id": "oop-software-design",
+      "module_id": "oop-inheritance",
+      "title": "Overriding Methods and `super()`",
+      "type": "theory",
+      "order": 2,
+      "content": "## Overriding Methods and `super()`\n\nA subclass often needs the parent's behavior *plus* something extra. **Overriding** a method means redefining it in the subclass; calling `super()` runs the parent's version.\n\n```python\nclass Employee:\n    def __init__(self, name, salary):\n        self.name = name\n        self.salary = salary\n\n    def monthly_pay(self):\n        return self.salary / 12\n\nclass Manager(Employee):\n    def __init__(self, name, salary, bonus):\n        super().__init__(name, salary)\n        self.bonus = bonus\n\n    def monthly_pay(self):\n        return super().monthly_pay() + self.bonus\n```\n\n```python\nm = Manager(\"Ada\", 120000, 500)\nprint(m.monthly_pay())   # 10500.0  (base pay plus bonus)\n```\n\n### Why call `super()`?\n\nWithout `super().__init__(name, salary)`, `Manager` would have to re-implement the base constructor — duplicating logic and risking drift. `super()` keeps the reuse explicit.\n\n### Extend, don't destroy\n\nA well-behaved override either:\n\n- Replaces the behavior entirely (no `super()` call), or\n- Extends it: runs `super()` first, then adds its own logic.\n\n```python\nclass SecureEmployee(Employee):\n    def __init__(self, name, salary, clearance):\n        super().__init__(name, salary)\n        self.clearance = clearance\n```\n\n### Overriding rules\n\n- The subclass method signature should stay compatible with the parent's.\n- Callers should not be able to tell (or care) which version runs.\n- If the base method returns a value, the override should return a compatible value.\n\n---\n\n**Next up:** interfaces and abstract classes — contracts your code can rely on.",
+      "language": "python"
+    },
+    {
+      "id": "oop-inheritance-abstract",
+      "course_id": "oop-software-design",
+      "module_id": "oop-inheritance",
+      "title": "Interfaces and Abstract Classes",
+      "type": "theory",
+      "order": 3,
+      "content": "## Interfaces and Abstract Classes\n\nSometimes a base class should define **what** a subclass must do without implementing **how**. That's the role of interfaces and abstract classes.\n\n### Abstract classes\n\nAn abstract class cannot be instantiated directly — it exists to be inherited. Methods decorated with `@abstractmethod` must be implemented by every subclass.\n\n```python\nfrom abc import ABC, abstractmethod\n\nclass Shape(ABC):\n    @abstractmethod\n    def area(self):\n        pass\n\nclass Circle(Shape):\n    def __init__(self, radius):\n        self.radius = radius\n\n    def area(self):\n        return 3.14159 * self.radius ** 2\n```\n\n`Shape` declares the contract: every shape must have an `area()` method. `Circle` fulfills it.\n\n### The contract guarantees\n\nBecause every subclass of `Shape` must implement `area()`, code that works with `Shape` is guaranteed to work with any future shape — a `Triangle`, a `Hexagon`, anything.\n\n### Interfaces in Python\n\nPython has no separate `interface` keyword. An interface is usually just an abstract class with no state, or an informal set of methods expected by convention (\"duck typing\", coming soon).\n\n```python\nclass Drawable(ABC):\n    @abstractmethod\n    def draw(self):\n        pass\n```\n\n### Abstract vs concrete base\n\n|                     | Abstract base class            | Concrete base class      |\n|---------------------|--------------------------------|--------------------------|\n| Instantiable?       | No                             | Yes                      |\n| Implements methods  | Some or none                   | Fully implements them    |\n| Purpose             | Define a contract for subclasses | Provide ready-to-use shared code |\n\nA good rule of thumb: if a base class is only ever used as a parent, consider making it abstract so its contract is explicit.\n\n---\n\n**Next up:** composition — building objects from other objects, and when it beats inheritance.",
+      "language": "python"
+    },
+    {
+      "id": "oop-inheritance-composition",
+      "course_id": "oop-software-design",
+      "module_id": "oop-inheritance",
+      "title": "Composition vs Inheritance Tradeoffs",
+      "type": "theory",
+      "order": 4,
+      "content": "## Composition vs Inheritance Tradeoffs\n\n**Composition** builds objects out of other objects. Instead of a class *being* something, it *has* something:\n\n```python\nclass Book:\n    def __init__(self, title, pages):\n        self.title = title\n        self.pages = pages\n\nclass Library:\n    def __init__(self, name):\n        self.name = name\n        self.books = []\n\n    def add_book(self, book):\n        self.books.append(book)\n\n    def total_pages(self):\n        return sum(book.pages for book in self.books)\n```\n\nA `Library` **has** books. That is composition: delegation through contained objects.\n\n### Inheritance: is-a vs has-a\n\n| Relationship | Wording                | Python                    |\n|--------------|------------------------|---------------------------|\n| Inheritance  | Dog **is a** Animal    | `class Dog(Animal)`       |\n| Composition  | Library **has** Books  | `self.books = []`         |\n\n### When to prefer composition\n\n- The relationship is \"has a\", not \"is a\".\n- You need flexibility: swap the contained object at runtime.\n- Inheritance would create deep, fragile chains.\n- You want to reuse behavior without taking on the parent's whole identity.\n\n### When inheritance still wins\n\n- True \"is-a\" modeling where subclasses genuinely extend the base.\n- Shared attributes and methods that every subclass needs.\n- Frameworks that expect you to override lifecycle methods.\n\n### Favor composition by default\n\nComposition is more flexible and less brittle: changing a contained object never breaks the container's other behavior, whereas changing a base class's internals can ripple through every subclass.\n\n```python\nclass Printer:\n    def print_doc(self, doc):\n        return f\"printing {doc}\"\n\nclass Computer:\n    def __init__(self):\n        self.printer = Printer()   # has-a\n\npc = Computer()\nprint(pc.printer.print_doc(\"report\"))   # printing report\n```\n\n---\n\n**Next up:** exercises — a shape hierarchy, talking animals, and a composed library.",
+      "language": "python"
+    },
+    {
+      "id": "oop-inheritance-exercise-shapes",
+      "course_id": "oop-software-design",
+      "module_id": "oop-inheritance",
+      "title": "Exercise: Shape Hierarchy",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Shape Hierarchy\n\nBuild a small inheritance hierarchy:\n\n- `Shape` — base class with `area()` returning `0`.\n- `Circle(Shape)` — takes a `radius`; `area()` returns `3.14159 * radius ** 2` rounded to 2 decimals.\n- `Rectangle(Shape)` — takes `width` and `height`; `area()` returns `width * height`.\n\nThen write `solve(spec)` that receives a JSON object describing one shape and returns its area. The object looks like `{\"type\":\"circle\",\"radius\":3}` or `{\"type\":\"rectangle\",\"width\":3,\"height\":4}`.\n\n### Sample\n\nInput (one line):\n\n```text\n{\"type\":\"circle\",\"radius\":3}\n```\n\nOutput:\n\n```text\n28.27\n```\n\n### How your code runs\n\nThe harness parses the JSON object and calls `solve(spec)`. Inside `solve`, build the right shape via `make_shape(spec)` and return its `.area()`.\n\n### Starter code\n\n```python\ndef solve(spec):\n    shape = make_shape(spec)\n    return shape.area()\n\nclass Shape:\n    def area(_self):\n        return 0\n\nclass Circle(Shape):\n    def __init__(_self, radius):\n        _self.radius = radius\n\n    def area(_self):\n        return round(3.14159 * _self.radius ** 2, 2)\n\nclass Rectangle(Shape):\n    def __init__(_self, width, height):\n        _self.width = width\n        _self.height = height\n\n    def area(_self):\n        return _self.width * _self.height\n\ndef make_shape(spec):\n    if spec[\"type\"] == \"circle\":\n        return Circle(spec[\"radius\"])\n    return Rectangle(spec[\"width\"], spec[\"height\"])\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    spec = json.loads(data)\n    print(solve(spec))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(spec):\n    shape = make_shape(spec)\n    return shape.area()\n\nclass Shape:\n    def area(_self):\n        return 0\n\nclass Circle(Shape):\n    def __init__(_self, radius):\n        _self.radius = radius\n\n    def area(_self):\n        return round(3.14159 * _self.radius ** 2, 2)\n\nclass Rectangle(Shape):\n    def __init__(_self, width, height):\n        _self.width = width\n        _self.height = height\n\n    def area(_self):\n        return _self.width * _self.height\n\ndef make_shape(spec):\n    if spec[\"type\"] == \"circle\":\n        return Circle(spec[\"radius\"])\n    return Rectangle(spec[\"width\"], spec[\"height\"])\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    spec = json.loads(data)\n    print(solve(spec))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "{\"type\":\"circle\",\"radius\":3}",
+          "expected_output": "28.27",
+          "description": "Circle of radius 3"
+        },
+        {
+          "input": "{\"type\":\"rectangle\",\"width\":3,\"height\":4}",
+          "expected_output": "12",
+          "description": "Rectangle 3x4"
+        },
+        {
+          "input": "{\"type\":\"circle\",\"radius\":1}",
+          "expected_output": "3.14",
+          "description": "Unit circle"
+        },
+        {
+          "input": "{\"type\":\"rectangle\",\"width\":5,\"height\":5}",
+          "expected_output": "25",
+          "description": "Square via rectangle"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-inheritance-exercise-animals",
+      "course_id": "oop-software-design",
+      "module_id": "oop-inheritance",
+      "title": "Exercise: Talking Animals",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Talking Animals\n\nBuild an animal hierarchy:\n\n- `Animal` — base class storing a `name`; `speak()` returns `\"...\"`.\n- `Dog(Animal)` — `speak()` returns `\"Woof!\"`.\n- `Cat(Animal)` — `speak()` returns `\"Meow!\"`.\n\nThen write `solve(kind)` that receives a lowercase animal name and returns the sound that animal makes. Use a lookup such as `{\"dog\": Dog, \"cat\": Cat}` to pick the class.\n\n### Sample\n\nInput (one line):\n\n```text\ndog\n```\n\nOutput:\n\n```text\nWoof!\n```\n\n### How your code runs\n\nThe harness passes the animal name as a single string. `solve` builds the correct animal and returns its `speak()` result.\n\n### Starter code\n\n```python\ndef solve(kind):\n    animal = {\"dog\": Dog, \"cat\": Cat}.get(kind, Animal)(\"?\")\n    return animal.speak()\n\nclass Animal:\n    def __init__(_self, name):\n        _self.name = name\n\n    def speak(_self):\n        return \"...\"\n\nclass Dog(Animal):\n    def speak(_self):\n        return \"Woof!\"\n\nclass Cat(Animal):\n    def speak(_self):\n        return \"Meow!\"\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    print(solve(data))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(kind):\n    animal = {\"dog\": Dog, \"cat\": Cat}.get(kind, Animal)(\"?\")\n    return animal.speak()\n\nclass Animal:\n    def __init__(_self, name):\n        _self.name = name\n\n    def speak(_self):\n        return \"...\"\n\nclass Dog(Animal):\n    def speak(_self):\n        return \"Woof!\"\n\nclass Cat(Animal):\n    def speak(_self):\n        return \"Meow!\"\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    print(solve(data))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "dog",
+          "expected_output": "Woof!",
+          "description": "A dog barks"
+        },
+        {
+          "input": "cat",
+          "expected_output": "Meow!",
+          "description": "A cat meows"
+        },
+        {
+          "input": "cow",
+          "expected_output": "...",
+          "description": "Unknown animal falls back"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-inheritance-exercise-library",
+      "course_id": "oop-software-design",
+      "module_id": "oop-inheritance",
+      "title": "Exercise: Composing a Library",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Composing a Library\n\nPractice composition with two classes:\n\n- `Book(title, pages)` storing both.\n- `Library(name)` with `add_book(book)` and `total_pages()` returning the sum of all books' pages.\n\nThen write `solve(books)` that receives a JSON list of `[title, pages]` pairs, adds a `Book` for each to a `Library`, and returns the library's total pages.\n\n### Sample\n\nInput (one line):\n\n```text\n[[\"Clean Code\", 464], [\"Refactoring\", 448]]\n```\n\nOutput:\n\n```text\n912\n```\n\n### How your code runs\n\nThe harness parses the JSON array and calls `solve(books)`. Build the library, add the books, return `library.total_pages()`.\n\n### Starter code\n\n```python\ndef solve(books):\n    library = Library(\"main\")\n    for title, pages in books:\n        library.add_book(Book(title, pages))\n    return library.total_pages()\n\nclass Book:\n    def __init__(_self, title, pages):\n        _self.title = title\n        _self.pages = pages\n\nclass Library:\n    def __init__(_self, name):\n        _self.name = name\n        _self.books = []\n\n    def add_book(_self, book):\n        _self.books.append(book)\n\n    def total_pages(_self):\n        return sum(book.pages for book in _self.books)\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    books = json.loads(data)\n    print(solve(books))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(books):\n    library = Library(\"main\")\n    for title, pages in books:\n        library.add_book(Book(title, pages))\n    return library.total_pages()\n\nclass Book:\n    def __init__(_self, title, pages):\n        _self.title = title\n        _self.pages = pages\n\nclass Library:\n    def __init__(_self, name):\n        _self.name = name\n        _self.books = []\n\n    def add_book(_self, book):\n        _self.books.append(book)\n\n    def total_pages(_self):\n        return sum(book.pages for book in _self.books)\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    books = json.loads(data)\n    print(solve(books))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[[\"Clean Code\",464],[\"Refactoring\",448]]",
+          "expected_output": "912",
+          "description": "Two books"
+        },
+        {
+          "input": "[[\"Python Crash Course\",624]]",
+          "expected_output": "624",
+          "description": "Single book"
+        },
+        {
+          "input": "[]",
+          "expected_output": "0",
+          "description": "Empty library"
+        },
+        {
+          "input": "[[\"A\",10],[\"B\",20],[\"C\",30]]",
+          "expected_output": "60",
+          "description": "Three small books"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-poly-dispatch",
+      "course_id": "oop-software-design",
+      "module_id": "oop-polymorphism",
+      "title": "Overrides and Dynamic Dispatch",
+      "type": "theory",
+      "order": 1,
+      "content": "## Overrides and Dynamic Dispatch\n\n**Polymorphism** (\"many forms\") lets one name mean different things depending on the object's actual type. Thanks to **dynamic dispatch**, Python decides *at runtime* which method implementation to call.\n\n```python\nclass Shape:\n    def area(self):\n        return 0\n\nclass Circle(Shape):\n    def __init__(self, radius):\n        self.radius = radius\n\n    def area(self):\n        return 3.14159 * self.radius ** 2\n\nclass Rectangle(Shape):\n    def __init__(self, width, height):\n        self.width = width\n        self.height = height\n\n    def area(self):\n        return self.width * self.height\n```\n\nNow a single loop can handle every shape without caring about its concrete type:\n\n```python\nshapes = [Circle(3), Rectangle(2, 5), Circle(1)]\n\ntotal = 0.0\nfor shape in shapes:          # each object is a Shape\n    total += shape.area()     # dispatch picks the right area()\nprint(total)\n```\n\n### What makes it work\n\n1. Every subclass guarantees the same method name (`area`).\n2. The caller only relies on the base interface.\n3. Python looks up the method on the **actual object**, not the declared type.\n\n### The payoff\n\nAdding a `Triangle` later requires **zero changes** to the loop. Polymorphism lets you write code that is open for extension — new types slot in without touching existing logic.\n\n### Compare to type checks\n\n```python\n# Without polymorphism — you must handle every case yourself\nif isinstance(shape, Circle):\n    total += 3.14159 * shape.radius ** 2\nelif isinstance(shape, Rectangle):\n    total += shape.width * shape.height\n```\n\nPolymorphism moves that decision into the classes, where it belongs.\n\n---\n\n**Next up:** duck typing — when the interface is just a convention.",
+      "language": "python"
+    },
+    {
+      "id": "oop-poly-ducktyping",
+      "course_id": "oop-software-design",
+      "module_id": "oop-polymorphism",
+      "title": "Duck Typing",
+      "type": "theory",
+      "order": 2,
+      "content": "## Duck Typing\n\n\"If it walks like a duck and quacks like a duck, it's a duck.\" Python applies this philosophy to objects: you don't need a formal base class for polymorphism. **If an object has the methods you call, it works.**\n\n```python\nclass ConsoleLogger:\n    def log(self, message):\n        return f\"console: {message}\"\n\nclass FileLogger:\n    def log(self, message):\n        return f\"file: {message}\"\n\nclass NetworkLogger:\n    def log(self, message):\n        return f\"network: {message}\"\n```\n\nAny code that calls `.log(message)` works with all three — no inheritance required:\n\n```python\ndef record(logger, message):\n    return logger.log(message)\n\nprint(record(ConsoleLogger(), \"start\"))   # console: start\nprint(record(FileLogger(), \"start\"))      # file: start\n```\n\n### Duck typing in action\n\nPython's built-ins are full of duck typing:\n\n- `len(x)` works for anything with `__len__`.\n- `for item in x` works for anything iterable.\n- `f\"{obj}\"` works for anything with `__str__`.\n\n```python\ndef total(items):\n    return sum(items)\n\nprint(total([1, 2, 3]))       # list\nprint(total((4, 5, 6)))       # tuple\n```\n\n### Trust the interface, not the type\n\nDuck typing encourages programming to the **behavior** an object exposes rather than its declared class. This is more flexible but places a responsibility on you: document and test the expected interface, because Python won't enforce it.\n\n### EAFP — easier to ask forgiveness\n\nPython idioms favor trying the operation and handling failure over pre-checking types:\n\n```python\ntry:\n    logger.log(msg)\nexcept AttributeError:\n    print(\"logger has no log() method\")\n```\n\n---\n\n**Next up:** programming to abstractions — depending on interfaces, not concrete details.",
+      "language": "python"
+    },
+    {
+      "id": "oop-poly-abstractions",
+      "course_id": "oop-software-design",
+      "module_id": "oop-polymorphism",
+      "title": "Programming to Abstractions",
+      "type": "theory",
+      "order": 3,
+      "content": "## Programming to Abstractions\n\nGood design programs against **abstractions** (interfaces) rather than **concretions** (specific implementations). You depend on *what* an object can do, not *which* implementation it is.\n\n### The problem with concrete dependencies\n\n```python\ndef notify_user(user, mode):\n    if mode == \"email\":\n        send_email(user.email, \"Update\")       # tightly coupled\n    elif mode == \"sms\":\n        send_sms(user.phone, \"Update\")\n    elif mode == \"push\":\n        send_push(user.device_id, \"Update\")\n```\n\nEvery new channel means editing `notify_user`. The function knows too much.\n\n### Programming to an abstraction\n\n```python\nclass Notifier:\n    def send(self, user, message):\n        pass\n\nclass EmailNotifier(Notifier):\n    def send(self, user, message):\n        return f\"email to {user.email}: {message}\"\n\nclass SmsNotifier(Notifier):\n    def send(self, user, message):\n        return f\"sms to {user.phone}: {message}\"\n```\n\nThe caller depends only on the `Notifier` contract:\n\n```python\ndef notify_user(user, message, notifier):\n    return notifier.send(user, message)   # any Notifier works\n```\n\n### Why it matters\n\n- **Replaceability** — swap implementations without touching callers.\n- **Testability** — inject a fake notifier in tests.\n- **Extensibility** — add new implementations without editing old code.\n\n### Three rules of thumb\n\n1. Name parameters by the abstraction (`notifier`), not the concrete type.\n2. Accept the smallest interface that does the job.\n3. Build the specific object once, at the \"edges\" of your program, and pass it in.\n\n---\n\n**Next up:** dependency inversion — how high-level modules stay independent of low-level details.",
+      "language": "python"
+    },
+    {
+      "id": "oop-poly-dependency-inversion",
+      "course_id": "oop-software-design",
+      "module_id": "oop-polymorphism",
+      "title": "Dependency Inversion",
+      "type": "theory",
+      "order": 4,
+      "content": "## Dependency Inversion\n\nThe **Dependency Inversion Principle** (the D in SOLID) says high-level modules should not depend on low-level modules — *both* should depend on abstractions. In plain terms: your business logic should not know which logger, database, or network stack it is using.\n\n### The inverted flow\n\nInstead of the caller creating its dependencies internally:\n\n```python\nclass OrderService:\n    def __init__(self):\n        self.logger = FileLogger()          # hard-wired detail\n\n    def place_order(self, order):\n        self.logger.log(\"placing order\")    # bound to FileLogger\n```\n\n...you **inject** the dependency through the constructor:\n\n```python\nclass OrderService:\n    def __init__(self, logger):             # abstraction injected\n        self.logger = logger\n\n    def place_order(self, order):\n        self.logger.log(\"placing order\")    # any logger works\n```\n\n### Constructor injection\n\n```python\nservice = OrderService(ConsoleLogger())\nservice2 = OrderService(FileLogger())\nservice3 = OrderService(CloudLogger())\n```\n\nThe same `OrderService` works with any object exposing `log(message)` — a duck-typed interface.\n\n### Why \"inversion\"?\n\nWithout injection, `OrderService` points down to `FileLogger`. With injection, both depend on the *abstraction* (\"a logger with a `log` method\"), so the direction of the dependency is inverted. High-level logic stops being coupled to low-level details.\n\n### Benefits\n\n- Swap infrastructure (files, cloud, memory) without touching business logic.\n- Write unit tests with a fake logger.\n- Each class stays small and focused on one responsibility.\n\n---\n\n**Next up:** exercises — polymorphic shapes, a strategy pattern, and dependency-injected logging.",
+      "language": "python"
+    },
+    {
+      "id": "oop-poly-exercise-total-area",
+      "course_id": "oop-software-design",
+      "module_id": "oop-polymorphism",
+      "title": "Exercise: Polymorphic Total Area",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Polymorphic Total Area\n\nReuse the shape hierarchy from Module 2, but this time work with a **collection** of shapes to show polymorphism in action.\n\n- `Shape` — base class with `area()` returning `0`.\n- `Circle(Shape)` — `area()` returns `3.14159 * radius ** 2` rounded to 2 decimals.\n- `Rectangle(Shape)` — `area()` returns `width * height`.\n\nWrite `solve(shapes)` that receives a JSON list of shape objects and returns the **total area**, rounded to 2 decimals.\n\n### Sample\n\nInput (one line):\n\n```text\n[{\"type\":\"circle\",\"radius\":3},{\"type\":\"rectangle\",\"width\":2,\"height\":5}]\n```\n\nOutput:\n\n```text\n38.27\n```\n\n### How your code runs\n\nThe harness parses the JSON array and calls `solve(shapes)`. Loop over the objects, build each shape with `make_shape(spec)`, and sum every `shape.area()`.\n\n### Starter code\n\n```python\ndef solve(shapes):\n    total = 0.0\n    for spec in shapes:\n        total += make_shape(spec).area()\n    return round(total, 2)\n\nclass Shape:\n    def area(_self):\n        return 0\n\nclass Circle(Shape):\n    def __init__(_self, radius):\n        _self.radius = radius\n\n    def area(_self):\n        return round(3.14159 * _self.radius ** 2, 2)\n\nclass Rectangle(Shape):\n    def __init__(_self, width, height):\n        _self.width = width\n        _self.height = height\n\n    def area(_self):\n        return _self.width * _self.height\n\ndef make_shape(spec):\n    if spec[\"type\"] == \"circle\":\n        return Circle(spec[\"radius\"])\n    return Rectangle(spec[\"width\"], spec[\"height\"])\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    shapes = json.loads(data)\n    print(solve(shapes))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(shapes):\n    total = 0.0\n    for spec in shapes:\n        total += make_shape(spec).area()\n    return round(total, 2)\n\nclass Shape:\n    def area(_self):\n        return 0\n\nclass Circle(Shape):\n    def __init__(_self, radius):\n        _self.radius = radius\n\n    def area(_self):\n        return round(3.14159 * _self.radius ** 2, 2)\n\nclass Rectangle(Shape):\n    def __init__(_self, width, height):\n        _self.width = width\n        _self.height = height\n\n    def area(_self):\n        return _self.width * _self.height\n\ndef make_shape(spec):\n    if spec[\"type\"] == \"circle\":\n        return Circle(spec[\"radius\"])\n    return Rectangle(spec[\"width\"], spec[\"height\"])\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    shapes = json.loads(data)\n    print(solve(shapes))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[{\"type\":\"circle\",\"radius\":3},{\"type\":\"rectangle\",\"width\":2,\"height\":5}]",
+          "expected_output": "38.27",
+          "description": "Circle plus rectangle"
+        },
+        {
+          "input": "[{\"type\":\"rectangle\",\"width\":2,\"height\":3},{\"type\":\"rectangle\",\"width\":4,\"height\":5}]",
+          "expected_output": "26.0",
+          "description": "Two rectangles"
+        },
+        {
+          "input": "[{\"type\":\"circle\",\"radius\":1},{\"type\":\"circle\",\"radius\":1}]",
+          "expected_output": "6.28",
+          "description": "Two unit circles"
+        },
+        {
+          "input": "[]",
+          "expected_output": "0.0",
+          "description": "No shapes"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-poly-exercise-strategy",
+      "course_id": "oop-software-design",
+      "module_id": "oop-polymorphism",
+      "title": "Exercise: Strategy Pattern (Min/Max)",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Strategy Pattern (Min/Max)\n\nImplement the **Strategy pattern**: a family of algorithms (`MinStrategy`, `MaxStrategy`), each exposing a `compute(nums)` method, selected at runtime by a factory.\n\n- `MinStrategy.compute(nums)` returns `min(nums)`.\n- `MaxStrategy.compute(nums)` returns `max(nums)`.\n- `select_strategy(mode)` returns the right strategy for `\"min\"` or `\"max\"`.\n\nWrite `solve(mode, nums)` that selects the strategy and returns its result.\n\n### Sample\n\nInput:\n\n```text\n\"min\"\n[3,1,2]\n```\n\nOutput:\n\n```text\n1\n```\n\n### How your code runs\n\nThe harness passes `mode` (a quoted string) on line 1 and the JSON list on line 2. Your `solve` picks the strategy and calls `strategy.compute(nums)`.\n\n### Starter code\n\n```python\ndef solve(mode, nums):\n    strategy = select_strategy(mode)\n    return strategy.compute(nums)\n\nclass MinStrategy:\n    def compute(_self, nums):\n        return min(nums)\n\nclass MaxStrategy:\n    def compute(_self, nums):\n        return max(nums)\n\ndef select_strategy(mode):\n    if mode == \"min\":\n        return MinStrategy()\n    return MaxStrategy()\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    lines = data.splitlines()\n    mode = lines[0].strip().strip('\"')\n    nums = json.loads(lines[1].strip())\n    print(solve(mode, nums))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(mode, nums):\n    strategy = select_strategy(mode)\n    return strategy.compute(nums)\n\nclass MinStrategy:\n    def compute(_self, nums):\n        return min(nums)\n\nclass MaxStrategy:\n    def compute(_self, nums):\n        return max(nums)\n\ndef select_strategy(mode):\n    if mode == \"min\":\n        return MinStrategy()\n    return MaxStrategy()\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    lines = data.splitlines()\n    mode = lines[0].strip().strip('\"')\n    nums = json.loads(lines[1].strip())\n    print(solve(mode, nums))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "\"min\"\n[3,1,2]",
+          "expected_output": "1",
+          "description": "Minimum of three"
+        },
+        {
+          "input": "\"max\"\n[3,1,2]",
+          "expected_output": "3",
+          "description": "Maximum of three"
+        },
+        {
+          "input": "\"min\"\n[5,5,5]",
+          "expected_output": "5",
+          "description": "All equal"
+        },
+        {
+          "input": "\"max\"\n[-1,-5,-2]",
+          "expected_output": "-1",
+          "description": "Negative values"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-poly-exercise-logger-di",
+      "course_id": "oop-software-design",
+      "module_id": "oop-polymorphism",
+      "title": "Exercise: Dependency-Injected Logger",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Dependency-Injected Logger\n\nApply **dependency injection** with duck-typed loggers:\n\n- `ConsoleLogger.log(message)` returns `\"LOG: \" + message`.\n- `FileLogger.log(message)` returns `\"FILE: \" + message`.\n- `make_logger(kind)` returns the right logger for `\"console\"` or `\"file\"`.\n\nWrite `solve(logger_type, message)` that builds the logger and returns the formatted log line.\n\n### Sample\n\nInput:\n\n```text\n\"console\"\nServer started\n```\n\nOutput:\n\n```text\nLOG: Server started\n```\n\n### How your code runs\n\nThe harness passes the logger type (a quoted string) on line 1 and the message on line 2. Your `solve` injects the chosen logger and delegates to it.\n\n### Starter code\n\n```python\ndef solve(logger_type, message):\n    logger = make_logger(logger_type)\n    return logger.log(message)\n\nclass ConsoleLogger:\n    def log(_self, message):\n        return \"LOG: \" + str(message)\n\nclass FileLogger:\n    def log(_self, message):\n        return \"FILE: \" + str(message)\n\ndef make_logger(kind):\n    if kind == \"console\":\n        return ConsoleLogger()\n    return FileLogger()\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    lines = data.splitlines()\n    logger_type = lines[0].strip().strip('\"')\n    message = lines[1].strip()\n    print(solve(logger_type, message))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(logger_type, message):\n    logger = make_logger(logger_type)\n    return logger.log(message)\n\nclass ConsoleLogger:\n    def log(_self, message):\n        return \"LOG: \" + str(message)\n\nclass FileLogger:\n    def log(_self, message):\n        return \"FILE: \" + str(message)\n\ndef make_logger(kind):\n    if kind == \"console\":\n        return ConsoleLogger()\n    return FileLogger()\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    lines = data.splitlines()\n    logger_type = lines[0].strip().strip('\"')\n    message = lines[1].strip()\n    print(solve(logger_type, message))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "\"console\"\nServer started",
+          "expected_output": "LOG: Server started",
+          "description": "Console logger"
+        },
+        {
+          "input": "\"file\"\nUser login",
+          "expected_output": "FILE: User login",
+          "description": "File logger"
+        },
+        {
+          "input": "\"console\"\nerror: bad input",
+          "expected_output": "LOG: error: bad input",
+          "description": "Console with error message"
+        },
+        {
+          "input": "\"file\"\n404 not found",
+          "expected_output": "FILE: 404 not found",
+          "description": "File with numeric-ish message"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-principles-srp-ocp",
+      "course_id": "oop-software-design",
+      "module_id": "oop-principles",
+      "title": "SOLID: SRP and OCP",
+      "type": "theory",
+      "order": 1,
+      "content": "## SOLID: SRP and OCP\n\n**SOLID** is a set of five design principles that keep object-oriented code maintainable. This lesson covers the first two.\n\n### Single Responsibility Principle (SRP)\n\nA class should have **one reason to change**. It should do one thing and do it well.\n\n```python\n# Overloaded class — three responsibilities\nclass Report:\n    def compute(self, data):\n        ...\n    def format(self, data):\n        ...\n    def save(self, data):\n        ...\n```\n\nSplit responsibilities into separate classes, each focused:\n\n```python\nclass ReportComputer:\n    def compute(self, data):\n        ...\n\nclass ReportFormatter:\n    def format(self, data):\n        ...\n\nclass ReportSaver:\n    def save(self, data):\n        ...\n```\n\nWhen a class has one responsibility, it is easier to understand, test, and modify without breaking unrelated behavior.\n\n### Open/Closed Principle (OCP)\n\nSoftware should be **open for extension but closed for modification**. Add new behavior by adding new code (new subclasses), not by editing existing code.\n\n```python\nclass AreaCalculator:\n    def area(self, shape):\n        if isinstance(shape, Circle):\n            return 3.14159 * shape.radius ** 2\n        elif isinstance(shape, Rectangle):\n            return shape.width * shape.height\n        # adding a Triangle means editing this method\n```\n\nWith polymorphism the same goal needs no edits:\n\n```python\nclass Shape:\n    def area(self):\n        return 0\n\nclass Triangle(Shape):\n    def area(self):\n        return 0.5 * self.base * self.height\n```\n\nAdding `Triangle` never touches `AreaCalculator` — the system is *open for extension* (new subclass) and *closed for modification* (no existing code changes).\n\n---\n\n**Next up:** LSP, ISP, and DIP — the rest of SOLID.",
+      "language": "python"
+    },
+    {
+      "id": "oop-principles-lsp-isp-dip",
+      "course_id": "oop-software-design",
+      "module_id": "oop-principles",
+      "title": "SOLID: LSP, ISP, and DIP",
+      "type": "theory",
+      "order": 2,
+      "content": "## SOLID: LSP, ISP, and DIP\n\nThree more SOLID principles complete the set.\n\n### Liskov Substitution Principle (LSP)\n\nA subclass must be usable wherever its superclass is expected, without breaking anything.\n\n```python\nclass Bird:\n    def move(self):\n        return \"fly\"\n\nclass Ostrich(Bird):\n    def move(self):     # overrides correctly — it walks\n        return \"walk\"\n\ndef travel(bird):\n    return bird.move()\n\nprint(travel(Bird()))       # fly\nprint(travel(Ostrich()))    # walk  — still fine\n```\n\nBreaking LSP usually shows up as `if isinstance(...)` checks or overrides that raise unexpected errors. If a subclass cannot honor the parent's contract, it should not inherit from it.\n\n### Interface Segregation Principle (ISP)\n\nClients should not be forced to depend on methods they don't use. Prefer several small, specific interfaces over one fat one.\n\n```python\nclass Worker:\n    def work(self):\n        ...\n    def attend_meeting(self):\n        ...\n    def code_review(self):\n        ...\n```\n\nA contractor who only codes is forced to implement irrelevant methods. Split the interface so each client depends only on what it needs.\n\n### Dependency Inversion Principle (DIP)\n\nHigh-level modules should not depend on low-level modules; both should depend on abstractions.\n\n```python\nclass Checkout:\n    def __init__(self, payment):   # inject the abstraction\n        self.payment = payment\n\n    def pay(self, amount):\n        self.payment.process(amount)\n```\n\nSwap in credit-card, PayPal, or a fake payment for tests without touching `Checkout`.\n\n### The five in one line\n\n1. **S**ingle Responsibility — one reason to change.\n2. **O**pen/Closed — extend without modifying.\n3. **L**iskov Substitution — subclasses honor the contract.\n4. **I**nterface Segregation — small, specific interfaces.\n5. **D**ependency Inversion — depend on abstractions.\n\n---\n\n**Next up:** cohesion and coupling — how well a module holds together and how little it depends on others.",
+      "language": "python"
+    },
+    {
+      "id": "oop-principles-cohesion-coupling",
+      "course_id": "oop-software-design",
+      "module_id": "oop-principles",
+      "title": "Cohesion and Coupling",
+      "type": "theory",
+      "order": 3,
+      "content": "## Cohesion and Coupling\n\nTwo quality measures describe how a codebase is organized: **cohesion** (inside a module) and **coupling** (between modules).\n\n### Cohesion — how related the parts are\n\nHigh cohesion means the elements of a class or module belong together and serve a single purpose.\n\n```python\n# High cohesion: every method deals with account balances\nclass Account:\n    def deposit(self, amount):\n        self.balance += amount\n\n    def withdraw(self, amount):\n        if amount <= self.balance:\n            self.balance -= amount\n```\n\nLow cohesion looks like a grab-bag: an `Utils` class with `parse_csv`, `send_email`, and `compute_hash` unrelated to each other.\n\n### Coupling — how much modules depend on each other\n\nLow coupling means modules interact through small, stable interfaces. High coupling means changes in one module ripple into many others.\n\n```python\n# High coupling: this module reaches into Order internals\nclass Invoice:\n    def build(self, order):\n        total = 0\n        for item in order.items:          # depends on internals\n            total += item._price * item._qty\n```\n\n```python\n# Low coupling: Invoice depends only on a stable contract\nclass Invoice:\n    def build(self, order):\n        return order.total()              # a clean public method\n```\n\n### The goal\n\nAim for **high cohesion and low coupling**:\n\n- High cohesion keeps related logic together, so a module is easy to understand and test alone.\n- Low coupling means modules can change independently without breaking each other.\n- SRP produces high cohesion; programming to abstractions produces low coupling.\n\n### A warning sign\n\nIf a change to one class forces edits in five others, coupling is too high. Introduce an interface between them and let each side depend on the abstraction.\n\n---\n\n**Next up:** common design patterns — strategy, factory, and observer.",
+      "language": "python"
+    },
+    {
+      "id": "oop-principles-patterns",
+      "course_id": "oop-software-design",
+      "module_id": "oop-principles",
+      "title": "Common Patterns: Strategy, Factory, Observer",
+      "type": "theory",
+      "order": 4,
+      "content": "## Common Patterns: Strategy, Factory, Observer\n\n**Design patterns** are proven, reusable solutions to recurring design problems. Three appear constantly.\n\n### Strategy — swap algorithms at runtime\n\nEncapsulate a family of algorithms behind a common interface and select one dynamically.\n\n```python\nclass MinStrategy:\n    def compute(self, nums):\n        return min(nums)\n\nclass MaxStrategy:\n    def compute(self, nums):\n        return max(nums)\n\ndef pick(strategy, nums):\n    return strategy.compute(nums)\n```\n\n### Factory — create objects without naming the class\n\nThe caller asks for an object by a simple description; the factory decides the concrete class.\n\n```python\ndef create_shape(kind, size):\n    if kind == \"circle\":\n        return Circle(size)\n    if kind == \"square\":\n        return Square(size)\n    raise ValueError(\"unknown shape\")\n```\n\nThe factory centralizes construction logic, so callers stay free of `if` chains.\n\n### Observer — notify many without coupling to them\n\nOne subject pushes events to a list of subscribers, each implementing the same notification method.\n\n```python\nclass NewsChannel:\n    def __init__(self):\n        self.subscribers = []\n\n    def subscribe(self, subscriber):\n        self.subscribers.append(subscriber)\n\n    def publish(self, message):\n        for subscriber in self.subscribers:\n            subscriber.notify(message)\n```\n\n### Choosing a pattern\n\n| Pattern   | Use when...                                    |\n|-----------|------------------------------------------------|\n| Strategy  | You want to swap algorithms at runtime.        |\n| Factory   | Construction logic is complex or repetitive.   |\n| Observer  | Many objects must react to one event.          |\n\nPatterns are tools, not goals — apply them when they genuinely reduce complexity.\n\n---\n\n**Next up:** exercises — an email validator, a shape factory, and an observer notification center.",
+      "language": "python"
+    },
+    {
+      "id": "oop-principles-exercise-email",
+      "course_id": "oop-software-design",
+      "module_id": "oop-principles",
+      "title": "Exercise: Email Validator Class",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Email Validator Class\n\nEncapsulate validation rules in a class. Write `EmailValidator` with a `validate(email)` method that returns `True` when an email passes **all** rules, else `False`:\n\n- Non-empty.\n- Contains exactly one `@`.\n- The `@` is not the first or last character.\n- Contains a `.` after the `@`.\n- Contains no spaces.\n\nThen write `solve(email)` that builds a validator and returns `validator.validate(email)`.\n\n### Sample\n\nInput (one line):\n\n```text\nada@example.com\n```\n\nOutput:\n\n```text\ntrue\n```\n\n### How your code runs\n\nThe harness passes the email as a single string. `solve` returns a boolean, which prints as `true` or `false`.\n\n### Starter code\n\n```python\ndef solve(email):\n    return EmailValidator().validate(email)\n\nclass EmailValidator:\n    def validate(_self, email):\n        if not email:\n            return False\n        if \" \" in email:\n            return False\n        parts = email.split(\"@\")\n        if len(parts) != 2:\n            return False\n        if not parts[0] or not parts[1]:\n            return False\n        return \".\" in parts[1]\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    print(str(solve(data)).lower())\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(email):\n    return EmailValidator().validate(email)\n\nclass EmailValidator:\n    def validate(_self, email):\n        if not email:\n            return False\n        if \" \" in email:\n            return False\n        parts = email.split(\"@\")\n        if len(parts) != 2:\n            return False\n        if not parts[0] or not parts[1]:\n            return False\n        return \".\" in parts[1]\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    print(str(solve(data)).lower())\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "ada@example.com",
+          "expected_output": "true",
+          "description": "Valid email"
+        },
+        {
+          "input": "ada.example.com",
+          "expected_output": "false",
+          "description": "Missing @ symbol"
+        },
+        {
+          "input": "ada@localhost",
+          "expected_output": "false",
+          "description": "No dot after @"
+        },
+        {
+          "input": "ada @x.com",
+          "expected_output": "false",
+          "description": "Contains a space"
+        },
+        {
+          "input": "@example.com",
+          "expected_output": "false",
+          "description": "@ is first character"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-principles-exercise-factory",
+      "course_id": "oop-software-design",
+      "module_id": "oop-principles",
+      "title": "Exercise: Shape Factory",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Shape Factory\n\nBuild a **factory** that creates shape objects from a type string:\n\n- `Circle(size)` — `area()` returns `3.14159 * size ** 2` rounded to 2 decimals.\n- `Square(size)` — `area()` returns `size * size`.\n- `ShapeFactory.create(kind, size)` returns the correct shape.\n\nWrite `solve(kind, size)` that asks the factory for a shape and returns its area.\n\n### Sample\n\nInput:\n\n```text\n\"circle\"\n2\n```\n\nOutput:\n\n```text\n12.57\n```\n\n### How your code runs\n\nThe harness passes the kind (a quoted string) on line 1 and the size on line 2. Your `solve` uses the factory and returns `shape.area()`.\n\n### Starter code\n\n```python\ndef solve(kind, size):\n    shape = ShapeFactory().create(kind, size)\n    return shape.area()\n\nclass Circle:\n    def __init__(_self, size):\n        _self.size = size\n\n    def area(_self):\n        return round(3.14159 * _self.size ** 2, 2)\n\nclass Square:\n    def __init__(_self, size):\n        _self.size = size\n\n    def area(_self):\n        return _self.size * _self.size\n\nclass ShapeFactory:\n    def create(_self, kind, size):\n        if kind == \"circle\":\n            return Circle(size)\n        return Square(size)\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    lines = data.splitlines()\n    kind = lines[0].strip().strip('\"')\n    size = int(lines[1].strip())\n    print(solve(kind, size))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(kind, size):\n    shape = ShapeFactory().create(kind, size)\n    return shape.area()\n\nclass Circle:\n    def __init__(_self, size):\n        _self.size = size\n\n    def area(_self):\n        return round(3.14159 * _self.size ** 2, 2)\n\nclass Square:\n    def __init__(_self, size):\n        _self.size = size\n\n    def area(_self):\n        return _self.size * _self.size\n\nclass ShapeFactory:\n    def create(_self, kind, size):\n        if kind == \"circle\":\n            return Circle(size)\n        return Square(size)\n\ndef main():\n    import sys\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    lines = data.splitlines()\n    kind = lines[0].strip().strip('\"')\n    size = int(lines[1].strip())\n    print(solve(kind, size))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "\"circle\"\n2",
+          "expected_output": "12.57",
+          "description": "Circle of size 2"
+        },
+        {
+          "input": "\"square\"\n4",
+          "expected_output": "16",
+          "description": "Square of size 4"
+        },
+        {
+          "input": "\"circle\"\n5",
+          "expected_output": "78.54",
+          "description": "Circle of size 5"
+        },
+        {
+          "input": "\"square\"\n3",
+          "expected_output": "9",
+          "description": "Square of size 3"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-principles-exercise-observer",
+      "course_id": "oop-software-design",
+      "module_id": "oop-principles",
+      "title": "Exercise: Observer Notification Center",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Observer Notification Center\n\nImplement a simple **observer** pattern:\n\n- `NotificationCenter` with `subscribe(channel, name)` and `notify(message)`.\n- `notify(message)` returns a list of strings, one per subscriber, formatted as `\"channel: name - message\"`.\n\nWrite `solve(data)` that receives a JSON object with a `subscribers` list and a `message`, and returns the notifications in subscription order.\n\n### Sample\n\nInput (one line):\n\n```text\n{\"subscribers\":[[\"email\",\"alice\"],[\"sms\",\"bob\"]],\"message\":\"hello\"}\n```\n\nOutput:\n\n```text\n[\"email: alice - hello\",\"sms: bob - hello\"]\n```\n\n### How your code runs\n\nThe harness parses the JSON object and calls `solve(data)`. Subscribe each `[channel, name]` pair, then return `center.notify(message)`.\n\n### Starter code\n\n```python\ndef solve(data):\n    center = NotificationCenter()\n    for channel, name in data[\"subscribers\"]:\n        center.subscribe(channel, name)\n    return center.notify(data[\"message\"])\n\nclass NotificationCenter:\n    def __init__(_self):\n        _self.subscribers = []\n\n    def subscribe(_self, channel, name):\n        _self.subscribers.append((channel, name))\n\n    def notify(_self, message):\n        return [f\"{channel}: {name} - {message}\" for channel, name in _self.subscribers]\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    payload = json.loads(data)\n    print(json.dumps(solve(payload), separators=(\",\", \":\")))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(data):\n    center = NotificationCenter()\n    for channel, name in data[\"subscribers\"]:\n        center.subscribe(channel, name)\n    return center.notify(data[\"message\"])\n\nclass NotificationCenter:\n    def __init__(_self):\n        _self.subscribers = []\n\n    def subscribe(_self, channel, name):\n        _self.subscribers.append((channel, name))\n\n    def notify(_self, message):\n        return [f\"{channel}: {name} - {message}\" for channel, name in _self.subscribers]\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    payload = json.loads(data)\n    print(json.dumps(solve(payload), separators=(\",\", \":\")))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "{\"subscribers\":[[\"email\",\"alice\"],[\"sms\",\"bob\"]],\"message\":\"hello\"}",
+          "expected_output": "[\"email: alice - hello\",\"sms: bob - hello\"]",
+          "description": "Two subscribers"
+        },
+        {
+          "input": "{\"subscribers\":[[\"push\",\"carol\"]],\"message\":\"deploy\"}",
+          "expected_output": "[\"push: carol - deploy\"]",
+          "description": "Single subscriber"
+        },
+        {
+          "input": "{\"subscribers\":[],\"message\":\"silence\"}",
+          "expected_output": "[]",
+          "description": "No subscribers"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-refactor-smells",
+      "course_id": "oop-software-design",
+      "module_id": "oop-refactor",
+      "title": "Refactoring and Code Smells",
+      "type": "theory",
+      "order": 1,
+      "content": "## Refactoring and Code Smells\n\n**Refactoring** is restructuring existing code without changing its behavior — making it cleaner while the tests keep proving it still works. Before you can refactor well, you must recognize **code smells**: signals that something is wrong.\n\n### Common smells\n\n| Smell                  | What it looks like                                   |\n|------------------------|------------------------------------------------------|\n| Duplicated code        | The same few lines copy-pasted in several places.    |\n| Long function          | One function doing five unrelated jobs.              |\n| God object             | A class that holds the whole program's state.        |\n| Feature envy           | A method using another object's data more than its own. |\n| Data clump             | The same few fields passed around together, again and again. |\n\n### Example: data clump\n\n```python\ndef create_order(user_name, user_email, user_id, product, qty):\n    ...\n```\n\n`user_name`, `user_email`, `user_id` travel together — they are begging to become a `User` object.\n\n### Why refactor at all?\n\n- Cleaner code is cheaper to change later.\n- Smells usually point to upcoming bugs.\n- Refactoring makes the next feature easier to add.\n\n### The golden rule\n\n**Refactor only when tests are green.** You are not changing behavior, so you must be able to prove it. Run the tests before and after every small step.\n\n---\n\n**Next up:** extracting classes from a procedural script.",
+      "language": "python"
+    },
+    {
+      "id": "oop-refactor-extract",
+      "course_id": "oop-software-design",
+      "module_id": "oop-refactor",
+      "title": "Extracting Classes from Procedural Code",
+      "type": "theory",
+      "order": 2,
+      "content": "## Extracting Classes from Procedural Code\n\nA classic refactoring turns a long procedural script into objects. Start with code that uses loose variables, then group state and behavior into classes.\n\n### Before — procedural\n\n```python\ndef main():\n    name = \"Ada\"\n    score = 92\n    if score >= 90:\n        grade = \"A\"\n    elif score >= 80:\n        grade = \"B\"\n    else:\n        grade = \"C\"\n    print(name, grade)\n```\n\nEvery piece of state (`name`, `score`, `grade`) floats at the top level, and the grade logic is embedded in `main`.\n\n### Step 1 — extract a class\n\n```python\nclass Student:\n    def __init__(self, name, score):\n        self.name = name\n        self.score = score\n\n    def grade(self):\n        if self.score >= 90:\n            return \"A\"\n        if self.score >= 80:\n            return \"B\"\n        return \"C\"\n\n    def report_line(self):\n        return f\"{self.name}: {self.grade()}\"\n```\n\n### Step 2 — slim the caller\n\n```python\ndef main():\n    student = Student(\"Ada\", 92)\n    print(student.report_line())   # Ada: A\n```\n\n### What changed\n\n- State and its logic now live together in `Student`.\n- `main` became a thin orchestration layer.\n- The grade rules are reusable and testable in isolation.\n\n### Refactoring recipe\n\n1. Identify a cluster of variables that belong together.\n2. Create a class with those fields.\n3. Move the functions that operate on them into methods.\n4. Run the tests — output must be identical.\n\n---\n\n**Next up:** encapsulating data and behavior.",
+      "language": "python"
+    },
+    {
+      "id": "oop-refactor-encapsulate",
+      "course_id": "oop-software-design",
+      "module_id": "oop-refactor",
+      "title": "Encapsulating Data and Behavior",
+      "type": "theory",
+      "order": 3,
+      "content": "## Encapsulating Data and Behavior\n\nEncapsulation means an object owns its data and the rules that keep it valid. Refactoring procedural code often means *moving behavior in*: methods take over operations that used to happen outside the object.\n\n### Before — behavior outside the data\n\n```python\nclass Cart:\n    def __init__(self):\n        self.items = []\n\ncart = Cart()\ncart.items.append({\"name\": \"Pen\", \"price\": 2, \"qty\": 3})\n\ntotal = 0\nfor item in cart.items:          # caller knows too much\n    total += item[\"price\"] * item[\"qty\"]\n```\n\nThe caller reaches into the `items` list and repeats the total logic everywhere.\n\n### After — behavior inside the class\n\n```python\nclass Cart:\n    def __init__(self):\n        self._items = []\n\n    def add(self, name, price, qty):\n        self._items.append({\"name\": name, \"price\": price, \"qty\": qty})\n\n    def total(self):\n        return sum(item[\"price\"] * item[\"qty\"] for item in self._items)\n```\n\n```python\ncart = Cart()\ncart.add(\"Pen\", 2, 3)\nprint(cart.total())      # 6\n```\n\n### The pattern of the refactor\n\n1. Find a loop or calculation that reads an object's fields.\n2. Move it into the object as a method.\n3. Replace external uses with method calls.\n4. Hide the raw fields behind a clear interface.\n\n### Result\n\nCallers stop knowing *how* totals are computed. If the storage changes (say, a `Product` class replaces dicts), only `Cart` changes — every caller keeps calling `cart.total()`.\n\n---\n\n**Next up:** a safe refactoring workflow backed by tests.",
+      "language": "python"
+    },
+    {
+      "id": "oop-refactor-workflow",
+      "course_id": "oop-software-design",
+      "module_id": "oop-refactor",
+      "title": "Refactoring Workflow and Testing",
+      "type": "theory",
+      "order": 4,
+      "content": "## Refactoring Workflow and Testing\n\nRefactoring is safe when it is boring: small steps, constant verification, no behavior changes. This is the workflow used for the project exercises in this module.\n\n### The refactoring loop\n\n1. **Get green** — run the existing tests; they must pass before you touch anything.\n2. **Pick one smell** — one small change at a time.\n3. **Refactor** — move code, extract a class, rename, encapsulate.\n4. **Re-run the tests** — the same expected outputs must still pass.\n5. **Repeat** — another small step, another green run.\n\n### A worked example\n\n```python\n# Step 1: tests pass\ndef main():\n    scores = [60, 80, 100]\n    avg = sum(scores) / len(scores)\n    print(avg, max(scores), min(scores))\n```\n\n```python\n# Step 2: extract a Grades class, step by step\nclass Grades:\n    def __init__(self, scores):\n        self._scores = scores\n\n    def average(self):\n        return sum(self._scores) / len(self._scores)\n\n    def highest(self):\n        return max(self._scores)\n\n    def lowest(self):\n        return min(self._scores)\n```\n\nAfter each extraction, the printed output stays exactly the same.\n\n### Guardrails\n\n- **Small steps** — a big rewrite is not a refactor; it's a rewrite.\n- **Behavior lock** — use tests to prove output is unchanged.\n- **No feature work** — refactoring adds no new features; it makes future features cheaper.\n- **Commit frequently** — if a step breaks something, you can go back easily.\n\n### When to stop\n\nStop when the code is clear enough that the next feature is obviously easy to add. Refactoring has diminishing returns — perfection is not the goal, maintainability is.\n\n---\n\n**Next up:** the project exercises — reports, grade classes, and a shopping cart.",
+      "language": "python"
+    },
+    {
+      "id": "oop-refactor-exercise-student-report",
+      "course_id": "oop-software-design",
+      "module_id": "oop-refactor",
+      "title": "Exercise: Student Report Formatting",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Student Report Formatting\n\nBuild a `Student` class that produces a readable report line:\n\n- `__init__(name, score)` storing both.\n- `grade()` returning the letter grade: `A` (90+), `B` (80+), `C` (70+), `D` (60+), else `F`.\n- `report_line()` returning `\"Name: A\"` (a `__str__`-style representation).\n\nWrite `solve(students)` that receives a JSON list of `{\"name\": ..., \"score\": ...}` objects and returns each student's report line, one per line.\n\n### Sample\n\nInput (one line):\n\n```text\n[{\"name\":\"Ada\",\"score\":92},{\"name\":\"Bob\",\"score\":78}]\n```\n\nOutput:\n\n```text\nAda: A\nBob: C\n```\n\n### How your code runs\n\nThe harness parses the JSON array and calls `solve(students)`. Build a `Student` for each entry, collect `report_line()`, and join with newlines.\n\n### Starter code\n\n```python\ndef solve(students):\n    lines = []\n    for entry in students:\n        student = Student(entry[\"name\"], entry[\"score\"])\n        lines.append(student.report_line())\n    return \"\n\".join(lines)\n\nclass Student:\n    def __init__(_self, name, score):\n        _self.name = name\n        _self.score = score\n\n    def grade(_self):\n        if _self.score >= 90:\n            return \"A\"\n        if _self.score >= 80:\n            return \"B\"\n        if _self.score >= 70:\n            return \"C\"\n        if _self.score >= 60:\n            return \"D\"\n        return \"F\"\n\n    def report_line(_self):\n        return f\"{_self.name}: {_self.grade()}\"\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    students = json.loads(data)\n    print(solve(students))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(students):\n    lines = []\n    for entry in students:\n        student = Student(entry[\"name\"], entry[\"score\"])\n        lines.append(student.report_line())\n    return \"\\n\".join(lines)\n\nclass Student:\n    def __init__(_self, name, score):\n        _self.name = name\n        _self.score = score\n\n    def grade(_self):\n        if _self.score >= 90:\n            return \"A\"\n        if _self.score >= 80:\n            return \"B\"\n        if _self.score >= 70:\n            return \"C\"\n        if _self.score >= 60:\n            return \"D\"\n        return \"F\"\n\n    def report_line(_self):\n        return f\"{_self.name}: {_self.grade()}\"\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    students = json.loads(data)\n    print(solve(students))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[{\"name\":\"Ada\",\"score\":92},{\"name\":\"Bob\",\"score\":78}]",
+          "expected_output": "Ada: A\nBob: C",
+          "description": "Two students"
+        },
+        {
+          "input": "[{\"name\":\"Pat\",\"score\":100}]",
+          "expected_output": "Pat: A",
+          "description": "Perfect score"
+        },
+        {
+          "input": "[{\"name\":\"Sam\",\"score\":45}]",
+          "expected_output": "Sam: F",
+          "description": "Failing score"
+        },
+        {
+          "input": "[]",
+          "expected_output": "",
+          "description": "No students"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-refactor-exercise-grades",
+      "course_id": "oop-software-design",
+      "module_id": "oop-refactor",
+      "title": "Exercise: Grades Class from a Script",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Grades Class from a Script\n\nRefactor a procedural calculation into a `Grades` class:\n\n- `__init__(scores)` storing the list.\n- `average()` returning `sum(scores) / len(scores)` rounded to 2 decimals.\n- `highest()` and `lowest()` returning the max and min.\n\nWrite `solve(scores)` that receives a JSON list of numbers and returns `\"{average} {highest} {lowest}\"`.\n\n### Sample\n\nInput (one line):\n\n```text\n[60,80,100]\n```\n\nOutput:\n\n```text\n80.0 100 60\n```\n\n### How your code runs\n\nThe harness parses the JSON array and calls `solve(scores)`. Build a `Grades`, then combine the three method results into one string.\n\n### Starter code\n\n```python\ndef solve(scores):\n    grades = Grades(scores)\n    return f\"{grades.average()} {grades.highest()} {grades.lowest()}\"\n\nclass Grades:\n    def __init__(_self, scores):\n        _self.scores = scores\n\n    def average(_self):\n        return round(sum(_self.scores) / len(_self.scores), 2)\n\n    def highest(_self):\n        return max(_self.scores)\n\n    def lowest(_self):\n        return min(_self.scores)\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    scores = json.loads(data)\n    print(solve(scores))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(scores):\n    grades = Grades(scores)\n    return f\"{grades.average()} {grades.highest()} {grades.lowest()}\"\n\nclass Grades:\n    def __init__(_self, scores):\n        _self.scores = scores\n\n    def average(_self):\n        return round(sum(_self.scores) / len(_self.scores), 2)\n\n    def highest(_self):\n        return max(_self.scores)\n\n    def lowest(_self):\n        return min(_self.scores)\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    scores = json.loads(data)\n    print(solve(scores))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[60,80,100]",
+          "expected_output": "80.0 100 60",
+          "description": "Three scores"
+        },
+        {
+          "input": "[75]",
+          "expected_output": "75.0 75 75",
+          "description": "Single score"
+        },
+        {
+          "input": "[10,20,30]",
+          "expected_output": "20.0 30 10",
+          "description": "Low scores"
+        },
+        {
+          "input": "[91,84,77,69,52]",
+          "expected_output": "74.6 91 52",
+          "description": "Mixed scores"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "oop-refactor-exercise-cart",
+      "course_id": "oop-software-design",
+      "module_id": "oop-refactor",
+      "title": "Exercise: Shopping Cart with Products",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Shopping Cart with Products\n\nEncapsulate a cart and its items:\n\n- `Product(name, price)` storing both.\n- `Cart` with `add(product, qty)` and `total()` returning the total price rounded to 2 decimals.\n\nWrite `solve(items)` that receives a JSON list of `{\"name\": ..., \"price\": ..., \"qty\": ...}` objects, adds a `Product` per item to a `Cart`, and returns `cart.total()`.\n\n### Sample\n\nInput (one line):\n\n```text\n[{\"name\":\"Pen\",\"price\":2,\"qty\":3},{\"name\":\"Book\",\"price\":10,\"qty\":1}]\n```\n\nOutput:\n\n```text\n16.00\n```\n\n### How your code runs\n\nThe harness parses the JSON array and calls `solve(items)`. Build the cart, add products, and return the formatted total.\n\n### Starter code\n\n```python\ndef solve(items):\n    cart = Cart()\n    for entry in items:\n        product = Product(entry[\"name\"], entry[\"price\"])\n        cart.add(product, entry[\"qty\"])\n    return f\"{cart.total():.2f}\"\n\nclass Product:\n    def __init__(_self, name, price):\n        _self.name = name\n        _self.price = price\n\nclass Cart:\n    def __init__(_self):\n        _self._items = []\n\n    def add(_self, product, qty):\n        _self._items.append((product, qty))\n\n    def total(_self):\n        total = 0.0\n        for product, qty in _self._items:\n            total += product.price * qty\n        return total\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    items = json.loads(data)\n    print(solve(items))\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(items):\n    cart = Cart()\n    for entry in items:\n        product = Product(entry[\"name\"], entry[\"price\"])\n        cart.add(product, entry[\"qty\"])\n    return f\"{cart.total():.2f}\"\n\nclass Product:\n    def __init__(_self, name, price):\n        _self.name = name\n        _self.price = price\n\nclass Cart:\n    def __init__(_self):\n        _self._items = []\n\n    def add(_self, product, qty):\n        _self._items.append((product, qty))\n\n    def total(_self):\n        total = 0.0\n        for product, qty in _self._items:\n            total += product.price * qty\n        return total\n\ndef main():\n    import sys, json\n    data = sys.stdin.read().strip()\n    if not data:\n        return\n    items = json.loads(data)\n    print(solve(items))\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[{\"name\":\"Pen\",\"price\":2,\"qty\":3},{\"name\":\"Book\",\"price\":10,\"qty\":1}]",
+          "expected_output": "16.00",
+          "description": "Two products"
+        },
+        {
+          "input": "[{\"name\":\"Mug\",\"price\":5,\"qty\":2}]",
+          "expected_output": "10.00",
+          "description": "Single product"
+        },
+        {
+          "input": "[{\"name\":\"Pen\",\"price\":2,\"qty\":3},{\"name\":\"Pad\",\"price\":1.5,\"qty\":2}]",
+          "expected_output": "9.00",
+          "description": "Decimal price"
+        },
+        {
+          "input": "[]",
+          "expected_output": "0.00",
+          "description": "Empty cart"
+        }
+      ],
+      "language": "python"
+    }
+  ]
+}

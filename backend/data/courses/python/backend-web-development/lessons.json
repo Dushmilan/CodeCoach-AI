@@ -1,0 +1,666 @@
+{
+  "items": [
+    {
+      "id": "backend-http-requests",
+      "course_id": "backend-web-development",
+      "module_id": "backend-http",
+      "title": "HTTP Requests",
+      "type": "theory",
+      "order": 1,
+      "content": "## HTTP Requests\n\nThe web runs on **HTTP** — a request/response protocol. A client (browser, app, or script) sends a **request**, and a server returns a **response**.\n\n### The anatomy of a request\n\n```text\nGET /api/users/42?page=2 HTTP/1.1\nHost: api.example.com\nAccept: application/json\nAuthorization: Bearer abc123\n```\n\n| Piece        | Example               | Meaning                          |\n|--------------|-----------------------|----------------------------------|\n| Method       | `GET`                 | What to do                       |\n| Path         | `/api/users/42`       | Which resource                   |\n| Query string | `?page=2`             | Extra parameters                 |\n| Headers      | `Accept: ...`         | Metadata about the request       |\n| Body         | (POST/PUT only)       | Data being sent                  |\n\n### Methods\n\n| Method   | Meaning                         |\n|----------|---------------------------------|\n| `GET`    | Read a resource                 |\n| `POST`   | Create a resource               |\n| `PUT`    | Replace a resource              |\n| `PATCH`  | Partially update a resource     |\n| `DELETE` | Remove a resource               |\n\n### URL parts\n\nA full URL decomposes cleanly:\n\n```text\nhttps://api.example.com:443/api/users/42?page=2\n|scheme| |---host---| |port| |--path--| |query--|\n```\n\nThe **path** selects the resource; the **query string** carries optional parameters as `key=value` pairs joined by `&`.\n\n### Headers\n\nHeaders carry metadata — content types, authentication, caching:\n\n- `Content-Type` — format of the body (`application/json`).\n- `Accept` — format the client wants back.\n- `Authorization` — credentials (often a token).\n\n### Request bodies\n\n`GET` has no body. `POST` and `PUT` send one, typically JSON:\n\n```json\n{ \"name\": \"Ada\", \"age\": 36 }\n```\n\n---\n\n**Next up:** HTTP responses — status codes and what the server sends back.",
+      "language": "python"
+    },
+    {
+      "id": "backend-http-responses",
+      "course_id": "backend-web-development",
+      "module_id": "backend-http",
+      "title": "HTTP Responses and Status Codes",
+      "type": "theory",
+      "order": 2,
+      "content": "## HTTP Responses and Status Codes\n\nEvery request gets a **response**: a status line, headers, and usually a body.\n\n### The anatomy of a response\n\n```text\nHTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: 31\n\n{ \"name\": \"Ada\", \"age\": 36 }\n```\n\n### Status code families\n\nThe first digit tells you the class:\n\n| Code range | Class         | Meaning                          |\n|------------|---------------|----------------------------------|\n| 1xx        | Informational | Request received, processing     |\n| 2xx        | Success       | It worked                        |\n| 3xx        | Redirection   | Go somewhere else                |\n| 4xx        | Client error  | The request was the problem      |\n| 5xx        | Server error  | The server failed                |\n\n### Status codes you will meet constantly\n\n| Code  | Meaning                          | When to use                      |\n|-------|----------------------------------|----------------------------------|\n| 200   | OK                               | Successful `GET`                 |\n| 201   | Created                          | Successful `POST`                |\n| 204   | No Content                       | Successful delete                |\n| 400   | Bad Request                      | Malformed or invalid input       |\n| 401   | Unauthorized                     | Missing/invalid credentials      |\n| 403   | Forbidden                        | Not allowed to act               |\n| 404   | Not Found                        | Resource does not exist          |\n| 409   | Conflict                         | Duplicate or state conflict      |\n| 422   | Unprocessable Entity             | Valid JSON, invalid semantics    |\n| 500   | Internal Server Error            | Unexpected server failure        |\n\n### The golden rule\n\nPick the code that describes the *situation*, not the code you happen to produce. A missing resource is `404`, not `500`. A bad request is `400`, not `200` with an error string.\n\n### Response bodies\n\nResponses usually carry JSON. Errors are also JSON, with a consistent shape:\n\n```json\n{ \"error\": \"not_found\", \"message\": \"User 42 not found\" }\n```\n\nA predictable error shape makes API clients far easier to write.\n\n---\n\n**Next up:** HTTP methods and JSON — the working tools of every backend.",
+      "language": "python"
+    },
+    {
+      "id": "backend-http-methods-json",
+      "course_id": "backend-web-development",
+      "module_id": "backend-http",
+      "title": "Methods, Semantics, and JSON",
+      "type": "theory",
+      "order": 3,
+      "content": "## Methods, Semantics, and JSON\n\nChoosing the right method is about **semantics** — saying what you mean so clients and proxies can reason about your API.\n\n### Method semantics\n\n| Method   | Safe | Idempotent | Purpose            |\n|----------|------|------------|--------------------|\n| `GET`    | yes  | yes        | Read               |\n| `POST`   | no   | no         | Create / act       |\n| `PUT`    | no   | yes        | Replace            |\n| `PATCH`  | no   | no         | Partial update     |\n| `DELETE` | no   | yes        | Remove             |\n\n- **Safe** methods never change server state — a client can call them repeatedly without side effects.\n- **Idempotent** methods produce the same result no matter how many times they run. Sending `DELETE` twice is fine; sending `POST` twice may create two records.\n\n### PUT vs PATCH\n\n`PUT` replaces the whole resource with what you send. `PATCH` applies only the fields you send:\n\n```text\nPUT    /api/users/42   {\"name\":\"Ada\",\"age\":37}   # replaces both\nPATCH  /api/users/42   {\"age\":37}                 # changes only age\n```\n\n### JSON: the wire format\n\nJSON is the de-facto API format. Python maps it directly:\n\n```python\nimport json\n\ndata = json.loads('{\"name\": \"Ada\", \"skills\": [\"py\", \"js\"]}')\ndata[\"name\"]             # \"Ada\"\njson.dumps({\"ok\": True}) # '{\"ok\": true}'\n```\n\n| JSON        | Python   |\n|-------------|----------|\n| `{}`        | dict     |\n| `[]`        | list     |\n| `\"str\"`     | str      |\n| `123`       | int      |\n| `true`      | True     |\n| `null`      | None     |\n\n### Content-Type\n\nAlways set `Content-Type: application/json` when a body is JSON — both when sending and when responding. Clients and frameworks rely on it.\n\n---\n\n**Next up:** exercises — parsing URLs, query strings, and status codes.",
+      "language": "python"
+    },
+    {
+      "id": "backend-http-request-lifecycle",
+      "course_id": "backend-web-development",
+      "module_id": "backend-http",
+      "title": "The Request Lifecycle",
+      "type": "theory",
+      "order": 4,
+      "content": "## The Request Lifecycle\n\nA single API call travels through a pipeline. Understanding the pipeline explains where errors happen and where to look for them.\n\n### The journey\n\n```text\nClient ──▶ DNS ──▶ TCP/TLS ──▶ Server ──▶ Router ──▶ Handler ──▶ Database\n                                                                     │\nClient ◀── response ◀── serialization ◀─── result ◀──────────────────┘\n```\n\n### 1. Resolution and transport\n\nThe client resolves the hostname (DNS) and opens a connection. HTTPS encrypts this leg with TLS. Most network errors — timeouts, refused connections — live here.\n\n### 2. The router\n\nThe server's **router** matches the request method + path to a handler:\n\n```python\n# FastAPI-style\n@app.get(\"/api/users/{user_id}\")\ndef get_user(user_id: int):\n    return {\"id\": user_id}\n```\n\n### 3. Parsing and validation\n\nThe framework parses the body and query string, then validates them against the declared types. Bad input is rejected here with a `400`/`422` — before your handler code runs.\n\n### 4. The handler and data layer\n\nThe handler runs the business logic and talks to the database (or repository). This is where real errors originate — missing rows, failed writes, bugs.\n\n### 5. Serialization and response\n\nThe result is converted to JSON (serialization) and returned with a status code and headers. The framework's exception handling converts any uncaught error into a clean `500`.\n\n### Where to look for bugs\n\n- Client-side timeout or DNS error → step 1.\n- `400`/`422` → your client sent something the schema rejects.\n- `404` → routing or a missing record.\n- `500` → server bug; check logs.\n\nKnowing the lifecycle means you can diagnose an issue by its status code in seconds.\n\n---\n\n**Next up:** Module 2 — turning raw HTTP into a well-designed API.",
+      "language": "python"
+    },
+    {
+      "id": "backend-http-exercise-parse-url",
+      "course_id": "backend-web-development",
+      "module_id": "backend-http",
+      "title": "Exercise: Parse a URL Path",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Parse a URL Path\n\nWrite a function `solve(url)` that returns the **path** part of a URL — everything before the query string.\n\n### Sample\n\nInput: `/api/users/42?page=2`\n\nOutput:\n\n```text\n/api/users/42\n```\n\n### How your code runs\n\nThe runner calls `solve(url)` with one argument: the URL string. Split on `\"?\"` and return the first part.\n\n### Starter code\n\n```python\ndef solve(url):\n    return url.split(\"?\")[0]\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    print(solve(raw))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(url):\n    return url.split(\"?\")[0]\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    print(solve(raw))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "/api/users/42?page=2",
+          "expected_output": "/api/users/42",
+          "description": "With a query string"
+        },
+        {
+          "input": "/api/users",
+          "expected_output": "/api/users",
+          "description": "No query string"
+        },
+        {
+          "input": "/search?q=js&lang=en",
+          "expected_output": "/search",
+          "description": "Multiple parameters"
+        },
+        {
+          "input": "/",
+          "expected_output": "/",
+          "description": "Root path"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-http-exercise-query-parser",
+      "course_id": "backend-web-development",
+      "module_id": "backend-http",
+      "title": "Exercise: Query-String Parser",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Query-String Parser\n\nWrite a function `solve(qs)` that parses a query string into a dictionary and returns it as a JSON string.\n\n### Sample\n\nInput: `search=python&page=2`\n\nOutput:\n\n```text\n{\"search\": \"python\", \"page\": \"2\"}\n```\n\n### How your code runs\n\nThe runner calls `solve(qs)` with one argument: the raw query string (no leading `?`). Split on `&`, then on `=`, build a dict, and return `json.dumps(result)`.\n\n### Starter code\n\n```python\nimport json\n\n\ndef solve(qs):\n    params = {}\n    if not qs:\n        return json.dumps(params)\n    for pair in qs.split(\"&\"):\n        if \"=\" in pair:\n            key, value = pair.split(\"=\", 1)\n            params[key] = value\n    return json.dumps(params)\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    print(solve(raw))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "import json\n\n\ndef solve(qs):\n    params = {}\n    if not qs:\n        return json.dumps(params)\n    for pair in qs.split(\"&\"):\n        if \"=\" in pair:\n            key, value = pair.split(\"=\", 1)\n            params[key] = value\n    return json.dumps(params)\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    print(solve(raw))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "search=python&page=2",
+          "expected_output": "{\"search\": \"python\", \"page\": \"2\"}",
+          "description": "Two parameters"
+        },
+        {
+          "input": "page=2",
+          "expected_output": "{\"page\": \"2\"}",
+          "description": "Single parameter"
+        },
+        {
+          "input": "",
+          "expected_output": "{}",
+          "description": "Empty query string"
+        },
+        {
+          "input": "a=1&b=2&c=3",
+          "expected_output": "{\"a\": \"1\", \"b\": \"2\", \"c\": \"3\"}",
+          "description": "Three parameters"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-http-exercise-status-class",
+      "course_id": "backend-web-development",
+      "module_id": "backend-http",
+      "title": "Exercise: Classify a Status Code",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Classify a Status Code\n\nWrite a function `solve(status)` that returns the **class name** for an HTTP status code:\n\n- `100`–`199` → `informational`\n- `200`–`299` → `success`\n- `300`–`399` → `redirect`\n- `400`–`499` → `client error`\n- `500`–`599` → `server error`\n- anything else → `unknown`\n\n### Sample\n\nInput: `404`\n\nOutput:\n\n```text\nclient error\n```\n\n### How your code runs\n\nThe runner calls `solve(status)` with one integer. Return the class string.\n\n### Starter code\n\n```python\ndef solve(status):\n    if 100 <= status <= 199:\n        return \"informational\"\n    if 200 <= status <= 299:\n        return \"success\"\n    if 300 <= status <= 399:\n        return \"redirect\"\n    if 400 <= status <= 499:\n        return \"client error\"\n    if 500 <= status <= 599:\n        return \"server error\"\n    return \"unknown\"\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(int(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(status):\n    if 100 <= status <= 199:\n        return \"informational\"\n    if 200 <= status <= 299:\n        return \"success\"\n    if 300 <= status <= 399:\n        return \"redirect\"\n    if 400 <= status <= 499:\n        return \"client error\"\n    if 500 <= status <= 599:\n        return \"server error\"\n    return \"unknown\"\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(int(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "404",
+          "expected_output": "client error",
+          "description": "Not found"
+        },
+        {
+          "input": "200",
+          "expected_output": "success",
+          "description": "OK"
+        },
+        {
+          "input": "500",
+          "expected_output": "server error",
+          "description": "Server failure"
+        },
+        {
+          "input": "301",
+          "expected_output": "redirect",
+          "description": "Moved"
+        },
+        {
+          "input": "99",
+          "expected_output": "unknown",
+          "description": "Out of range"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-api-routing",
+      "course_id": "backend-web-development",
+      "module_id": "backend-api",
+      "title": "Routing and Path Parameters",
+      "type": "theory",
+      "order": 1,
+      "content": "## Routing and Path Parameters\n\nA **route** maps a method + path pattern to a handler function. Routing is the front door of every API.\n\n### A basic router\n\n```python\n@app.get(\"/api/users\")\ndef list_users():\n    return {\"users\": [...]}\n```\n\n### Path parameters\n\nParts of the path can be **variables**:\n\n```python\n@app.get(\"/api/users/{user_id}\")\ndef get_user(user_id: int):\n    return {\"id\": user_id}\n```\n\nA request to `/api/users/42` binds `user_id = 42`. Frameworks validate and convert types automatically — here `user_id` must be an integer.\n\n### Query parameters\n\nOptional parameters live in the query string:\n\n```python\n@app.get(\"/api/users\")\ndef list_users(page: int = 1, per_page: int = 20):\n    return {\"page\": page, \"per_page\": per_page}\n```\n\n`/api/users?page=2&per_page=10` → `page=2`, `per_page=10`. Omitted parameters fall back to their defaults.\n\n### Route design rules\n\n- **Nouns, not verbs**: `/api/users` not `/api/getUsers`.\n- **Plural resources**: `/api/users` and `/api/users/{id}`.\n- **Nested resources** for ownership: `/api/users/42/posts`.\n- **Consistent casing**: lowercase with hyphens (`per-page`) or underscores — pick one and stay consistent.\n- **Order matters** in some routers: static paths before parameterized ones (`/api/users/me` before `/api/users/{user_id}`).\n\n### REST vs RPC\n\nREST models resources and uses HTTP methods as the verbs. RPC exposes action endpoints like `/api/doLogin`. REST scales better for CRUD; RPC lingers for awkward actions — a pragmatic API mixes them.\n\n---\n\n**Next up:** validation — rejecting bad input before it reaches your logic.",
+      "language": "python"
+    },
+    {
+      "id": "backend-api-validation",
+      "course_id": "backend-web-development",
+      "module_id": "backend-api",
+      "title": "Input Validation",
+      "type": "theory",
+      "order": 2,
+      "content": "## Input Validation\n\nNever trust client input. **Validation** is the gate that rejects bad data before your logic or database ever sees it.\n\n### Types of validation\n\n| Kind          | Example                            |\n|---------------|------------------------------------|\n| Required      | `name` must be present             |\n| Type          | `age` must be an integer           |\n| Range         | `age` between 0 and 150            |\n| Format        | email must contain `@`             |\n| Membership    | status must be one of a set        |\n| Uniqueness    | email not already registered       |\n\n### Declarative schemas\n\nFastAPI-style frameworks validate with schema models:\n\n```python\nclass UserCreate(BaseModel):\n    name: str = Field(..., min_length=1, max_length=120)\n    age: int = Field(..., ge=0, le=150)\n    email: EmailStr\n```\n\nThe framework validates the incoming JSON against this schema automatically.\n\n### What a validator does\n\n1. Check required fields are present.\n2. Convert types (`\"36\"` → `36`) or reject.\n3. Apply constraints (ranges, lengths, formats).\n4. Produce a **structured error** with a `400`/`422` status.\n\n### Validation vs sanitization\n\n- **Validation** — reject invalid input.\n- **Sanitization** — clean valid-ish input (strip whitespace, trim).\n\nDo both: validate the shape, then sanitize the values.\n\n### Fail fast\n\nValidate **at the boundary** — as soon as the request arrives — so downstream code can assume valid data. Sloppy input drifting into business logic is the source of most bugs and many security holes.\n\n### Error responses\n\n```json\n{\n  \"error\": \"validation_failed\",\n  \"details\": [{\"field\": \"age\", \"message\": \"age must be between 0 and 150\"}]\n}\n```\n\n---\n\n**Next up:** serialization — turning models into the JSON clients receive.",
+      "language": "python"
+    },
+    {
+      "id": "backend-api-serialization",
+      "course_id": "backend-web-development",
+      "module_id": "backend-api",
+      "title": "Serialization and Response Models",
+      "type": "theory",
+      "order": 3,
+      "content": "## Serialization and Response Models\n\n**Serialization** turns internal objects into the JSON clients receive. It is the mirror image of validation — and just as important.\n\n### The problem\n\nYour database row has secrets and internal fields:\n\n```python\nuser = {\"id\": 1, \"name\": \"Ada\", \"password_hash\": \"...\", \"is_internal\": True}\n```\n\nClients should only ever see the public subset:\n\n```json\n{ \"id\": 1, \"name\": \"Ada\" }\n```\n\n### Response models\n\nFrameworks declare the public shape explicitly:\n\n```python\nclass UserOut(BaseModel):\n    id: int\n    name: str\n\n@app.get(\"/api/users/{user_id}\")\ndef get_user(user_id: int) -> UserOut:\n    return user_row   # framework serializes only declared fields\n```\n\n### One schema in, one schema out\n\n| Direction | Model name | Purpose                 |\n|-----------|------------|-------------------------|\n| In        | `UserCreate` | What clients may send |\n| Out       | `UserOut`   | What clients may see  |\n| Internal  | (dict/ORM)  | What the app works with |\n\nKeeping **input** and **output** models separate means clients cannot inject fields (like `is_admin`) by adding them to the request.\n\n### Field selection\n\nWhen serializing by hand, select explicitly — never dump the whole object:\n\n```python\ndef serialize(user):\n    return {\"id\": user[\"id\"], \"name\": user[\"name\"]}\n```\n\n### Nested data\n\nRelationships become nested JSON:\n\n```json\n{ \"id\": 1, \"name\": \"Ada\", \"posts\": [{ \"id\": 10, \"title\": \"Hello\" }] }\n```\n\nWatch for **N+1 queries** when building nested responses — fetch related rows in bulk, not per-parent.\n\n### Consistent shapes\n\nEvery endpoint returns a predictable shape. Clients deserve to know what each response looks like — that predictability is what makes an API feel professional.\n\n---\n\n**Next up:** REST conventions — naming, methods, and status for every resource.",
+      "language": "python"
+    },
+    {
+      "id": "backend-api-rest-conventions",
+      "course_id": "backend-web-development",
+      "module_id": "backend-api",
+      "title": "REST Conventions",
+      "type": "theory",
+      "order": 4,
+      "content": "## REST Conventions\n\n**REST** (Representational State Transfer) is a set of conventions for building APIs around *resources*. Following the conventions makes your API predictable without a manual.\n\n### The resource map\n\nFor a `users` resource, the standard surface is small and fixed:\n\n| Method   | Path                 | Purpose                | Success code |\n|----------|----------------------|------------------------|--------------|\n| `GET`    | `/api/users`         | List / search          | 200          |\n| `POST`   | `/api/users`         | Create                 | 201          |\n| `GET`    | `/api/users/{id}`    | Read one               | 200          |\n| `PUT`    | `/api/users/{id}`    | Replace                | 200          |\n| `PATCH`  | `/api/users/{id}`    | Partial update         | 200          |\n| `DELETE` | `/api/users/{id}`    | Delete                 | 204          |\n\nAny user of your API can predict every endpoint because the pattern is universal.\n\n### Collection vs item\n\n- **Collection** endpoints: `/api/users`, `/api/posts` — work on the whole set.\n- **Item** endpoints: `/api/users/{id}` — work on one member.\n\n### Errors use the right status\n\n- Invalid body → `400`/`422`.\n- Missing auth → `401`.\n- Wrong permissions → `403`.\n- Unknown resource → `404`.\n- Duplicate create → `409`.\n\n### Filtering, sorting, pagination\n\nKeep them in the query string:\n\n```text\nGET /api/users?filter=status:active&sort=-created_at&page=2&per_page=20\n```\n\n### Versioning\n\nChanging a public API breaks clients. Version it:\n\n```text\n/api/v1/users\n/api/v2/users\n```\n\n### Consistency beats cleverness\n\nThe REST conventions exist so that \"what would this endpoint do?\" has an obvious answer. When in doubt, match the standard pattern instead of inventing a new one — your future clients will thank you.\n\n---\n\n**Next up:** exercises — validation, pagination math, and serialization.",
+      "language": "python"
+    },
+    {
+      "id": "backend-api-exercise-validate",
+      "course_id": "backend-web-development",
+      "module_id": "backend-api",
+      "title": "Exercise: JSON Field Validation",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: JSON Field Validation\n\nWrite a function `solve(payload)` that validates a JSON object. The required fields are `name` and `email`.\n\n- If both are present, return `ok`.\n- Otherwise return `missing: ` followed by the missing field names joined by `, `.\n\n### Sample\n\nInput:\n\n```text\n{\"name\": \"Ada\"}\n```\n\nOutput:\n\n```text\nmissing: email\n```\n\n### How your code runs\n\nThe runner calls `solve(payload)` with one argument: a dictionary parsed from the JSON input. Check each required field with `in`.\n\n### Starter code\n\n```python\ndef solve(payload):\n    required = [\"name\", \"email\"]\n    missing = [field for field in required if field not in payload]\n    if not missing:\n        return \"ok\"\n    return \"missing: \" + \", \".join(missing)\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(json.loads(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(payload):\n    required = [\"name\", \"email\"]\n    missing = [field for field in required if field not in payload]\n    if not missing:\n        return \"ok\"\n    return \"missing: \" + \", \".join(missing)\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(json.loads(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "{\"name\": \"Ada\", \"email\": \"ada@x.com\"}",
+          "expected_output": "ok",
+          "description": "All fields present"
+        },
+        {
+          "input": "{\"name\": \"Ada\"}",
+          "expected_output": "missing: email",
+          "description": "Email missing"
+        },
+        {
+          "input": "{}",
+          "expected_output": "missing: name, email",
+          "description": "Everything missing"
+        },
+        {
+          "input": "{\"name\": \"Ada\", \"email\": \"ada@x.com\", \"age\": 36}",
+          "expected_output": "ok",
+          "description": "Extra fields are fine"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-api-exercise-pagination",
+      "course_id": "backend-web-development",
+      "module_id": "backend-api",
+      "title": "Exercise: Pagination Math",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Pagination Math\n\nWrite a function `solve(total, page, per_page)` that returns a JSON string describing a page of results:\n\n- `total_pages` — the number of pages needed\n- `page` — the requested page\n- `offset` — the 0-based start index for this page: `(page - 1) * per_page`\n\nUse `math.ceil` for the page count. An empty dataset has `0` total pages.\n\n### Sample\n\nInput:\n\n```text\n25\n2\n10\n```\n\nOutput:\n\n```text\n{\"total_pages\": 3, \"page\": 2, \"offset\": 10}\n```\n\n### How your code runs\n\nThe runner calls `solve(total, page, per_page)` with three integers parsed from the three input lines. Return `json.dumps(result)`.\n\n### Starter code\n\n```python\nimport json\nimport math\n\n\ndef solve(total, page, per_page):\n    total_pages = math.ceil(total / per_page) if total > 0 else 0\n    return json.dumps({\"total_pages\": total_pages, \"page\": page, \"offset\": (page - 1) * per_page})\n\n\ndef main():\n    import sys, json as _json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    total, page, per_page = [int(ln) for ln in lines]\n    print(solve(total, page, per_page))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "import json\nimport math\n\n\ndef solve(total, page, per_page):\n    total_pages = math.ceil(total / per_page) if total > 0 else 0\n    return json.dumps({\"total_pages\": total_pages, \"page\": page, \"offset\": (page - 1) * per_page})\n\n\ndef main():\n    import sys, json as _json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    total, page, per_page = [int(ln) for ln in lines]\n    print(solve(total, page, per_page))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "25\n2\n10",
+          "expected_output": "{\"total_pages\": 3, \"page\": 2, \"offset\": 10}",
+          "description": "Second page"
+        },
+        {
+          "input": "10\n1\n10",
+          "expected_output": "{\"total_pages\": 1, \"page\": 1, \"offset\": 0}",
+          "description": "Single page"
+        },
+        {
+          "input": "95\n4\n20",
+          "expected_output": "{\"total_pages\": 5, \"page\": 4, \"offset\": 60}",
+          "description": "Rounded up page count"
+        },
+        {
+          "input": "0\n1\n10",
+          "expected_output": "{\"total_pages\": 0, \"page\": 1, \"offset\": 0}",
+          "description": "Empty dataset"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-api-exercise-serialize",
+      "course_id": "backend-web-development",
+      "module_id": "backend-api",
+      "title": "Exercise: Serialize a Resource",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Serialize a Resource\n\nWrite a function `solve(user)` that returns a JSON string containing only the **public fields** `id`, `name`, and `email` — never leaking internal fields.\n\n### Sample\n\nInput:\n\n```text\n{\"id\": 1, \"name\": \"Ada\", \"email\": \"ada@x.com\", \"password_hash\": \"abc123\"}\n```\n\nOutput:\n\n```text\n{\"id\": 1, \"name\": \"Ada\", \"email\": \"ada@x.com\"}\n```\n\n### How your code runs\n\nThe runner calls `solve(user)` with one dictionary parsed from the JSON input. Build a new dict with only the public keys and return `json.dumps(result)`.\n\n### Starter code\n\n```python\nimport json\n\n\ndef solve(user):\n    public = [\"id\", \"name\", \"email\"]\n    result = {field: user[field] for field in public if field in user}\n    return json.dumps(result)\n\n\ndef main():\n    import sys, json as _json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(_json.loads(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "import json\n\n\ndef solve(user):\n    public = [\"id\", \"name\", \"email\"]\n    result = {field: user[field] for field in public if field in user}\n    return json.dumps(result)\n\n\ndef main():\n    import sys, json as _json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(_json.loads(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "{\"id\": 1, \"name\": \"Ada\", \"email\": \"ada@x.com\", \"password_hash\": \"abc123\"}",
+          "expected_output": "{\"id\": 1, \"name\": \"Ada\", \"email\": \"ada@x.com\"}",
+          "description": "Secrets excluded"
+        },
+        {
+          "input": "{\"name\": \"Bob\"}",
+          "expected_output": "{\"name\": \"Bob\"}",
+          "description": "Partial fields"
+        },
+        {
+          "input": "{\"id\": 5, \"email\": \"e@x.com\"}",
+          "expected_output": "{\"id\": 5, \"email\": \"e@x.com\"}",
+          "description": "Missing name is fine"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-persistence-relational",
+      "course_id": "backend-web-development",
+      "module_id": "backend-persistence",
+      "title": "Relational Data Concepts",
+      "type": "theory",
+      "order": 1,
+      "content": "## Relational Data Concepts\n\nRelational databases store data in **tables** with rows and columns, and connect them with **keys**. Most production backends sit on one.\n\n### The table\n\nA table is a grid: columns define the shape, rows are records.\n\n```text\nusers\n| id | name  | email          | created_at      |\n|----|-------|----------------|-----------------|\n| 1  | Ada   | ada@x.com      | 2025-01-01 10:00|\n| 2  | Linus | linus@x.com    | 2025-01-02 09:30|\n```\n\n### Keys\n\n| Key             | Purpose                                  |\n|-----------------|------------------------------------------|\n| Primary key     | Uniquely identifies each row (usually `id`) |\n| Foreign key     | References a row in another table        |\n| Unique          | No two rows share this value             |\n| Index           | Speeds up lookups (not a constraint)     |\n\n### Relationships\n\n- **One-to-many**: one user → many posts (posts hold `user_id`).\n- **Many-to-many**: users ↔ courses, joined by a link table.\n- **One-to-one**: user ↔ profile (rarely needed).\n\n### Normalization\n\n**Normalization** removes duplicate data by splitting it into related tables. A phone number stored in three places is a bug waiting to happen — store it once and reference it.\n\n### Constraints enforce integrity\n\n```sql\nCREATE TABLE users (\n  id    INTEGER PRIMARY KEY,\n  email TEXT NOT NULL UNIQUE,\n  age   INTEGER CHECK (age >= 0)\n);\n```\n\nThe database itself refuses bad rows — `NOT NULL`, `UNIQUE`, and `CHECK` are guard rails your app does not have to re-implement.\n\n### SQL in one glance\n\n```sql\nSELECT id, name FROM users WHERE age >= 18 ORDER BY name LIMIT 10;\nINSERT INTO users (name, email) VALUES ('Ada', 'ada@x.com');\nUPDATE users SET age = 37 WHERE id = 1;\nDELETE FROM users WHERE id = 2;\n```\n\nThese four statements map directly onto the CRUD operations your API exposes.\n\n---\n\n**Next up:** the repository pattern — keeping SQL out of your endpoints.",
+      "language": "python"
+    },
+    {
+      "id": "backend-persistence-repository",
+      "course_id": "backend-web-development",
+      "module_id": "backend-persistence",
+      "title": "The Repository Pattern",
+      "type": "theory",
+      "order": 2,
+      "content": "## The Repository Pattern\n\nA **repository** is the layer between your application logic and the database. It presents a simple, business-shaped interface and hides all the SQL inside.\n\n### Why a separate layer\n\nWithout repositories, endpoint handlers fill up with raw queries. Every query gets duplicated, and swapping storage means touching every handler.\n\n### The shape of a repository\n\n```python\nclass UserRepository:\n    def list(self, filters=None): ...\n    def get(self, user_id): ...\n    def create(self, data): ...\n    def update(self, user_id, data): ...\n    def delete(self, user_id): ...\n```\n\nHandlers only see these method calls — never a SQL string.\n\n### The payoff\n\n| Concern        | Lives in repository   | Not in handler |\n|----------------|-----------------------|----------------|\n| SQL            | yes                   | no             |\n| Connection handling | yes              | no             |\n| Error mapping  | yes                   | no             |\n| Business logic | no                    | yes            |\n\n### Repository vs service\n\nKeep the two layers separate:\n\n- **Repository** — mechanical data access (fetch, save, delete).\n- **Service** — business rules (authorization, workflows, validation).\n\n```python\ndef create_post(user, post_data):          # service\n    if not user.is_premium and post_data[\"size\"] > 1_000_000:\n        raise ForbiddenError(\"limit reached\")\n    return post_repo.create(user.id, post_data)   # repository\n```\n\n### Testing wins\n\nBecause the repository interface is small, you can swap a real database for an **in-memory implementation** in tests — exactly what the exercises in this module do with plain lists.\n\n### Keep it honest\n\nA repository is not a dump of every possible query. Keep methods named after **business intent** (`find_active`, not `select_where_flag_1`) and resist the urge to add a query per handler.\n\n---\n\n**Next up:** migrations — evolving the schema safely.",
+      "language": "python"
+    },
+    {
+      "id": "backend-persistence-migrations",
+      "course_id": "backend-web-development",
+      "module_id": "backend-persistence",
+      "title": "Migrations",
+      "type": "theory",
+      "order": 3,
+      "content": "## Migrations\n\nSchemas change: new columns, new tables, renamed fields. **Migrations** are versioned, ordered scripts that evolve the database safely.\n\n### The idea\n\nEach migration has a number and describes one change:\n\n```text\n001_create_users.sql        CREATE TABLE users (...);\n002_add_bio_to_users.sql     ALTER TABLE users ADD COLUMN bio TEXT;\n003_create_posts.sql         CREATE TABLE posts (...);\n```\n\nA table records which migrations have run:\n\n```text\nschema_migrations\n| version | applied_at        |\n|---------|-------------------|\n| 1       | 2025-01-01 10:00  |\n| 2       | 2025-01-01 10:05  |\n```\n\n### Forward and rollback\n\nEach migration usually ships a forward and a rollback script:\n\n```sql\n-- 002_add_bio_to_users.sql\nALTER TABLE users ADD COLUMN bio TEXT;\n\n-- 002_add_bio_to_users.down.sql\nALTER TABLE users DROP COLUMN bio;\n```\n\nRollbacks let you undo a bad release cleanly.\n\n### Why migrations beat manual SQL\n\n- **Reproducible**: a new environment runs the whole history and gets the same schema.\n- **Auditable**: every change is recorded with its intent.\n- **Reviewable**: schema changes get code-reviewed like code.\n\n### Migration discipline\n\n- Never edit a migration that already ran — write a new one.\n- Keep migrations **idempotent-ish**: they run once, in order.\n- Test rollbacks in staging.\n- Back up before destructive migrations (`DROP`, `RENAME`).\n\n### In practice\n\nTools like Alembic (SQLAlchemy), Prisma, and Django's `makemigrations` generate and apply migrations. You still decide *what* changes — they handle *when* and *how*.\n\n---\n\n**Next up:** transactions — keeping writes atomic and consistent.",
+      "language": "python"
+    },
+    {
+      "id": "backend-persistence-transactions",
+      "course_id": "backend-web-development",
+      "module_id": "backend-persistence",
+      "title": "Transactions",
+      "type": "theory",
+      "order": 4,
+      "content": "## Transactions\n\nA **transaction** groups several operations so they succeed or fail **together**. If any step fails, the whole group rolls back — the database returns to its previous state.\n\n### The classic example\n\nTransferring money touches two rows:\n\n```text\n1. debit  user A  -100\n2. credit user B  +100\n```\n\nIf step 2 fails, step 1 must not stand alone — that would create money.\n\n### ACID\n\n| Property | Meaning                                             |\n|----------|-----------------------------------------------------|\n| Atomicity| All steps succeed or all are undone                 |\n| Consistency | Data stays valid (constraints hold)            |\n| Isolation | Concurrent transactions do not corrupt each other   |\n| Durability| Committed data survives crashes                     |\n\n### Transaction control\n\n```python\nwith db.transaction():      # BEGIN\n    account_repo.debit(a_id, 100)\n    account_repo.credit(b_id, 100)\n                            # COMMIT on success\n                            # ROLLBACK on any exception\n```\n\nThe context manager commits on success and rolls back on any raised error.\n\n### When to use transactions\n\n- Multi-row writes that must stay consistent (balances, orders, inventory).\n- Writes plus a dependent write (\"create user, then create their profile\").\n- Any operation where a partial result is worse than no result.\n\n### When not to\n\nLong transactions hold locks and hurt concurrency. Keep them **short and focused** — do slow work (network calls, heavy computation) outside the transaction.\n\n### The read-your-own-write rule\n\nIf a handler writes then immediately reads, and the reads must see the write, do both inside one transaction or transaction-ish boundary. Otherwise a cached or uncommitted read can bite you.\n\n---\n\n**Next up:** exercises — a CRUD repository, a ledger, and migration versions.",
+      "language": "python"
+    },
+    {
+      "id": "backend-persistence-exercise-repo",
+      "course_id": "backend-web-development",
+      "module_id": "backend-persistence",
+      "title": "Exercise: In-Memory Repository",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: In-Memory Repository\n\nWrite a function `solve(request)` that simulates a **repository over a list passed as JSON**. The request is a dict:\n\n- `records` — the current list of `{\"id\": ..., \"name\": ...}` rows\n- `action` — `\"create\"` or `\"delete\"`\n- `record` — for create, the row to add; for delete, an object with the `id` to remove\n\nReturn the resulting list as a **JSON string**.\n\n### Sample\n\nInput:\n\n```text\n{\"records\": [{\"id\": 1, \"name\": \"Ada\"}], \"action\": \"create\", \"record\": {\"id\": 2, \"name\": \"Bob\"}}\n```\n\nOutput:\n\n```text\n[{\"id\": 1, \"name\": \"Ada\"}, {\"id\": 2, \"name\": \"Bob\"}]\n```\n\n### How your code runs\n\nThe runner calls `solve(request)` with one dictionary. Mutate a copy of `records`, then return `json.dumps(result)`.\n\n### Starter code\n\n```python\nimport json\n\n\ndef solve(request):\n    records = list(request[\"records\"])\n    action = request[\"action\"]\n    record = request[\"record\"]\n    if action == \"create\":\n        records.append(record)\n    elif action == \"delete\":\n        records = [r for r in records if r[\"id\"] != record[\"id\"]]\n    return json.dumps(records)\n\n\ndef main():\n    import sys, json as _json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(_json.loads(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "import json\n\n\ndef solve(request):\n    records = list(request[\"records\"])\n    action = request[\"action\"]\n    record = request[\"record\"]\n    if action == \"create\":\n        records.append(record)\n    elif action == \"delete\":\n        records = [r for r in records if r[\"id\"] != record[\"id\"]]\n    return json.dumps(records)\n\n\ndef main():\n    import sys, json as _json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(_json.loads(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "{\"records\": [{\"id\": 1, \"name\": \"Ada\"}], \"action\": \"create\", \"record\": {\"id\": 2, \"name\": \"Bob\"}}",
+          "expected_output": "[{\"id\": 1, \"name\": \"Ada\"}, {\"id\": 2, \"name\": \"Bob\"}]",
+          "description": "Create appends"
+        },
+        {
+          "input": "{\"records\": [{\"id\": 1, \"name\": \"Ada\"}, {\"id\": 2, \"name\": \"Bob\"}], \"action\": \"delete\", \"record\": {\"id\": 1}}",
+          "expected_output": "[{\"id\": 2, \"name\": \"Bob\"}]",
+          "description": "Delete by id"
+        },
+        {
+          "input": "{\"records\": [], \"action\": \"create\", \"record\": {\"id\": 9, \"name\": \"Eve\"}}",
+          "expected_output": "[{\"id\": 9, \"name\": \"Eve\"}]",
+          "description": "Create into empty list"
+        },
+        {
+          "input": "{\"records\": [{\"id\": 1, \"name\": \"Ada\"}], \"action\": \"delete\", \"record\": {\"id\": 99}}",
+          "expected_output": "[{\"id\": 1, \"name\": \"Ada\"}]",
+          "description": "Delete missing id is a no-op"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-persistence-exercise-ledger",
+      "course_id": "backend-web-development",
+      "module_id": "backend-persistence",
+      "title": "Exercise: Ledger Balance",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Ledger Balance\n\nWrite a function `solve(transactions, start)` that applies a list of transactions to a starting balance and returns the final balance.\n\nEach transaction is `{\"type\": \"credit\" | \"debit\", \"amount\": n}`. Credits add, debits subtract. **A debit larger than the current balance is rejected** (the balance never goes negative — a simple consistency rule).\n\n### Sample\n\nInput:\n\n```text\n[{\"type\": \"credit\", \"amount\": 100}, {\"type\": \"debit\", \"amount\": 30}]\n50\n```\n\nOutput:\n\n```text\n120\n```\n\n### How your code runs\n\nThe runner calls `solve(transactions, start)` with a JSON list and an integer parsed from the two input lines. Return the final balance.\n\n### Starter code\n\n```python\ndef solve(transactions, start):\n    balance = start\n    for tx in transactions:\n        if tx[\"type\"] == \"credit\":\n            balance += tx[\"amount\"]\n        elif tx[\"type\"] == \"debit\":\n            if tx[\"amount\"] <= balance:\n                balance -= tx[\"amount\"]\n    return balance\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    transactions = json.loads(lines[0])\n    start = int(lines[1])\n    print(solve(transactions, start))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(transactions, start):\n    balance = start\n    for tx in transactions:\n        if tx[\"type\"] == \"credit\":\n            balance += tx[\"amount\"]\n        elif tx[\"type\"] == \"debit\":\n            if tx[\"amount\"] <= balance:\n                balance -= tx[\"amount\"]\n    return balance\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    transactions = json.loads(lines[0])\n    start = int(lines[1])\n    print(solve(transactions, start))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[{\"type\": \"credit\", \"amount\": 100}, {\"type\": \"debit\", \"amount\": 30}]\n50",
+          "expected_output": "120",
+          "description": "Credit then debit"
+        },
+        {
+          "input": "[{\"type\": \"debit\", \"amount\": 200}]\n50",
+          "expected_output": "50",
+          "description": "Overdraft rejected"
+        },
+        {
+          "input": "[]\n100",
+          "expected_output": "100",
+          "description": "No transactions"
+        },
+        {
+          "input": "[{\"type\": \"credit\", \"amount\": 5}, {\"type\": \"credit\", \"amount\": 5}]\n0",
+          "expected_output": "10",
+          "description": "Two credits"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-persistence-exercise-schema",
+      "course_id": "backend-web-development",
+      "module_id": "backend-persistence",
+      "title": "Exercise: Pending Migrations",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Pending Migrations\n\nWrite a function `solve(applied, latest)` that returns the list of **migration versions that still need to run**: every version from `1` up to `latest` that is not already in `applied`.\n\n### Sample\n\nInput:\n\n```text\n[1, 2]\n4\n```\n\nVersions `1` and `2` are applied; `3` and `4` are not. Output:\n\n```text\n[3,4]\n```\n\n### How your code runs\n\nThe runner calls `solve(applied, latest)` with a JSON list and an integer parsed from the two input lines. Return the list of pending versions.\n\n### Starter code\n\n```python\ndef solve(applied, latest):\n    applied_set = set(applied)\n    return [v for v in range(1, latest + 1) if v not in applied_set]\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    applied = json.loads(lines[0])\n    latest = int(lines[1])\n    print(json.dumps(solve(applied, latest), separators=(\",\", \":\")))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(applied, latest):\n    applied_set = set(applied)\n    return [v for v in range(1, latest + 1) if v not in applied_set]\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    applied = json.loads(lines[0])\n    latest = int(lines[1])\n    print(json.dumps(solve(applied, latest), separators=(\",\", \":\")))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[1, 2]\n4",
+          "expected_output": "[3,4]",
+          "description": "Two pending"
+        },
+        {
+          "input": "[1, 2, 3, 4]\n4",
+          "expected_output": "[]",
+          "description": "All applied"
+        },
+        {
+          "input": "[]\n2",
+          "expected_output": "[1,2]",
+          "description": "Fresh database"
+        },
+        {
+          "input": "[2]\n3",
+          "expected_output": "[1,3]",
+          "description": "Gap in the middle"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-auth-passwords",
+      "course_id": "backend-web-development",
+      "module_id": "backend-auth",
+      "title": "Password Hashing",
+      "type": "theory",
+      "order": 1,
+      "content": "## Password Hashing\n\nStoring passwords in plain text is catastrophic — a single leaked database exposes every account. The correct approach is **hashing**.\n\n### Hashing vs encryption\n\n|           | Hashing                          | Encryption                       |\n|-----------|----------------------------------|----------------------------------|\n| Direction | One-way                          | Two-way                          |\n| Reversible| No                               | Yes, with a key                 |\n| Purpose   | Verify without storing           | Protect data you must read back |\n\nEncryption is reversible by design — which means anyone with the key (or a stolen key) can decrypt. Hashes cannot be reversed, so a leaked hash database is far less useful.\n\n### How it works\n\n```python\nstored = hash_function(password)      # store ONLY this\n...later...\nif hash_function(attempt) == stored:  # compare hashes\n    allow()\n```\n\n### Salting\n\nTwo users with the same password get the same hash — attackers exploit that with **rainbow tables**. A **salt** is random data mixed into each hash:\n\n```python\nsalt = os.urandom(16)\nstored = hash_function(salt + password) + salt\n```\n\nNow identical passwords produce different hashes, and precomputed tables are useless.\n\n### Slow is a feature\n\nFast hashes (MD5, SHA-256) let attackers try billions of guesses per second. Password hashes are designed to be **slow**:\n\n| Algorithm | Purpose            |\n|-----------|--------------------|\n| bcrypt    | Password hashing   |\n| argon2    | Password hashing   |\n| PBKDF2    | Password hashing   |\n\nNever roll your own — use a well-tested library with sensible defaults.\n\n### The check\n\n```python\nfrom passlib.hash import bcrypt\n\nstored = bcrypt.hash(\"s3cret\")\nbcrypt.verify(\"s3cret\", stored)   # True\nbcrypt.verify(\"wrong\", stored)    # False\n```\n\nThe exercise in this module simulates the *shape* of this check with a simple function so you can practice the logic in the sandbox.\n\n---\n\n**Next up:** tokens — how the server remembers who you are.",
+      "language": "python"
+    },
+    {
+      "id": "backend-auth-tokens",
+      "course_id": "backend-web-development",
+      "module_id": "backend-auth",
+      "title": "Tokens and Sessions",
+      "type": "theory",
+      "order": 2,
+      "content": "## Tokens and Sessions\n\nAfter login, the server needs to recognize the user on subsequent requests. The two main approaches are **sessions** and **tokens**.\n\n### Sessions\n\nThe server stores session state and gives the client an opaque session id:\n\n```text\nlogin → server stores {session_id: user_id} → client gets cookie\nrequest with cookie → server looks up session → knows the user\n```\n\n- Simple, revocable (delete the session row).\n- State lives **server-side** — needs a store (memory, Redis, DB).\n- Cookies sent automatically by the browser.\n\n### Tokens (JWT)\n\nA **JWT** (JSON Web Token) is a self-contained, signed string the client holds:\n\n```text\neyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiIsImV4cCI6MTY...9.signature\n      header (algorithm)          payload (claims)          signature\n```\n\nThe server verifies the signature; it does **not** need to look anything up.\n\n### JWT structure\n\n| Part      | Contents                                  |\n|-----------|-------------------------------------------|\n| Header    | Signing algorithm, type                   |\n| Payload   | Claims: `sub` (user), `exp` (expiry), `iat` (issued) |\n| Signature | Header + payload signed with a secret     |\n\n### Key properties\n\n- **Stateless** — no server-side store; any instance can verify.\n- **Expiry** — `exp` claim limits lifetime; short-lived tokens are safer.\n- **Signed, not encrypted** — the payload is readable base64. Never put secrets in it.\n\n### Where tokens live\n\nClients send tokens via the `Authorization` header:\n\n```text\nAuthorization: Bearer eyJhbGciOi...\n```\n\n### The trade-off\n\n| Approach | Server state | Revocation | Complexity |\n|----------|--------------|------------|------------|\n| Session  | yes          | easy       | low        |\n| JWT      | no           | harder     | medium     |\n\nSessions are easier to invalidate; tokens scale horizontally with no shared store. Many systems use short-lived tokens plus a **refresh token** stored securely.\n\n---\n\n**Next up:** authorization — deciding what a user may do.",
+      "language": "python"
+    },
+    {
+      "id": "backend-auth-authorization",
+      "course_id": "backend-web-development",
+      "module_id": "backend-auth",
+      "title": "Authorization and Roles",
+      "type": "theory",
+      "order": 3,
+      "content": "## Authorization and Roles\n\n**Authentication** answers *\"who are you?\"* — **authorization** answers *\"what are you allowed to do?\"* Confusing them is the source of many security bugs.\n\n### Authentication vs authorization\n\n```text\nrequest → authenticate (who) → authorize (may they?) → act\n```\n\n- Authenticate: verify the token / session / credentials.\n- Authorize: check roles, permissions, or ownership before acting.\n\n### Roles (RBAC)\n\n**Role-Based Access Control** groups permissions into roles:\n\n| Role   | Permissions                        |\n|--------|------------------------------------|\n| guest  | read public content                |\n| user   | create/update/delete own posts     |\n| admin  | everything, plus manage users      |\n\n```python\n@app.delete(\"/api/posts/{post_id}\")\ndef delete_post(post_id: int, user=Depends(get_current_user)):\n    if user.role != \"admin\":\n        raise HTTPException(403, \"admin only\")\n    ...\n```\n\n### Ownership checks\n\nRoles are not enough — a user may edit their own post but not yours. Check **ownership** explicitly:\n\n```python\npost = post_repo.get(post_id)\nif post.author_id != user.id and user.role != \"admin\":\n    raise HTTPException(403)\n```\n\n### Permission scopes\n\nFine-grained systems use **scopes** (specific capabilities) instead of coarse roles:\n\n```text\nposts:read   posts:write   users:manage   billing:read\n```\n\nA token can carry its scopes, and each endpoint declares what it needs.\n\n### The golden rules\n\n- **Deny by default** — new code is locked down until proven otherwise.\n- **Check in one place** — a shared dependency, not scattered `if`s.\n- **Never trust the client** — authorization comes from the token/role, never from a request field like `\"is_admin\": true`.\n- **Fail closed** — on error, deny access.\n\n### Common vulnerability\n\nAn endpoint that checks authentication but forgets authorization — e.g. any logged-in user can read or delete anyone's resource. Always ask: *is this user allowed to touch this specific resource?*\n\n---\n\n**Next up:** input validation and security — hardening the request boundary.",
+      "language": "python"
+    },
+    {
+      "id": "backend-auth-input-validation",
+      "course_id": "backend-web-development",
+      "module_id": "backend-auth",
+      "title": "Input Validation and Security",
+      "type": "theory",
+      "order": 4,
+      "content": "## Input Validation and Security\n\nMost web vulnerabilities trace back to trusting untrusted input. Hardening the input boundary is the cheapest security you can buy.\n\n### Injection\n\n**SQL injection**: user input becomes SQL.\n\n```python\n# DANGEROUS\nquery = f\"SELECT * FROM users WHERE name = '{name}'\"\n# name = \"'; DROP TABLE users; --\"\n\n# SAFE — parameters\nquery = \"SELECT * FROM users WHERE name = ?\"\n```\n\nAlways use **parameterized queries**; never build SQL by string concatenation.\n\n### Command injection\n\nSame idea, operating systems. Never pass user input into `os.system` or `shell=True` without strict validation.\n\n### XSS\n\n**Cross-Site Scripting**: user content is rendered as HTML, running scripts in other users' browsers. Escape output on the way to the page, and use auto-escaping templates.\n\n### Validation as a security control\n\nValidate on the **server**, always — the client can be bypassed in one curl command:\n\n```python\ndef validate_email(email: str):\n    if \"@\" not in email or len(email) > 254:\n        raise ValueError(\"invalid email\")\n```\n\n### Rate limiting\n\nAbusers hammer endpoints. **Rate limiting** caps requests per client per window:\n\n```text\nmax 60 requests / minute / IP (or / token)\n```\n\nThe exercise in this module simulates the counting logic behind a rate limiter.\n\n### Security checklist\n\n- [ ] Parameterized SQL everywhere\n- [ ] Server-side validation of every input\n- [ ] Escape / auto-escape all rendered user content\n- [ ] Hashed passwords, never plain text\n- [ ] Short-lived tokens, secrets rotated\n- [ ] Rate limiting on login and write endpoints\n- [ ] Least-privilege roles with ownership checks\n\nSecurity is not a feature you add at the end — it is a habit applied at every layer.\n\n---\n\n**Next up:** exercises — password checks, token expiry, and rate limiting.",
+      "language": "python"
+    },
+    {
+      "id": "backend-auth-exercise-password-check",
+      "course_id": "backend-web-development",
+      "module_id": "backend-auth",
+      "title": "Exercise: Password Hash Check",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Password Hash Check\n\nWrite a function `solve(password, stored_hash)` that checks a password against a stored hash using a **simple hash function simulation**: the hash of a string is the sum of the ASCII codes of its characters (`sum(ord(c) for c in s)`).\n\nReturn `match` if `hash(password) == stored_hash`, otherwise `mismatch`.\n\n### Sample\n\nInput:\n\n```text\nsecret\n646\n```\n\n`ord('s')+ord('e')+ord('c')+ord('r')+ord('e')+ord('t')` is 646, so:\n\nOutput:\n\n```text\nmatch\n```\n\n### How your code runs\n\nThe runner calls `solve(password, stored_hash)` with a string and a number parsed from the two input lines. Compare the computed hash to `int(stored_hash)`.\n\n### Starter code\n\n```python\ndef solve(password, stored_hash):\n    if hash_string(password) == int(stored_hash):\n        return \"match\"\n    return \"mismatch\"\n\n\ndef hash_string(s):\n    return sum(ord(c) for c in s)\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    print(solve(lines[0], lines[1]))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(password, stored_hash):\n    if hash_string(password) == int(stored_hash):\n        return \"match\"\n    return \"mismatch\"\n\n\ndef hash_string(s):\n    return sum(ord(c) for c in s)\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    print(solve(lines[0], lines[1]))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "secret\n646",
+          "expected_output": "match",
+          "description": "Correct password"
+        },
+        {
+          "input": "secret\n000",
+          "expected_output": "mismatch",
+          "description": "Wrong hash"
+        },
+        {
+          "input": "admin\n435",
+          "expected_output": "mismatch",
+          "description": "Hash for another password"
+        },
+        {
+          "input": "admin\n521",
+          "expected_output": "match",
+          "description": "admin hashes to 521"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-auth-exercise-token-expiry",
+      "course_id": "backend-web-development",
+      "module_id": "backend-auth",
+      "title": "Exercise: Token Expiry Check",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Token Expiry Check\n\nWrite a function `solve(issued, ttl, now)` that decides whether a token is still valid, using **numeric timestamps**.\n\nA token issued at `issued` with a lifetime of `ttl` seconds is valid while `now <= issued + ttl`. Return `valid` or `expired`.\n\n### Sample\n\nInput:\n\n```text\n1000\n500\n1400\n```\n\n`1000 + 500 = 1500`, and `now` is `1400`, so the token is still live:\n\nOutput:\n\n```text\nvalid\n```\n\n### How your code runs\n\nThe runner calls `solve(issued, ttl, now)` with three integers parsed from the three input lines. Return the status string.\n\n### Starter code\n\n```python\ndef solve(issued, ttl, now):\n    if now <= issued + ttl:\n        return \"valid\"\n    return \"expired\"\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    issued, ttl, now = (int(ln) for ln in raw.split(\"\\n\"))\n    print(solve(issued, ttl, now))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(issued, ttl, now):\n    if now <= issued + ttl:\n        return \"valid\"\n    return \"expired\"\n\n\ndef main():\n    import sys\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    issued, ttl, now = (int(ln) for ln in raw.split(\"\\n\"))\n    print(solve(issued, ttl, now))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "1000\n500\n1400",
+          "expected_output": "valid",
+          "description": "Still within lifetime"
+        },
+        {
+          "input": "1000\n500\n1500",
+          "expected_output": "valid",
+          "description": "Exactly at expiry is valid"
+        },
+        {
+          "input": "1000\n500\n1501",
+          "expected_output": "expired",
+          "description": "One second past expiry"
+        },
+        {
+          "input": "0\n60\n59",
+          "expected_output": "valid",
+          "description": "Short-lived token"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-auth-exercise-rate-limit",
+      "course_id": "backend-web-development",
+      "module_id": "backend-auth",
+      "title": "Exercise: Rate-Limit Counter",
+      "type": "exercise",
+      "order": 7,
+      "content": "## Exercise: Rate-Limit Counter\n\nWrite a function `solve(timestamps, window, limit)` that returns the number of requests **allowed** under a sliding-window rate limit.\n\nRequests arrive at the given integer timestamps (in order). A request is allowed if fewer than `limit` requests arrived in the previous `window` time units. Allowed requests count toward the window.\n\n### Sample\n\nInput:\n\n```text\n[1, 2, 3, 4]\n3\n2\n```\n\nWalk through: `1` allowed, `2` allowed (two in window), `3` blocked (already two in the last 3 units), `4` allowed (by then `1` has fallen out). So:\n\nOutput:\n\n```text\n3\n```\n\n### How your code runs\n\nThe runner calls `solve(timestamps, window, limit)` with a JSON list and two integers parsed from the three input lines. Return the count.\n\n### Starter code\n\n```python\ndef solve(timestamps, window, limit):\n    recent = []\n    allowed = 0\n    for t in timestamps:\n        recent = [x for x in recent if x > t - window]\n        if len(recent) < limit:\n            recent.append(t)\n            allowed += 1\n    return allowed\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    timestamps = json.loads(lines[0])\n    window = int(lines[1])\n    limit = int(lines[2])\n    print(solve(timestamps, window, limit))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(timestamps, window, limit):\n    recent = []\n    allowed = 0\n    for t in timestamps:\n        recent = [x for x in recent if x > t - window]\n        if len(recent) < limit:\n            recent.append(t)\n            allowed += 1\n    return allowed\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    timestamps = json.loads(lines[0])\n    window = int(lines[1])\n    limit = int(lines[2])\n    print(solve(timestamps, window, limit))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[1, 2, 3, 4]\n3\n2",
+          "expected_output": "3",
+          "description": "Sliding window allows 3 of 4"
+        },
+        {
+          "input": "[1, 2, 3]\n10\n2",
+          "expected_output": "2",
+          "description": "All within one window"
+        },
+        {
+          "input": "[10, 20, 30]\n5\n3",
+          "expected_output": "3",
+          "description": "Sparse requests all pass"
+        },
+        {
+          "input": "[]\n10\n5",
+          "expected_output": "0",
+          "description": "No requests"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-project-architecture",
+      "course_id": "backend-web-development",
+      "module_id": "backend-project",
+      "title": "Designing the API",
+      "type": "theory",
+      "order": 1,
+      "content": "## Designing the API\n\nThe project builds a complete authenticated API — a todo service. Start by designing the surface before writing code.\n\n### The resource\n\nTodos belong to a user. Keep them nested to make ownership explicit:\n\n```text\nGET    /api/todos          list my todos\nPOST   /api/todos          create a todo\nGET    /api/todos/{id}     read one\nPATCH  /api/todos/{id}     update\nDELETE /api/todos/{id}     delete\n```\n\n### The models\n\n```python\nclass TodoCreate(BaseModel):        # what clients send\n    title: str = Field(..., min_length=1, max_length=200)\n\nclass TodoOut(BaseModel):           # what clients receive\n    id: int\n    title: str\n    done: bool = False\n    owner_id: int\n```\n\n### The layering\n\n```text\nroutes (HTTP) → services (logic) → repositories (data)\n```\n\n| Layer        | Responsibility                    |\n|--------------|-----------------------------------|\n| Routes       | Parse/validate requests, serialize responses |\n| Services     | Business rules, ownership checks  |\n| Repositories | Database access                  |\n\n### The endpoints by method\n\n| Method   | Path            | Success | Failure                     |\n|----------|-----------------|---------|-----------------------------|\n| `GET`    | `/api/todos`    | 200     | 401 (no auth)               |\n| `POST`   | `/api/todos`    | 201     | 422 (bad body)              |\n| `GET`    | `/api/todos/{id}` | 200   | 404 (not yours or missing)  |\n| `PATCH`  | `/api/todos/{id}` | 200  | 404, 422                    |\n| `DELETE` | `/api/todos/{id}` | 204  | 404                         |\n\n### Design decisions\n\n- **Ownership**: every todo has `owner_id`; handlers only touch the current user's rows.\n- **Auth**: `POST /api/auth/register` and `/api/auth/login` return a token.\n- **Validation**: schemas reject bad bodies at the boundary.\n- **Errors**: consistent JSON shape, right status codes.\n\nWrite this plan down, then implement it layer by layer — the module's exercises build the pieces.\n\n---\n\n**Next up:** building the auth and todo endpoints.",
+      "language": "python"
+    },
+    {
+      "id": "backend-project-auth-flow",
+      "course_id": "backend-web-development",
+      "module_id": "backend-project",
+      "title": "The Authentication Flow",
+      "type": "theory",
+      "order": 2,
+      "content": "## The Authentication Flow\n\nEvery protected endpoint needs to know *who is calling*. This module walks the full flow from signup to protected request.\n\n### 1. Register\n\n```python\n@app.post(\"/api/auth/register\")\ndef register(data: RegisterRequest):\n    if user_repo.get_by_email(data.email):\n        raise HTTPException(409, \"email already registered\")\n    user = user_repo.create(\n        email=data.email,\n        password_hash=hash_password(data.password),\n    )\n    return {\"token\": create_token(user.id)}\n```\n\nNever store the raw password — hash it at the boundary.\n\n### 2. Login\n\n```python\n@app.post(\"/api/auth/login\")\ndef login(data: LoginRequest):\n    user = user_repo.get_by_email(data.email)\n    if not user or not verify_password(data.password, user[\"password_hash\"]):\n        raise HTTPException(401, \"invalid credentials\")\n    return {\"token\": create_token(user[\"id\"])}\n```\n\nSame error for \"no such user\" and \"wrong password\" — don't leak which one failed.\n\n### 3. The dependency\n\nOne shared dependency authenticates every protected route:\n\n```python\ndef get_current_user(authorization: str = Header(...)):\n    token = authorization.removeprefix(\"Bearer \")\n    payload = decode_token(token)             # raises on bad/expired\n    return user_repo.get(payload[\"sub\"])\n\n@app.get(\"/api/todos\")\ndef list_todos(user=Depends(get_current_user)):\n    return todo_repo.list_for_user(user[\"id\"])\n```\n\n### 4. Token lifetime\n\n```python\ndef create_token(user_id):\n    return jwt.encode(\n        {\"sub\": str(user_id), \"iat\": now(), \"exp\": now() + 3600},\n        SECRET_KEY,\n    )\n```\n\nShort `exp` plus secure storage of the secret. Rotate the secret on suspicion of compromise.\n\n### The flow in one picture\n\n```text\nregister/login → token\nrequest → Authorization: Bearer <token>\ndependency decodes + loads user → handler acts as that user\n```\n\nEvery security rule from module 4 lands here: hashed passwords, short-lived signed tokens, ownership checks on every todo.\n\n---\n\n**Next up:** logging and idempotency — the operational details.",
+      "language": "python"
+    },
+    {
+      "id": "backend-project-logging",
+      "course_id": "backend-web-development",
+      "module_id": "backend-project",
+      "title": "Logging and Idempotency",
+      "type": "theory",
+      "order": 3,
+      "content": "## Logging and Idempotency\n\nTwo operational details separate a prototype from a dependable service: **logging** and **idempotency**.\n\n### Structured logging\n\nEvery request should leave a trace you can search. A structured log line carries fields, not prose:\n\n```text\nmethod=GET path=/api/todos status=200 duration_ms=12 user_id=42\nmethod=POST path=/api/todos status=201 duration_ms=5 user_id=42\n```\n\nUse a logging library and emit JSON or key=value lines. What to record:\n\n| Field         | Why                                    |\n|---------------|----------------------------------------|\n| method, path  | What was called                        |\n| status        | Outcome                                |\n| duration_ms   | Performance signal                     |\n| user_id       | Traceability (never log passwords/tokens) |\n| request_id    | Correlate a single request across logs |\n\nNever log secrets, full tokens, or raw password data — a common and embarrassing leak.\n\n### Idempotency\n\nA retried request should not duplicate work. **Idempotency keys** let a client mark a request so repeats return the original result:\n\n```text\nPOST /api/payments\nIdempotency-Key: order-123\n```\n\nThe server keeps processed keys:\n\n```python\ndef apply_idempotent(key, operation):\n    if key in processed_keys:\n        return stored_result[key]          # replay, don't re-run\n    result = operation()\n    processed_keys[key] = result\n    return result\n```\n\n### Where it matters\n\n- Payment creation, order placement, any \"create\" the client may retry.\n- Webhooks and background jobs that can be delivered more than once.\n\n### The mental model\n\nLogging tells you *what happened*; idempotency keys make retries safe. Together they give you the confidence to run a service you cannot watch by hand.\n\n---\n\n**Next up:** testing and deploying the API.",
+      "language": "python"
+    },
+    {
+      "id": "backend-project-testing-deploy",
+      "course_id": "backend-web-development",
+      "module_id": "backend-project",
+      "title": "Testing and Deployment",
+      "type": "theory",
+      "order": 4,
+      "content": "## Testing and Deployment\n\nAn API is only \"done\" when it is tested and can be shipped. Both follow repeatable habits.\n\n### The test pyramid\n\n```text\n     /  few, slow, end-to-end       /  some integration tests        /     many fast unit tests        ```\n\n- **Unit tests** — one function, no I/O: validation, hashing, pagination math.\n- **Integration tests** — endpoint + repository against a real (or test) database.\n- **E2E tests** — full user flows through the running app.\n\n### Testing the API layer\n\n```python\ndef test_create_todo_requires_auth(client):\n    res = client.post(\"/api/todos\", json={\"title\": \"x\"})\n    assert res.status_code == 401\n\ndef test_create_todo(client, auth_token):\n    res = client.post(\"/api/todos\", json={\"title\": \"learn backend\"},\n                      headers={\"Authorization\": f\"Bearer {auth_token}\"})\n    assert res.status_code == 201\n    assert res.json()[\"title\"] == \"learn backend\"\n```\n\n### What to test\n\n- Every happy path and its main failure (404, 422, 401, 403).\n- Validation rejects bad input.\n- Ownership: user A cannot touch user B's todo.\n- The repository: CRUD and edge cases, with the storage swapped for a fake.\n\n### Deployment basics\n\n| Concern       | Practice                                    |\n|---------------|---------------------------------------------|\n| Config        | Secrets via environment variables, not code |\n| Build         | Reproducible image (Dockerfile)             |\n| Health        | `GET /health` endpoint for the orchestrator |\n| Logs          | Structured, shipped to a log store          |\n| Rollbacks     | Keep previous image; migrate schema forward  |\n\n### The loop\n\n1. Green tests locally.\n2. Build the image, run migration.\n3. Deploy, watch health and logs.\n4. Roll back on errors.\n\nA well-tested, deployable API is the entire point of the module — the exercises hand you the pure logic pieces, and the design practice stitches them together.\n\n---\n\n**Next up:** exercises — the log formatter, idempotency, and the design capstone.",
+      "language": "python"
+    },
+    {
+      "id": "backend-project-exercise-logger",
+      "course_id": "backend-web-development",
+      "module_id": "backend-project",
+      "title": "Exercise: Request Log Formatter",
+      "type": "exercise",
+      "order": 5,
+      "content": "## Exercise: Request Log Formatter\n\nWrite a function `solve(request)` that formats a request into a **structured log line**.\n\nThe request is a dict with `method`, `path`, `status`, and `duration_ms`. Return the line as `method=... path=... status=... duration_ms=...`.\n\n### Sample\n\nInput:\n\n```text\n{\"method\": \"GET\", \"path\": \"/api/todos\", \"status\": 200, \"duration_ms\": 12}\n```\n\nOutput:\n\n```text\nmethod=GET path=/api/todos status=200 duration_ms=12\n```\n\n### How your code runs\n\nThe runner calls `solve(request)` with one dictionary parsed from the JSON input. Build the string with an f-string.\n\n### Starter code\n\n```python\ndef solve(request):\n    return (\n        f\"method={request['method']} path={request['path']} \"\n        f\"status={request['status']} duration_ms={request['duration_ms']}\"\n    )\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(json.loads(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(request):\n    return (\n        f\"method={request['method']} path={request['path']} \"\n        f\"status={request['status']} duration_ms={request['duration_ms']}\"\n    )\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    print(solve(json.loads(raw)))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "{\"method\": \"GET\", \"path\": \"/api/todos\", \"status\": 200, \"duration_ms\": 12}",
+          "expected_output": "method=GET path=/api/todos status=200 duration_ms=12",
+          "description": "Successful list"
+        },
+        {
+          "input": "{\"method\": \"POST\", \"path\": \"/api/todos\", \"status\": 201, \"duration_ms\": 5}",
+          "expected_output": "method=POST path=/api/todos status=201 duration_ms=5",
+          "description": "Created"
+        },
+        {
+          "input": "{\"method\": \"GET\", \"path\": \"/api/todos/42\", \"status\": 404, \"duration_ms\": 1}",
+          "expected_output": "method=GET path=/api/todos/42 status=404 duration_ms=1",
+          "description": "Not found"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-project-exercise-idempotency",
+      "course_id": "backend-web-development",
+      "module_id": "backend-project",
+      "title": "Exercise: Idempotency Key Check",
+      "type": "exercise",
+      "order": 6,
+      "content": "## Exercise: Idempotency Key Check\n\nWrite a function `solve(processed, key)` that decides whether a request with an **idempotency key** should run or be replayed.\n\n- If `key` is in the list of already-processed keys, return `replay` (do not run again).\n- Otherwise return `process`.\n\n### Sample\n\nInput:\n\n```text\n[\"order-1\", \"order-2\"]\norder-2\n```\n\nOutput:\n\n```text\nreplay\n```\n\n### How your code runs\n\nThe runner calls `solve(processed, key)` with a JSON list and a plain string parsed from the two input lines. Use `in` for the membership test.\n\n### Starter code\n\n```python\ndef solve(processed, key):\n    if key in processed:\n        return \"replay\"\n    return \"process\"\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    processed = json.loads(lines[0])\n    key = lines[1]\n    print(solve(processed, key))\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\nGood luck!",
+      "starter_code": "def solve(processed, key):\n    if key in processed:\n        return \"replay\"\n    return \"process\"\n\n\ndef main():\n    import sys, json\n    raw = sys.stdin.read().strip()\n    if not raw:\n        return\n    lines = raw.split(\"\\n\")\n    processed = json.loads(lines[0])\n    key = lines[1]\n    print(solve(processed, key))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "test_cases": [
+        {
+          "input": "[\"order-1\", \"order-2\"]\norder-2",
+          "expected_output": "replay",
+          "description": "Already processed"
+        },
+        {
+          "input": "[\"order-1\", \"order-2\"]\norder-3",
+          "expected_output": "process",
+          "description": "New key"
+        },
+        {
+          "input": "[]\norder-1",
+          "expected_output": "process",
+          "description": "First request"
+        }
+      ],
+      "language": "python"
+    },
+    {
+      "id": "backend-project-exercise-design",
+      "course_id": "backend-web-development",
+      "module_id": "backend-project",
+      "title": "Practice: Design the Full API",
+      "type": "theory",
+      "order": 7,
+      "content": "## Practice: Design the Full API\n\nThis is a **design capstone** — think it through and write your answer. There are no automated tests.\n\n### The brief\n\nDesign a complete authenticated todo API that a frontend (like the one from the JavaScript course) could consume. Use the modules of this course as your checklist.\n\n### Write down\n\n1. **Endpoints** — the full table: method, path, purpose, success status, failure statuses.\n2. **Models** — `TodoCreate`, `TodoOut`, `UserCreate`, `LoginRequest` and their required fields.\n3. **Layers** — which routes, services, and repositories exist.\n4. **Auth** — register/login flow, token shape, expiry, how protected routes resolve the user.\n5. **Persistence** — tables and constraints; how ownership is stored.\n6. **Security** — password hashing, input validation, rate limiting, ownership checks.\n7. **Operations** — log format, idempotency keys on `POST /api/todos`.\n\n### A starting sketch\n\n```text\nTables:\n  users (id, email UNIQUE, password_hash, created_at)\n  todos (id, title, done, owner_id → users.id)\n\nEndpoints:\n  POST /api/auth/register    201 / 409 / 422\n  POST /api/auth/login       200 / 401\n  GET  /api/todos            200 / 401\n  POST /api/todos            201 / 401 / 422\n  GET  /api/todos/{id}       200 / 404 / 401\n  PATCH /api/todos/{id}      200 / 404 / 422\n  DELETE /api/todos/{id}     204 / 404\n\nAuth: JWT with exp=3600s; Authorization: Bearer <token>.\n```\n\n### Check yourself\n\n- Can a user never see another user's todo? (ownership in every handler)\n- Is every error status chosen deliberately?\n- Is there a layer for data access, business rules, and HTTP?\n- What happens if `POST /api/todos` is retried?\n\n### When you finish\n\nYou have designed a production-shaped API. Implementing it is the natural next step — and the exercises in this course already cover the trickiest pure logic: validation, pagination, hashing, expiry, rate limiting, logging, and idempotency.\n\n---\n\n**Next up:** the next course — putting a frontend in front of this API.",
+      "language": "python"
+    }
+  ]
+}
