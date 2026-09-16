@@ -113,32 +113,52 @@ VALID_CACHED_ANIMATION = {
 
 
 class TestGroqServiceInit:
-    def test_init_with_api_key_arg(self):
-        with patch.dict("os.environ", {}, clear=True):
-            from app.services.groq_service import GroqService
+    @staticmethod
+    def _settings_double(**overrides):
+        from types import SimpleNamespace
 
+        base = {
+            "GROQ_API_KEY": "gsk_test",
+            "GROQ_BASE_URL": "https://api.groq.com/openai/v1",
+            "GROQ_MODEL_EASY": "openai/gpt-oss-20b",
+            "GROQ_MODEL_MEDIUM": "openai/gpt-oss-120b",
+            "GROQ_MODEL_HARD": "openai/gpt-oss-120b",
+            "GROQ_MODEL_STREAM": "openai/gpt-oss-20b",
+            "GROQ_MODEL_ANIMATE": "openai/gpt-oss-120b",
+        }
+        base.update(overrides)
+        return SimpleNamespace(**base)
+
+    def test_init_with_api_key_arg(self):
+        from app.services.groq_service import GroqService
+
+        settings = self._settings_double(GROQ_API_KEY=None)
+        with patch("app.services.groq_service.get_settings", return_value=settings):
             service = GroqService(api_key="gsk_test_key_12345")
             assert service.api_key == "gsk_test_key_12345"
             assert service.base_url == "https://api.groq.com/openai/v1"
 
     def test_init_with_env_var(self):
-        with patch.dict("os.environ", {"GROQ_API_KEY": "gsk_from_env"}):
-            from app.services.groq_service import GroqService
+        from app.services.groq_service import GroqService
 
+        settings = self._settings_double(GROQ_API_KEY="gsk_from_env")
+        with patch("app.services.groq_service.get_settings", return_value=settings):
             service = GroqService()
             assert service.api_key == "gsk_from_env"
 
     def test_init_without_key_raises(self):
-        with patch.dict("os.environ", {}, clear=True):
-            from app.services.groq_service import GroqService
+        from app.services.groq_service import GroqService
 
+        settings = self._settings_double(GROQ_API_KEY=None)
+        with patch("app.services.groq_service.get_settings", return_value=settings):
             with pytest.raises(ValueError, match="GROQ_API_KEY"):
                 GroqService()
 
     def test_model_map_defaults(self):
-        with patch.dict("os.environ", {"GROQ_API_KEY": "gsk_test"}):
-            from app.services.groq_service import GroqService
+        from app.services.groq_service import GroqService
 
+        settings = self._settings_double()
+        with patch("app.services.groq_service.get_settings", return_value=settings):
             service = GroqService()
             assert service.models["easy"] == "openai/gpt-oss-20b"
             assert service.models["medium"] == "openai/gpt-oss-120b"
@@ -147,17 +167,14 @@ class TestGroqServiceInit:
             assert service.models["animate"] == "openai/gpt-oss-120b"
 
     def test_model_map_env_overrides(self):
-        with patch.dict(
-            "os.environ",
-            {
-                "GROQ_API_KEY": "gsk_test",
-                "GROQ_MODEL_EASY": "custom-easy",
-                "GROQ_MODEL_MEDIUM": "custom-medium",
-                "GROQ_MODEL_ANIMATE": "custom-animate",
-            },
-        ):
-            from app.services.groq_service import GroqService
+        from app.services.groq_service import GroqService
 
+        settings = self._settings_double(
+            GROQ_MODEL_EASY="custom-easy",
+            GROQ_MODEL_MEDIUM="custom-medium",
+            GROQ_MODEL_ANIMATE="custom-animate",
+        )
+        with patch("app.services.groq_service.get_settings", return_value=settings):
             service = GroqService()
             assert service.models["easy"] == "custom-easy"
             assert service.models["medium"] == "custom-medium"
