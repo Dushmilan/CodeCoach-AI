@@ -15,14 +15,17 @@ from app.api.auth_deps import PROFESSOR_ROLES, require_instructor
 from app.api.dependencies import (
     get_class_analytics_service,
     get_classroom_repository,
+    get_course_repo,
 )
 from app.models.analytics_schemas import ClassAnalyticsResponse
 from app.models.auth_schemas import UserResponse
 from app.models.orm import ClassroomORM
 from app.ports.classroom_repository import ClassroomRepository
+from app.ports.course_repository import CourseRepository
 from app.services.class_analytics_service import (
     ClassAnalyticsService,
     ClassroomNotFoundError,
+    resolve_total_lessons,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,22 +78,31 @@ async def list_classrooms(
 
 @router.get("/classrooms-analytics", response_model=list[ClassroomDetailOut])
 async def classrooms_analytics(
-    total_lessons: int = Query(default=10, ge=0),
+    total_lessons: Optional[int] = Query(default=None, ge=0),
     repo: ClassroomRepository = Depends(get_classroom_repository),
     service: ClassAnalyticsService = Depends(get_class_analytics_service),
+    courses: CourseRepository = Depends(get_course_repo),
     current_user: UserResponse = Depends(require_instructor),
 ):
     """Batch analytics for the caller's own rooms in O(1) requests (Issue #179).
 
     Professors see owned rooms, TAs assigned rooms; students get 403 from
     ``require_instructor``. Figures identical to the detail endpoint.
+    An omitted total_lessons resolves per room to the room's real course
+    lesson count (shared fallback when the course has no lessons yet), so
+    every view reports the same completion figures.
     """
     if current_user.role == "ta":
         rooms = await repo.list_for_ta(current_user.id)
     else:
         rooms = await repo.list_owned_by_professor(current_user.id)
     by_room = await repo.list_classroom_student_ids_by_room([r.id for r in rooms])
-    overviews = await service.class_overviews(by_room, total_lessons=total_lessons)
+    counts = await service.course_lesson_counts([r.course_id for r in rooms], courses)
+    totals = {
+        r.id: resolve_total_lessons(total_lessons, counts.get(r.course_id, 0))
+        for r in rooms
+    }
+    overviews = await service.class_overviews(by_room, total_lessons=totals)
     return [
         ClassroomDetailOut(classroom=_room_out(room), analytics=overviews[room.id])
         for room in rooms
@@ -100,9 +112,10 @@ async def classrooms_analytics(
 @router.get("/classrooms/{classroom_id}", response_model=ClassroomDetailOut)
 async def classroom_detail(
     classroom_id: str,
-    total_lessons: int = Query(default=10, ge=0),
+    total_lessons: Optional[int] = Query(default=None, ge=0),
     repo: ClassroomRepository = Depends(get_classroom_repository),
     service: ClassAnalyticsService = Depends(get_class_analytics_service),
+    courses: CourseRepository = Depends(get_course_repo),
     current_user: UserResponse = Depends(require_instructor),
 ):
     """Room + class aggregates. 404 for unknown ids, 403 when the caller
@@ -110,6 +123,8 @@ async def classroom_detail(
 
     Existence and authorization resolve before any aggregation runs, so a
     denied caller never triggers per-student progress/submission reads.
+    An omitted total_lessons resolves to the room's real course lesson
+    count (shared fallback when the course has no lessons yet).
     """
     room = await service.get_classroom(classroom_id, classrooms=repo)
     if room is None:
@@ -133,9 +148,14 @@ async def classroom_detail(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not assigned to this classroom",
             )
+    counts = await service.course_lesson_counts([room.course_id], courses)
     try:
         _, overview = await service.classroom_overview(
-            classroom_id, total_lessons=total_lessons, classrooms=repo
+            classroom_id,
+            total_lessons=resolve_total_lessons(
+                total_lessons, counts.get(room.course_id, 0)
+            ),
+            classrooms=repo,
         )
     except ClassroomNotFoundError:
         raise HTTPException(

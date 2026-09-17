@@ -298,6 +298,9 @@ def test_classrooms_analytics_endpoint_own_rooms_only_and_contract():
             return {c: [] for c in cids}
 
     class _Svc:
+        async def course_lesson_counts(self, course_ids, courses=None):
+            return {}
+
         async def class_overviews(self, rosters, total_lessons=10):
             from app.models.analytics_schemas import ClassAnalyticsResponse
 
