@@ -1,0 +1,81 @@
+{
+  "_comment": "Machine-readable codebase context for agents. Regenerate method: live OpenAPI (GET /openapi.json) + repo inspection. Generated 2026-09-17 on branch test/200-vision-e2e. Docs/data artifact only — no behavior change.",
+  "backend": {
+    "routers": [
+      { "prefix": "/api/auth", "routes": 5, "notes": "register, login, refresh; JWT username/password" },
+      { "prefix": "/api/questions", "routes": 7, "notes": "paginated list, detail, search" },
+      { "prefix": "/api/run", "routes": 5, "notes": "Piston execution + validate" },
+      { "prefix": "/api/submit", "routes": 1, "notes": "grades + SM-2 observe + adapter-state" },
+      { "prefix": "/api/submissions", "routes": 2, "notes": "own attempt history" },
+      { "prefix": "/api/coach", "routes": 7, "notes": "6 modes, SSE stream, warm, interactions; daily caps" },
+      { "prefix": "/api/skills", "routes": 6, "notes": "graph, mastery, boilerplate, recommended-questions" },
+      { "prefix": "/api/mistakes", "routes": 1, "notes": "error graph" },
+      { "prefix": "/api/reviews", "routes": 2, "notes": "SM-2 due + grade" },
+      { "prefix": "/api/memory", "routes": 1, "notes": "forgetting-curve graph" },
+      { "prefix": "/api/analytics", "routes": 1, "notes": "plateau signals, 7d window" },
+      { "prefix": "/api/courses", "routes": 5, "notes": "curriculum; anonymous list cached 30s + stampede lock" },
+      { "prefix": "/api/progress", "routes": 5, "notes": "lesson access/complete, course progress" },
+      { "prefix": "/api/workspace", "routes": 4, "notes": "Redis drafts, chat, last-visited, meta (7d)" },
+      { "prefix": "/api/usage", "routes": 1, "notes": "daily limits via daily_limits router" },
+      { "prefix": "/api/admin", "routes": 22, "notes": "stats, users, questions, courses, usage, abuse, hierarchy" },
+      { "prefix": "/api/admin/hierarchy", "routes": 1, "notes": "professor -> courses -> classrooms tree" },
+      { "prefix": "/api/professor", "routes": 7, "notes": "owner-scoped courses/modules/lessons CRUD" },
+      { "prefix": "/api/instructor", "routes": 4, "notes": "classrooms, rosters, class analytics" },
+      { "prefix": "/api/question-validation", "routes": 7, "notes": "incl. ANIMATION gate; batch/quick/use-cases" },
+      { "prefix": "/health", "routes": 2, "notes": "questions_db, piston, redis checks" },
+      { "prefix": "/debug", "routes": 2, "notes": "dev-only, 404 in production" }
+    ],
+    "route_count_live": 98,
+    "removed": ["rescue (table dropped, no router; service deleted)"],
+    "services": ["abuse_detection", "adapter_state_recovery", "animation_compiler", "animation_validator", "auth", "class_analytics", "coaching_adapter", "course", "daily_limit", "error_graph", "execution_adapter", "family_compilers", "groq", "hierarchy", "learner_context", "learning_analytics", "local_sync", "memory_graph", "monitoring", "piston", "question_bank", "question_catalog", "question_validator", "redis", "reference_solutions", "review", "scene_planner", "skill_graph", "skill_taxonomy", "sm2_rules", "solution_animation", "static_code_validator", "submit_grading", "trace_instrumenter", "trace_parser", "usage", "workspace"],
+    "cache": {
+      "backend": "RedisCache (app/services/redis_service.py), keys codecoach:{namespace}:{rest}, graceful degradation",
+      "namespaces": [
+        { "key": "codecoach:courses:list:anonymous", "ttl_s": 30, "notes": "stampede lock 10s; verified live 64ms cold -> 3.6ms warm" },
+        { "key": "codecoach:skills:graph:{user}", "ttl_s": 60 },
+        { "key": "codecoach:skills:recs:{user}:{limit}", "ttl_s": 60 },
+        { "key": "codecoach:submissions:recent:{user}", "ttl_s": 30 },
+        { "key": "codecoach:coach:ctx:{user}", "ttl_s": 60 },
+        { "key": "codecoach:workspace:*", "ttl_s": 604800, "notes": "code, chat, last-visited, meta" },
+        { "key": "codecoach:questions:detail (300s)", "ttl_s": 300 },
+        { "key": "codecoach:piston:runtimes", "ttl_s": 3600 }
+      ],
+      "live_redis": "codecoach-redis :6379, reachable; workspace keys present"
+    },
+    "roles": ["user", "professor", "ta", "admin", "super_admin"],
+    "seed_accounts": ["admin/admin123", "superadmin/superadmin123", "professor.ada+professor.grace/professor123", "demonstrator.turing+demonstrator.curie/demonstrator123", "15 students/student123", "CS101-A-2026, CS201-B-2026 classrooms"]
+  },
+  "frontend": {
+    "routes": ["/", "/login", "/register", "/problems", "/problems/[id]", "/learn", "/learn/[courseId]", "/learn/lesson/[lessonId]", "/dashboard", "/privacy", "/admin", "/admin/login", "/admin/dashboard", "/admin/users", "/admin/questions", "/admin/curriculum", "/admin/professors", "/admin/professors/[id]", "/admin/classrooms/[classroomId]", "/professor", "/professor/courses", "/professor/curriculum", "/professor/classrooms", "/professor/classrooms/[id]", "/professor/analytics", "/professor/students/[id]", "/demonstrator", "/demonstrator/classrooms", "/demonstrator/classrooms/[id]", "/demonstrator/analytics", "/demonstrator/students/[id]"],
+    "route_count": 31,
+    "features": ["analytics", "animation", "auth", "coaching", "code-execution", "curriculum", "instructor", "memory", "question", "review", "skill-graph", "usage", "workspace"],
+    "e2e_specs": ["accessibility", "admin-flow", "admin-full-access", "admin-hierarchy", "animate-flow", "animation-scrub", "auth-flow", "auth-login-logout", "code-execution-flow", "curriculum-flow", "edge-cases", "error-handling", "homepage", "instructor-flow", "mobile-responsive", "performance", "practice-next", "professor-curriculum", "settings-flow", "user-flow", "viewer-render"],
+    "e2e_spec_count": 21
+  },
+  "tests": {
+    "backend_unit": 93,
+    "backend_integration": 38,
+    "backend_contract": 4,
+    "backend_security": 5,
+    "backend_performance": 2,
+    "backend_migrations": 4,
+    "backend_simulation": 2,
+    "frontend_vitest": 101,
+    "frontend_e2e": 20
+  },
+  "gaps_found_2026_09_17": [
+    "README listed rescue API/UI; rescue fully removed (drop migration e7a8b9c0d1e2) — README fixed",
+    "README said 15 E2E specs / 80 Vitest files; actual 20 / 101 — README fixed",
+    "README backend tier counts stale (82/33/1/x/x/2/x); actual 93/38/4/5/2/4/2 — README fixed",
+    "README roadmap listed classroom/professor dashboard as Missing; professor/demonstrator/classroom + admin hierarchy shipped and E2E-covered — README fixed",
+    "README API table missed question-validation, progress, professor, instructor, hierarchy, usage rows — added",
+    "README feature/component lists included rescue, omitted instructor/animate/learn/onboarding/results/terminal — fixed",
+    "Progress.md status tables still stale (Supabase refs, rescue_queue, 'no professor view') — flagged, not edited (lives with maintainers)"
+  ],
+  "verification_2026_09_17": {
+    "e2e_chromium": "62/62 pass",
+    "unit_related": "22/22 pass",
+    "browser_sweep": "home, login, problems, problem-detail, admin/professor/student dashboards, learn, mobile — all pass",
+    "cache": "anonymous course list 64ms cold -> 3.6ms warm, TTL 30, key codecoach:courses:list:anonymous"
+  }
+}

@@ -230,6 +230,30 @@ on the staged diff, fix ALL findings (bug:, risk:, and nit:), and re-stage befor
 - One Issue = one branch. Do not mix unrelated Issues in the same branch. If scope changes, create a new branch/Issue.
 - If the agent/session was started on `main` or the wrong branch, STOP and create/switch branches before any file edits.
 
+## MANDATORY: Browser-Use Verification — Every Test Also Runs in a Real Browser
+
+**Hard rule — Do NOT skip.** Every test must also be verified with
+browser-use: a real browser run against the running app, with screenshots
+fed into the vision model and each journey classified pass/fail/blocked.
+Unit/Vitest results alone never close a test task.
+
+- **Tooling:** `chrome-devtools` MCP (`npx -y chrome-devtools-mcp@latest`,
+  registered in `.opencode/opencode.json`) for interactive debugging;
+  Playwright (`frontend/e2e/`, `pnpm test:e2e`) plus scripted screenshot
+  capture for repeatable evidence. If the direct browser tool cannot launch
+  (e.g. missing Chrome channel), fall back to Playwright-bundled Chromium
+  screenshots saved under `/tmp/opencode/` — never to claims without
+  rendered evidence.
+- **Scope:** every feature change and every QA pass exercises the affected
+  journeys in a real browser at desktop (1280x800) and mobile (390x844)
+  viewports: render, interact (click/type/navigate), screenshot, classify.
+- **Evidence:** console/page errors are recorded per page; anonymous 401
+  auth probes are expected noise, not defects. Screenshots are read back
+  through vision before any pass claim.
+- **Gate:** no test task is complete, and no PR is raised, until the
+  browser-use pass is recorded with evidence. `verification-before-completion`
+  applies: no completion claims without fresh browser evidence.
+
 ## Engineering Best Practices
 
 Follow the existing layered architecture and conventions of this codebase:

@@ -44,10 +44,13 @@ test.describe('Admin Flow', () => {
     await expect(page.getByRole('heading', { name: /questions/i })).toBeVisible();
   });
 
-  test('unauthenticated access shows access denied', async ({ page }) => {
+  test('unauthenticated access redirects to admin sign-in', async ({ page }) => {
     await page.goto('/admin/dashboard');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    await expect(page.getByText(/access denied/i)).toBeVisible({ timeout: 15000 });
+    // Guard convention (Issue #180): unauthenticated users go to sign-in;
+    // "Access Denied" is reserved for authenticated wrong-role users.
+    await page.waitForURL('**/admin/login', { timeout: 15000 });
+    await expect(page.getByRole('main').getByRole('button', { name: /sign in/i })).toBeVisible({ timeout: 15000 });
   });
 });

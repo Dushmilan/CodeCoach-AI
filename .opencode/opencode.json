@@ -7,6 +7,11 @@
       "command": ["npx", "-y", "@playwright/mcp@latest", "--headless"],
       "enabled": true
     },
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+      "enabled": true
+    },
     "shadcn": {
       "type": "local",
       "command": ["npx", "-y", "shadcn-registry-mcp"],
