@@ -50,6 +50,7 @@ async def _invalidate_learner_cache(user_id: str, cache: RedisCache | None) -> N
         pass
 
 
+@router.post("", response_model=SubmitResponse)
 @router.post("/", response_model=SubmitResponse)
 @limiter.limit(RUN_RATE_LIMIT)
 async def submit_code(

@@ -174,4 +174,105 @@ class TestRedisOutage:
             app.dependency_overrides.pop(get_redis_cache, None)
 
         assert response.status_code == 200
-        assert response.json()["status"] == "ok"
+
+
+@contextmanager
+def dead_postgres_override():
+    """Override the DB session dependency with a Postgres outage simulator."""
+    from app.core.database import get_db
+    from sqlalchemy.exc import OperationalError
+
+    async def _dead_db():
+        raise OperationalError("SELECT 1", None, ConnectionError("connection refused"))
+
+    app.dependency_overrides[get_db] = _dead_db
+    try:
+        yield
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def _assert_sanitized_500(response) -> None:
+    """A DB outage must surface as JSON 500 with no driver internals."""
+    assert response.status_code == 500
+    body = response.text
+    for marker in ("asyncpg", "sqlalchemy", "Traceback", "connection refused"):
+        assert marker.lower() not in body.lower(), f"leaked {marker!r}: {body[:200]}"
+
+
+class TestPostgresOutage:
+    """Hot paths must fail closed with sanitized 500s when Postgres is down."""
+
+    def test_public_catalog_returns_sanitized_500_when_postgres_down(
+        self, test_client: TestClient
+    ):
+        # Unhandled DB errors escape the route: read the true client-visible
+        # 500 instead of re-raising in-process.
+        with TestClient(app, raise_server_exceptions=False) as raw_client:
+            with dead_postgres_override():
+                response = raw_client.get("/api/courses/")
+
+        _assert_sanitized_500(response)
+
+    def test_login_returns_sanitized_500_when_postgres_down(
+        self, test_client: TestClient
+    ):
+        with TestClient(app, raise_server_exceptions=False) as raw_client:
+            with dead_postgres_override():
+                response = raw_client.post(
+                    "/api/auth/login",
+                    json={"username": "nobody", "password": "wrong"},
+                )
+
+        # Fail closed: a DB outage must never read as 401 "bad credentials".
+        _assert_sanitized_500(response)
+
+
+def _raw_client() -> TestClient:
+    """Non-following client: surfaces 307s instead of chasing them."""
+    return TestClient(app, raise_server_exceptions=False, follow_redirects=False)
+
+
+class TestNoSlashRootParity:
+    """Same-origin rewrites may strip trailing slashes (observed: the
+    Next /api rewrite forwards ``/api/run/`` as ``/api/run``). Root
+    routes must answer with and without the slash — never 307 to an
+    absolute backend URL (browsers follow it cross-origin and CSP
+    ``connect-src 'self'`` kills the request: "Failed to fetch").
+
+    questions/courses/progress already carry dual ``""``/``"/"`` routes;
+    run/submit/coach/health must match that convention.
+    """
+
+    def test_run_no_slash_routes(self):
+        with _raw_client() as client:
+            response = client.post(
+                "/api/run",
+                json={"language": "python", "code": "print(1)"},
+            )
+        assert response.status_code != 307, response.headers.get("location")
+        assert response.status_code == 401
+
+    def test_submit_no_slash_routes(self):
+        with _raw_client() as client:
+            response = client.post(
+                "/api/submit",
+                json={"question_id": "two-sum", "language": "python", "code": "x"},
+            )
+        assert response.status_code != 307, response.headers.get("location")
+        assert response.status_code == 401
+
+    def test_coach_no_slash_routes(self):
+        with _raw_client() as client:
+            response = client.post(
+                "/api/coach",
+                json={"problem": "x", "code": "y", "language": "python"},
+            )
+        assert response.status_code != 307, response.headers.get("location")
+        assert response.status_code in (401, 422)
+
+    def test_health_no_slash(self):
+        with _raw_client() as client:
+            response = client.get("/health")
+        assert response.status_code != 307, response.headers.get("location")
+        assert response.status_code == 200

@@ -1,3 +1,4 @@
+import ast
 import re
 from typing import Any, Dict, List
 
@@ -5,7 +6,121 @@ from .base import CodeWrapper
 from .output_comparator import PYTHON_OUTPUT_MATCH
 
 
+def _split_top_level(text: str) -> List[str]:
+    """Split on commas that sit outside brackets and string literals."""
+    parts: List[str] = []
+    current: List[str] = []
+    depth = 0
+    quote: str | None = None
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if quote is not None:
+            current.append(ch)
+            if ch == "\\" and i + 1 < len(text):
+                current.append(text[i + 1])
+                i += 1
+            elif ch == quote:
+                quote = None
+        elif ch in ("'", '"'):
+            quote = ch
+            current.append(ch)
+        elif ch in "[{(":
+            depth += 1
+            current.append(ch)
+        elif ch in "]})":
+            depth = max(0, depth - 1)
+            current.append(ch)
+        elif ch == "," and depth == 0:
+            parts.append("".join(current))
+            current = []
+        else:
+            current.append(ch)
+        i += 1
+    parts.append("".join(current))
+    return parts
+
+
+def _function_arity(code: str, func_name: str) -> tuple[int, int]:
+    """(total, required) positional params of the named function.
+
+    Falls back to (1, 1) when the code does not parse — single-arg call
+    behavior is then preserved exactly.
+    """
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return (1, 1)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == func_name:
+            total = len(node.args.posonlyargs) + len(node.args.args)
+            required = total - len(node.args.defaults)
+            return (total, required)
+    return (1, 1)
+
+
+def _maybe_split_input(text: str, total: int, required: int) -> str:
+    """Unpack a single-line multi-arg input into newline-separated args.
+
+    The suite runner already unpacks multi-line inputs positionally; a
+    one-line ``"[2,7,11,15], 9"`` for ``def two_sum(nums, target)`` would
+    otherwise arrive as a single string and fail with a missing-argument
+    error even for correct solutions. Only rewrites when the part count
+    matches the function's arity, so ambiguous inputs keep old behavior.
+    """
+    if total <= 1 or "\n" in text:
+        return text
+    parts = [p.strip() for p in _split_top_level(text)]
+    if len(parts) > 1 and len(parts) in (required, total):
+        return "\n".join(parts)
+    return text
+
+
 class PythonCodeWrapper(CodeWrapper):
+    # Bracket/quote-aware splitter embedded in multi-arg single-run runners.
+    # f-string literal: every brace below is doubled in the template itself.
+    _SPLIT_HELPER = """
+def __split_top_level(__text):
+    __parts = []
+    __current = []
+    __depth = 0
+    __quote = None
+    __i = 0
+    while __i < len(__text):
+        __ch = __text[__i]
+        if __quote is not None:
+            __current.append(__ch)
+            if __ch == "\\\\" and __i + 1 < len(__text):
+                __current.append(__text[__i + 1])
+                __i += 1
+            elif __ch == __quote:
+                __quote = None
+        elif __ch in ("'", '"'):
+            __quote = __ch
+            __current.append(__ch)
+        elif __ch in "[{(":
+            __depth += 1
+            __current.append(__ch)
+        elif __ch in "]})":
+            __depth = max(0, __depth - 1)
+            __current.append(__ch)
+        elif __ch == "," and __depth == 0:
+            __parts.append("".join(__current))
+            __current = []
+        else:
+            __current.append(__ch)
+        __i += 1
+    __parts.append("".join(__current))
+    return __parts
+
+
+def __to_arg(__s):
+    try:
+        return json.loads(__s)
+    except Exception:
+        return __s
+"""
+
     def wrap(self, code: str) -> str:
         if "input(" in code or "sys.stdin" in code or "print(" in code:
             return code
@@ -15,20 +130,37 @@ class PythonCodeWrapper(CodeWrapper):
         if not func_match:
             return code
         func_name = func_match.group(1)
+        total, required = _function_arity(code, func_name)
+        if total <= 1:
+            single_call = "result = {func_name}(parsed_line)"
+        else:
+            single_call = """if __raw and isinstance(parsed_line, str):
+            __split = [__p.strip() for __p in __split_top_level(parsed_line)]
+            if len(__split) > 1 and len(__split) in ({required}, {total}):
+                result = {func_name}(*[__to_arg(__p) for __p in __split])
+            else:
+                result = {func_name}(parsed_line)
+        else:
+            result = {func_name}(parsed_line)"""
         runner = f"""
 import sys
 import json
 
 {code}
-
+"""
+        if total > 1:
+            runner += self._SPLIT_HELPER
+        runner += f"""
 try:
     line = sys.stdin.read().strip()
     if line:
         try:
             parsed_line = json.loads(line)
+            __raw = False
         except:
             parsed_line = line
-        result = {func_name}(parsed_line)
+            __raw = True
+        {single_call.format(func_name=func_name, required=required, total=total)}
     else:
         result = {func_name}("")
     if result is None and isinstance(parsed_line, (list, dict)):
@@ -49,13 +181,18 @@ except Exception as e:
 
     def wrap_with_tests(self, code: str, test_cases: List[Dict[str, Any]]) -> str:
         code = re.sub(r"(\(\s*)self\s*,?\s*", r"\1", code)
+        func_match = re.search(r"def\s+(\w+)\s*\(", code)
+        func_name = func_match.group(1) if func_match else "solve"
+        total, required = _function_arity(code, func_name)
         tc_clean = [
-            {"input": tc["input"], "expected": tc["expected_output"], "index": i + 1}
+            {
+                "input": _maybe_split_input(tc["input"], total, required),
+                "expected": tc["expected_output"],
+                "index": i + 1,
+            }
             for i, tc in enumerate(test_cases)
         ]
         tc_repr = repr(tc_clean)
-        func_match = re.search(r"def\s+(\w+)\s*\(", code)
-        func_name = func_match.group(1) if func_match else "solve"
 
         return f"""import sys, json
 

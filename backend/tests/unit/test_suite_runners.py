@@ -652,6 +652,50 @@ class TestStringReturningRunnerEndToEnd:
         results = self._parse_suite(self._run_python_runner(code, test_cases))
         assert results[0]["passed"] is False, results
 
+    def test_python_single_line_multi_arg_passes(self):
+        """Seed two-sum regression: one line, two args must unpack."""
+        code = (
+            "def two_sum(nums, target):\n"
+            "    seen = {}\n"
+            "    for i, n in enumerate(nums):\n"
+            "        if target - n in seen:\n"
+            "            return [seen[target - n], i]\n"
+            "        seen[n] = i"
+        )
+        test_cases = [
+            {"input": "[2,7,11,15], 9", "expected_output": "[0,1]", "hidden": False},
+        ]
+        results = self._parse_suite(self._run_python_runner(code, test_cases))
+        assert results[0]["passed"] is True, results
+
+    def _run_python_single(self, code, stdin):
+        import subprocess
+        import sys
+
+        from app.adapters.code_wrappers.python_wrapper import PythonCodeWrapper
+
+        runner = PythonCodeWrapper().wrap(code)
+        return subprocess.run(
+            [sys.executable, "-c", runner],
+            input=stdin,
+            capture_output=True,
+            text=True,
+        )
+
+    def test_python_wrap_single_line_multi_arg_stdin(self):
+        """Run-button path: single-line stdin must unpack like the suite."""
+        code = (
+            "def two_sum(nums, target):\n"
+            "    seen = {}\n"
+            "    for i, n in enumerate(nums):\n"
+            "        if target - n in seen:\n"
+            "            return [seen[target - n], i]\n"
+            "        seen[n] = i"
+        )
+        proc = self._run_python_single(code, "[2,7,11,15], 9")
+        assert proc.returncode == 0, proc.stderr
+        assert proc.stdout.strip() == "[0,1]"
+
     def test_python_arrays_booleans_numbers_still_pass(self):
         cases = [
             ("def arr(x):\n    return x", [1, 2, 3], "[1,2,3]"),

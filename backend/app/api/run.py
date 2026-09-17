@@ -40,6 +40,7 @@ def _crash_signature(stderr: str) -> str | None:
     return None
 
 
+@router.post("", response_model=CodeExecutionResult)
 @router.post("/", response_model=CodeExecutionResult)
 @limiter.limit(RUN_RATE_LIMIT)
 async def execute_code(

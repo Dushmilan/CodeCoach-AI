@@ -168,6 +168,7 @@ async def warm_coaching_context(
     return WarmResponse(status="warming", warmed=True, ttl=COACH_CONTEXT_TTL)
 
 
+@router.post("", response_model=CoachingResponse)
 @router.post("/", response_model=CoachingResponse)
 @limiter.limit(COACH_RATE_LIMIT)
 async def get_coaching(

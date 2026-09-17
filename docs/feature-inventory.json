@@ -1,5 +1,5 @@
 {
-  "_comment": "Machine-readable codebase context for agents. Regenerate method: live OpenAPI (GET /openapi.json) + repo inspection. Generated 2026-09-17 on branch test/200-vision-e2e. Docs/data artifact only — no behavior change.",
+  "_comment": "Machine-readable codebase context for agents. Regenerate method: live OpenAPI (GET /openapi.json) + repo inspection. Generated 2026-09-17 on branch test/200-vision-e2e; forensic audit 2026-09-17. Docs/data artifact only — no behavior change.",
   "backend": {
     "routers": [
       { "prefix": "/api/auth", "routes": 5, "notes": "register, login, refresh; JWT username/password" },
@@ -25,7 +25,7 @@
       { "prefix": "/health", "routes": 2, "notes": "questions_db, piston, redis checks" },
       { "prefix": "/debug", "routes": 2, "notes": "dev-only, 404 in production" }
     ],
-    "route_count_live": 98,
+    "route_count_live": 102,
     "removed": ["rescue (table dropped, no router; service deleted)"],
     "services": ["abuse_detection", "adapter_state_recovery", "animation_compiler", "animation_validator", "auth", "class_analytics", "coaching_adapter", "course", "daily_limit", "error_graph", "execution_adapter", "family_compilers", "groq", "hierarchy", "learner_context", "learning_analytics", "local_sync", "memory_graph", "monitoring", "piston", "question_bank", "question_catalog", "question_validator", "redis", "reference_solutions", "review", "scene_planner", "skill_graph", "skill_taxonomy", "sm2_rules", "solution_animation", "static_code_validator", "submit_grading", "trace_instrumenter", "trace_parser", "usage", "workspace"],
     "cache": {
@@ -49,8 +49,8 @@
     "routes": ["/", "/login", "/register", "/problems", "/problems/[id]", "/learn", "/learn/[courseId]", "/learn/lesson/[lessonId]", "/dashboard", "/privacy", "/admin", "/admin/login", "/admin/dashboard", "/admin/users", "/admin/questions", "/admin/curriculum", "/admin/professors", "/admin/professors/[id]", "/admin/classrooms/[classroomId]", "/professor", "/professor/courses", "/professor/curriculum", "/professor/classrooms", "/professor/classrooms/[id]", "/professor/analytics", "/professor/students/[id]", "/demonstrator", "/demonstrator/classrooms", "/demonstrator/classrooms/[id]", "/demonstrator/analytics", "/demonstrator/students/[id]"],
     "route_count": 31,
     "features": ["analytics", "animation", "auth", "coaching", "code-execution", "curriculum", "instructor", "memory", "question", "review", "skill-graph", "usage", "workspace"],
-    "e2e_specs": ["accessibility", "admin-flow", "admin-full-access", "admin-hierarchy", "animate-flow", "animation-scrub", "auth-flow", "auth-login-logout", "code-execution-flow", "curriculum-flow", "edge-cases", "error-handling", "homepage", "instructor-flow", "mobile-responsive", "performance", "practice-next", "professor-curriculum", "settings-flow", "user-flow", "viewer-render"],
-    "e2e_spec_count": 21
+    "e2e_specs": ["accessibility", "admin-flow", "admin-full-access", "admin-hierarchy", "animate-flow", "animation-scrub", "auth-flow", "auth-login-logout", "code-execution-flow", "curriculum-flow", "edge-cases", "error-handling", "homepage", "instructor-flow", "mobile-responsive", "performance", "practice-next", "professor-curriculum", "resilience-flow", "settings-flow", "solve-submit-flow", "usage-paywall", "user-flow", "viewer-render"],
+    "e2e_spec_count": 24
   },
   "tests": {
     "backend_unit": 93,
@@ -61,7 +61,7 @@
     "backend_migrations": 4,
     "backend_simulation": 2,
     "frontend_vitest": 101,
-    "frontend_e2e": 20
+    "frontend_e2e": 23
   },
   "gaps_found_2026_09_17": [
     "README listed rescue API/UI; rescue fully removed (drop migration e7a8b9c0d1e2) — README fixed",
@@ -77,5 +77,63 @@
     "unit_related": "22/22 pass",
     "browser_sweep": "home, login, problems, problem-detail, admin/professor/student dashboards, learn, mobile — all pass",
     "cache": "anonymous course list 64ms cold -> 3.6ms warm, TTL 30, key codecoach:courses:list:anonymous"
+  },
+  "forensic_audit_2026_09_17": {
+    "scope": "auth, submissions/piston, caching, persistence/resilience, frontend routes vs e2e; live probes against branch DB codecoach_200_vision_e2e + local postgres/redis/piston",
+    "coverage_map": {
+      "auth_login_refresh_logout": ["backend unit test_auth_service/test_auth_dependency/test_auth_deps_csrf", "integration test_auth_endpoints/test_auth_cookies", "security test_auth_security", "e2e auth-flow/auth-login-logout/edge-cases(Auth)"],
+      "role_guards_backend": ["unit test_instructor_roles", "integration test_instructor_analytics_access/test_professor_courses/test_admin_hierarchy", "contract professor/instructor/instructor_admin_passthrough"],
+      "role_guards_frontend": ["vitest roles/roleHome/AuthProvider/fetch-client", "e2e edge-cases/guards + instructor-flow/professor-curriculum/admin-flow"],
+      "submit_grading": ["unit piston_service/code_wrappers/suite_runners/adapter_state", "integration test_submit_endpoints/test_run_capture/test_adapter_state_audit", "e2e solve-submit-flow (live two-sum 1/1 + solved persistence)"],
+      "run_execution": ["unit piston_service/execution_result_formatter", "integration test_run_endpoints", "e2e solve-submit-flow (live Test Results 1/1)"],
+      "double_submit_guard": ["e2e solve-submit-flow (delayed-route probe: exactly 1 POST /api/submit/)"],
+      "backend_down_ux": ["e2e resilience-flow (problems list/detail/login inline error + back link)"],
+      "cache_invalidation": ["integration test_admin_cache_invalidation (anon list, question detail, lesson detail)", "integration test_learner_context_flow/test_daily_request_limits"],
+      "postgres_outage": ["integration test_external_failures.TestPostgresOutage (sanitized 500, fail-closed login)", "live probe n/a (shared container, not stopped)"],
+      "piston_outage": ["integration test_external_failures.TestPistonOutage (502)", "live probe :8001 dead piston (sanitized 500, process alive)"],
+      "redis_outage": ["integration test_external_failures.TestRedisOutage + workspace/daily-limit degrade tests", "live probe :8002 REDIS_ENABLED=false (courses/login/submit/monitoring all 200)"],
+      "groq_outage": ["integration test_external_failures.TestGroqOutage (502)"],
+      "no_slash_parity": ["integration test_external_failures.TestNoSlashRootParity (run/submit/coach/health)"],
+      "migrations": ["tests/migrations (chain, roundtrips, drift baseline, repair regs) — MUST run against scratch codecoach_test DB, never a branch DB (fixture drops public!)"]
+    },
+    "bugs_fixed": [
+      "lesson detail cache never invalidated (stale <=1h): _invalidate_course_caches now drops courses:lesson:* — test test_update_lesson_refreshes_lesson_detail_cache red->green",
+      "python suite runner could not grade multi-arg single-line inputs (seed two-sum ungradeable: missing 'target'): host-side top-level split into newline args in wrap_with_tests — behavioral test red->green",
+      "python single-run wrapper same gap on Run-button path (validateCode feeds case input as stdin): arity-aware unpack embedded in wrap() — subprocess test red->green",
+      "POST /api/run/, /api/submit/, /api/coach/, GET /health/ 307-loop via same-origin rewrite (trailing slash stripped -> Starlette redirect to absolute backend URL -> CSP connect-src kills follow-up: 'Failed to fetch'; core solve loop + coach send broken in browser): dual ''/'/' routes per questions/courses convention — 4 parity tests red->green"
+    ],
+    "resilience_verified_live": {
+      "piston_unreachable": "run/submit 500 sanitized, no leak, process stays up",
+      "redis_disabled": "courses/login/submit/monitoring all 200 (fail-open)",
+      "groq_unconfigured": "coach 500 'Groq API key not configured' (no leak)",
+      "postgres_down": "simulated via get_db override (container shared, not stopped): sanitized 500, login fails closed (never 401)",
+      "read_replicas": "NONE EXIST — single async engine, no read/write splitting; replica-down scenario not applicable",
+      "rate_limits": "run/submit 30/min per IP verified live (30x200 then 429s); coach 10/min + per-user 60/min + daily caps by test"
+    },
+    "notes": [
+      "exec:run/exec:submit result cache (1h, content hash) serves stale grades after runner fixes — flush codecoach:exec:* on deploys touching wrappers",
+      "TerminalSimulation types output char-by-char and TestCaseResults shadows the raw output string for non-interactive questions — e2e asserts banner + toast + localStorage, not raw text",
+      "Monaco eats fast-typed brackets (auto-close); e2e fills the editor via clipboard paste",
+      "fetch-client timeout is 10s: cold piston runs abort as 'Failed to fetch' in UI; warm runs are sub-second"
+    ],
+    "open_risks": [
+      "refresh tokens never revoked server-side (logout/rotation do not invalidate; 7d window on theft); no reuse detection",
+      "no login brute-force throttle/lockout (limiter covers coach/run/questions only)",
+      "no password change/reset endpoints; no session list/kick",
+      "RedisCache sticky disable(): one transient blip disables caching until restart (fail-open, but no re-probe)",
+      "no retry/backoff/circuit-breaker on DB calls (pool_pre_ping + 30s pool timeout only)",
+      "INCR-then-EXPIRE non-atomic in rate-limit/daily-limit keys (crash between = key without TTL)",
+      "question detail cache may hold 404s; groq cache version pinned (template change needs bump)",
+      "2 perf tests fail in this env (load_balancing_simulation, spike_load) — identical on clean tree (rate-limiter + client pool caps under burst); CI-env sensitive, not a regression"
+    ],
+    "verification": {
+      "backend_unit_contract_security": "1384 passed",
+      "backend_integration": "354 passed",
+      "backend_performance_migrations": "31 passed, 2 pre-existing env failures (baseline-identical)",
+      "frontend_vitest": "722 passed (102 files)",
+      "frontend_lint_typecheck": "clean",
+      "e2e_chromium_full": "87/87 pass (23 specs incl. new solve-submit-flow + resilience-flow)",
+      "ruff": "check + format clean on all touched files"
+    }
   }
 }

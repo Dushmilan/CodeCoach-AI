@@ -45,6 +45,7 @@ async def db_reachable(timeout: float = _DB_PROBE_TIMEOUT_S) -> str:
         return "unavailable"
 
 
+@router.get("")
 @router.get("/")
 async def health_check(request: Request):
     rate_limiting_enabled = hasattr(request.app.state, "limiter")
