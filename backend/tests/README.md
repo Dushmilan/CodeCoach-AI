@@ -21,13 +21,13 @@ tests/
 │   ├── auth_helpers.py         # Shared register/admin header builders
 │   ├── live_question_ids.json  # Pinned live-question inventory (107 ids)
 │   └── mock_coaching_provider.py
-├── unit/            (82 files) # Services, rules, wrappers, repositories (sql_*), validators
-├── integration/    (33 files)  # Endpoints against the app + isolated DB schema
-├── contract/        (1 file)   # OpenAPI response-contract validation
-├── security/        (5 files)  # Auth, injection, CORS, headers, abuse detection
-├── performance/     (2 files)  # Load / concurrency / rate-limit stress
-├── simulation/      (2 files)  # Deterministic skill-graph learner simulations
-├── migrations/      (2 files)  # Alembic up/down + schema-vs-model drift
+├── unit/            (94 files) # Services, rules, wrappers, repositories (sql_*), validators
+├── integration/    (40 files)  # Endpoints against the app + isolated DB schema
+├── contract/        (4 files) # OpenAPI response-contract validation
+├── security/        (6 files) # Auth, injection, CORS, headers, abuse detection
+├── performance/     (2 files) # Load / concurrency / rate-limit stress
+├── simulation/      (2 files) # Deterministic skill-graph learner simulations
+├── migrations/      (4 files) # Alembic up/down + schema-vs-model drift
 ├── enforce_flaky_quarantine.py # CI gate for the flaky-test manifest
 └── flaky-quarantine.json       # Quarantined flaky tests (must stay green)
 ```
