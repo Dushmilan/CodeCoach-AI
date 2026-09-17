@@ -61,3 +61,30 @@ def test_promote_requires_confirm_token_and_live_target():
         )
         is False
     )
+
+
+class TestOwnerRemap:
+    """Regression: pull/promote crashed with ForeignKeyViolationError when the
+    source DB's course owner_ids did not exist in the destination (users never
+    travel with the curriculum). copy_tables must null them instead."""
+
+    def test_unresolvable_owner_is_nulled(self):
+        data = {"id": "c1", "owner_id": "40dfa91b-e7db-40f9-b4f9-4c5faa30da38"}
+        fixed = branch_db._drop_unresolvable_owner(data, dst_user_ids={"u-1"})
+        assert fixed["owner_id"] is None
+
+    def test_resolvable_owner_is_preserved(self):
+        owner = "35370a55-9372-43f8-bde1-12921c1fbac8"
+        data = {"id": "c1", "owner_id": owner}
+        fixed = branch_db._drop_unresolvable_owner(data, dst_user_ids={owner})
+        assert fixed["owner_id"] == owner
+
+    def test_null_owner_stays_null(self):
+        data = {"id": "c1", "owner_id": None}
+        fixed = branch_db._drop_unresolvable_owner(data, dst_user_ids=set())
+        assert fixed["owner_id"] is None
+
+    def test_owner_remap_applies_only_to_courses(self):
+        # Questions/modules/lessons have no owner column; the remap must be
+        # keyed on the courses table so other rows pass through untouched.
+        assert branch_db.COPY_TABLES.count("courses") == 1

@@ -66,7 +66,9 @@ export function SkillGraph() {
   const skills = graph?.skills ?? [];
   const edges = graph?.edges ?? [];
   const isBoilerplate = skills.length > 0 && skills.every((s) => s.mastery_score === 0 && s.evidence_count === 0);
-  const layout = useMemo(() => (skills.length ? computeLayout(skills, edges) : null), [graph]);
+  // Recompute from `graph` (the single source): skills/edges are derived
+  // from it, so listing them here would be redundant deps (eslint warning).
+  const layout = useMemo(() => (skills.length ? computeLayout(skills, edges) : null), [graph]); // eslint-disable-line react-hooks/exhaustive-deps
   if (isLoading) {
     return (
       <section aria-label="Skill graph" className="rounded-[2rem] bg-white/[0.03] ring-1 ring-white/5 p-5 md:p-6">

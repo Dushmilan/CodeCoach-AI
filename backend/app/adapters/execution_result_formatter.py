@@ -13,10 +13,17 @@ class ExecutionResultFormatter:
             logger.warning(f"Could not log full response: {e}")
 
         run_info = result.get("run", {})
+        # Piston returns "code": null when the OS killed the process (timeout,
+        # OOM, signal). .get("code", 1) does NOT replace a present-but-None
+        # value, so exit_code leaked as None and CodeExecutionResult validation
+        # turned a normal "process was killed" crash into an HTTP 500. Treat
+        # null like a non-zero exit (killed by signal = failure).
+        raw_code = run_info.get("code")
+        exit_code = 1 if raw_code is None else raw_code
         processed = {
             "stdout": run_info.get("stdout", ""),
             "stderr": run_info.get("stderr", ""),
-            "exit_code": run_info.get("code", 1),
+            "exit_code": exit_code,
             "signal": run_info.get("signal", None),
             "execution_time": run_info.get("wall_time", run_info.get("time", None)),
             "memory_usage": run_info.get("memory", None),

@@ -71,6 +71,9 @@ jobs:
           ruff check .
           ruff format . --check
 
+      - name: Type check with mypy
+        run: mypy app/
+
       - name: Env-hermeticity guard (hostile local .env must not change results)
         run: |
           printf 'REDIS_ENABLED=false\nENVIRONMENT=development\nJWT_SECRET_KEY=hostile-secret\nUSER_RATE_LIMIT_PER_MINUTE=1\n' > .env

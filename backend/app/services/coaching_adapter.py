@@ -8,7 +8,7 @@ logged and never break the coaching response (degrade open).
 import hashlib
 import logging
 import uuid
-from typing import Any, AsyncIterator, Optional
+from typing import Any, AsyncGenerator, Optional
 
 from app.ports.coaching_provider import CoachingProvider
 from app.ports.coaching_interaction_repository import CoachingInteractionRepository
@@ -125,7 +125,8 @@ class CoachingAdapter(CoachingProvider):
         lesson_context: Optional[str] = None,
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
-    ) -> AsyncIterator[str]:
+        surface: str = "questions",
+    ) -> AsyncGenerator[str, None]:
         async for chunk in self.inner.stream(
             problem=problem,
             code=code,
@@ -136,6 +137,7 @@ class CoachingAdapter(CoachingProvider):
             lesson_context=lesson_context,
             chat_history=chat_history,
             initial_code=initial_code,
+            surface=surface,
         ):
             yield chunk
 

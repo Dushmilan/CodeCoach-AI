@@ -1,6 +1,6 @@
 # Progress — CodeCoach AI
 
-> Last updated: September 16, 2026 (branch `chore/168-local-postgres-branch-db`, issue #168) — local-first PostgreSQL; Supabase removed.
+> Last updated: September 17, 2026 — production audit & hardening (see entry below).
 >
 > ## Sep 16, 2026 — Local-first databases, Supabase removed (#168)
 > - Local PostgreSQL is the working main: one database per git branch
@@ -14,6 +14,29 @@
 > - App runs against the branch DB (`backend/.env` → local URL; `/health` ok,
 >   admin login + `/api/questions` verified). Live promotion stays a separate
 >   confirmed step (upsert-only; verified identical 14/108/70/491 after run).
+
+## Sep 17, 2026 — Production audit: type-safety, crash fixes, cleanup
+
+- **`mypy app/` green (was 419 errors):** added `backend/mypy.ini` scoping
+  SQLAlchemy dynamic-mapper noise; fixed the real findings — port/adapter
+  `stream()` signature mismatch (`AsyncGenerator`, missing `surface` param on
+  `CoachingAdapter.stream`), `skill_graph_rules` `Optional[str]` recommendation
+  id, `instructor.py` 404 guard for classrooms with no linked course, and the
+  Starlette exception-handler protocol in `rate_limit.py`.
+- **Piston kill/timeout no longer 500s:** `ExecutionResultFormatter` maps
+  `"code": null` (process killed by signal) to a non-zero exit instead of
+  leaking `None` into `CodeExecutionResult` validation.
+- **`branch_db.py pull/promote` fixed:** unresolvable course `owner_id`s are
+  NULLed instead of crashing the whole copy with ForeignKeyViolationError
+  (users never travel with the curriculum); regression-tested.
+- **Compose:** postgres `max_connections=300` (perf-tier bursts exhausted the
+  default 100), fixed mis-indented `NEXT_PUBLIC_WS_URL` env entry.
+- **Cleanup:** removed legacy `prisma` dep + `backend/prisma/` schema and the
+  `aiomysql` driver (PostgreSQL-only by config); deleted obsolete
+  `Docs/AUDIT_REPORT.md`, `Docs/PENDING_WORK_PLAN.md`, `docs/superpowers/`
+  plans; frontend `pnpm lint` now 0 warnings (`SkillGraph` memo deps).
+- **E2E stability:** animate/viewer specs now drive Monaco so the launcher
+  enables deterministically.
 
 This is the project's living status document. It is kept in sync with the code:
 if a section lists a feature as **Built**, that capability exists in the current

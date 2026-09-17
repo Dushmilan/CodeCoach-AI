@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import AsyncIterator, Dict, Any, Optional
+from typing import AsyncGenerator, AsyncIterator, Dict, Any, Optional
 
 import httpx
 from fastapi import HTTPException
@@ -375,7 +375,7 @@ class GroqService(CoachingProvider):
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
         surface: str = "questions",
-    ) -> AsyncIterator[str]:
+    ) -> AsyncGenerator[str, None]:
         async for chunk in self.get_coaching_response(
             problem=problem,
             code=code,

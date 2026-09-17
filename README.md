@@ -367,7 +367,8 @@ cd ../CodeCoach-AI-<slug>
 graphify query "<what are you changing and why>"
 
 # backend gates
-cd backend && ruff check . && ruff format . --check && python -m pytest tests/unit
+cd backend && ruff check . && ruff format . --check \
+  && python -m mypy app/ && python -m pytest tests/unit
 # frontend gates
 cd frontend && pnpm lint && pnpm typecheck && pnpm test:run
 
@@ -443,6 +444,9 @@ ruff check . && ruff format . --check     # lint gate
 Shared auth builders live in `tests/fixtures/auth_helpers.py`; the seed bank +
 107 live ids (`fixtures/live_question_ids.json`) come from `conftest.py`.
 Flaky tests belong in the quarantine manifest (`tests/enforce_flaky_quarantine.py`), not the suite.
+
+`mypy app/` must pass clean (`backend/mypy.ini` scopes the SQLAlchemy
+dynamic-mapper noise so real cross-module type errors stay visible).
 
 ### Frontend (Vitest)
 

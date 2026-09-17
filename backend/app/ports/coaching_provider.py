@@ -4,7 +4,7 @@ Defines the interface that coaching adapters (NIM, mock, etc.) must satisfy.
 """
 
 from abc import ABC, abstractmethod
-from typing import AsyncIterator, Dict, Any, Optional
+from typing import AsyncGenerator, Dict, Any, Optional
 
 
 class CoachingProvider(ABC):
@@ -42,9 +42,9 @@ class CoachingProvider(ABC):
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
         surface: str = "questions",
-    ) -> AsyncIterator[str]:
+    ) -> AsyncGenerator[str, None]:
         """Yield streaming text chunks from the coaching backend."""
-        ...  # pragma: no cover
+        yield ""  # pragma: no cover — abstract; makes this an async generator
 
     async def get_animation_script(
         self,

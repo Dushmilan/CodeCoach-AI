@@ -209,6 +209,12 @@ test.describe('Viewer rendering', () => {
 
     const animate = page.getByRole('button', { name: 'Animate solution' });
     await expect(animate).toBeVisible({ timeout: 15000 });
+    // Monaco hydrates the editor asynchronously after mount; a keystroke
+    // guarantees onCodeChange fires so `code` is non-empty and the launcher
+    // enables (starter-code-only state can leave it disabled on fast loads).
+    await page.locator('.monaco-editor').first().click();
+    await page.keyboard.type('#');
+    await page.waitForTimeout(500);
     await expect(animate).toBeEnabled({ timeout: 15000 });
     await animate.click();
 

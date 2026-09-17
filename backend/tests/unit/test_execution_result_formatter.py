@@ -160,3 +160,36 @@ class TestFormat:
             }
         )
         assert isinstance(result["stdout"], str) or result["stdout"] == 12345
+
+
+class TestNullExitCode:
+    """Regression: Piston returns "code": null when the OS kills the process
+    (infinite loop hitting run_timeout, OOM). dict.get("code", 1) does not
+    replace a present-but-None value, so exit_code was None and
+    CodeExecutionResult validation raised — the user saw a 500 instead of the
+    crash output (observed live in test_timeout_handling, Sep 2026 audit)."""
+
+    def test_null_code_is_mapped_to_nonzero_exit(self, formatter):
+        result = formatter.format(
+            {
+                "run": {
+                    "stdout": "",
+                    "stderr": "",
+                    "code": None,
+                    "signal": "KILL",
+                },
+                "language": "python",
+                "version": "3.11.0",
+            }
+        )
+        assert result["exit_code"] == 1
+        assert result["signal"] == "KILL"
+
+    def test_null_code_result_passes_code_execution_result_validation(self, formatter):
+        from app.models.schemas import CodeExecutionResult
+
+        raw = formatter.format(
+            {"run": {"stdout": "", "stderr": "", "code": None, "signal": "KILL"}}
+        )
+        result = CodeExecutionResult(**{k: v for k, v in raw.items() if k != "signal"})
+        assert result.exit_code != 0

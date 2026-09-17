@@ -148,6 +148,8 @@ async def classroom_detail(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not assigned to this classroom",
             )
+    if not room.course_id:
+        raise HTTPException(status_code=404, detail="Classroom has no linked course")
     counts = await service.course_lesson_counts([room.course_id], courses)
     try:
         _, overview = await service.classroom_overview(
