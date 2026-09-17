@@ -290,6 +290,34 @@ async def test_student_role_cannot_list_classrooms(async_client, test_db):
     assert resp.status_code == 403, resp.text
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_instructor_and_hierarchy_agree_on_avg_completion(async_client, test_db):
+    """Consistency: the instructor batch view (no explicit total_lessons) and
+    the admin hierarchy tree must report the same avg_completion for the same
+    room — the server resolves the room's real course denominator, falling
+    back to the shared default when the course has no lessons yet.
+
+    Fixture courses carry no lessons, so both views must use the default
+    (10): (60 + 40 + 20 + 0 + 80) / 5 == 40.0.
+    """
+    await _seed_hierarchy(test_db)
+    with _auth_as(*ADA):
+        batch = await async_client.get("/api/instructor/classrooms-analytics")
+    assert batch.status_code == 200, batch.text
+    instructor_avg = {
+        r["classroom"]["invite_code"]: r["analytics"]["avg_completion"]
+        for r in batch.json()
+    }[CS101_INVITE]
+    with _auth_as("t5-root", "root", "super_admin"):
+        tree = await async_client.get("/api/admin/hierarchy")
+    assert tree.status_code == 200, tree.text
+    ada = next(p for p in tree.json()["professors"] if p["username"] == "professor.ada")
+    cs101 = next(r for r in ada["classrooms"] if r["invite_code"] == CS101_INVITE)
+    assert cs101["students"] == 5
+    assert cs101["avg_completion"] == instructor_avg == 40.0
+
+
 async def _invite_map(test_db) -> dict[str, str]:
     result = await test_db.execute(
         select(ClassroomORM).where(

@@ -26,7 +26,8 @@ test.describe('Settings Flow', () => {
     const tablist = page.getByRole('tablist');
     await expect(tablist).toHaveAttribute('aria-orientation', 'vertical');
     await expect(page.getByTestId('settings-tab-general')).toBeVisible();
-    await expect(page.getByTestId('settings-tab-plan')).toBeVisible();
+    // Plan tab intentionally removed — Groq info lives in General
+    await expect(page.getByTestId('settings-tab-plan')).toHaveCount(0);
     await expect(page.getByTestId('settings-tab-account')).toBeVisible();
     // Dashboard / skill-graph moved out of the gear menu into /dashboard
     await expect(page.getByTestId('settings-tab-dashboard')).toHaveCount(0);
@@ -43,11 +44,9 @@ test.describe('Settings Flow', () => {
     await general.focus();
     await expect(general).toBeFocused();
     await page.keyboard.press('ArrowDown');
-    await expect(page.getByTestId('settings-tab-plan')).toBeFocused();
-    await page.keyboard.press('ArrowDown');
     await expect(page.getByTestId('settings-tab-account')).toBeFocused();
     await page.keyboard.press('ArrowUp');
-    await expect(page.getByTestId('settings-tab-plan')).toBeFocused();
+    await expect(page.getByTestId('settings-tab-general')).toBeFocused();
     await page.keyboard.press('Escape');
   });
 

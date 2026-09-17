@@ -13,8 +13,9 @@ Composes existing ports only (never touches a SQL session):
   the student-only roster read cannot serve this);
 - student counts + avg completion from ``ClassAnalyticsService`` (the
   same optimal-path aggregates the instructor views use, with the room's
-  real per-course lesson count as the denominator — never a hardcoded
-  constant, so completion can never exceed 100%).
+  real per-course lesson count as the denominator — falling back to the
+  shared default when the course has no lessons yet, so completion can
+  never exceed 100% and every view agrees).
 
 Tree shape matches the Task 6 brief exactly::
 
@@ -28,7 +29,10 @@ from app.models.orm import ClassroomORM
 from app.ports.classroom_repository import ClassroomRepository
 from app.ports.course_repository import CourseRepository
 from app.ports.user_admin_repository import UserAdminRepository
-from app.services.class_analytics_service import ClassAnalyticsService
+from app.services.class_analytics_service import (
+    ClassAnalyticsService,
+    resolve_total_lessons,
+)
 
 # list_users pages through the whole user table; large enough that an admin
 # tree build stays a handful of queries on realistic tenants.
@@ -108,7 +112,8 @@ class HierarchyService:
             return None
         return {"id": course.id, "title": course.title, "lessons": lesson_count}
 
-    async def _room_entry(self, room: ClassroomORM, total_lessons: int) -> dict:
+    async def _room_entry(self, room: ClassroomORM, course_lessons: int) -> dict:
+        total_lessons = resolve_total_lessons(None, course_lessons)
         student_ids = await self._classrooms.list_classroom_student_ids(room.id)
         _, overview = await self._analytics.classroom_overview(
             room.id,

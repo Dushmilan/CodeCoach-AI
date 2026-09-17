@@ -57,6 +57,9 @@ class _FakeClassrooms:
 
 
 class _FakeAnalytics:
+    async def course_lesson_counts(self, course_ids, courses=None):  # noqa: ARG002
+        return {}
+
     async def get_classroom(self, classroom_id, *, classrooms=None):  # noqa: ARG002
         return ROOM if classroom_id == ROOM.id else None
 

@@ -26,7 +26,7 @@ test.describe('Admin hierarchy', () => {
     await expect(section.getByText('CS101 · Section A')).toBeVisible();
     await expect(section.getByText('CS101-A-2026')).toBeVisible();
     await expect(section.getByText('demonstrator.turing').first()).toBeVisible();
-    await expect(section.getByText(/5 students/).first()).toBeVisible();
+    await expect(section.getByText(/8 students/).first()).toBeVisible();
     await expect(section.getByText(/avg completion/).first()).toBeVisible();
   });
 });

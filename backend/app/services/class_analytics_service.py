@@ -21,6 +21,25 @@ from app.ports.user_repository import UserRepository
 
 logger = logging.getLogger(__name__)
 
+# Shared fallback denominator when a room's course has no lessons yet.
+# Matches the legacy instructor default so every completion view agrees.
+DEFAULT_TOTAL_LESSONS = 10
+
+
+def resolve_total_lessons(explicit: Optional[int], course_lesson_count: int) -> int:
+    """One denominator rule for every completion view.
+
+    An explicit caller value always wins (API contract); otherwise the
+    room's real course lesson count; a course with no lessons yet falls
+    back to the shared default instead of a zero denominator (which
+    would force every student to 0%).
+    """
+    if explicit is not None:
+        return explicit
+    if course_lesson_count > 0:
+        return course_lesson_count
+    return DEFAULT_TOTAL_LESSONS
+
 
 class ClassroomNotFoundError(LookupError):
     """Unknown classroom id — routes map this to 404 (never 400)."""
@@ -118,13 +137,40 @@ class ClassAnalyticsService:
         ]
         return self._aggregate(students)
 
+    async def course_lesson_counts(
+        self, course_ids: Sequence[str], courses
+    ) -> dict[str, int]:
+        """Real lesson count per course (batch reads, no per-course roundtrip).
+
+        ``courses`` is a CourseRepository; missing courses count as 0 lessons
+        (callers fall back via resolve_total_lessons).
+        """
+        ids = list(dict.fromkeys(course_ids))
+        if not ids:
+            return {}
+        modules = await courses.get_modules_by_course_batch(ids)
+        summaries = await courses.get_lesson_summaries_by_module_ids(
+            [m.id for m in modules or []]
+        )
+        counts: dict[str, int] = {cid: 0 for cid in ids}
+        for lesson in summaries or []:
+            cid = getattr(lesson, "course_id", None)
+            if cid in counts:
+                counts[cid] += 1
+        return counts
+
     async def class_overviews(
         self,
         room_students: dict[str, List[str]],
         *,
-        total_lessons: int = 10,
+        total_lessons: int | dict[str, int] = 10,
     ) -> dict[str, ClassAnalyticsResponse]:
-        """Batch overviews for many rooms with O(1) repo calls."""
+        """Batch overviews for many rooms with O(1) repo calls.
+
+        ``total_lessons`` is one denominator for all rooms or a per-room
+        map (room id -> denominator); a per-room map keeps batching while
+        letting each room use its own course lesson count.
+        """
         all_ids = list(
             dict.fromkeys(uid for ids in room_students.values() for uid in ids)
         )
@@ -147,13 +193,18 @@ class ClassAnalyticsService:
         usernames = await self._usernames_by_id(all_ids)
         out: dict[str, ClassAnalyticsResponse] = {}
         for room_id, ids in room_students.items():
+            per_room = (
+                total_lessons.get(room_id, DEFAULT_TOTAL_LESSONS)
+                if isinstance(total_lessons, dict)
+                else total_lessons
+            )
             students = [
                 self._summarize(
                     user_id,
                     subs_by_user.get(user_id, []),
                     progress_by_user.get(user_id, []),
                     usernames.get(user_id, user_id),
-                    total_lessons=total_lessons,
+                    total_lessons=per_room,
                 )
                 for user_id in ids
             ]

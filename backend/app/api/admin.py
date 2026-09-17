@@ -60,6 +60,7 @@ async def _invalidate_course_caches(cache: Optional[RedisCache]) -> None:
     if cache is not None:
         try:
             await cache.delete(RedisCache.key("courses", "detail", "*"))
+            await cache.delete(RedisCache.key("courses", "lesson", "*"))
         except Exception as exc:  # noqa: BLE001 - invalidation is best-effort
             logger.debug("Course detail cache invalidation failed: %s", exc)
 
