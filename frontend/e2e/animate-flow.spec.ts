@@ -179,6 +179,11 @@ test.describe('AI Animate flow', () => {
 
     const animate = page.getByRole('button', { name: 'Animate solution' });
     await expect(animate).toBeVisible({ timeout: 15000 });
+    // Monaco hydrates asynchronously after mount; force onCodeChange so
+    // `code` is non-empty and the launcher enables (starter-only state can
+    // leave it disabled when the workspace code fetch resolves empty).
+    await page.locator('.monaco-editor').first().click();
+    await page.keyboard.type('#');
     await expect(animate).toBeEnabled({ timeout: 15000 });
     await animate.click();
 
@@ -251,6 +256,10 @@ test.describe('AI Animate flow', () => {
 
     const animate = page.getByRole('button', { name: 'Animate solution' });
     await expect(animate).toBeVisible({ timeout: 15000 });
+    // Monaco hydrates asynchronously; force onCodeChange so `code` is
+    // non-empty and the launcher enables even when starter hydration wins.
+    await page.locator('.monaco-editor').first().click();
+    await page.keyboard.type('#');
     await expect(animate).toBeEnabled({ timeout: 15000 });
     await animate.click();
 

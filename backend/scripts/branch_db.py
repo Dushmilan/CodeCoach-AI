@@ -57,7 +57,8 @@ from app.models.orm import (
 # Tables copied live -> local -> live, in FK-safe order: courses before
 # modules/lessons (course_id), questions before lessons (question_id),
 # modules before lessons (module_id). Courses carry nullable owner_id
-# (SET NULL), so no users need to travel with the curriculum.
+# (SET NULL), so no users need to travel with the curriculum. Owner ids
+# that cannot resolve in the destination are dropped (see copy_tables).
 COPY_TABLES = ["courses", "questions", "modules", "lessons"]
 
 TABLE_MODELS = {
@@ -155,8 +156,28 @@ async def init_db(db_url: str) -> str:
     return db_name
 
 
+def _drop_unresolvable_owner(data: dict, dst_user_ids: set) -> dict:
+    """Null a copied course's owner_id when it cannot resolve in the target.
+
+    Users never travel with the curriculum: different databases assign the
+    same person different UUIDs. Keeping a foreign owner_id verbatim used to
+    crash the whole copy with a ForeignKeyViolationError (any pull into a
+    branch DB whose users differ). Ownership that DOES resolve is preserved,
+    so promote round-trips keep it.
+    """
+    owner = data.get("owner_id")
+    if owner is not None and owner not in dst_user_ids:
+        data["owner_id"] = None
+    return data
+
+
 async def copy_tables(source_url: str, dest_url: str) -> dict:
-    """Upsert COPY_TABLES from source to dest. Returns per-table counts."""
+    """Upsert COPY_TABLES from source to dest. Returns per-table counts.
+
+    Destination user ids are resolved once up front so course owner_ids can
+    be dropped (NULL) when they would violate the FK — see
+    ``_drop_unresolvable_owner``.
+    """
     src = _engine(source_url)
     dst = _engine(dest_url)
     src_session = async_sessionmaker(src, expire_on_commit=False)
@@ -164,12 +185,17 @@ async def copy_tables(source_url: str, dest_url: str) -> dict:
     counts: dict = {}
     try:
         async with src_session() as s, dst_session() as d:
+            # Resolve before any merge() so no autoflush carries an
+            # unresolvable owner_id into the flush.
+            dst_user_ids = set((await d.execute(select(UserORM.id))).scalars().all())
             for table in COPY_TABLES:
                 model = TABLE_MODELS[table]
                 rows = (await s.execute(select(model))).scalars().all()
                 n = 0
                 for row in rows:
                     data = {c.key: getattr(row, c.key) for c in model.__table__.columns}
+                    if table == "courses":
+                        data = _drop_unresolvable_owner(data, dst_user_ids)
                     await d.merge(model(**data))
                     n += 1
                 counts[table] = n

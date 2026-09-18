@@ -307,7 +307,8 @@ def recommend(
         if slug in (r.skill_slug for r in results):
             continue
         name = skill_names.get(slug, slug)
-        question = (question_by_skill.get(slug) or [None])[0]
+        candidates = question_by_skill.get(slug) or []
+        question: Optional[str] = candidates[0] if candidates else None
         results.append(
             Recommendation(
                 skill_slug=slug,

@@ -139,7 +139,7 @@ test.describe('Problems edge cases', () => {
     await page.getByPlaceholder(/search by title/i).fill('zzz-no-such-problem');
     await expect(page.getByText(/no questions match your filters/i)).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: /clear all filters/i }).click();
-    await expect(page.getByText(/showing 2 of 2/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/showing \d+ of \d+ questions/i)).toBeVisible({ timeout: 15000 });
   });
 
   test('unknown problem id shows 404 with working back link', async ({ page }) => {

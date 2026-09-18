@@ -190,8 +190,12 @@ QUESTIONS_RATE_LIMIT: Callable[[], str] = _rate_limit(
 limiter = Limiter()
 
 
-async def _rate_limit_exceeded_handler(
-    request: Request, exc: RateLimitExceeded
-) -> Response:
-    """429 response for the in-process limiter."""
+async def _rate_limit_exceeded_handler(request: Request, exc: Exception) -> Response:
+    """429 response for the in-process limiter.
+
+    Typed as ``Exception`` (Starlette's handler protocol) and narrowed back
+    to ``RateLimitExceeded`` — Starlette's ``add_exception_handler`` signature
+    is invariant in the exception type.
+    """
+    assert isinstance(exc, RateLimitExceeded)
     return JSONResponse({"error": exc.detail}, status_code=429)
