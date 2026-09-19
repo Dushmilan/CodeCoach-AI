@@ -18,7 +18,10 @@ _ANON_LIST_LOCK_KEY = RedisCache.key("courses", "list", "anonymous", "lock")
 # Stampede protection: SET NX lock so only one worker rebuilds on a miss.
 # Losers poll briefly, then build directly (fail-safe — never block the hot path).
 _ANON_LIST_LOCK_TTL = 10
-_ANON_LIST_LOCK_POLLS = 20
+# Lock losers re-read briefly for a fast winner, then build directly.
+# Bounded at 4 x 50ms = 200ms max so a stalled lock can't add a full
+# second of p99 latency before the (identical) direct build.
+_ANON_LIST_LOCK_POLLS = 4
 _ANON_LIST_LOCK_POLL_INTERVAL = 0.05
 
 

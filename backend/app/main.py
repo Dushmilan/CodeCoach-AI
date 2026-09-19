@@ -68,7 +68,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     if settings.REDIS_ENABLED:
         try:
             _app.state.redis_cache = RedisCache(settings.REDIS_URL)
-            logger.info("Redis cache initialized at %s", settings.REDIS_URL)
+            if not await _app.state.redis_cache.ping():
+                logger.warning(
+                    "Redis ping failed at %s — caching disabled until recovery",
+                    settings.REDIS_URL,
+                )
+            else:
+                logger.info("Redis cache initialized at %s", settings.REDIS_URL)
         except Exception as e:
             logger.warning(
                 "Redis cache initialization failed: %s — caching disabled", e

@@ -223,3 +223,48 @@ class TestDailyLimitServiceFallback:
         service = DailyLimitService(cache=cache, repo=repo)
         allowed, _ = await service.consume(user_id, cap=20, now=_now())
         assert allowed is True
+
+    @pytest.mark.asyncio
+    async def test_consume_retries_failed_refund(self):
+        """Issue #210: a lost decr refund is retried once, never raises."""
+
+        class _FlakyDecrCache(FakeRedisCache):
+            def __init__(self):
+                super().__init__()
+                self.decr_calls = 0
+
+            async def decr(self, key):
+                self.decr_calls += 1
+                if self.decr_calls == 1:
+                    return None  # transient blip
+                return await super().decr(key)
+
+        from app.services.daily_limit_service import DailyLimitService
+
+        cache = _FlakyDecrCache()
+        service = DailyLimitService(cache=cache, repo=None)
+        key = service._key("u1", _now().date())
+        cache.data[key] = 20
+        allowed, remaining = await service.consume("u1", cap=20, now=_now())
+        assert allowed is False
+        assert remaining == 0
+        assert cache.decr_calls == 2
+        assert cache.data[key] == 20  # refunded
+
+    @pytest.mark.asyncio
+    async def test_consume_denies_cleanly_when_refund_lost(self):
+        """Issue #210: refund outage still denies without raising."""
+
+        class _DeadDecrCache(FakeRedisCache):
+            async def decr(self, key):
+                return None
+
+        from app.services.daily_limit_service import DailyLimitService
+
+        cache = _DeadDecrCache()
+        service = DailyLimitService(cache=cache, repo=None)
+        key = service._key("u1", _now().date())
+        cache.data[key] = 20
+        allowed, remaining = await service.consume("u1", cap=20, now=_now())
+        assert allowed is False
+        assert remaining == 0
