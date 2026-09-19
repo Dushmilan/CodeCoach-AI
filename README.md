@@ -138,7 +138,7 @@ stays short on purpose.
 | **Auth** | JWT (python-jose), bcrypt, username/password |
 | **Migrations** | Alembic (`backend/alembic/`) |
 | **Testing** | pytest (backend), Vitest + Testing Library + MSW (frontend), Playwright (E2E) |
-| **Deploy** | Docker Compose + Cloudflare Workers (OpenNext) |
+| **Deploy** | Docker Compose self-host (`next start` standalone) |
 | **Observability** | Structured logs, `/health` dependency checks, `X-Usage-*` headers |
 
 ---
@@ -553,7 +553,7 @@ CodeCoach-AI/
 
 - **Docker Compose (production):** `docker compose up -d --build` builds `pip install` /
   `npm run build` into images. No volume mounts; `PistonService` + `Redis` + `Postgres` wired via env.
-- **Cloudflare Workers (frontend):** OpenNext build — `NEXT_PUBLIC_*` must be set as build args,
+- **Frontend (self-host):** standalone `next build` / `next start` — `NEXT_PUBLIC_*` must be set as build args,
   not runtime env.
 - **Live migrations:** `alembic upgrade head` (live schema moves via migrations only).
 - **Health:** `GET /health` checks `questions_db`, `piston`, `redis`; Docker `HEALTHCHECK` gates `backend`.

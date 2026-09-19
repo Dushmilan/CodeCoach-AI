@@ -4,8 +4,7 @@ const { resolvePublicApiUrl } = require("./csp.js");
 
 // Rewrites are serialized into the build output at build time.
 //   - API_URL: server-side destination for the /api/* rewrite. In Docker this
-//     is the container-network URL (http://backend:8000); on Cloudflare it is
-//     the public backend URL baked into the Worker.
+//     is the container-network URL (http://backend:8000).
 //   - NEXT_PUBLIC_API_URL: inlined into the client bundle. Defaults to
 //     same-origin ('') so browser calls stay under CSP connect-src 'self'
 //     and ride the /api rewrite; cross-origin deployments set an https:
@@ -74,13 +73,5 @@ const nextConfig = {
     ];
   },
 };
-
-// Integrate Cloudflare bindings with the Next.js dev server only.
-// @opennextjs/cloudflare is a devDependency; requiring it at runtime in the
-// Docker standalone production image would fail.
-if (process.env.NODE_ENV !== 'production') {
-  const { initOpenNextCloudflareForDev } = require('@opennextjs/cloudflare');
-  initOpenNextCloudflareForDev();
-}
 
 module.exports = nextConfig;

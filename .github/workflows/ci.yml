@@ -214,12 +214,12 @@ jobs:
         run: |
           node -e "const m=require('./flaky-quarantine.json'); if(m.schema_version!==1||!Array.isArray(m.quarantined)) throw new Error('bad manifest'); for(const e of m.quarantined){for(const k of ['node_id','reason','owner','fix_by']) if(!e[k]) throw new Error('entry missing '+k);} console.log('flaky-quarantine OK');"
 
-      - name: OpenNext Cloudflare build
+      - name: Frontend production build
         env:
           API_URL: ${{ vars.API_URL }}
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
-        run: pnpm run cf:build
+        run: pnpm run build
 
   docker:
     name: Docker Build
