@@ -40,6 +40,15 @@ class _FakeClient:
     async def expire(self, key, ttl):
         self.expire_calls.append((key, ttl))
 
+    async def eval(self, script, numkeys, key, ttl):
+        """Emulate the INCR+EXPIRE Lua script: one atomic round trip."""
+        if self.fail:
+            raise ConnectionError("boom")
+        self._counter += 1
+        if self._counter == 1:
+            await self.expire(key, ttl)
+        return self._counter
+
     async def aclose(self):
         pass
 
@@ -100,29 +109,25 @@ async def test_error_disables_cache_and_stays_disabled():
 
 
 @pytest.mark.asyncio
-async def test_incr_expire_window_is_documented(fake_cache):
-    """Known gap: INCR-then-EXPIRE is two round trips, not atomic.
+async def test_incr_is_single_atomic_round_trip(fake_cache):
+    """Issue #210: INCR+EXPIRE runs as one Lua EVAL — no crash window.
 
-    A crash between them leaves a counter key without TTL. This test pins
-    the call order so any future Lua-script fix must update it deliberately.
+    Replaces the old two-round-trip pin: a single client call per incr,
+    with EXPIRE applied server-side only when the counter is new.
     """
     cache, fake = fake_cache
     calls = []
-    orig_incr = fake.incr
-    orig_expire = fake.expire
+    orig_eval = fake.eval
 
-    async def _incr(key):
-        calls.append("incr")
-        return await orig_incr(key)
+    async def _eval(script, numkeys, key, ttl):
+        calls.append("eval")
+        assert "EXPIRE" in script  # TTL rides along in the same script
+        return await orig_eval(script, numkeys, key, ttl)
 
-    async def _expire(key, ttl):
-        calls.append("expire")
-        return await orig_expire(key, ttl)
-
-    fake.incr = _incr
-    fake.expire = _expire
-    await cache.incr("ctr2", ttl=60)
-    assert calls == ["incr", "expire"]
+    fake.eval = _eval
+    assert await cache.incr("ctr2", ttl=60) == 1
+    assert await cache.incr("ctr2", ttl=60) == 2
+    assert calls == ["eval", "eval"]
     assert fake.expire_calls == [("ctr2", 60)]
 
 

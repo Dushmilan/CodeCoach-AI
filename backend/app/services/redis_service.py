@@ -10,9 +10,25 @@ import logging
 from typing import Any, Optional
 
 import redis.asyncio as aioredis
+import redis.exceptions as redis_exc
 from redis.asyncio.connection import ConnectionPool
 
 logger = logging.getLogger(__name__)
+
+#: Errors that mean the Redis server is unreachable (outage). Only these
+#: trip the circuit breaker. Data errors (bad JSON, wrong types) are
+#: per-key problems and must never disable the whole cache.
+_CONNECTION_ERRORS = (
+    redis_exc.ConnectionError,
+    redis_exc.TimeoutError,
+    TimeoutError,
+    OSError,
+)
+
+
+def _is_connection_error(exc: BaseException) -> bool:
+    """True when exc signals an unreachable Redis (vs. a bad value)."""
+    return isinstance(exc, _CONNECTION_ERRORS)
 
 
 def _content_hash(*parts: str) -> str:
@@ -43,6 +59,18 @@ class RedisCache:
         """Graceful degradation — disable caching without raising."""
         self._enabled = False
 
+    def _note_error(self, exc: Exception, op: str, key: str) -> None:
+        """Log a cache failure; trip the breaker only on outages.
+
+        Connection errors are operational events (warning + disable).
+        Anything else is a per-key data problem (debug, stay enabled).
+        """
+        if _is_connection_error(exc):
+            logger.warning("Redis %s failed for %s: %s", op, key, exc)
+            self.disable()
+        else:
+            logger.debug("Redis %s failed for %s: %s", op, key, exc)
+
     async def get(self, key: str) -> Optional[Any]:
         """Return deserialized value or None on miss/error."""
         client = await self._client()
@@ -52,10 +80,18 @@ class RedisCache:
             raw = await client.get(key)
             if raw is None:
                 return None
-            return json.loads(raw)
+            try:
+                return json.loads(raw)
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                # Poison value, not an outage: drop the key, stay enabled.
+                logger.warning("Redis dropping undecodable key %s: %s", key, e)
+                try:
+                    await client.delete(key)
+                except Exception as del_e:
+                    self._note_error(del_e, "delete-poison", key)
+                return None
         except Exception as e:
-            logger.debug("Redis get failed for key %s: %s", key, e)
-            self.disable()
+            self._note_error(e, "get", key)
             return None
         finally:
             try:
@@ -72,8 +108,7 @@ class RedisCache:
             raw = json.dumps(value, default=str)
             await client.setex(key, ttl, raw)
         except Exception as e:
-            logger.debug("Redis set failed for key %s: %s", key, e)
-            self.disable()
+            self._note_error(e, "set", key)
         finally:
             try:
                 await client.aclose()
@@ -90,8 +125,7 @@ class RedisCache:
             acquired = await client.set(key, raw, ex=ttl, nx=True)
             return bool(acquired)
         except Exception as e:
-            logger.debug("Redis set_if_absent failed for key %s: %s", key, e)
-            self.disable()
+            self._note_error(e, "set_if_absent", key)
             return False
         finally:
             try:
@@ -99,23 +133,28 @@ class RedisCache:
             except Exception:
                 pass
 
+    _INCR_SCRIPT = (
+        "local v = redis.call('INCR', KEYS[1]);"
+        " if v == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end;"
+        " return v;"
+    )
+
     async def incr(self, key: str, ttl: int = 60) -> Optional[int]:
         """Atomically increment a counter, setting TTL on first increment.
 
-        Returns the new value, or None on any error (caller must degrade
-        gracefully). Used for per-user rate limiting.
+        The INCR+EXPIRE runs as one Lua script so a crash between the two
+        can never leak a TTL-less key. Returns the new value, or None on
+        any error (caller must degrade gracefully). Used for per-user
+        rate limiting.
         """
         client = await self._client()
         if not client:
             return None
         try:
-            value = await client.incr(key)
-            if value == 1:
-                await client.expire(key, ttl)
+            value = await client.eval(self._INCR_SCRIPT, 1, key, ttl)
             return int(value)
         except Exception as e:
-            logger.debug("Redis incr failed for key %s: %s", key, e)
-            self.disable()
+            self._note_error(e, "incr", key)
             return None
         finally:
             try:
@@ -144,8 +183,7 @@ class RedisCache:
                 removed += await client.delete(*batch)
             return removed
         except Exception as e:
-            logger.debug("Redis delete failed for pattern %s: %s", pattern, e)
-            self.disable()
+            self._note_error(e, "delete", pattern)
             return 0
         finally:
             try:
@@ -166,8 +204,7 @@ class RedisCache:
             value = await client.decr(key)
             return int(value)
         except Exception as e:
-            logger.debug("Redis decr failed for key %s: %s", key, e)
-            self.disable()
+            self._note_error(e, "decr", key)
             return None
         finally:
             try:
@@ -183,7 +220,7 @@ class RedisCache:
         try:
             return await client.exists(key) > 0
         except Exception as e:
-            logger.debug("Redis exists check failed for key %s: %s", key, e)
+            self._note_error(e, "exists", key)
             return False
         finally:
             try:
@@ -199,7 +236,7 @@ class RedisCache:
         try:
             return await client.ttl(key)
         except Exception as e:
-            logger.debug("Redis ttl check failed for key %s: %s", key, e)
+            self._note_error(e, "ttl", key)
             return -2
         finally:
             try:
