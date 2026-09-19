@@ -91,3 +91,82 @@ async def test_ttl_disables_on_connection_error(monkeypatch):
         assert cache._enabled is False
     finally:
         await cache.close()
+
+
+@needs_redis
+@pytest.mark.asyncio
+async def test_client_is_shared_across_ops():
+    """One client per cache — no per-op construct/aclose churn."""
+    from app.services.redis_service import RedisCache
+
+    cache = RedisCache(REDIS_URL)
+    try:
+        assert await cache._client() is await cache._client()
+    finally:
+        await cache.close()
+
+
+@needs_redis
+@pytest.mark.asyncio
+async def test_pool_has_socket_timeouts():
+    """Pool must fail fast (2s) instead of hanging on a black-holed Redis."""
+    from app.services.redis_service import RedisCache
+
+    cache = RedisCache(REDIS_URL)
+    try:
+        kwargs = cache._pool.connection_kwargs
+        assert kwargs.get("socket_timeout") == 2.0
+        assert kwargs.get("socket_connect_timeout") == 2.0
+    finally:
+        await cache.close()
+
+
+@needs_redis
+@pytest.mark.asyncio
+async def test_ping_true_on_live_redis():
+    from app.services.redis_service import RedisCache
+
+    cache = RedisCache(REDIS_URL)
+    try:
+        assert await cache.ping() is True
+        assert cache._enabled is True
+    finally:
+        await cache.close()
+
+
+@pytest.mark.asyncio
+async def test_ping_false_on_dead_redis_disables():
+    """Unreachable Redis: ping is False and the breaker trips — no raise."""
+    from app.services.redis_service import RedisCache
+
+    cache = RedisCache("redis://127.0.0.1:1/0", socket_timeout=0.2)
+    try:
+        assert await cache.ping() is False
+        assert cache._enabled is False
+    finally:
+        await cache.close()
+
+
+@needs_redis
+@pytest.mark.asyncio
+async def test_half_open_recovers_without_restart():
+    """A disabled cache re-probes after the backoff and serves again."""
+    import time
+
+    from app.services.redis_service import RedisCache
+
+    cache = RedisCache(REDIS_URL)
+    key = f"codecoach:test:{os.getpid()}:recover"
+    try:
+        cache.disable()
+        assert await cache.get(key) is None  # fail fast, stays disabled
+        assert cache._enabled is False
+        cache._disabled_at = time.monotonic() - 31  # backoff elapsed
+        await cache.set(key, {"v": 1}, ttl=60)
+        assert await cache.get(key) == {"v": 1}
+        assert cache._enabled is True
+    finally:
+        cache._enabled = True
+        cache._disabled_at = None
+        await cache.delete(key)
+        await cache.close()

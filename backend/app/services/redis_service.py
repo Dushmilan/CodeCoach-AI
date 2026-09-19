@@ -7,6 +7,7 @@ Uses connection pooling and is safe for concurrent use.
 import hashlib
 import json
 import logging
+import time
 from typing import Any, Optional
 
 import redis.asyncio as aioredis
@@ -40,24 +41,70 @@ def _content_hash(*parts: str) -> str:
 class RedisCache:
     """Async Redis cache client with connection pooling and graceful degradation."""
 
-    def __init__(self, redis_url: str, max_connections: int = 20):
-        self._pool = ConnectionPool.from_url(redis_url, max_connections=max_connections)
+    #: Seconds without a successful probe before a disabled cache tries
+    #: one recovery PING instead of failing fast (half-open breaker).
+    RECOVER_AFTER = 30.0
+
+    def __init__(
+        self, redis_url: str, max_connections: int = 20, socket_timeout: float = 2.0
+    ):
+        self._pool = ConnectionPool.from_url(
+            redis_url,
+            max_connections=max_connections,
+            socket_connect_timeout=socket_timeout,
+            socket_timeout=socket_timeout,
+        )
+        self._redis = aioredis.Redis(connection_pool=self._pool)
         self._enabled = True
+        self._disabled_at: Optional[float] = None
 
     async def _client(self) -> Optional[aioredis.Redis]:
-        """Get a Redis client from the pool if enabled."""
-        if not self._enabled:
+        """Get the shared Redis client, or None when the breaker is open.
+
+        Past the recovery backoff a single PING re-probes: success
+        re-enables caching without a restart, failure backs off again.
+        """
+        if self._enabled:
+            return self._redis
+        if not await self._probe_recovery():
             return None
+        return self._redis
+
+    async def _probe_recovery(self) -> bool:
+        """Half-open probe: True when Redis answers again (re-enabled)."""
+        if self._disabled_at is None:
+            return False
+        if time.monotonic() - self._disabled_at < self.RECOVER_AFTER:
+            return False
         try:
-            return aioredis.Redis(connection_pool=self._pool)
+            await self._redis.ping()
+        except Exception:
+            self._disabled_at = time.monotonic()
+            return False
+        self._enabled = True
+        self._disabled_at = None
+        logger.info("Redis recovered — caching re-enabled")
+        return True
+
+    async def ping(self) -> bool:
+        """Liveness check for startup: True when Redis answers, else False.
+
+        Never raises; a failed ping trips the breaker so callers fail fast.
+        """
+        client = await self._client()
+        if client is None:
+            return False
+        try:
+            await client.ping()
+            return True
         except Exception as e:
-            logger.warning("Redis client creation failed: %s", e)
-            self._enabled = False
-            return None
+            self._note_error(e, "ping", "ping")
+            return False
 
     def disable(self) -> None:
         """Graceful degradation — disable caching without raising."""
         self._enabled = False
+        self._disabled_at = time.monotonic()
 
     def _note_error(self, exc: Exception, op: str, key: str) -> None:
         """Log a cache failure; trip the breaker only on outages.
@@ -93,11 +140,6 @@ class RedisCache:
         except Exception as e:
             self._note_error(e, "get", key)
             return None
-        finally:
-            try:
-                await client.aclose()
-            except Exception:
-                pass
 
     async def set(self, key: str, value: Any, ttl: int = 300) -> None:
         """Serialize and store value with TTL (seconds). Silently skip on error."""
@@ -109,11 +151,6 @@ class RedisCache:
             await client.setex(key, ttl, raw)
         except Exception as e:
             self._note_error(e, "set", key)
-        finally:
-            try:
-                await client.aclose()
-            except Exception:
-                pass
 
     async def set_if_absent(self, key: str, value: Any, ttl: int = 300) -> bool:
         """Atomically set key only if absent (SET NX EX). True if acquired."""
@@ -127,11 +164,6 @@ class RedisCache:
         except Exception as e:
             self._note_error(e, "set_if_absent", key)
             return False
-        finally:
-            try:
-                await client.aclose()
-            except Exception:
-                pass
 
     _INCR_SCRIPT = (
         "local v = redis.call('INCR', KEYS[1]);"
@@ -156,11 +188,6 @@ class RedisCache:
         except Exception as e:
             self._note_error(e, "incr", key)
             return None
-        finally:
-            try:
-                await client.aclose()
-            except Exception:
-                pass
 
     async def delete(self, pattern: str) -> int:
         """Delete all keys matching glob pattern. Returns number deleted.
@@ -185,11 +212,6 @@ class RedisCache:
         except Exception as e:
             self._note_error(e, "delete", pattern)
             return 0
-        finally:
-            try:
-                await client.aclose()
-            except Exception:
-                pass
 
     async def decr(self, key: str) -> Optional[int]:
         """Atomically decrement a counter, returning the new value.
@@ -206,11 +228,6 @@ class RedisCache:
         except Exception as e:
             self._note_error(e, "decr", key)
             return None
-        finally:
-            try:
-                await client.aclose()
-            except Exception:
-                pass
 
     async def exists(self, key: str) -> bool:
         """Check if key exists in cache."""
@@ -222,11 +239,6 @@ class RedisCache:
         except Exception as e:
             self._note_error(e, "exists", key)
             return False
-        finally:
-            try:
-                await client.aclose()
-            except Exception:
-                pass
 
     async def ttl(self, key: str) -> int:
         """Return remaining TTL in seconds. -1 if no TTL, -2 if key missing."""
@@ -238,14 +250,13 @@ class RedisCache:
         except Exception as e:
             self._note_error(e, "ttl", key)
             return -2
-        finally:
-            try:
-                await client.aclose()
-            except Exception:
-                pass
 
     async def close(self) -> None:
-        """Close the connection pool."""
+        """Close the shared client and the connection pool."""
+        try:
+            await self._redis.aclose()
+        except Exception:
+            pass
         if not hasattr(self, "_pool") or self._pool is None:
             return
         try:
