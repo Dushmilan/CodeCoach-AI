@@ -171,12 +171,10 @@ def _sanitize_errors(error_data):
 
 # Configure CORS
 # Production: set CORS_ORIGINS to the real frontend origin(s), e.g.
-# "https://codecoach.app,https://app.codecoach.ai". The workers.dev URL below
-# is only a placeholder (real URLs are account-scoped).
+# "https://codecoach.app,https://app.codecoach.ai".
 cors_origins = os.getenv(
     "CORS_ORIGINS",
-    "http://localhost:3000,https://codecoach-ai-frontend.vercel.app,"
-    "https://codecoach-ai.workers.dev",
+    "http://localhost:3000,https://codecoach-ai-frontend.vercel.app",
 ).split(",")
 app.add_middleware(
     CORSMiddleware,

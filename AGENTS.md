@@ -334,7 +334,7 @@ Rules:
   execution via Piston; AI coaching via Groq.
 - **Frontend:** Next.js 14 (App Router) + TypeScript + Tailwind, shadcn-style
   components, backend-JWT auth, Vitest + Testing Library + MSW for unit tests,
-  Playwright for E2E. Cloudflare Workers deployment via OpenNext.
+  Playwright for E2E. Docker Compose self-host (`next start` standalone).
 - **Infra:** Docker Compose (backend, frontend, postgres, redis, piston), GitHub Actions CI
   running lint/format + all test tiers + coverage budget enforcement.
 - **Data:** working data lives in the local PostgreSQL branch databases;
