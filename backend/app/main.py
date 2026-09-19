@@ -7,20 +7,10 @@ from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv, find_dotenv
 import logging
 import os
-import sys
+
+from app.core.logging import setup_logging
 
 logger = logging.getLogger(__name__)
-
-
-def setup_logging():
-    level = os.getenv("LOG_LEVEL", "INFO").upper()
-    logging.basicConfig(
-        level=getattr(logging, level, logging.INFO),
-        format="%(asctime)s [%(levelname)8s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        stream=sys.stdout,
-    )
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 
 load_dotenv(find_dotenv())
@@ -58,6 +48,7 @@ from app.middleware.rate_limit import (  # noqa: E402
     _rate_limit_exceeded_handler,
 )
 from app.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
+from app.middleware.request_id import RequestIDMiddleware  # noqa: E402
 from app.services.redis_service import RedisCache  # noqa: E402
 
 
@@ -143,6 +134,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestIDMiddleware)
 
 
 # Add validation error handler for detailed error messages
