@@ -77,6 +77,11 @@ class Settings(BaseSettings):
             )
         return self
 
+    # OpenTelemetry tracing (Phase 3: opt-in OTLP export, off by default)
+    OTEL_ENABLED: bool = False
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://localhost:4318"
+    OTEL_SAMPLER_RATIO: float = 1.0
+
     # Anonymous course-list cache (PostgreSQL pooler ~1.5s per query on cold pool)
     COURSE_LIST_TTL_SECONDS: int = 30
 
