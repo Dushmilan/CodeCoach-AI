@@ -48,6 +48,7 @@ from app.middleware.rate_limit import (  # noqa: E402
     _rate_limit_exceeded_handler,
 )
 from app.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
+from app.middleware.request_id import RequestIDMiddleware  # noqa: E402
 from app.services.redis_service import RedisCache  # noqa: E402
 
 
@@ -127,6 +128,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestIDMiddleware)
 
 
 # Add validation error handler for detailed error messages

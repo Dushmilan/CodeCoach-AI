@@ -59,7 +59,14 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "message": _redact_text(record.getMessage()),
+            "request_id": getattr(record, "request_id", "-"),
+            "trace_id": getattr(record, "trace_id", "-"),
+            "span_id": getattr(record, "span_id", "-"),
         }
+        for key in ("method", "path", "status", "latency_ms"):
+            value = getattr(record, key, None)
+            if value is not None:
+                payload[key] = value
         if record.exc_info and record.exc_info[0] is not None:
             payload["exc_info"] = _redact_text(self.formatException(record.exc_info))
         return json.dumps(payload, separators=(",", ":"))
@@ -85,6 +92,9 @@ def setup_logging(
 
     handler = logging.StreamHandler(out)
     handler.addFilter(RedactingFilter())
+    from app.middleware.request_id import CorrelationFilter
+
+    handler.addFilter(CorrelationFilter())
     if resolved_env == "production":
         handler.setFormatter(JsonFormatter())
     else:
