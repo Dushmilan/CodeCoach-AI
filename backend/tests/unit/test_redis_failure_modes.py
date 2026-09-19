@@ -170,3 +170,73 @@ async def test_half_open_recovers_without_restart():
         cache._disabled_at = None
         await cache.delete(key)
         await cache.close()
+
+
+def _dead_cache():
+    """Real RedisCache pointed at a closed port: every op fails fast."""
+    from app.services.redis_service import RedisCache
+
+    return RedisCache("redis://127.0.0.1:1/0", socket_timeout=0.2)
+
+
+@pytest.mark.asyncio
+async def test_question_bank_serves_from_db_when_cache_dead():
+    """Issue #210: dead cache degrades to the repository, never raises."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.models.schemas import (
+        Difficulty,
+        Example,
+        Question,
+        StarterCode,
+        TestCase,
+    )
+    from app.services.question_bank import QuestionBank
+
+    question = Question(
+        id="two-sum",
+        title="Two Sum",
+        difficulty=Difficulty.EASY,
+        category="arrays",
+        description="desc",
+        starter=StarterCode(python="def f(): pass"),
+        examples=[Example(input="1", output="1")],
+        test_cases=[TestCase(input="1", expected_output="1")],
+    )
+    repo = MagicMock()
+    repo.get_by_id = AsyncMock(return_value=question)
+    cache = _dead_cache()
+    try:
+        bank = QuestionBank(repository=repo, cache=cache)
+        assert await bank.get("two-sum") == question
+    finally:
+        await cache.close()
+
+
+@pytest.mark.asyncio
+async def test_piston_execute_ignores_dead_cache():
+    """Issue #210: execution still runs via Piston when caching is down."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from app.services.piston_service import PistonService
+
+    with patch("httpx.AsyncClient") as mock_client:
+        mock_instance = AsyncMock()
+        mock_instance.__aenter__.return_value = mock_instance
+        mock_client.return_value = mock_instance
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "run": {"stdout": "Hi\n", "stderr": "", "code": 0},
+            "language": "python",
+            "version": "3.10.0",
+        }
+        mock_instance.post.return_value = mock_response
+
+        cache = _dead_cache()
+        try:
+            service = PistonService(cache=cache)
+            result = await service.execute("python", "print('Hi')")
+            assert result.stdout == "Hi\n"
+        finally:
+            await cache.close()

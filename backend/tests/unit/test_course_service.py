@@ -392,3 +392,32 @@ class TestAnonymousCourseListCache:
 
         assert mock_course_repo.get_all_courses.call_count == 2
         assert cache.store == {}
+
+
+class TestAnonymousListLockBound:
+    """Issue #210: lock losers must not sleep up to 1s (20 polls x 50ms)."""
+
+    @pytest.mark.asyncio
+    async def test_lock_loser_falls_back_after_bounded_polls(
+        self, mock_course_repo, mock_progress_repo
+    ):
+        class _StuckLockCache:
+            def __init__(self):
+                self.get_calls = 0
+
+            async def get(self, key):
+                self.get_calls += 1
+                return None  # winner never publishes
+
+            async def set_if_absent(self, key, value, ttl=300):
+                return False  # lock held by someone else
+
+        cache = _StuckLockCache()
+        service = CourseService(
+            course_repo=mock_course_repo,
+            progress_repo=mock_progress_repo,
+            cache=cache,
+        )
+        assert await service.list_courses(user_id=None) == []
+        # 1 initial read + a small bounded number of re-polls, not 21.
+        assert cache.get_calls <= 5

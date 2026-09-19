@@ -17,9 +17,26 @@ class _FakeRedis:
     async def get(self, key):
         return None
 
+    async def ping(self):
+        return True
+
 
 class _FakeRedisDisabled:
     _enabled = False
+    _disabled_at = 0.0
+
+    async def ping(self):
+        return False
+
+
+class _FlakyRedis:
+    """Ping fails mid-probe (breaker trips during the round trip)."""
+
+    _enabled = True
+
+    async def ping(self):
+        self._enabled = False
+        return False
 
 
 def _report(flags=None, total=0):
@@ -64,11 +81,23 @@ async def test_render_unhealthy_when_db_missing():
 
 
 @pytest.mark.asyncio
-async def test_render_unhealthy_when_redis_disabled():
+async def test_render_degraded_not_unhealthy_when_redis_disabled():
+    """Issue #210: Redis is disposable cache — outage degrades, stays healthy."""
     svc = MonitoringService(_FakeRedisDisabled())
     report = await svc.render(db_session=_FakeDB())
     assert not any(d.ok for d in report.dependencies if d.name == "redis")
-    assert report.healthy is False
+    assert report.healthy is True
+    assert report.degraded == ["redis"]
+
+
+@pytest.mark.asyncio
+async def test_probe_reports_degraded_on_failed_round_trip():
+    """Issue #210: first probe after an outage already shows degraded."""
+    svc = MonitoringService(_FlakyRedis())
+    report = await svc.render(db_session=_FakeDB())
+    assert not any(d.ok for d in report.dependencies if d.name == "redis")
+    assert report.healthy is True
+    assert report.degraded == ["redis"]
 
 
 @pytest.mark.asyncio

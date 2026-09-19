@@ -76,7 +76,9 @@ async def monitoring_check(
 
     Runs lightweight probes against Redis and the database, plus the abuse
     detector over the last 24h of rate-limit events. `healthy` is false when
-    a dependency is unreachable or a high-severity abuse flag is present.
+    the database is unreachable or a high-severity abuse flag is present; a
+    Redis-only outage reports `healthy: true` with the cache named in
+    `degraded` (requests are served slower from the database).
     """
     from app.services.abuse_detection import AbuseDetectionService
     from app.services.monitoring import MonitoringService
@@ -102,6 +104,7 @@ async def monitoring_check(
         "status": "ok" if snapshot.healthy else "degraded",
         "timestamp": snapshot.timestamp,
         "healthy": snapshot.healthy,
+        "degraded": snapshot.degraded,
         "dependencies": [
             {"name": d.name, "ok": d.ok, "detail": d.detail}
             for d in snapshot.dependencies

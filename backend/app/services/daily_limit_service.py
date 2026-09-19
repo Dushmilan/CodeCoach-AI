@@ -10,10 +10,13 @@ only; persistence of the increment happens via UsageService after a call).
 """
 
 from datetime import datetime, timedelta, timezone
+import logging
 from typing import Optional, Tuple
 
 from app.ports.usage_repository import UsageRepository
 from app.services.redis_service import RedisCache
+
+logger = logging.getLogger(__name__)
 
 
 class DailyLimitService:
@@ -70,7 +73,16 @@ class DailyLimitService:
             value = await self.cache.incr(key, self.ttl_to_midnight(now))
             if value is not None:
                 if value > cap:
-                    await self.cache.decr(key)
+                    # Denied attempts must not burn quota: refund the slot.
+                    # One best-effort retry covers transient blips; a lost
+                    # refund only inflates the approximate Redis counter —
+                    # Postgres usage rows remain the billing truth.
+                    if await self.cache.decr(key) is None:
+                        logger.warning(
+                            "daily quota refund failed user=%s (retrying once)",
+                            user_id,
+                        )
+                        await self.cache.decr(key)
                     return False, 0
                 return True, cap - value
         daily = await self.repo.get_daily(user_id, day)

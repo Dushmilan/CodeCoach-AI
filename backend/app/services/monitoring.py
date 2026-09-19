@@ -35,6 +35,7 @@ class MonitoringReport:
     dependencies: list[DependencyStatus] = field(default_factory=list)
     abuse_flag_count: int = 0
     abuse_severity_max: str = "none"
+    degraded: list[str] = field(default_factory=list)
 
 
 class MonitoringService:
@@ -45,11 +46,16 @@ class MonitoringService:
         if self._redis is None:
             return DependencyStatus(name="redis", ok=False, detail="disabled")
         try:
-            if getattr(self._redis, "_enabled", True) is False:
-                return DependencyStatus(name="redis", ok=False, detail="disabled")
-            # Round-trip through the cache — exercises pool + connectivity.
-            await self._redis.get("__monitor_probe__")
-            return DependencyStatus(name="redis", ok=True, detail="ok")
+            # ping() routes through the breaker's half-open probe, so a
+            # monitoring poll both reports AND triggers recovery when due —
+            # no traffic needed for the cache to heal itself.
+            before = getattr(self._redis, "_disabled_at", None)
+            alive = await self._redis.ping()
+            after = getattr(self._redis, "_disabled_at", None)
+            if alive and getattr(self._redis, "_enabled", True):
+                return DependencyStatus(name="redis", ok=True, detail="ok")
+            detail = "degraded" if after != before else "disabled"
+            return DependencyStatus(name="redis", ok=False, detail=detail)
         except Exception as e:  # pragma: no cover - defensive
             return DependencyStatus(name="redis", ok=False, detail=str(e))
 
@@ -79,13 +85,17 @@ class MonitoringService:
             if severity_order.get(f.severity, 0) > severity_order.get(max_sev, 0):
                 max_sev = f.severity
 
-        healthy = all(d.ok for d in deps) and max_sev != "high"
+        # Redis is a disposable cache: its outage degrades (slower, DB-backed)
+        # but does not make the service unhealthy. DB or abuse still does.
+        degraded = [d.name for d in deps if not d.ok and d.name == "redis"]
+        healthy = all(d.ok for d in deps if d.name != "redis") and max_sev != "high"
         return MonitoringReport(
             healthy=healthy,
             timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             dependencies=deps,
             abuse_flag_count=len(flags),
             abuse_severity_max=max_sev,
+            degraded=degraded,
         )
 
 

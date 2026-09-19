@@ -47,7 +47,7 @@ class TestMonitoringEndpoint:
             app.dependency_overrides.pop(get_usage_repo, None)
 
     @pytest.mark.asyncio
-    async def test_monitoring_marks_redis_unhealthy_when_disabled(
+    async def test_monitoring_marks_redis_degraded_when_disabled(
         self, async_client, test_db
     ):
         class _DisabledRedis:
@@ -71,7 +71,8 @@ class TestMonitoringEndpoint:
             data = res.json()
             redis = next(d for d in data["dependencies"] if d["name"] == "redis")
             assert redis["ok"] is False
-            assert data["healthy"] is False
+            assert data["healthy"] is True
+            assert data["degraded"] == ["redis"]
         finally:
             app.dependency_overrides.pop(get_redis_cache, None)
             app.dependency_overrides.pop(get_usage_repo, None)

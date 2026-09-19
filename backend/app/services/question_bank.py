@@ -69,6 +69,8 @@ class QuestionBank:
     # ── Interface ─────────────────────────────────────────────────────
 
     async def query(self, filters: QuestionFilters) -> QuestionPage:
+        # Deliberately uncached: filtered/paginated lists have unbounded
+        # key cardinality and stale-page risk; detail + stats are cached.
         offset = (filters.page - 1) * filters.per_page
         if filters.query:
             summaries = await self._repo.search_summaries(
