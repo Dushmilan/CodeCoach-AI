@@ -49,6 +49,7 @@ from app.middleware.rate_limit import (  # noqa: E402
 )
 from app.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
 from app.middleware.request_id import RequestIDMiddleware  # noqa: E402
+from app.core.tracing import setup_tracing  # noqa: E402
 from app.services.redis_service import RedisCache  # noqa: E402
 
 
@@ -85,6 +86,12 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 settings = get_settings()
 
 _production = is_production()
+
+setup_tracing(
+    enabled=settings.OTEL_ENABLED,
+    endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT,
+    sampler_ratio=settings.OTEL_SAMPLER_RATIO,
+)
 
 
 async def _log_migration_requirement() -> None:

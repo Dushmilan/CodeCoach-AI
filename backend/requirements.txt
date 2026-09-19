@@ -17,6 +17,11 @@ cryptography>=42.0,<45
 # Redis caching
 redis[hiredis]>=5.0,<6
 
+# OpenTelemetry tracing (Phase 3: opt-in OTLP export)
+opentelemetry-api>=1.30,<2
+opentelemetry-sdk>=1.30,<2
+opentelemetry-exporter-otlp>=1.30,<2
+
 # Dev / linting / testing
 ruff==0.15.13
 mypy>=1.11,<2
