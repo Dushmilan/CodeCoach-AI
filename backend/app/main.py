@@ -7,20 +7,10 @@ from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv, find_dotenv
 import logging
 import os
-import sys
+
+from app.core.logging import setup_logging
 
 logger = logging.getLogger(__name__)
-
-
-def setup_logging():
-    level = os.getenv("LOG_LEVEL", "INFO").upper()
-    logging.basicConfig(
-        level=getattr(logging, level, logging.INFO),
-        format="%(asctime)s [%(levelname)8s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        stream=sys.stdout,
-    )
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 
 load_dotenv(find_dotenv())
