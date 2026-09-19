@@ -23,7 +23,13 @@ vi.mock('@/providers', () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isHydrated: true,
-    user: { plan: 'premium' },
+    user: {
+      id: 'test-id',
+      username: 'testuser',
+      email: 'test@example.com',
+      created_at: '2025-01-01T00:00:00Z',
+      is_active: true,
+    },
   }),
 }));
 
