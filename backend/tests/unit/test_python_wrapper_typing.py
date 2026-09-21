@@ -95,3 +95,101 @@ class TestTypingAutoImport:
         runner = PythonCodeWrapper().wrap_with_tests(code, CASES)
         assert "from typing import List" in runner
         _exec_suite(runner)
+
+
+class TestTypingEdgeCases:
+    """Senior edge coverage for the #231 typing auto-import.
+
+    Every case pins BOTH runner paths (wrap AND wrap_with_tests) and
+    execs the runner so a bad import line fails loudly, not silently.
+    """
+
+    def test_nested_generics_inject_all_names_once(self):
+        code = "def f(m: Dict[str, List[int]]) -> Optional[List[int]]:\n    return None"
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert runner.count("from typing import") == 1
+            line = next(ln for ln in runner.splitlines() if "from typing import" in ln)
+            for name in ("Dict", "List", "Optional"):
+                assert name in line
+        _exec_single(PythonCodeWrapper().wrap(code), '{"a": [1]}')
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+
+    def test_typing_attribute_style_injects_typing_module(self):
+        code = "def f(nums: typing.List[int]) -> int:\n    return 1"
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert "import typing" in runner
+        _exec_single(PythonCodeWrapper().wrap(code), "[1,2]")
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+
+    def test_typing_attribute_with_existing_import_gets_no_injection(self):
+        code = "import typing\ndef f(nums: typing.List[int]) -> int:\n    return 1"
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert "import typing" in runner  # the user's own line
+            assert runner.count("import typing") == 1
+        _exec_single(PythonCodeWrapper().wrap(code), "[1,2]")
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+
+    def test_typing_module_alias_gets_no_injection(self):
+        code = "import typing as t\ndef f(nums: t.List[int]) -> int:\n    return 1"
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert "from typing import" not in runner
+        _exec_single(PythonCodeWrapper().wrap(code), "[1,2]")
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+
+    def test_from_import_alias_gets_no_injection(self):
+        code = "from typing import List as L\ndef f(nums: L[int]) -> int:\n    return 1"
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert runner.count("from typing import") == 1
+        _exec_single(PythonCodeWrapper().wrap(code), "[1,2]")
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+
+    def test_partial_import_injects_only_missing_names(self):
+        code = (
+            "from typing import List\n"
+            "def f(nums: List[int]) -> int:\n"
+            "    m: Dict[str, int] = {}\n"
+            "    return 1"
+        )
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert runner.count("from typing import") == 2
+            assert "from typing import Dict" in runner
+        _exec_single(PythonCodeWrapper().wrap(code), "[1,2]")
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+
+    def test_mixed_attribute_and_bare_names_inject_both_lines(self):
+        code = "def f(nums: typing.Optional[List[int]]) -> int:\n    return 1"
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert "import typing" in runner
+            assert "from typing import List" in runner
+        _exec_single(PythonCodeWrapper().wrap(code), "[1,2]")
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+
+    def test_syntax_error_code_passes_through_without_typing(self):
+        code = "def broken(:\n    pass"
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert "from typing import" not in runner
+            assert "import typing" not in runner

@@ -302,5 +302,31 @@ describe('Header', () => {
       expect(dashboardLinks).toHaveLength(0);
       expect(dialog.textContent).not.toMatch(/dashboard/i);
     });
+
+    it.each([
+      { role: 'user', label: 'student' },
+      { role: 'ta', label: 'TA' },
+      { role: 'professor', label: 'professor' },
+      { role: 'admin', label: 'admin' },
+      { role: 'super_admin', label: 'super_admin' },
+    ])(
+      'shows exactly one desktop + one mobile dashboard link for $label role',
+      ({ role }) => {
+        mockUseAuth.mockReturnValue({
+          user: { id: '9', username: `${role}-u`, email: 'r@a.com', created_at: '', is_active: true, role },
+          isAuthenticated: true,
+          isHydrated: true,
+          isLoading: false,
+          logout: vi.fn(),
+        } as unknown as ReturnType<typeof mockUseAuth>);
+        render(<Header />);
+        const desktop = screen.getAllByTestId('header-dashboard-link');
+        expect(desktop).toHaveLength(1);
+        expect(desktop[0]).toHaveAttribute('href', '/dashboard');
+        const mobile = screen.getAllByTestId('header-dashboard-link-mobile');
+        expect(mobile).toHaveLength(1);
+        expect(mobile[0]).toHaveAttribute('href', '/dashboard');
+      },
+    );
   });
 });

@@ -99,6 +99,19 @@ class TestDefaultFallback:
             "contains-duplicate",
         ]
 
+    def test_limit_one_returns_first_default_only(self):
+        service = _isolated_service()
+
+        async def loader(qid: str):
+            if qid in DEFAULT_COLD_START_QUESTION_IDS:
+                return _fake_question(qid)
+            return None
+
+        results = asyncio.run(
+            service.get_recommended_questions("fresh-232", loader, limit=1)
+        )
+        assert [r.question.id for r in results] == [DEFAULT_COLD_START_QUESTION_IDS[0]]
+
     def test_users_with_states_never_get_defaults(self):
         service = SkillGraphService(repository=build_seeded_repo())
 
