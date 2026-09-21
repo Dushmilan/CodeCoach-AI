@@ -96,8 +96,6 @@ class FunctionSignatureValidationUseCase(BaseValidationUseCase):
         generic_match = re.match(r"(\w+)\[", type_str)
         if generic_match and generic_match.group(1) in self.VALID_PYTHON_TYPES:
             return True
-        if type_str.startswith(("Optional[", "Union[", "Callable[")):
-            return True
         if type_str.lower() in {t.lower() for t in self.VALID_PYTHON_TYPES}:
             return True
         return False

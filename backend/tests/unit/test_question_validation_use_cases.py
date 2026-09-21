@@ -588,6 +588,136 @@ def solve(nums: List[int]) -> List[int]:
         assert len(result.issues) > 0
 
 
+class TestFunctionSignatureCoverageGaps:
+    """Round 2: close the function_signature.py coverage gap with real tests.
+
+    Each test pins observable validator behavior for a previously
+    unexecuted line/branch (measured 87.4% lines unit-only vs the 91.1%
+    floor): default-valued params, case-insensitive builtins, trailing
+    commas, missing definitions, invalid names, arrow-function JS,
+    non-camelCase Java, cross-language name mismatches, and the
+    generic-alias validity path (Optional/Union/Callable).
+    """
+
+    def _use_case(self):
+        from app.services.question_validator import FunctionSignatureValidationUseCase
+
+        return FunctionSignatureValidationUseCase()
+
+    def _python_issues(self, code: str):
+        return self._use_case()._validate_python_signature(code)
+
+    def _js_issues(self, code: str):
+        return self._use_case()._validate_javascript_signature(code)
+
+    def _java_issues(self, code: str):
+        return self._use_case()._validate_java_signature(code)
+
+    def test_default_valued_params_are_stripped_not_flagged(self):
+        issues = self._python_issues(
+            "def solve(nums: List[int] = None, target: int = 0) -> int:\n    pass"
+        )
+        assert [i for i in issues if i.severity == ValidationSeverity.ERROR] == []
+        assert not any("missing type hint" in i.message for i in issues)
+
+    def test_case_insensitive_builtin_spellings_are_valid(self):
+        issues = self._python_issues("def solve(nums: LIST) -> INT:\n    pass")
+        assert not any("Potentially invalid" in i.message for i in issues)
+
+    def test_generic_aliases_validate_without_startswith_fallback(self):
+        for hint in ("Optional[int]", "Union[int, str]", "Callable[[int], int]"):
+            assert self._use_case()._is_valid_python_type(hint) is True
+
+    def test_nested_generic_commas_do_not_split_params(self):
+        params = self._use_case()._parse_python_params("m: Dict[str, int]")
+        assert params == [("m", "Dict[str, int]")]
+
+    def test_trailing_comma_param_is_ignored(self):
+        params = self._use_case()._parse_python_params("nums: List[int],")
+        assert params == [("nums", "List[int]")]
+
+    def test_missing_python_definition_is_error(self):
+        issues = self._python_issues("nums = [1, 2, 3]")
+        assert any(
+            i.severity == ValidationSeverity.ERROR
+            and "No valid Python function definition" in i.message
+            for i in issues
+        )
+
+    def test_invalid_python_function_name_warns(self):
+        issues = self._python_issues("def 2solve(nums: int) -> int:\n    pass")
+        assert any(
+            i.severity == ValidationSeverity.WARNING
+            and "Invalid Python function name" in i.message
+            for i in issues
+        )
+
+    def test_unknown_param_type_hint_is_info(self):
+        issues = self._python_issues("def solve(nums: CustomType) -> int:\n    pass")
+        assert any(
+            i.severity == ValidationSeverity.INFO
+            and "nums" in i.message
+            and "CustomType" in i.message
+            for i in issues
+        )
+
+    def test_arrow_function_js_has_no_missing_definition_error(self):
+        issues = self._js_issues("const solve = (nums) => nums;")
+        assert [i for i in issues if i.severity == ValidationSeverity.ERROR] == []
+
+    def test_missing_js_definition_is_error(self):
+        issues = self._js_issues("let x = 42;")
+        assert any(
+            i.severity == ValidationSeverity.ERROR
+            and "No valid JavaScript function definition" in i.message
+            for i in issues
+        )
+
+    def test_invalid_js_function_name_warns(self):
+        issues = self._js_issues("const 123abc = (x) => x;")
+        assert any(
+            i.severity == ValidationSeverity.WARNING
+            and "Invalid JavaScript function name" in i.message
+            for i in issues
+        )
+
+    def test_missing_java_definition_is_error(self):
+        issues = self._java_issues("class Solution { int x = 1; }")
+        assert any(
+            i.severity == ValidationSeverity.ERROR
+            and "No valid Java method definition" in i.message
+            for i in issues
+        )
+
+    def test_non_camelcase_java_method_name_is_info(self):
+        issues = self._java_issues(
+            "class Solution { public int Solve(int[] nums) { return 0; } }"
+        )
+        assert any(
+            i.severity == ValidationSeverity.INFO and "camelCase" in i.message
+            for i in issues
+        )
+
+    def test_extract_java_method_name_returns_none_without_public_method(self):
+        assert self._use_case()._extract_java_method_name("class A { int x; }") is None
+
+    def test_python_js_name_mismatch_is_info(self, valid_question_data):
+        valid_question_data["starter"]["python"] = (
+            "def solve(nums: List[int]) -> List[int]:\n    pass"
+        )
+        valid_question_data["starter"]["javascript"] = (
+            "function resolver(nums) {\n    return nums;\n}"
+        )
+        question = Question(**valid_question_data)
+        issues = self._use_case()._check_signature_consistency(question)
+        assert any(
+            i.severity == ValidationSeverity.INFO
+            and "solve" in i.message
+            and "resolver" in i.message
+            for i in issues
+        )
+
+
 # ============================================================================
 # OutputFormatValidationUseCase Tests
 # ============================================================================

@@ -193,3 +193,82 @@ class TestTypingEdgeCases:
         ):
             assert "from typing import" not in runner
             assert "import typing" not in runner
+
+
+class TestFutureImportAndStringAnnotations:
+    """String annotations + ``from __future__ import annotations`` (Round 2).
+
+    Probe results (pinned here):
+    - ``from __future__ import annotations`` does NOT change the AST —
+      annotations still parse as real expressions, so ``_typing_import_block``
+      still sees the bare names and must inject. The injected header must go
+      AFTER the student's future imports (they must lead the module), or the
+      runner is a compile-time SyntaxError.
+    - Quoted annotations (``"List[int]"``) parse as string Constants: no
+      Name node exists, so nothing is injected. Safe-wont-fix: annotations
+      are never evaluated at def-time, so the function defines and runs
+      without the import (the runner never calls ``get_type_hints``).
+    """
+
+    FUTURE_CODE = (
+        "from __future__ import annotations\n"
+        "def two_sum(nums: List[int], target: int) -> List[int]:\n"
+        "    return list(nums)"
+    )
+
+    def test_future_annotations_still_inject_typing(self):
+        for runner in (
+            PythonCodeWrapper().wrap(self.FUTURE_CODE),
+            PythonCodeWrapper().wrap_with_tests(self.FUTURE_CODE, CASES),
+        ):
+            assert "from typing import List" in runner
+
+    def test_future_import_leads_runner_module(self):
+        for runner in (
+            PythonCodeWrapper().wrap(self.FUTURE_CODE),
+            PythonCodeWrapper().wrap_with_tests(self.FUTURE_CODE, CASES),
+        ):
+            compile(runner, "<runner>", "exec")
+            future_at = runner.index("from __future__ import annotations")
+            assert runner.index("import sys") > future_at
+            assert runner.index("from typing import List") > future_at
+
+    def test_future_annotated_runner_exec_defines_function(self):
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(self.FUTURE_CODE, CASES))
+        namespace = _exec_single(
+            PythonCodeWrapper().wrap(self.FUTURE_CODE), "[2,7,11,15], 9"
+        )
+        assert callable(namespace["two_sum"])
+
+    def test_future_import_without_typing_still_compiles(self):
+        code = (
+            "from __future__ import annotations\n"
+            "def add(a: int, b: int) -> int:\n"
+            "    return a + b"
+        )
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            compile(runner, "<runner>", "exec")
+        _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+
+    def test_string_annotations_need_no_injection_and_exec(self):
+        code = (
+            'def two_sum(nums: "List[int]", target: int) -> "List[int]":\n'
+            "    return list(nums)"
+        )
+        for runner in (
+            PythonCodeWrapper().wrap(code),
+            PythonCodeWrapper().wrap_with_tests(code, CASES),
+        ):
+            assert "from typing import" not in runner
+            compile(runner, "<runner>", "exec")
+        namespace = _exec_suite(PythonCodeWrapper().wrap_with_tests(code, CASES))
+        assert callable(namespace["two_sum"])
+
+    def test_semicolon_shared_future_import_is_left_untouched(self):
+        from app.adapters.code_wrappers.python_wrapper import _split_future_imports
+
+        code = "from __future__ import annotations; x = 1"
+        assert _split_future_imports(code) == ("", code)

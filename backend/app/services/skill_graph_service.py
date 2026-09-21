@@ -51,6 +51,15 @@ class SkillGraphService:
         Difficulty.HARD: 2,
     }
 
+    # Loader fan-out bounds for the attempted-easier fill (Round 2).
+    # Uncapped, one unsolved attempt costs one ``question_loader`` call per
+    # same-skill candidate, so a many-attempts user costs
+    # ``attempts × candidates`` loader calls. Both bounds keep best-pick
+    # (easiest strictly-easier, id tiebreak) in unsolved-attempt order and
+    # never let the fill exceed the caller's limit.
+    _ATTEMPTED_FILL_MAX_LOADER_CALLS = 50
+    _ATTEMPTED_FILL_MAX_CANDIDATE_LOADS_PER_ATTEMPT = 20
+
     def __init__(
         self,
         repository: SkillGraphRepository,
@@ -414,7 +423,10 @@ class SkillGraphService:
         ``question_loader``. If the attempted question itself cannot be
         resolved, the comparison rank is unknown and the easiest same-skill
         candidate is used. Fills remaining slots only; never exceeds the
-        caller's limit. Runs AFTER skill recs and BEFORE programme starters.
+        caller's limit. Loader fan-out is bounded (per-attempt candidate
+        loads + total budget, rank-0 early exit); best-pick and
+        unsolved-attempt order are unchanged. Runs AFTER skill recs and
+        BEFORE programme starters.
         """
         submissions_repo = self._submission_repository
         if submissions_repo is None or remaining <= 0:
@@ -440,8 +452,11 @@ class SkillGraphService:
         attempted_set = set(attempted_ordered)
         seen = set(exclude_ids)
         results: List[RecommendedQuestion] = []
+        loader_calls = 0
         for attempted_id in unsolved:
             if len(results) >= remaining:
+                break
+            if loader_calls >= self._ATTEMPTED_FILL_MAX_LOADER_CALLS:
                 break
             mappings = question_skills_by_q.get(attempted_id, [])
             if not mappings:
@@ -449,6 +464,7 @@ class SkillGraphService:
             skill_slug = max(mappings, key=lambda m: m.weight).skill_slug
             skill = skills_by_slug.get(skill_slug)
             skill_name = skill.name if skill is not None else skill_slug
+            loader_calls += 1
             attempted_question = await question_loader(attempted_id)
             attempted_rank = (
                 self._DIFFICULTY_RANK.get(attempted_question.difficulty)
@@ -457,9 +473,21 @@ class SkillGraphService:
             )
             best: Optional[Question] = None
             best_rank = 0
+            candidate_loads = 0
             for candidate_id in question_by_skill.get(skill_slug, []):
+                if best is not None and best_rank == 0:
+                    break
+                if (
+                    candidate_loads
+                    >= self._ATTEMPTED_FILL_MAX_CANDIDATE_LOADS_PER_ATTEMPT
+                ):
+                    break
+                if loader_calls >= self._ATTEMPTED_FILL_MAX_LOADER_CALLS:
+                    break
                 if candidate_id in seen or candidate_id in attempted_set:
                     continue
+                candidate_loads += 1
+                loader_calls += 1
                 candidate = await question_loader(candidate_id)
                 if candidate is None:
                     continue

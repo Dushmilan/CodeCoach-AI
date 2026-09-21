@@ -127,6 +127,51 @@ def _typing_import_block(code: str) -> str:
     return "\n".join(lines)
 
 
+def _split_future_imports(code: str) -> tuple[str, str]:
+    """Split top-level ``from __future__`` imports out of student code.
+
+    The runner prepends its own ``import sys/json`` header (plus injected
+    typing imports), which would otherwise push a student's future import
+    off the top of the module — a compile-time ``SyntaxError``, since
+    future imports must lead the file. Returns ``(future_block, rest)``;
+    ``future_block`` is "" when there is nothing to hoist or the code does
+    not parse (old behavior preserved).
+    """
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return "", code
+    future_nodes = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom) and node.module == "__future__"
+    ]
+    if not future_nodes:
+        return "", code
+    lines = code.splitlines(keepends=True)
+    for node in future_nodes:
+        # A future import sharing its line with another statement via
+        # semicolon (``from __future__ import annotations; x = 1``) cannot
+        # be hoisted by whole lines without silently dropping that code —
+        # bail out and preserve old behavior instead.
+        first = lines[node.lineno - 1]
+        if first[: node.col_offset].strip():
+            return "", code
+        last = lines[(node.end_lineno or node.lineno) - 1]
+        end_col = node.end_col_offset or len(last)
+        trailing = last[end_col:].strip()
+        if trailing and not trailing.startswith("#"):
+            return "", code
+    future_linenos: set[int] = set()
+    for node in future_nodes:
+        for lineno in range(node.lineno, (node.end_lineno or node.lineno) + 1):
+            future_linenos.add(lineno)
+    lines = code.splitlines(keepends=True)
+    future_block = "".join(lines[i - 1] for i in sorted(future_linenos)).strip()
+    rest = "".join(ln for i, ln in enumerate(lines, start=1) if i not in future_linenos)
+    return future_block, rest
+
+
 class PythonCodeWrapper(CodeWrapper):
     # Bracket/quote-aware splitter embedded in multi-arg single-run runners.
     # f-string literal: every brace below is doubled in the template itself.
@@ -194,13 +239,16 @@ def __to_arg(__s):
         else:
             result = {func_name}(parsed_line)"""
         typing_imports = _typing_import_block(code)
+        future_block, body = _split_future_imports(code)
         header = "import sys\nimport json"
         if typing_imports:
             header += f"\n{typing_imports}"
+        if future_block:
+            header = f"{future_block}\n{header}"
         runner = f"""
 {header}
 
-{code}
+{body}
 """
         if total > 1:
             runner += self._SPLIT_HELPER
@@ -249,12 +297,15 @@ except Exception as e:
         tc_repr = repr(tc_clean)
 
         typing_imports = _typing_import_block(code)
+        future_block, body = _split_future_imports(code)
         header = "import sys, json"
         if typing_imports:
             header += f"\n{typing_imports}"
+        if future_block:
+            header = f"{future_block}\n{header}"
         return f"""{header}
 
-{code}
+{body}
 
 {PYTHON_OUTPUT_MATCH}
 

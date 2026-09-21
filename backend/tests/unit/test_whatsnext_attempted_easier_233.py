@@ -303,3 +303,120 @@ class TestAttemptedEasierCombined:
 
         results = _run(service, loader, limit=4)
         assert [r.question.id for r in results] == list(DEFAULT_COLD_START_QUESTION_IDS)
+
+
+class TestAttemptedEasierFillFanoutCap:
+    """Round 2: bound ``question_loader`` fan-out in ``_attempted_easier_fill``.
+
+    Uncapped, one unsolved attempt fans out to one loader call per
+    same-skill candidate, so a many-attempts user costs
+    ``attempts × candidates`` loader calls. The fill keeps best-pick
+    (easiest strictly-easier, id tiebreak) in unsolved-attempt order, but
+    the scan is bounded: a per-attempt candidate-load cap, a total
+    loader-call budget, and early exit once rank-0 (EASY) is found.
+    """
+
+    def _service_no_recs(self, repo, subs):
+        service = SkillGraphService(
+            repository=repo, submission_repository=FakeSubmissions(subs)
+        )
+
+        async def recs(*args, **kwargs):
+            return []
+
+        service.get_recommendations = recs  # type: ignore[method-assign]
+        return service
+
+    def _big_repo(self, attempted_ids, candidate_ids):
+        repo = InMemorySkillGraphRepository()
+        repo.seed_skills([Skill(slug="arrays", name="Arrays")])
+        repo.seed_question_skills(
+            [
+                QuestionSkill(question_id=qid, skill_slug="arrays", weight=1.0)
+                for qid in attempted_ids + candidate_ids
+            ]
+        )
+        return repo
+
+    def _counting_loader(self, mapping, counter):
+        async def load(question_id: str):
+            counter["calls"] += 1
+            if question_id not in mapping:
+                return None
+            return _question(question_id, mapping[question_id])
+
+        return load
+
+    def test_many_attempts_resolve_within_loader_budget(self):
+        attempted = [f"hard-{i}" for i in range(25)]
+        candidates = [f"easy-{i}" for i in range(40)]
+        mapping = {qid: Difficulty.HARD for qid in attempted}
+        mapping.update({qid: Difficulty.EASY for qid in candidates})
+        counter = {"calls": 0}
+        service = self._service_no_recs(
+            self._big_repo(attempted, candidates),
+            [_sub("u-1", qid, passed=False, seq=i) for i, qid in enumerate(attempted)],
+        )
+        results = _run(service, self._counting_loader(mapping, counter), limit=5)
+        assert len(results) == 5  # == limit: fill never exceeds it.
+        assert counter["calls"] <= SkillGraphService._ATTEMPTED_FILL_MAX_LOADER_CALLS
+        assert {r.question.difficulty for r in results} == {Difficulty.EASY}
+        assert len({r.question.id for r in results}) == 5
+
+    def test_per_attempt_candidate_scan_is_bounded_but_keeps_best_pick(self):
+        # All MEDIUM: every candidate is valid (strictly easier than HARD),
+        # none triggers the rank-0 early exit, so the scan must hit the
+        # per-attempt cap instead of loading all 100. Seed order puts a
+        # larger id first: best-pick still wins over first-pick.
+        attempted = ["hard-0"]
+        candidates = [f"med-{i}" for i in [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]]
+        candidates += [f"med-x{i}" for i in range(90)]
+        mapping = {"hard-0": Difficulty.HARD}
+        mapping.update({qid: Difficulty.MEDIUM for qid in candidates})
+        counter = {"calls": 0}
+        service = self._service_no_recs(
+            self._big_repo(attempted, candidates),
+            [_sub("u-1", "hard-0", passed=False)],
+        )
+        results = _run(service, self._counting_loader(mapping, counter), limit=5)
+        assert [r.question.id for r in results] == ["med-0"]
+        assert (
+            counter["calls"]
+            <= 1 + SkillGraphService._ATTEMPTED_FILL_MAX_CANDIDATE_LOADS_PER_ATTEMPT
+        )
+
+    def test_multiple_attempts_fill_in_attempt_order_within_limit(self):
+        # Two skills so each unsolved attempt resolves to a distinct pick:
+        # fills follow newest-first attempt order, total <= limit.
+        repo = InMemorySkillGraphRepository()
+        repo.seed_skills(
+            [Skill(slug="arrays", name="Arrays"), Skill(slug="strings", name="Strings")]
+        )
+        repo.seed_question_skills(
+            [
+                QuestionSkill(question_id="hard-a", skill_slug="arrays", weight=1.0),
+                QuestionSkill(question_id="easy-a", skill_slug="arrays", weight=1.0),
+                QuestionSkill(question_id="hard-s", skill_slug="strings", weight=1.0),
+                QuestionSkill(question_id="easy-s", skill_slug="strings", weight=1.0),
+            ]
+        )
+        service = self._service_no_recs(
+            repo,
+            [
+                _sub("u-1", "hard-s", passed=False, seq=1),
+                _sub("u-1", "hard-a", passed=False, seq=0),
+            ],
+        )
+        loader = self._counting_loader(
+            {
+                "hard-a": Difficulty.HARD,
+                "easy-a": Difficulty.EASY,
+                "hard-s": Difficulty.HARD,
+                "easy-s": Difficulty.EASY,
+            },
+            {"calls": 0},
+        )
+        results = _run(service, loader, limit=2)
+        assert [r.question.id for r in results] == ["easy-s", "easy-a"]
+        assert [r.skill_slug for r in results] == ["strings", "arrays"]
+        assert len(results) <= 2
