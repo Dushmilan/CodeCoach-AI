@@ -6,6 +6,7 @@ app.services.question_validator and orchestrates these use cases.
 """
 
 from .base import BaseValidationUseCase
+from .starter_shapes import starter_code_for
 from .structure import StructureValidationUseCase
 from .test_cases import TestCaseValidationUseCase
 from .starter_code import StarterCodeValidationUseCase
@@ -17,6 +18,7 @@ from .animation import AnimationValidationUseCase
 
 __all__ = [
     "BaseValidationUseCase",
+    "starter_code_for",
     "StructureValidationUseCase",
     "TestCaseValidationUseCase",
     "StarterCodeValidationUseCase",

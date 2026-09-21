@@ -13,6 +13,7 @@ from app.models.question_validation_schemas import (
 )
 
 from .base import BaseValidationUseCase
+from .starter_shapes import starter_code_for
 
 
 class SolutionValidationUseCase(BaseValidationUseCase):
@@ -109,31 +110,14 @@ except Exception as e:
     ) -> str:
         """Coerce a union-typed starter to its Python code, if any.
 
-        ``Question.starter`` is ``StarterCode | str | list | dict``: the
-        schema's ``normalize_starter`` turns language-name strings and
-        list/dict shapes into a model, but plain strings survive and
-        unvalidated shapes (``model_construct``/``model_copy``) can arrive
-        as list/dict. This mirrors that normalization at the narrowest
-        boundary instead of crashing on attribute access: model -> .python,
-        dict -> its ``python`` entry, list -> the ``python`` language entry,
-        anything else (str, None, ...) -> "" (treated as absent, exactly
-        like the sibling use cases' ``getattr(starter, lang, None)``).
+        Thin delegate to the shared :func:`starter_code_for` helper so the
+        SOLUTION attribution (here and in ``_used_starter_fallback``) cannot
+        drift from every other use case's boundary coercion. Identical to
+        the Round 7 inline version for all schema-valid inputs (and safer
+        for unvalidated non-str model attributes, which now coerce to ""
+        instead of leaking downstream).
         """
-        if isinstance(starter, StarterCode):
-            return starter.python or ""
-        if isinstance(starter, dict):
-            code = starter.get("python", "")
-            return code if isinstance(code, str) else ""
-        if isinstance(starter, list):
-            for entry in starter:
-                if (
-                    isinstance(entry, dict)
-                    and entry.get("language") == "python"
-                    and isinstance(entry.get("code"), str)
-                ):
-                    return entry["code"]
-            return ""
-        return ""
+        return starter_code_for(starter, "python")
 
     def _create_executable_solution(self, question: Question) -> Optional[str]:
         if question.is_interactive:

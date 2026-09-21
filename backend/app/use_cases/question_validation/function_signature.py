@@ -12,6 +12,7 @@ from app.models.question_validation_schemas import (
 )
 
 from .base import BaseValidationUseCase
+from .starter_shapes import starter_code_for
 
 
 class FunctionSignatureValidationUseCase(BaseValidationUseCase):
@@ -51,9 +52,19 @@ class FunctionSignatureValidationUseCase(BaseValidationUseCase):
 
     async def _execute_validation(self, question: Question) -> UseCaseValidationResult:
         issues: List = []
-        issues.extend(self._validate_python_signature(question.starter.python))
-        issues.extend(self._validate_javascript_signature(question.starter.javascript))
-        issues.extend(self._validate_java_signature(question.starter.java))
+        issues.extend(
+            self._validate_python_signature(
+                starter_code_for(question.starter, "python")
+            )
+        )
+        issues.extend(
+            self._validate_javascript_signature(
+                starter_code_for(question.starter, "javascript")
+            )
+        )
+        issues.extend(
+            self._validate_java_signature(starter_code_for(question.starter, "java"))
+        )
         issues.extend(self._check_signature_consistency(question))
         passed = not any(issue.severity == ValidationSeverity.ERROR for issue in issues)
         return self._create_result(passed=passed, issues=issues)
@@ -260,9 +271,15 @@ class FunctionSignatureValidationUseCase(BaseValidationUseCase):
 
     def _check_signature_consistency(self, question: Question) -> List:
         issues = []
-        python_name = self._extract_python_function_name(question.starter.python)
-        js_name = self._extract_js_function_name(question.starter.javascript)
-        java_name = self._extract_java_method_name(question.starter.java)
+        python_name = self._extract_python_function_name(
+            starter_code_for(question.starter, "python")
+        )
+        js_name = self._extract_js_function_name(
+            starter_code_for(question.starter, "javascript")
+        )
+        java_name = self._extract_java_method_name(
+            starter_code_for(question.starter, "java")
+        )
         if python_name and js_name:
             if python_name.replace("_", "").lower() != js_name.lower():
                 issues.append(
