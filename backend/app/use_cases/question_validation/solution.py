@@ -5,7 +5,7 @@ import re
 from typing import List, Optional
 
 from app.ports.code_executor import CodeExecutor
-from app.models.schemas import Question
+from app.models.schemas import Question, StarterCode
 from app.models.question_validation_schemas import (
     UseCaseValidationResult,
     ValidationUseCase,
@@ -122,12 +122,35 @@ except Exception as e:
         if starter_code:
             candidates.append(starter_code)
         for candidate in candidates:
-            func_match = re.search(r"def\s+(\w+)\s*\(", candidate)
-            if not func_match:
+            if not self._executable_candidate(candidate):
                 continue
-            if "pass" not in candidate or "return" in candidate:
-                return self._create_runner(candidate, func_match.group(1), question)
+            func_match = re.search(r"def\s+(\w+)\s*\(", candidate)
+            assert func_match is not None  # guaranteed by _executable_candidate
+            return self._create_runner(candidate, func_match.group(1), question)
         return None
+
+    def _executable_candidate(self, code: Optional[str]) -> bool:
+        if not code:
+            return False
+        if not re.search(r"def\s+(\w+)\s*\(", code):
+            return False
+        return "pass" not in code or "return" in code
+
+    def _used_starter_fallback(self, question: Question) -> bool:
+        """True when the executed artifact came from the starter, not the reference.
+
+        Interactive questions always execute the reference directly; otherwise
+        the fallback fires exactly when the solution carries no executable
+        function but the starter does (mirrors `_create_executable_solution`).
+        """
+        if question.is_interactive:
+            return False
+        solution_text = str(question.solution) if question.solution else ""
+        if self._executable_candidate(solution_text):
+            return False
+        starter = question.starter
+        starter_python = starter.python if isinstance(starter, StarterCode) else ""
+        return self._executable_candidate(starter_python)
 
     async def _validate_solution_with_piston(self, question: Question) -> List:
         issues = []
@@ -145,6 +168,12 @@ except Exception as e:
                 )
             )
             return issues
+        used_fallback = self._used_starter_fallback(question)
+        fallback_note = (
+            " (executed via starter-code fallback; reference solution is prose)"
+            if used_fallback
+            else ""
+        )
         passed_count = 0
         total_count = len(question.test_cases)
         for i, test_case in enumerate(question.test_cases):
@@ -155,7 +184,7 @@ except Exception as e:
                 if result.exit_code != 0:
                     issues.append(
                         self._create_issue(
-                            message=f"Solution failed on test case {i + 1}: {result.stderr[:100]}",
+                            message=f"Solution failed on test case {i + 1}: {result.stderr[:100]}{fallback_note}",
                             field="solution",
                             test_case_index=i,
                             details={
@@ -172,7 +201,7 @@ except Exception as e:
                 else:
                     issues.append(
                         self._create_issue(
-                            message=f"Solution output mismatch on test case {i + 1}",
+                            message=f"Solution output mismatch on test case {i + 1}{fallback_note}",
                             field="solution",
                             test_case_index=i,
                             details={

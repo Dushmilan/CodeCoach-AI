@@ -1874,3 +1874,132 @@ class TestStarterFallbackContractRound5:
             and i.severity == ValidationSeverity.ERROR
             for i in result.issues
         )
+
+
+# ============================================================================
+# Round 6: starter-fallback attribution note.
+# When the reference solution is prose and the executed artifact came from
+# the starter fallback, per-test-case SOLUTION ERRORs must say so instead
+# of reading as if the reference itself failed. No exact-text consumer
+# exists for these messages (repo-wide grep: only solution.py emits them;
+# tests match substrings), so clarifying the text is safe.
+# ============================================================================
+
+
+class TestStarterFallbackAttributionRound6:
+    """Fallback failures carry a starter-fallback note; reference failures don't."""
+
+    def _use_case(self, executor=None):
+        from app.services.question_validator import SolutionValidationUseCase
+
+        return SolutionValidationUseCase(executor=executor)
+
+    @pytest.mark.asyncio
+    async def test_fallback_exit_failure_notes_starter_fallback(
+        self, valid_question_data, mock_piston_service
+    ):
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["solution"] = "Two-pointer prose explanation."
+        valid_question_data["starter"]["python"] = (
+            "def solve(nums):\n    raise ValueError('boom')"
+        )
+        valid_question_data["test_cases"] = [
+            {"input": "[1]", "expected_output": "[1]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="", stderr="ValueError: boom", exit_code=1
+        )
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is False
+        failures = [
+            i
+            for i in result.issues
+            if i.use_case == ValidationUseCase.SOLUTION
+            and i.severity == ValidationSeverity.ERROR
+            and "failed on test case" in i.message
+        ]
+        assert len(failures) == 1
+        assert "starter" in failures[0].message.lower()
+
+    @pytest.mark.asyncio
+    async def test_fallback_mismatch_notes_starter_fallback(
+        self, valid_question_data, mock_piston_service
+    ):
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["solution"] = "Two-pointer prose explanation."
+        valid_question_data["starter"]["python"] = (
+            "def solve(nums):\n    return ['STARTER']"
+        )
+        valid_question_data["test_cases"] = [
+            {"input": "[1]", "expected_output": "[1]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="['STARTER']", exit_code=0
+        )
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is False
+        mismatches = [
+            i
+            for i in result.issues
+            if i.use_case == ValidationUseCase.SOLUTION
+            and i.severity == ValidationSeverity.ERROR
+            and "mismatch" in i.message
+        ]
+        assert len(mismatches) == 1
+        assert "starter" in mismatches[0].message.lower()
+
+    @pytest.mark.asyncio
+    async def test_reference_failure_carries_no_fallback_note(
+        self, valid_question_data, mock_piston_service
+    ):
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["solution"] = "def solve(nums):\n    return []"
+        valid_question_data["starter"]["python"] = (
+            "def solve(nums):\n    return ['STARTER']"
+        )
+        valid_question_data["test_cases"] = [
+            {"input": "[1]", "expected_output": "[1]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="[]", exit_code=0
+        )
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is False
+        errors = [
+            i
+            for i in result.issues
+            if i.use_case == ValidationUseCase.SOLUTION
+            and i.severity == ValidationSeverity.ERROR
+        ]
+        assert errors != []
+        assert all("starter" not in i.message.lower() for i in errors)
+
+    def test_executable_candidate_rejects_empty(self):
+        uc = self._use_case()
+        assert uc._executable_candidate("") is False
+        assert uc._executable_candidate(None) is False
+
+    def test_no_fallback_for_interactive(self, valid_question_data):
+        valid_question_data["is_interactive"] = True
+        valid_question_data["solution"] = "print('hi')"
+        question = Question(**valid_question_data)
+        assert self._use_case()._used_starter_fallback(question) is False
+
+    def test_empty_starter_yields_no_executable(self, valid_question_data):
+        valid_question_data["solution"] = "Prose only."
+        valid_question_data["starter"]["python"] = ""
+        question = Question(**valid_question_data)
+        assert self._use_case()._create_executable_solution(question) is None
+        assert self._use_case()._used_starter_fallback(question) is False
+
+    def test_non_model_starter_never_fallback(self, valid_question_data):
+        valid_question_data["solution"] = "Prose only."
+        valid_question_data["starter"] = "just text"
+        question = Question(**valid_question_data)
+        assert self._use_case()._used_starter_fallback(question) is False
