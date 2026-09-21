@@ -48,8 +48,8 @@
       "branches": 54.0
     },
     "app/use_cases/question_validation/solution.py": {
-      "lines": 71.0,
-      "branches": 57.6
+      "lines": 100.0,
+      "branches": 100.0
     },
     "app/use_cases/question_validation/starter_code.py": {
       "lines": 52.5,
