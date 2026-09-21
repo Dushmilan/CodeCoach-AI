@@ -231,3 +231,53 @@ class TestFailOnWarningsDefaultRound6:
                 if "fail_on_warnings=True" in text.replace(" ", ""):
                     hits.append(str(path.relative_to(backend)))
         assert hits == []
+
+
+# ============================================================================
+# Round 7: call-site-anchored strict-mode guard.
+# Round 6's guard scans app/ + scripts/ for the literal `fail_on_warnings=True`,
+# which a future strict consumer in a NEW top-level dir (or a new API module)
+# would silently bypass. These tests anchor on the constructor instead: every
+# non-test file that calls `QuestionValidatorService(` is enumerated
+# backend-wide, the set itself is pinned (a new consumer trips the test and
+# forces an audit), and each call-site file is asserted strict-free. tests/
+# is the intentional exception -- the strict opt-in test above must keep
+# constructing a strict service to pin the reflag behavior.
+# ============================================================================
+
+
+class TestFailOnWarningsCallSitesRound7:
+    """No present-or-future call site may opt into strict mode unnoticed."""
+
+    @staticmethod
+    def _backend_root():
+        from pathlib import Path
+
+        return Path(__file__).resolve().parents[2]
+
+    def _call_site_files(self):
+        backend = self._backend_root()
+        sites = []
+        for path in sorted(backend.rglob("*.py")):
+            if "tests" in path.relative_to(backend).parts:
+                continue
+            if "QuestionValidatorService(" in path.read_text():
+                sites.append(path)
+        return sites
+
+    def test_all_call_sites_are_known(self):
+        sites = {
+            str(p.relative_to(self._backend_root())) for p in self._call_site_files()
+        }
+        assert sites == {
+            "app/api/admin.py",
+            "app/api/question_validation.py",
+        }
+
+    def test_no_call_site_enables_strict_mode(self):
+        offenders = [
+            str(p.relative_to(self._backend_root()))
+            for p in self._call_site_files()
+            if "fail_on_warnings=True" in p.read_text().replace(" ", "")
+        ]
+        assert offenders == []

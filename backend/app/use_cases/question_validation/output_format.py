@@ -57,18 +57,24 @@ class OutputFormatValidationUseCase(BaseValidationUseCase):
 
     def _detect_output_format(self, output: str) -> str:
         output = output.strip()
+        # Grammar note: with the default decoder a value starting with `[`
+        # (resp. `{`) that parses IS a list (resp. dict) -- the first
+        # non-whitespace character fixes the JSON type -- so no isinstance
+        # re-check is needed; unparsable input falls through below.
         if output.startswith("[") and output.endswith("]"):
             try:
-                if isinstance(json.loads(output), list):
-                    return self.FORMAT_JSON_ARRAY
+                json.loads(output)
             except json.JSONDecodeError:
                 pass
+            else:
+                return self.FORMAT_JSON_ARRAY
         if output.startswith("{") and output.endswith("}"):
             try:
-                if isinstance(json.loads(output), dict):
-                    return self.FORMAT_JSON_OBJECT
+                json.loads(output)
             except json.JSONDecodeError:
                 pass
+            else:
+                return self.FORMAT_JSON_OBJECT
         try:
             float(output)
             return self.FORMAT_NUMBER
