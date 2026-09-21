@@ -62,3 +62,29 @@ def test_dev_script_has_health_gates_and_teardown():
     assert "/health/" in src, "backend health gate missing"
     assert "pg_isready" in src, "postgres readiness check missing"
     assert "--down" in src, "teardown mode missing"
+
+
+def test_dev_script_frees_default_ports_before_bind():
+    # Issue #217: dev.sh owns the default ports — a stale server holding
+    # :3000/:8000/:9000 must be reclaimed, not worked around.
+    src = _read()
+    for port in ("3000", "8000", "9000"):
+        assert port in src, f"dev.sh must manage default port {port}"
+    assert "free_port" in src or "fuser -k" in src or "lsof -ti" in src, (
+        "dev.sh must reclaim occupied ports before binding"
+    )
+
+
+def test_dev_script_starts_viewer_by_default():
+    # Issue #217: plain ./dev.sh starts everything including the
+    # motion-canvas viewer; --no-viewer opts out.
+    src = _read()
+    assert "WITH_VIEWER=1" in src, "viewer must be on by default"
+    assert "--no-viewer" in src, "opt-out flag --no-viewer missing"
+
+
+def test_gitignore_excludes_harness_dirs():
+    # Issue #217: session scaffolding stays untracked, never committed.
+    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    for entry in (".agents/", ".claude/", ".freebuff/"):
+        assert entry in gitignore, f".gitignore missing {entry}"
