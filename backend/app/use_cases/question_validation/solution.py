@@ -133,10 +133,15 @@ except Exception as e:
         issues = []
         solution_code = self._create_executable_solution(question)
         if not solution_code:
+            # No runnable artifact exists (prose solution + stub-only
+            # starter is the normal real-bank shape): this is advisory,
+            # not a bank-blocking error. Genuinely executable references
+            # that fail cases are still reported as ERROR below.
             issues.append(
                 self._create_issue(
                     message="Could not create executable solution from reference solution",
                     field="solution",
+                    severity=ValidationSeverity.WARNING,
                 )
             )
             return issues

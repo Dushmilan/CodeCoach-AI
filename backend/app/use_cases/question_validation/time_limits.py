@@ -16,10 +16,14 @@ from .base import BaseValidationUseCase
 
 
 class TimeLimitValidationUseCase(BaseValidationUseCase):
+    # Single-tier thresholds: a complexity above `max_complexity` for the
+    # difficulty yields one WARNING (never ERROR) in _validate_time_complexity.
+    # A former `warning_complexity` key per tier was dead config — never read
+    # anywhere — so it was removed in Round 5 rather than left to mislead.
     COMPLEXITY_THRESHOLDS = {
-        "easy": {"max_complexity": "O(n)", "warning_complexity": "O(n log n)"},
-        "medium": {"max_complexity": "O(n log n)", "warning_complexity": "O(n^2)"},
-        "hard": {"max_complexity": "O(n^2)", "warning_complexity": "O(n^3)"},
+        "easy": {"max_complexity": "O(n)"},
+        "medium": {"max_complexity": "O(n log n)"},
+        "hard": {"max_complexity": "O(n^2)"},
     }
     COMPLEXITY_ORDER = [
         "O(1)",

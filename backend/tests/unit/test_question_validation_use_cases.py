@@ -1665,3 +1665,212 @@ class TestTimeLimitsCoverageRound4:
         uc.COMPLEXITY_THRESHOLDS = {}
         question = Question(**valid_question_data)
         assert uc._validate_time_complexity(question) == []
+
+
+# ============================================================================
+# Round 5: SOLUTION non-executable reference is WARNING, not ERROR.
+# Real-bank shape (prose solution + pass-only stub) yields no runnable
+# artifact; flagging the whole bank with ERROR for that is noise. Genuinely
+# executable references that fail cases must STILL be ERROR.
+# ============================================================================
+
+
+class TestSolutionNonExecutableWarningRound5:
+    """Non-executable reference -> WARNING; bad executable -> ERROR."""
+
+    def _use_case(self, executor=None):
+        from app.services.question_validator import SolutionValidationUseCase
+
+        return SolutionValidationUseCase(executor=executor)
+
+    @pytest.mark.asyncio
+    async def test_prose_solution_with_stub_starter_is_warning_not_error(
+        self, valid_question_data, mock_piston_service
+    ):
+        valid_question_data["solution"] = "Return the array as is."
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    pass"
+        question = Question(**valid_question_data)
+        assert self._use_case()._create_executable_solution(question) is None
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is True
+        assert len(result.issues) == 1
+        issue = result.issues[0]
+        assert issue.use_case == ValidationUseCase.SOLUTION
+        assert issue.severity == ValidationSeverity.WARNING
+        assert (
+            issue.message
+            == "Could not create executable solution from reference solution"
+        )
+        assert issue.field == "solution"
+        mock_piston_service.execute.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_bad_executable_reference_is_still_error(
+        self, valid_question_data, mock_piston_service
+    ):
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["solution"] = "def solve(nums):\n    return []"
+        valid_question_data["test_cases"] = [
+            {"input": "[1]", "expected_output": "[1]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="[]", exit_code=0
+        )
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is False
+        assert any(
+            i.severity == ValidationSeverity.ERROR and "mismatch" in i.message
+            for i in result.issues
+        )
+
+    @pytest.mark.asyncio
+    async def test_good_executable_reference_passes_clean(
+        self, valid_question_data, mock_piston_service
+    ):
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["solution"] = "def solve(nums):\n    return nums"
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    pass"
+        valid_question_data["test_cases"] = [
+            {"input": "[1,2,3]", "expected_output": "[1,2,3]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="[1,2,3]", exit_code=0
+        )
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is True
+        assert result.issues == []
+
+
+# ============================================================================
+# Round 5: COMPLEXITY_THRESHOLDS dead-config probe.
+# `warning_complexity` keys are defined but never read — only
+# `max_complexity` drives `_validate_time_complexity`, and every breach is a
+# single-tier WARNING. These tests pin the removal + the surviving boundary.
+# ============================================================================
+
+
+class TestComplexityThresholdsRound5:
+    """Dead warning_complexity keys are gone; max_complexity boundary holds."""
+
+    def _use_case(self):
+        from app.services.question_validator import TimeLimitValidationUseCase
+
+        return TimeLimitValidationUseCase()
+
+    def test_no_dead_warning_complexity_keys(self):
+        uc = self._use_case()
+        assert uc.COMPLEXITY_THRESHOLDS != {}
+        for difficulty, thresholds in uc.COMPLEXITY_THRESHOLDS.items():
+            assert "warning_complexity" not in thresholds, difficulty
+            assert "max_complexity" in thresholds, difficulty
+
+    @pytest.mark.asyncio
+    async def test_medium_boundary_pins_max_only_semantics(self, valid_question_data):
+        from app.models.schemas import Difficulty
+
+        # At max (O(n log n) for medium): no threshold warning.
+        valid_question_data["difficulty"] = Difficulty.MEDIUM
+        valid_question_data["time_complexity"] = "O(n log n)"
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert not any("may be too high" in i.message for i in result.issues)
+        # Above max (O(n^2) for medium): WARNING, never ERROR.
+        valid_question_data["time_complexity"] = "O(n^2)"
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert any(
+            i.severity == ValidationSeverity.WARNING and "may be too high" in i.message
+            for i in result.issues
+        )
+        assert result.passed is True
+
+
+# ============================================================================
+# Round 5: starter-fallback contract pin.
+# `_create_executable_solution` prefers the reference solution and falls back
+# to the starter only when the solution carries no executable function.
+# Behavior is correct post-Round-4; these tests lock the contract so future
+# changes cannot silently misattribute again.
+# ============================================================================
+
+
+class TestStarterFallbackContractRound5:
+    """Pin when the fallback fires, what it executes, and its label."""
+
+    def _use_case(self, executor=None):
+        from app.services.question_validator import SolutionValidationUseCase
+
+        return SolutionValidationUseCase(executor=executor)
+
+    def test_prose_solution_plus_stub_starter_yields_none(self, valid_question_data):
+        # Exact real-bank shape: nothing executable anywhere -> None.
+        valid_question_data["solution"] = "Return the array as is."
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    pass"
+        question = Question(**valid_question_data)
+        assert self._use_case()._create_executable_solution(question) is None
+
+    def test_fallback_fires_only_for_prose_solution(self, valid_question_data):
+        # Prose solution + executable starter -> runner embeds the STARTER.
+        valid_question_data["solution"] = "Two-pointer prose explanation."
+        valid_question_data["starter"]["python"] = (
+            "def solve(nums):\n    return ['STARTER']"
+        )
+        question = Question(**valid_question_data)
+        runner = self._use_case()._create_executable_solution(question)
+        assert runner is not None
+        assert "STARTER" in runner
+
+    def test_executable_solution_shadows_executable_starter(self, valid_question_data):
+        # Both executable -> the REFERENCE wins; starter body never embedded.
+        valid_question_data["solution"] = "def solve(nums):\n    return ['REF']"
+        valid_question_data["starter"]["python"] = (
+            "def solve(nums):\n    return ['STARTER']"
+        )
+        question = Question(**valid_question_data)
+        runner = self._use_case()._create_executable_solution(question)
+        assert runner is not None
+        assert "REF" in runner
+        assert "STARTER" not in runner
+
+    def test_pass_only_solution_defers_to_executable_starter(self, valid_question_data):
+        # A def with a bare pass (no return) is not executable -> defer.
+        valid_question_data["solution"] = "def solve(nums):\n    pass"
+        valid_question_data["starter"]["python"] = (
+            "def solve(nums):\n    return ['STARTER']"
+        )
+        question = Question(**valid_question_data)
+        runner = self._use_case()._create_executable_solution(question)
+        assert runner is not None
+        assert "STARTER" in runner
+
+    @pytest.mark.asyncio
+    async def test_fallback_execution_attributed_to_solution_use_case(
+        self, valid_question_data, mock_piston_service
+    ):
+        # Fallback-executed code failing cases is still ERROR, labeled SOLUTION.
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["solution"] = "Two-pointer prose explanation."
+        valid_question_data["starter"]["python"] = (
+            "def solve(nums):\n    return ['STARTER']"
+        )
+        valid_question_data["test_cases"] = [
+            {"input": "[1]", "expected_output": "[1]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="['STARTER']", exit_code=0
+        )
+        result = await self._use_case(mock_piston_service).execute(question)
+        sent_code = mock_piston_service.execute.call_args.kwargs["code"]
+        assert "STARTER" in sent_code
+        assert result.passed is False
+        assert any(
+            i.use_case == ValidationUseCase.SOLUTION
+            and i.severity == ValidationSeverity.ERROR
+            for i in result.issues
+        )
