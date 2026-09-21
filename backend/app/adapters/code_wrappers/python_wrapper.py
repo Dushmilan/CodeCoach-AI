@@ -76,6 +76,57 @@ def _maybe_split_input(text: str, total: int, required: int) -> str:
     return text
 
 
+# Typing names students commonly use bare in annotations (e.g. LeetCode
+# signatures like ``def canJump(nums: List[int])``) without importing them.
+# Lowercase builtins (``list[int]``) need nothing and are never injected.
+_TYPING_NAMES = frozenset({"List", "Dict", "Set", "Tuple", "Optional", "Union", "Any"})
+
+
+def _typing_import_block(code: str) -> str:
+    """Import lines for typing names the code uses but never imports.
+
+    Returns "" when nothing is missing, when the code already imports what
+    it uses, or when the code does not parse (old behavior preserved).
+    """
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return ""
+    imported: set[str] = set()
+    imports_typing_module = False
+    used: set[str] = set()
+    uses_typing_attr = False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id in _TYPING_NAMES:
+            used.add(node.id)
+        elif (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "typing"
+        ):
+            uses_typing_attr = True
+    # Only top-level imports bind names at module scope, where the runner
+    # embeds student code. A typing import nested in a function body must
+    # not suppress the injected header (worst case is a redundant import).
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.module == "typing":
+            if any(a.name == "*" for a in node.names):
+                return ""
+            imported.update(a.asname or a.name for a in node.names)
+        elif isinstance(node, ast.Import):
+            if any(
+                a.name == "typing" or a.name.startswith("typing.") for a in node.names
+            ):
+                imports_typing_module = True
+    lines: List[str] = []
+    if uses_typing_attr and not imports_typing_module:
+        lines.append("import typing")
+    missing = sorted(used - imported)
+    if missing:
+        lines.append(f"from typing import {', '.join(missing)}")
+    return "\n".join(lines)
+
+
 class PythonCodeWrapper(CodeWrapper):
     # Bracket/quote-aware splitter embedded in multi-arg single-run runners.
     # f-string literal: every brace below is doubled in the template itself.
@@ -142,9 +193,12 @@ def __to_arg(__s):
                 result = {func_name}(parsed_line)
         else:
             result = {func_name}(parsed_line)"""
+        typing_imports = _typing_import_block(code)
+        header = "import sys\nimport json"
+        if typing_imports:
+            header += f"\n{typing_imports}"
         runner = f"""
-import sys
-import json
+{header}
 
 {code}
 """
@@ -194,7 +248,11 @@ except Exception as e:
         ]
         tc_repr = repr(tc_clean)
 
-        return f"""import sys, json
+        typing_imports = _typing_import_block(code)
+        header = "import sys, json"
+        if typing_imports:
+            header += f"\n{typing_imports}"
+        return f"""{header}
 
 {code}
 
