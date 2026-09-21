@@ -272,3 +272,47 @@ class TestFutureImportAndStringAnnotations:
 
         code = "from __future__ import annotations; x = 1"
         assert _split_future_imports(code) == ("", code)
+
+
+class TestGetTypeHintsInvariant:
+    """Pin the string-annotation safety invariant at the wrapper module level.
+
+    Quoted / PEP-563 annotations are safe ONLY because the runner path never
+    calls ``typing.get_type_hints()`` (which would evaluate the strings and
+    raise ``NameError`` for unimported names). If anyone adds such a call to
+    the wrapper module or a generated runner, these tests fail loudly.
+    """
+
+    def test_wrapper_module_never_resolves_type_hints(self):
+        import ast
+        import pathlib
+
+        import app.adapters.code_wrappers.python_wrapper as wrapper_module
+
+        # AST-level: the module docstring documents this invariant by name,
+        # so a substring check would trip on prose. Fail only on a real
+        # reference in executable code.
+        tree = ast.parse(pathlib.Path(wrapper_module.__file__).read_text())
+        refs = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name)
+            and node.id == "get_type_hints"
+            or isinstance(node, ast.Attribute)
+            and node.attr == "get_type_hints"
+        ]
+        assert refs == []
+
+    def test_generated_runners_never_resolve_type_hints(self):
+        codes = [
+            'def two_sum(nums: "List[int]", target: int) -> "List[int]":\n'
+            "    return list(nums)",
+            "from __future__ import annotations\n"
+            "def two_sum(nums: List[int], target: int) -> List[int]:\n"
+            "    return list(nums)",
+            "def canJump(nums: List[int]) -> bool:\n    return True",
+        ]
+        wrapper = PythonCodeWrapper()
+        for code in codes:
+            assert "get_type_hints" not in wrapper.wrap(code)
+            assert "get_type_hints" not in wrapper.wrap_with_tests(code, CASES)

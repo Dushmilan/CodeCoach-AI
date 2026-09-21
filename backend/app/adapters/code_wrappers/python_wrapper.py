@@ -1,3 +1,15 @@
+"""Python student-code runner (wrap / wrap_with_tests).
+
+INVARIANT — no ``typing.get_type_hints()`` on this path: string annotations
+(quoted ``"List[int]"`` or PEP 563 ``from __future__ import annotations``)
+are never evaluated at def-time, so student functions define and run without
+their names being importable. That safety holds ONLY because nothing here —
+runner templates, arity detection (``_function_arity`` is AST-based), or
+output comparison — resolves annotations via ``typing.get_type_hints()``,
+which would evaluate the strings and raise ``NameError``. Keep it that way:
+introspection on this path stays syntactic (``ast``/``re``).
+"""
+
 import ast
 import re
 from typing import Any, Dict, List

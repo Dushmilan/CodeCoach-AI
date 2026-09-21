@@ -1122,3 +1122,372 @@ class TestExecutorFailureHandling:
             and i.message.startswith("Failed to validate test case")
         ]
         assert degraded, f"expected degraded testcase issues, got {result.issues}"
+
+
+# ============================================================================
+# Round 3: sibling validator edge coverage (output_format / starter_code /
+# solution). Same recipe as Round 2's function_signature work: real behavior
+# tests over every live branch; only provably-dead branches removed.
+# ============================================================================
+
+
+class TestOutputFormatEdgeCases:
+    """Behavior coverage for OutputFormatValidationUseCase branches."""
+
+    def _use_case(self):
+        from app.services.question_validator import OutputFormatValidationUseCase
+
+        return OutputFormatValidationUseCase()
+
+    def test_detect_output_format_matrix(self):
+        uc = self._use_case()
+        assert uc._detect_output_format("[1,2,3]") == uc.FORMAT_JSON_ARRAY
+        assert uc._detect_output_format('{"a": 1}') == uc.FORMAT_JSON_OBJECT
+        assert uc._detect_output_format("3.14") == uc.FORMAT_NUMBER
+        assert uc._detect_output_format("42") == uc.FORMAT_NUMBER
+        assert uc._detect_output_format("True") == uc.FORMAT_BOOLEAN
+        assert uc._detect_output_format("false") == uc.FORMAT_BOOLEAN
+        assert uc._detect_output_format("hello") == uc.FORMAT_STRING
+        # Looks like JSON but does not parse -> falls through to string.
+        assert uc._detect_output_format("[1,2,") == uc.FORMAT_STRING
+        assert uc._detect_output_format("{oops}") == uc.FORMAT_STRING
+
+    def test_are_formats_compatible_matrix(self):
+        uc = self._use_case()
+        assert uc._are_formats_compatible(uc.FORMAT_NUMBER, uc.FORMAT_NUMBER) is True
+        assert uc._are_formats_compatible(uc.FORMAT_NUMBER, uc.FORMAT_STRING) is True
+        assert uc._are_formats_compatible(uc.FORMAT_BOOLEAN, uc.FORMAT_STRING) is True
+        assert uc._are_formats_compatible(uc.FORMAT_BOOLEAN, uc.FORMAT_NUMBER) is False
+        assert (
+            uc._are_formats_compatible(uc.FORMAT_JSON_ARRAY, uc.FORMAT_JSON_OBJECT)
+            is False
+        )
+        assert (
+            uc._are_formats_compatible(uc.FORMAT_JSON_ARRAY, uc.FORMAT_NUMBER) is False
+        )
+
+    @pytest.mark.asyncio
+    async def test_no_test_cases_is_error(self, valid_question_data):
+        valid_question_data["test_cases"] = []
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert result.passed is False
+        assert any("No test cases" in i.message for i in result.issues)
+
+    @pytest.mark.asyncio
+    async def test_json_array_and_object_mix_is_error(self, valid_question_data):
+        valid_question_data["test_cases"] = [
+            {"input": "a", "expected_output": "[1,2]"},
+            {"input": "b", "expected_output": '{"x": 1}'},
+        ]
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert result.passed is False
+        assert any("arrays and objects" in i.message for i in result.issues)
+
+    @pytest.mark.asyncio
+    async def test_json_and_primitive_mix_is_error(self, valid_question_data):
+        valid_question_data["test_cases"] = [
+            {"input": "a", "expected_output": "[1,2]"},
+            {"input": "b", "expected_output": "42"},
+        ]
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert result.passed is False
+        assert any("primitive types" in i.message for i in result.issues)
+
+    @pytest.mark.asyncio
+    async def test_minor_inconsistency_is_warning_only(self, valid_question_data):
+        # number vs string: distinct formats, no JSON involved -> WARNING.
+        valid_question_data["test_cases"] = [
+            {"input": "a", "expected_output": "42"},
+            {"input": "b", "expected_output": "hello"},
+        ]
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert result.passed is True
+        assert any(
+            i.severity == ValidationSeverity.WARNING
+            and "Minor output format inconsistency" in i.message
+            for i in result.issues
+        )
+
+    def test_single_output_branches(self):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        uc = self._use_case()
+        # Empty output -> WARNING.
+        issues = uc._validate_single_output("   ", 0)
+        assert any(i.severity == ValidationSeverity.WARNING for i in issues)
+        # Empty array -> INFO nudge.
+        issues = uc._validate_single_output("[]", 0)
+        assert any(
+            i.severity == ValidationSeverity.INFO and "empty array" in i.message
+            for i in issues
+        )
+        # Mixed element types -> WARNING.
+        issues = uc._validate_single_output('[1, "a"]', 0)
+        assert any("mixed element types" in i.message for i in issues)
+        # Homogeneous array -> no issues.
+        assert uc._validate_single_output("[1, 2]", 0) == []
+        # Invalid JSON -> ERROR.
+        issues = uc._validate_single_output("[1,", 0)
+        assert any(i.severity == ValidationSeverity.ERROR for i in issues)
+        # Uppercase boolean -> INFO lowercase nudge.
+        issues = uc._validate_single_output("True", 0)
+        assert any(
+            i.severity == ValidationSeverity.INFO and "lowercase" in i.message
+            for i in issues
+        )
+        assert uc._validate_single_output("true", 0) == []
+
+    def test_examples_consistency_branches(self, valid_question_data):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        uc = self._use_case()
+        # No examples -> no issues.
+        valid_question_data["examples"] = []
+        question = Question(**valid_question_data)
+        assert uc._check_examples_consistency(question) == []
+        # Compatible example format (number test-case vs string example)
+        # -> INFO; incompatible (array test-case vs number example) -> WARNING.
+        valid_question_data["test_cases"] = [{"input": "a", "expected_output": "42"}]
+        valid_question_data["examples"] = [
+            {"input": "a", "output": "hello", "explanation": "e"},
+            {"input": "b", "output": "hello", "explanation": "e"},
+        ]
+        question = Question(**valid_question_data)
+        issues = uc._check_examples_consistency(question)
+        assert any(
+            i.severity == ValidationSeverity.INFO and "differs" in i.message
+            for i in issues
+        )
+        valid_question_data["test_cases"] = [{"input": "a", "expected_output": "[1]"}]
+        valid_question_data["examples"] = [
+            {"input": "a", "output": "42", "explanation": "e"},
+        ]
+        question = Question(**valid_question_data)
+        issues = uc._check_examples_consistency(question)
+        assert any(
+            i.severity == ValidationSeverity.WARNING and "incompatible" in i.message
+            for i in issues
+        )
+        # Examples present but no test cases -> no issues.
+        valid_question_data["test_cases"] = []
+        question = Question(**valid_question_data)
+        assert uc._check_examples_consistency(question) == []
+
+
+class TestStarterCodeEdgeCases:
+    """Behavior coverage for StarterCodeValidationUseCase branches."""
+
+    def _use_case(self, executor=None):
+        from app.services.question_validator import StarterCodeValidationUseCase
+
+        return StarterCodeValidationUseCase(executor=executor)
+
+    def test_escape_code_handles_backslash_and_triple_quote(self):
+        uc = self._use_case()
+        assert uc._escape_code('a\\b """c"""') == 'a\\\\b \\"\\"\\"c\\"\\"\\"'
+
+    def test_parse_error_message_branches(self):
+        uc = self._use_case()
+        assert uc._parse_error_message("python", "") == "Unknown error"
+        assert (
+            uc._parse_error_message("python", "  SyntaxError: bad\nnote line\n")
+            == "SyntaxError: bad"
+        )
+        # No error keyword -> first non-empty line.
+        assert uc._parse_error_message("python", "boom\nsecond") == "boom"
+        # Blank stderr -> over-long tail branch.
+        long_blank = "\n" * 300
+        assert uc._parse_error_message("python", long_blank) == long_blank[:200]
+        short_blank = "  \n "
+        assert uc._parse_error_message("python", short_blank) == short_blank
+
+    def test_create_syntax_test_code_per_language(self):
+        uc = self._use_case()
+        assert "compile(" in uc._create_syntax_test_code("python", "x = 1")
+        js = uc._create_syntax_test_code("javascript", "var x = 1;")
+        assert js.startswith("var x = 1;") and "Syntax OK" in js
+        assert uc._create_syntax_test_code("java", "class A {}") == "class A {}"
+        assert uc._create_syntax_test_code("ruby", "puts 1") == "puts 1"
+
+    def test_basic_validate_dispatch(self):
+        uc = self._use_case()
+        assert uc._basic_validate("python", "def f():\n    pass") == []
+        assert uc._basic_validate("javascript", "function f() {}") == []
+        assert uc._basic_validate("java", "class A {}") == []
+        assert uc._basic_validate("ruby", "puts 1") == []
+
+    def test_basic_python_flags_unbalanced_and_missing_colon(self):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        uc = self._use_case()
+        issues = uc._basic_python_validate("def f((x):\n    pass")
+        assert any(
+            "Unbalanced" in i.message and i.severity == ValidationSeverity.WARNING
+            for i in issues
+        )
+        issues = uc._basic_python_validate("def f(x)\n    pass")
+        assert any(
+            "missing colon" in i.message and i.severity == ValidationSeverity.ERROR
+            for i in issues
+        )
+
+    def test_basic_javascript_flags_unbalanced(self):
+        uc = self._use_case()
+        issues = uc._basic_javascript_validate("function f( {")
+        assert any("Unbalanced" in i.message for i in issues)
+        assert uc._basic_javascript_validate("function f() {}") == []
+
+    def test_basic_java_flags_missing_class_and_braces(self):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        uc = self._use_case()
+        issues = uc._basic_java_validate("public void solve() {}")
+        assert any(
+            "class definition" in i.message and i.severity == ValidationSeverity.WARNING
+            for i in issues
+        )
+        issues = uc._basic_java_validate("class A { void m() {")
+        assert any("Unbalanced braces" in i.message for i in issues)
+
+    @pytest.mark.asyncio
+    async def test_missing_language_is_error(self, valid_question_data):
+        valid_question_data["starter"]["java"] = ""
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert result.passed is False
+        assert any(
+            i.field == "starter.java" and "missing" in i.message for i in result.issues
+        )
+
+    @pytest.mark.asyncio
+    async def test_basic_path_flags_bad_python_without_executor(
+        self, valid_question_data
+    ):
+        valid_question_data["starter"]["python"] = "def f((x):\n    pass"
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert any(
+            i.language == "python" and "Unbalanced" in i.message for i in result.issues
+        )
+
+    @pytest.mark.asyncio
+    async def test_executor_syntax_error_reports_stderr(self, valid_question):
+        from app.ports.code_executor import CodeExecutor, ExecutionResult
+
+        executor = AsyncMock(spec=CodeExecutor)
+        executor.execute.return_value = ExecutionResult(
+            exit_code=1, stderr="file.py line 3\nSyntaxError: bad indent"
+        )
+        result = await self._use_case(executor).execute(valid_question)
+        assert result.passed is False
+        assert any(
+            "Syntax error in python" in i.message and "bad indent" in i.message
+            for i in result.issues
+        )
+
+
+class TestSolutionEdgeCases:
+    """Behavior coverage for SolutionValidationUseCase branches."""
+
+    def _use_case(self, executor=None):
+        from app.services.question_validator import SolutionValidationUseCase
+
+        return SolutionValidationUseCase(executor=executor)
+
+    def test_compare_outputs_matrix(self):
+        uc = self._use_case()
+        assert uc._compare_outputs("42", "42") is True
+        assert uc._compare_outputs("42\n", "42") is True
+        assert uc._compare_outputs("[1, 2]", "[1,2]") is True
+        assert uc._compare_outputs("42.0", "42") is True
+        assert uc._compare_outputs("True", "true") is True
+        assert uc._compare_outputs("True", "False") is False
+        assert uc._compare_outputs("abc", "def") is False
+
+    def test_create_executable_solution_branches(self, valid_question_data):
+        uc = self._use_case()
+        # Interactive questions run the solution body as-is.
+        valid_question_data["is_interactive"] = True
+        valid_question_data["solution"] = "print('hi')"
+        question = Question(**valid_question_data)
+        assert uc._create_executable_solution(question) == "print('hi')"
+        # Interactive without a solution body -> None.
+        valid_question_data["solution"] = None
+        question = Question(**valid_question_data)
+        assert uc._create_executable_solution(question) is None
+        # Non-interactive without a def -> None.
+        valid_question_data["is_interactive"] = False
+        valid_question_data["starter"]["python"] = "x = 1"
+        question = Question(**valid_question_data)
+        assert uc._create_executable_solution(question) is None
+        # Pass-only stub -> None (nothing executable to validate).
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    pass"
+        question = Question(**valid_question_data)
+        assert uc._create_executable_solution(question) is None
+        # Stub with a return -> runnable runner embedding the function.
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    return nums"
+        question = Question(**valid_question_data)
+        runner = uc._create_executable_solution(question)
+        assert runner is not None and "solve" in runner
+
+    @pytest.mark.asyncio
+    async def test_no_executor_is_warning_not_error(self, valid_question):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        result = await self._use_case().execute(valid_question)
+        assert result.passed is True
+        assert any(
+            i.severity == ValidationSeverity.WARNING and "without Piston" in i.message
+            for i in result.issues
+        )
+
+    @pytest.mark.asyncio
+    async def test_executor_failure_and_mismatch_reported(
+        self, valid_question_data, mock_piston_service
+    ):
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    return nums"
+        valid_question_data["test_cases"] = [
+            {"input": "[1]", "expected_output": "[1]"},
+            {"input": "[2]", "expected_output": "[2]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.side_effect = [
+            ExecutionResult(stdout="[9]", exit_code=0),
+            ExecutionResult(stdout="", stderr="boom", exit_code=1),
+        ]
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is False
+        assert any("mismatch" in i.message for i in result.issues)
+        assert any("failed on test case 2" in i.message for i in result.issues)
+        assert any("only passed 0/2" in i.message for i in result.issues)
+
+    @pytest.mark.asyncio
+    async def test_executor_exception_degrades_to_issue(
+        self, valid_question_data, mock_piston_service
+    ):
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    return nums"
+        valid_question_data["test_cases"] = [
+            {"input": "[1]", "expected_output": "[1]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.side_effect = RuntimeError("piston down")
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert any("Failed to execute solution" in i.message for i in result.issues)
+
+    @pytest.mark.asyncio
+    async def test_no_test_cases_passes_without_summary(
+        self, valid_question_data, mock_piston_service
+    ):
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    return nums"
+        valid_question_data["test_cases"] = []
+        question = Question(**valid_question_data)
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is True
+        assert result.issues == []
+        mock_piston_service.execute.assert_not_called()
