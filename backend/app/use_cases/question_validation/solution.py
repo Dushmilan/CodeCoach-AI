@@ -108,13 +108,25 @@ except Exception as e:
         if question.is_interactive:
             return str(question.solution) if question.solution else None
 
+        # The runnable artifact under test is the *reference solution*
+        # (question.solution), not the starter template: executing the stub
+        # and attributing the outcome to the solution produced false ERRORs
+        # on every real question (prose solution + pass stub) and could mask
+        # a wrong reference behind a working starter. The solution field is
+        # usually prose, so fall back to the starter only when the solution
+        # carries no function definition.
+        candidates = []
+        if question.solution:
+            candidates.append(str(question.solution))
         starter_code = question.starter.python
-        func_match = re.search(r"def\s+(\w+)\s*\(", starter_code)
-        if not func_match:
-            return None
-        func_name = func_match.group(1)
-        if "pass" not in starter_code or "return" in starter_code:
-            return self._create_runner(starter_code, func_name, question)
+        if starter_code:
+            candidates.append(starter_code)
+        for candidate in candidates:
+            func_match = re.search(r"def\s+(\w+)\s*\(", candidate)
+            if not func_match:
+                continue
+            if "pass" not in candidate or "return" in candidate:
+                return self._create_runner(candidate, func_match.group(1), question)
         return None
 
     async def _validate_solution_with_piston(self, question: Question) -> List:

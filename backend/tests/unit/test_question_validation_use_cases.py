@@ -1491,3 +1491,177 @@ class TestSolutionEdgeCases:
         assert result.passed is True
         assert result.issues == []
         mock_piston_service.execute.assert_not_called()
+
+
+# ============================================================================
+# Round 4: solution-vs-starter attribution probe
+# (solution.py:_create_executable_solution latent-bug investigation).
+# The reference solution lives in ``question.solution``; the starter template
+# lives in ``question.starter.python``. These probes pin which artifact the
+# SOLUTION use case actually executes.
+# ============================================================================
+
+
+class TestSolutionAttributionRound4:
+    """Failing-test probe: runner must come from the reference solution."""
+
+    def _use_case(self, executor=None):
+        from app.services.question_validator import SolutionValidationUseCase
+
+        return SolutionValidationUseCase(executor=executor)
+
+    def test_executable_reference_solution_beats_pass_stub(self, valid_question_data):
+        """A working reference solution + pass-only starter must be runnable.
+
+        Before the fix this returns None ("Could not create executable
+        solution") even though an executable reference solution exists.
+        """
+        valid_question_data["solution"] = "def solve(nums):\n    return nums"
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    pass"
+        question = Question(**valid_question_data)
+        runner = self._use_case()._create_executable_solution(question)
+        assert runner is not None
+        assert "return nums" in runner
+
+    @pytest.mark.asyncio
+    async def test_wrong_reference_not_masked_by_starter(
+        self, valid_question_data, mock_piston_service
+    ):
+        """The executor must receive the reference solution, not the starter.
+
+        Wrong reference + correct starter: before the fix the starter body is
+        executed and attributed to the solution (false pass); the executed
+        code must contain the reference body instead.
+        """
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["solution"] = "def solve(nums):\n    return ['WRONG']"
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    return nums"
+        valid_question_data["test_cases"] = [
+            {"input": "[1]", "expected_output": "[1]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="['WRONG']", exit_code=0
+        )
+        result = await self._use_case(mock_piston_service).execute(question)
+        sent_code = mock_piston_service.execute.call_args.kwargs["code"]
+        assert "WRONG" in sent_code
+        assert result.passed is False
+        assert any("mismatch" in i.message for i in result.issues)
+
+    @pytest.mark.asyncio
+    async def test_correct_reference_with_stub_starter_passes(
+        self, valid_question_data, mock_piston_service
+    ):
+        """End to end: correct reference + stub starter must pass validation.
+
+        Before the fix this reports ERROR ("Could not create executable
+        solution from reference solution") on real-shaped data.
+        """
+        from app.ports.code_executor import ExecutionResult
+
+        valid_question_data["solution"] = "def solve(nums):\n    return nums"
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    pass"
+        valid_question_data["test_cases"] = [
+            {"input": "[1,2,3]", "expected_output": "[1,2,3]"},
+        ]
+        question = Question(**valid_question_data)
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="[1,2,3]", exit_code=0
+        )
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is True
+
+
+# ============================================================================
+# Round 4: time_limits.py coverage rot (same recipe as Rounds 2-3: real
+# behavior tests over live branches; only provably-dead branches removed).
+# ============================================================================
+
+
+class TestTimeLimitsCoverageRound4:
+    """Behavior coverage for TimeLimitValidationUseCase branches."""
+
+    def _use_case(self):
+        from app.services.question_validator import TimeLimitValidationUseCase
+
+        return TimeLimitValidationUseCase()
+
+    @pytest.mark.asyncio
+    async def test_non_standard_notation_is_warning_only(self, valid_question_data):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        valid_question_data["time_complexity"] = "linear"
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert result.passed is True
+        assert any(
+            i.severity == ValidationSeverity.WARNING
+            and "standard Big O notation" in i.message
+            for i in result.issues
+        )
+
+    @pytest.mark.asyncio
+    async def test_exponential_blows_time_budget(self, valid_question_data):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        valid_question_data["time_complexity"] = "O(2^n)"
+        valid_question_data["constraints"] = ["n <= 40"]
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert any(
+            i.severity == ValidationSeverity.WARNING
+            and "may exceed time limit" in i.message
+            and i.details["estimated_operations"] == 2**30
+            for i in result.issues
+        )
+
+    @pytest.mark.asyncio
+    async def test_ten_power_constraint_parses_input_size(self, valid_question_data):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        valid_question_data["time_complexity"] = "O(n^2)"
+        valid_question_data["constraints"] = ["input size up to 10^5"]
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert any(
+            i.severity == ValidationSeverity.WARNING
+            and "may exceed time limit" in i.message
+            and i.details["max_input_size"] == 100000
+            for i in result.issues
+        )
+
+    @pytest.mark.asyncio
+    async def test_unmatched_constraints_skip_operation_estimate(
+        self, valid_question_data
+    ):
+        valid_question_data["time_complexity"] = "O(n)"
+        valid_question_data["constraints"] = ["Be kind to newcomers"]
+        question = Question(**valid_question_data)
+        uc = self._use_case()
+        assert uc._validate_constraints_for_time(question) == []
+        result = await uc.execute(question)
+        assert result.passed is True
+
+    @pytest.mark.asyncio
+    async def test_missing_time_complexity_is_warning_only(self, valid_question_data):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        valid_question_data["time_complexity"] = None
+        question = Question(**valid_question_data)
+        result = await self._use_case().execute(question)
+        assert result.passed is True
+        assert any(
+            i.severity == ValidationSeverity.WARNING
+            and "should be specified" in i.message
+            for i in result.issues
+        )
+
+    def test_empty_thresholds_yield_no_issues(self, valid_question_data):
+        # Defensive `if thresholds:` false path: unknown difficulty config
+        # degrades to no threshold issues instead of crashing.
+        uc = self._use_case()
+        uc.COMPLEXITY_THRESHOLDS = {}
+        question = Question(**valid_question_data)
+        assert uc._validate_time_complexity(question) == []

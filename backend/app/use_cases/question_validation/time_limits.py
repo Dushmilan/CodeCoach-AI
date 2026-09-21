@@ -75,8 +75,6 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
             return 5
         elif "n^2" in cl or "n²" in cl:
             return 4
-        elif "n log" in cl:
-            return 3
         elif "n" in cl:
             return 2
         return 2
@@ -118,9 +116,6 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
         thresholds = self.COMPLEXITY_THRESHOLDS.get(difficulty, {})
         if thresholds:
             max_level = self._get_complexity_level(thresholds.get("max_complexity"))
-            warning_level = self._get_complexity_level(
-                thresholds.get("warning_complexity")
-            )
             if complexity_level > max_level:
                 issues.append(
                     self._create_issue(
@@ -131,19 +126,6 @@ class TimeLimitValidationUseCase(BaseValidationUseCase):
                             "complexity": complexity,
                             "difficulty": difficulty,
                             "recommended_max": thresholds["max_complexity"],
-                        },
-                    )
-                )
-            elif complexity_level > warning_level:
-                issues.append(
-                    self._create_issue(
-                        message=f"Time complexity {complexity} is acceptable but challenging for {difficulty} problem",
-                        field="time_complexity",
-                        severity=ValidationSeverity.INFO,
-                        details={
-                            "complexity": complexity,
-                            "difficulty": difficulty,
-                            "recommended": thresholds["warning_complexity"],
                         },
                     )
                 )
