@@ -83,6 +83,46 @@ def test_dev_script_starts_viewer_by_default():
     assert "--no-viewer" in src, "opt-out flag --no-viewer missing"
 
 
+def test_dev_script_forces_localhost_piston_url():
+    # Issue #228: .env carries the docker-internal PISTON_API_URL
+    # (http://piston:2000/...) for the containerized backend, but dev.sh
+    # runs the backend on the host where `piston` does not resolve
+    # (Errno -3). Local dev must force the localhost default, same as
+    # NEXT_PUBLIC_API_URL above.
+    src = _read()
+    assert "PISTON_API_URL" in src
+    assert 'export PISTON_API_URL="http://localhost:2000/api/v2"' in src, (
+        "local backend must export the localhost Piston URL, not the "
+        "docker-internal hostname from .env"
+    )
+
+
+def test_dev_script_starts_infra_via_compose_only():
+    # Issue #228: bare `docker start` by container name bypasses compose
+    # reconciliation (env/network/healthcheck) and fails silently.
+    # Infra must come up through one idempotent compose path.
+    src = _read()
+    assert "docker compose up -d --no-build postgres redis piston" in src, (
+        "infra must start via a single idempotent compose up"
+    )
+    assert "docker start" not in src, (
+        "must not bypass compose with bare `docker start`"
+    )
+
+
+def test_dev_script_leaves_infra_running_on_exit():
+    # Issue #228: normal exit stopped postgres/redis/piston, so a manual
+    # `docker ps` after any run always showed Piston down. Only --down
+    # stops the shared infra; the foreground exit stops just the backend.
+    src = _read()
+    assert "docker compose stop" in src, "--down must keep the full stop"
+    tail = src.split("# ---- Frontend (foreground) ----", 1)[1]
+    assert "teardown" not in tail, (
+        "normal exit must not stop infra containers (only --down does)"
+    )
+    assert "stop_backend" in tail, "normal exit must still stop the backend"
+
+
 def test_gitignore_excludes_harness_dirs():
     # Issue #217: session scaffolding stays untracked, never committed.
     gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
