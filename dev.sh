@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 #
-# dev.sh — one-button local start for CodeCoach-AI (issue #215).
+# dev.sh — one-button local start for CodeCoach-AI (issue #215, #217).
 #
-#   ./dev.sh                Start infra + backend + frontend (:3000).
-#   ./dev.sh --with-viewer  Also start the Motion Canvas viewer (:9000).
+#   ./dev.sh                Start everything: infra + backend (:8000) +
+#                           frontend (:3000) + Motion Canvas viewer (:9000).
+#   ./dev.sh --no-viewer    Skip the Motion Canvas viewer.
+#   ./dev.sh --with-viewer  Same as the default (kept for compatibility).
 #   ./dev.sh --install      Allow pnpm installs when node_modules is missing
 #                           (otherwise fail closed to protect metered data).
 #   ./dev.sh --down         Stop everything without starting.
 #
-# Data-light by design: infra containers are started, never built or
+# Data-light by design: infra containers are started, never rebuilt or
 # pulled; the Next.js cache (.next) is never wiped; installs are opt-in.
 # Test: python -m pytest tests/test_dev_script.py -v
 set -euo pipefail
@@ -23,12 +25,49 @@ DEFAULT_REDIS_URL="redis://localhost:6379/0"
 BACKEND_URL="http://localhost:8000"
 PISTON_RUNTIMES_URL="http://localhost:2000/api/v2/runtimes"
 
-WITH_VIEWER=0
+WITH_VIEWER=1
 ALLOW_INSTALL=0
 
 log()  { printf '[dev.sh] %s\n' "$*"; }
 fail() { printf '[dev.sh] ERROR: %s\n' "$*" >&2; exit 1; }
 warn() { printf '[dev.sh] WARN: %s\n' "$*" >&2; }
+
+# Issue #217: dev.sh owns the default ports. A stale server from a previous
+# run (or a sibling checkout's leftover) holding :3000/:8000/:9000 is
+# reclaimed so the fresh stack always binds where the docs say it will.
+# Only these three host dev ports are touched — docker-mapped ports
+# (postgres/redis/piston) are managed by compose, never killed here.
+free_port() {
+  local port="$1" pids=""
+  if command -v lsof >/dev/null 2>&1; then
+    pids="$(lsof -ti :"$port" 2>/dev/null || true)"
+  elif command -v ss >/dev/null 2>&1; then
+    pids="$(ss -tlnp 2>/dev/null | grep ":$port " | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u || true)"
+  elif command -v fuser >/dev/null 2>&1; then
+    log "Port $port may be occupied — reclaiming via fuser."
+    fuser -k "$port"/tcp >/dev/null 2>&1 || true
+    return 0
+  else
+    warn "No lsof/ss/fuser found — cannot check port $port; hoping it is free."
+    return 0
+  fi
+  if [[ -n "$pids" ]]; then
+    # shellcheck disable=SC2086
+    log "Port $port in use (pids: $pids) — stopping stale dev server."
+    # shellcheck disable=SC2086
+    kill $pids 2>/dev/null || true
+    sleep 2
+    local remaining=""
+    if command -v lsof >/dev/null 2>&1; then
+      remaining="$(lsof -ti :"$port" 2>/dev/null || true)"
+    elif command -v ss >/dev/null 2>&1; then
+      remaining="$(ss -tlnp 2>/dev/null | grep ":$port " | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u || true)"
+    fi
+    if [[ -n "$remaining" ]]; then
+      fail "Port $port still occupied (pids: $remaining) — stop it manually and re-run."
+    fi
+  fi
+}
 
 stop_backend() {
   if [[ -f "$BACKEND_PID" ]]; then
@@ -58,6 +97,7 @@ for arg in ${@+"$@"}; do
     -h|--help) usage; exit 0 ;;
     --down|down) teardown; exit 0 ;;
     --with-viewer) WITH_VIEWER=1 ;;
+    --no-viewer) WITH_VIEWER=0 ;;
     --install) ALLOW_INSTALL=1 ;;
     *) fail "Unknown argument: $arg (see --help)" ;;
   esac
@@ -145,6 +185,7 @@ for i in $(seq 1 60); do
 done
 
 # ---- Backend (local uvicorn) -------------------------------------------------
+free_port 8000
 log "Starting backend (uvicorn --reload :8000)..."
 (cd "$ROOT/backend" && nohup "$PY" -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 \
   > "$PID_DIR/backend.log" 2>&1 & echo $! > "$BACKEND_PID")
@@ -188,6 +229,10 @@ if [[ "$WITH_VIEWER" == "1" ]]; then
 fi
 log "  Piston:           http://localhost:2000"
 log ""
+free_port 3000
+if [[ "$WITH_VIEWER" == "1" ]]; then
+  free_port 9000
+fi
 log "Press Ctrl-C to stop everything."
 if [[ "$WITH_VIEWER" == "1" ]]; then
   (cd "$ROOT/frontend" && pnpm dev:all) || _rc=$?
