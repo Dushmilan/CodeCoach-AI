@@ -336,6 +336,23 @@ _QUESTION_SKILL_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
 }
 
 
+# Default whats-next questions for brand-new users (Issue #232).
+
+# When a fresh user has no skill states AND no classroom enrollment, the
+# skill-graph recs + programme starters chain resolves to nothing. These 4
+# curated easy starters fill the whats-next slot so the dashboard is never
+# empty. Every ID MUST exist in the live bank (live_question_ids.json) and
+# carry a QUESTION_SKILLS mapping — enforced by
+# tests/unit/test_cold_start_defaults_232.py. Ordered by roadmap progression:
+# arrays/hash-maps fundamentals first, then strings, then stacks.
+DEFAULT_COLD_START_QUESTION_IDS: Tuple[str, ...] = (
+    "two-sum",
+    "contains-duplicate",
+    "valid-anagram",
+    "valid-parentheses",
+)
+
+
 def _build_question_skills() -> Dict[str, List[QuestionSkill]]:
     return {
         question_id: [

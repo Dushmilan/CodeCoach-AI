@@ -26,7 +26,10 @@ from app.services.skill_graph_rules import (
     mastery_for_status,
     recommend,
 )
-from app.services.skill_taxonomy import SUPPORTING_SKILL_SLUGS
+from app.services.skill_taxonomy import (
+    DEFAULT_COLD_START_QUESTION_IDS,
+    SUPPORTING_SKILL_SLUGS,
+)
 
 
 class SkillGraphService:
@@ -266,6 +269,35 @@ class SkillGraphService:
             user_id, limit=limit
         )
 
+    @staticmethod
+    async def _resolve_ids(
+        question_ids: List[str],
+        skill_slug: str,
+        skill_name: str,
+        reason_text: str,
+        question_loader: Callable[[str], Awaitable[Optional[Question]]],
+    ) -> List[RecommendedQuestion]:
+        """Resolve IDs via the loader, skipping unresolvable ones.
+
+        Never fabricates practice data: an ID the loader cannot resolve is
+        dropped, not synthesized.
+        """
+        resolved: List[RecommendedQuestion] = []
+        for question_id in question_ids:
+            question = await question_loader(question_id)
+            if question is None:
+                continue
+            resolved.append(
+                RecommendedQuestion(
+                    skill_slug=skill_slug,
+                    skill_name=skill_name,
+                    reason=RecommendationReason.NEW_SKILL,
+                    reason_text=reason_text,
+                    question=question,
+                )
+            )
+        return resolved
+
     async def get_recommended_questions(
         self,
         user_id: str,
@@ -282,6 +314,12 @@ class SkillGraphService:
         Cold-start (Issue #186): when skill-graph recs resolve to nothing and
         the user has no skill states, fall back to the enrolled programme's
         starter questions in deterministic programme order.
+
+        Empty-state default (Issue #232): when the user also has no enrolled
+        programme starters (brand-new user, no classroom), fall back to the
+        curated DEFAULT_COLD_START_QUESTION_IDS so whats-next is never empty.
+        Both fallbacks resolve via ``question_loader`` and skip unresolvable
+        IDs — the response never fabricates practice data.
         """
         recs = await self.get_recommendations(user_id, now=now, limit=limit)
         results: List[RecommendedQuestion] = []
@@ -308,17 +346,27 @@ class SkillGraphService:
                     await self.get_enrolled_programme_starters(user_id, limit=limit),
                     limit=limit,
                 )
-                for question_id in starter_ids:
-                    question = await question_loader(question_id)
-                    if question is None:
-                        continue
-                    results.append(
-                        RecommendedQuestion(
-                            skill_slug="programme-start",
-                            skill_name="Programme Start",
-                            reason=RecommendationReason.NEW_SKILL,
-                            reason_text="Start your programme.",
-                            question=question,
+                results.extend(
+                    await self._resolve_ids(
+                        starter_ids,
+                        "programme-start",
+                        "Programme Start",
+                        "Start your programme.",
+                        question_loader,
+                    )
+                )
+                if not results:
+                    default_ids = cold_start_order(
+                        list(DEFAULT_COLD_START_QUESTION_IDS),
+                        limit=limit,
+                    )
+                    results.extend(
+                        await self._resolve_ids(
+                            default_ids,
+                            "getting-started",
+                            "Getting Started",
+                            "Start with these foundational questions.",
+                            question_loader,
                         )
                     )
         return results
