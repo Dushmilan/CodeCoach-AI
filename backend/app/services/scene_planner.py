@@ -552,10 +552,13 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                     "duration": 0.3,
                 }
             )
+            # The state comes from the trace via _try_planner (label); only
+            # sorting algorithms ever mark "sorted" (#235).
+            state = step.label or "sorted"
             if 0 <= idx < n:
-                narr = f"Mark [{idx}]={display[idx]} sorted"
+                narr = f"Mark [{idx}]={display[idx]} {state}"
             else:
-                narr = f"Mark [{idx}] sorted"
+                narr = f"Mark [{idx}] {state}"
             camera = {
                 "action": "focus",
                 "element": f"cell_{idx}",
@@ -577,6 +580,37 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                 narr = f"Pointer → [{idx}]={display[idx]}"
             else:
                 narr = f"Pointer → [{idx}]"
+            camera = {
+                "action": "focus",
+                "element": f"cell_{idx}",
+                "zoom": tokens.CAMERA["zoom_focus"],
+            }
+        elif step.action in ("read", "visit"):
+            # Array traces observe cells via read (greedy/DP) and visit
+            # (cycle/consecutive scans) — highlight the observed cell like a
+            # single compare, never a placeholder beat on cell_0 (#235).
+            idx = max(0, min(int(step.index or 0), n - 1))
+            m.append(
+                {
+                    "target": f"cell_{idx}",
+                    "op": "fill",
+                    "to": tokens.PALETTE["highlight_fill"],
+                    "duration": 0.25,
+                }
+            )
+            m.append(
+                {
+                    "target": f"cell_{idx}",
+                    "op": "stroke",
+                    "to": tokens.PALETTE["highlight_stroke"],
+                    "duration": 0.25,
+                }
+            )
+            verb = "Read" if step.action == "read" else "Visit"
+            if 0 <= idx < n:
+                narr = f"{verb} [{idx}]={display[idx]}"
+            else:
+                narr = f"{verb} [{idx}]"
             camera = {
                 "action": "focus",
                 "element": f"cell_{idx}",

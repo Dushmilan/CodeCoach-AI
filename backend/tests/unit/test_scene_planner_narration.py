@@ -50,6 +50,51 @@ def test_no_duplicate_consecutive_narrations():
     assert len(set(narrs)) == len(narrs)
 
 
+def _jump_game_spec():
+    # #235: jump_game emits pointer/read/mark(active) per index. The planner
+    # must render every event at its own cell — never a placeholder beat.
+    return AlgorithmAnimation(
+        algorithm="jump_game",
+        visualization="array",
+        initialState=InitialState(array=[2, 3, 1, 1, 4], extra={}),
+        steps=[
+            AnimationStepSpec(action="pointer", index=2),
+            AnimationStepSpec(action="read", index=2),
+            AnimationStepSpec(action="mark", index=2, label="active"),
+            AnimationStepSpec(action="visit", index=3),
+        ],
+        complexity=Complexity(time="O(n)", space="O(1)"),
+        title="Jump Game",
+    )
+
+
+def test_read_beat_highlights_event_cell_not_cell_0():
+    beats = scene_planner.plan_array(_jump_game_spec())
+    read_beats = [b for b in beats if "Read" in (b.get("narration") or "")]
+    assert len(read_beats) == 1
+    assert "[2]" in read_beats[0]["narration"]
+    targets = [m["target"] for m in read_beats[0]["motion"]]
+    assert "cell_2" in targets
+    assert "cell_0" not in targets
+
+
+def test_visit_beat_highlights_event_cell_not_cell_0():
+    beats = scene_planner.plan_array(_jump_game_spec())
+    visit_beats = [b for b in beats if "Visit" in (b.get("narration") or "")]
+    assert len(visit_beats) == 1
+    assert "[3]" in visit_beats[0]["narration"]
+    assert "cell_3" in [m["target"] for m in visit_beats[0]["motion"]]
+    assert "cell_0" not in [m["target"] for m in visit_beats[0]["motion"]]
+
+
+def test_mark_narration_uses_event_state_not_sorted():
+    beats = scene_planner.plan_array(_jump_game_spec())
+    mark_beats = [b for b in beats if "Mark" in (b.get("narration") or "")]
+    assert len(mark_beats) == 1
+    assert "sorted" not in mark_beats[0]["narration"]
+    assert "active" in mark_beats[0]["narration"]
+
+
 def _tree_spec():
     return AlgorithmAnimation(
         algorithm="maximum_depth_of_binary_tree",
