@@ -244,3 +244,6 @@ AGENTS.md
 .opencode/
 .opencodeignore
 Docs/
+
+# Local dev launcher runtime state (./dev.sh backend pid + log)
+.dev-pids/
