@@ -36,7 +36,7 @@
       "branches": 100.0
     },
     "app/use_cases/question_validation/base.py": {
-      "lines": 84.0,
+      "lines": 92.0,
       "branches": 100.0
     },
     "app/use_cases/question_validation/function_signature.py": {
@@ -56,12 +56,12 @@
       "branches": 100.0
     },
     "app/use_cases/question_validation/structure.py": {
-      "lines": 86.3,
-      "branches": 68.4
+      "lines": 100.0,
+      "branches": 100.0
     },
     "app/use_cases/question_validation/test_cases.py": {
-      "lines": 88.6,
-      "branches": 73.6
+      "lines": 100.0,
+      "branches": 100.0
     },
     "app/use_cases/question_validation/time_limits.py": {
       "lines": 100.0,
@@ -69,13 +69,13 @@
     }
   },
   "exceptions": {
-    "app/adapters/code_wrappers/base.py": {
-      "lines": 100.0,
-      "branches": 100.0
-    },
     "app/adapters/coaching_prompts.py": {
       "lines": 98.8,
       "branches": 96.4
+    },
+    "app/adapters/code_wrappers/base.py": {
+      "lines": 100.0,
+      "branches": 100.0
     }
   }
 }

@@ -2359,3 +2359,478 @@ class TestStarterGetattrSitesSafeRound8:
                 starter
             )
             assert any("missing or empty" in i.message for i in result.issues), starter
+
+
+# ============================================================================
+# Round 9: structure.py coverage triage (floor 86.3/68.4).
+# Combined unit+integration coverage leaves 12 statements uncovered, all in
+# leaf validators. Each test below pins one verified behavior (outputs were
+# confirmed empirically before writing); the two MIN_*=1 ``elif`` bodies
+# (lines 146, 184) are provably unreachable and removed instead -- see the
+# structure.py note. No validation outcome changes.
+# ============================================================================
+
+
+class TestStructureCoverageRound9:
+    """Leaf-branch behavior pins for StructureValidationUseCase."""
+
+    async def test_id_with_invalid_characters_fails(self, valid_question_data):
+        from app.services.question_validator import StructureValidationUseCase
+
+        valid_question_data["id"] = "Bad ID!!"
+        result = await StructureValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is False
+        assert any(
+            issue.field == "id" and "lowercase" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_empty_title_fails(self, valid_question_data):
+        from app.services.question_validator import StructureValidationUseCase
+
+        valid_question_data["title"] = ""
+        result = await StructureValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is False
+        assert any(
+            issue.field == "title" and "cannot be empty" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_overlong_title_warns_but_passes(self, valid_question_data):
+        from app.services.question_validator import StructureValidationUseCase
+
+        valid_question_data["title"] = "A" * 201
+        result = await StructureValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is True
+        assert any(
+            issue.field == "title"
+            and issue.severity == ValidationSeverity.WARNING
+            and "at most 200" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_empty_description_fails(self, valid_question_data):
+        from app.services.question_validator import StructureValidationUseCase
+
+        valid_question_data["description"] = ""
+        result = await StructureValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is False
+        assert any(
+            issue.field == "description" and "cannot be empty" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_empty_category_fails(self, valid_question_data):
+        from app.services.question_validator import StructureValidationUseCase
+
+        valid_question_data["category"] = ""
+        result = await StructureValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is False
+        assert any(
+            issue.field == "category" and "cannot be empty" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_short_starter_warns_but_passes(self, valid_question_data):
+        from app.services.question_validator import StructureValidationUseCase
+
+        valid_question_data["starter"]["python"] = "x = 1"
+        result = await StructureValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is True
+        assert any(
+            issue.field == "starter.python"
+            and issue.severity == ValidationSeverity.WARNING
+            and "too short" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_none_test_case_input_fails(self, valid_question_data):
+        # None is unreachable via the schema (normalize None -> ""); only an
+        # unvalidated TestCase (model_construct) reaches the defensive branch.
+        from app.models.schemas import TestCase
+        from app.services.question_validator import StructureValidationUseCase
+
+        question = Question(**valid_question_data).model_copy(
+            update={
+                "test_cases": [
+                    TestCase.model_construct(
+                        input=None, expected_output="y", description="d", hidden=False
+                    )
+                ]
+            }
+        )
+        result = await StructureValidationUseCase().execute(question)
+        assert result.passed is False
+        assert any(
+            issue.field == "test_cases[0].input" and "missing input" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_none_test_case_output_fails(self, valid_question_data):
+        from app.models.schemas import TestCase
+        from app.services.question_validator import StructureValidationUseCase
+
+        question = Question(**valid_question_data).model_copy(
+            update={
+                "test_cases": [
+                    TestCase.model_construct(
+                        input="x", expected_output=None, description="d", hidden=False
+                    )
+                ]
+            }
+        )
+        result = await StructureValidationUseCase().execute(question)
+        assert result.passed is False
+        assert any(
+            issue.field == "test_cases[0].expected_output"
+            and "missing expected output" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_no_examples_warns_but_passes(self, valid_question_data):
+        from app.services.question_validator import StructureValidationUseCase
+
+        valid_question_data["examples"] = []
+        result = await StructureValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is True
+        assert any(
+            issue.field == "examples"
+            and issue.severity == ValidationSeverity.WARNING
+            and "At least one example is recommended" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_none_difficulty_fails(self, valid_question_data):
+        # Difficulty is required by the schema; only model_copy can inject
+        # None, reaching the defensive branch.
+        from app.services.question_validator import StructureValidationUseCase
+
+        question = Question(**valid_question_data).model_copy(
+            update={"difficulty": None}
+        )
+        result = await StructureValidationUseCase().execute(question)
+        assert result.passed is False
+        assert any(
+            issue.field == "difficulty" and "required" in issue.message
+            for issue in result.issues
+        )
+
+
+# ============================================================================
+# Round 9: test_cases.py coverage triage (floor 88.6/73.6).
+# Ten uncovered statements, each pinned below with verified behavior. The
+# None-output path degrades via the base-class crash guard (passed=False);
+# that accident is pinned as-is -- unpicking it changes issue content and
+# needs coordinator sign-off (Round 10 candidate).
+# ============================================================================
+
+
+class TestTestCasesCoverageRound9:
+    """Leaf-branch behavior pins for TestCaseValidationUseCase."""
+
+    async def test_more_than_max_cases_warns_but_passes(self, valid_question_data):
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        valid_question_data["test_cases"] = [
+            {"input": f"i{i}", "expected_output": "o"} for i in range(51)
+        ]
+        result = await TestCaseValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is True
+        assert any(
+            issue.field == "test_cases"
+            and issue.severity == ValidationSeverity.WARNING
+            and "Maximum 50" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_none_input_fails(self, valid_question_data):
+        # None is unreachable via the schema (normalize None -> ""); only an
+        # unvalidated TestCase (model_construct) reaches the defensive branch.
+        from app.models.schemas import TestCase
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        question = Question(**valid_question_data).model_copy(
+            update={
+                "test_cases": [
+                    TestCase.model_construct(
+                        input=None, expected_output="y", description="d", hidden=False
+                    )
+                ]
+            }
+        )
+        result = await TestCaseValidationUseCase().execute(question)
+        assert result.passed is False
+        assert any(
+            issue.field == "test_cases[0].input" and "missing input" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_overlong_input_warns(self, valid_question_data):
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        valid_question_data["test_cases"] = [
+            {"input": "x" * 10001, "expected_output": "y", "description": "d"}
+        ]
+        result = await TestCaseValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert any(
+            issue.field == "test_cases[0].input"
+            and issue.severity == ValidationSeverity.WARNING
+            and "exceeds maximum length" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_none_output_degrades_to_base_error(self, valid_question_data):
+        # None output reaches the appended ERROR, then _check_output_determinism
+        # raises TypeError on re.search(None) and the base execute() guard
+        # converts it to a generic ERROR with passed=False. Pinned as-is;
+        # replacing the crash with the proper finding is a Round 10 call.
+        from app.models.schemas import TestCase
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        question = Question(**valid_question_data).model_copy(
+            update={
+                "test_cases": [
+                    TestCase.model_construct(
+                        input="x", expected_output=None, description="d", hidden=False
+                    )
+                ]
+            }
+        )
+        result = await TestCaseValidationUseCase().execute(question)
+        assert result.passed is False
+        assert any(
+            "Validation failed with error" in issue.message for issue in result.issues
+        )
+
+    async def test_overlong_output_warns(self, valid_question_data):
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        valid_question_data["test_cases"] = [
+            {"input": "x", "expected_output": "y" * 10001, "description": "d"}
+        ]
+        result = await TestCaseValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert any(
+            issue.field == "test_cases[0].expected_output"
+            and issue.severity == ValidationSeverity.WARNING
+            and "exceeds maximum length" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_nondeterministic_output_warns(self, valid_question_data):
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        valid_question_data["test_cases"] = [
+            {"input": "x", "expected_output": "ptr 0x7f3a2b1c", "description": "d"}
+        ]
+        result = await TestCaseValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert any(
+            issue.field == "test_cases[0].expected_output"
+            and issue.severity == ValidationSeverity.WARNING
+            and "non-deterministic" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_all_hidden_warns_but_passes(self, valid_question_data):
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        valid_question_data["test_cases"] = [
+            {"input": "a", "expected_output": "b", "description": "d", "hidden": True},
+            {"input": "c", "expected_output": "d", "description": "d", "hidden": True},
+        ]
+        result = await TestCaseValidationUseCase().execute(
+            Question(**valid_question_data)
+        )
+        assert result.passed is True
+        assert any(
+            issue.field == "test_cases"
+            and issue.severity == ValidationSeverity.WARNING
+            and "visible" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_require_hidden_config_errors_without_hidden(
+        self, valid_question_data
+    ):
+        from app.models.question_validation_schemas import TestCaseValidationConfig
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        config = TestCaseValidationConfig(require_hidden_tests=True)
+        result = await TestCaseValidationUseCase(config=config).execute(
+            Question(**valid_question_data)
+        )
+        # Fixture has one hidden case; drop it so the config branch fires.
+        # (Fresh construction: model_copy would leave unvalidated dicts.)
+        visible = Question(
+            **{
+                **valid_question_data,
+                "test_cases": [
+                    {**valid_question_data["test_cases"][0], "hidden": False},
+                    {**valid_question_data["test_cases"][1], "hidden": False},
+                ],
+            }
+        )
+        assert result.passed is True  # control: fixture satisfies the config
+        result = await TestCaseValidationUseCase(config=config).execute(visible)
+        assert result.passed is False
+        assert any(
+            issue.field == "test_cases"
+            and "hidden test case is required" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_executability_without_executor_returns_no_issues(
+        self, valid_question
+    ):
+        # Defensive guard: _execute_validation only calls _validate_executability
+        # when an executor exists, so this early return has no caller in the
+        # normal path -- pinned by direct call instead of removal.
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        result = await TestCaseValidationUseCase()._validate_executability(
+            valid_question
+        )
+        assert result == []
+
+    async def test_executor_nonzero_exit_warns(
+        self, valid_question, mock_piston_service
+    ):
+        from app.ports.code_executor import ExecutionResult
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        mock_piston_service.execute.return_value = ExecutionResult(
+            stdout="", stderr="parse boom", exit_code=1
+        )
+        result = await TestCaseValidationUseCase(executor=mock_piston_service).execute(
+            valid_question
+        )
+        assert any(
+            issue.severity == ValidationSeverity.WARNING
+            and "may cause execution issues" in issue.message
+            for issue in result.issues
+        )
+
+    async def test_executor_exception_is_info(
+        self, valid_question, mock_piston_service
+    ):
+        from app.services.question_validator import TestCaseValidationUseCase
+
+        mock_piston_service.execute.side_effect = RuntimeError("piston down")
+        result = await TestCaseValidationUseCase(executor=mock_piston_service).execute(
+            valid_question
+        )
+        assert result.passed is True
+        assert any(
+            issue.severity == ValidationSeverity.INFO
+            and "Failed to validate test case" in issue.message
+            for issue in result.issues
+        )
+
+
+# ============================================================================
+# Round 9: dict/list starter gap -- EXACT pins, no behavior change.
+# Coordinator decision: starter_code.py / structure.py report dict/list
+# starters as missing (getattr ignores mappings). Do NOT widen them here --
+# that changes validation outcomes and needs product sign-off. These tests
+# pin the exact current findings (severity/field/message/language tuples
+# byte-identical to an empty StarterCode), including the sharpest case: a
+# fully-populated dict and a well-formed [{language, code}] list STILL
+# report every language missing. Any future coercion change fails loudly.
+# ============================================================================
+
+
+class TestStarterShapesExactPinsRound9:
+    """Dict/list/str starters are exactly an empty StarterCode, by findings."""
+
+    @staticmethod
+    def _with_starter(valid_question_data, starter):
+        return Question(**valid_question_data).model_copy(update={"starter": starter})
+
+    @staticmethod
+    def _signature(result):
+        return sorted(
+            (i.severity.value, i.field, i.message, i.language) for i in result.issues
+        )
+
+    async def test_starter_code_shapes_match_empty_model_exactly(
+        self, valid_question_data
+    ):
+        from app.models.schemas import StarterCode
+        from app.services.question_validator import StarterCodeValidationUseCase
+
+        empty = Question(**{**valid_question_data, "starter": StarterCode()})
+        empty_sig = self._signature(await StarterCodeValidationUseCase().execute(empty))
+        assert len(empty_sig) == 3  # one missing-ERROR per language
+
+        shapes = {
+            "str": "just text",
+            "list-of-strings": ["not", "a", "mapping"],
+            "list-of-language-code": [
+                {"language": "python", "code": "def solve():\n    return 1"},
+                {"language": "javascript", "code": "function solve(){return 1;}"},
+                {"language": "java", "code": "class S{}"},
+            ],
+            "partial-dict": {"javascript": "function f(){}"},
+            "full-dict": {
+                "python": "def solve():\n    return 1",
+                "javascript": "function solve(){return 1;}",
+                "java": "class Solution{}",
+            },
+        }
+        for name, starter in shapes.items():
+            question = self._with_starter(valid_question_data, starter)
+            result = await StarterCodeValidationUseCase().execute(question)
+            assert self._signature(result) == empty_sig, name
+            assert result.passed is False, name
+
+    async def test_structure_shapes_match_empty_model_exactly(
+        self, valid_question_data
+    ):
+        from app.models.schemas import StarterCode
+        from app.services.question_validator import StructureValidationUseCase
+
+        empty = Question(**{**valid_question_data, "starter": StarterCode()})
+        empty_result = await StructureValidationUseCase().execute(empty)
+        empty_sig = self._signature(empty_result)
+
+        shapes = {
+            "str": "just text",
+            "list-of-strings": ["not", "a", "mapping"],
+            "list-of-language-code": [
+                {"language": "python", "code": "def solve():\n    return 1"},
+            ],
+            "partial-dict": {"javascript": "function f(){}"},
+            "full-dict": {
+                "python": "def solve():\n    return 1",
+                "javascript": "function solve(){return 1;}",
+                "java": "class Solution{}",
+            },
+        }
+        for name, starter in shapes.items():
+            question = self._with_starter(valid_question_data, starter)
+            result = await StructureValidationUseCase().execute(question)
+            assert self._signature(result) == empty_sig, name
+            # Empty-model baseline already fails on the missing starters;
+            # every shape must fail identically, never pass by accident.
+            assert result.passed == empty_result.passed, name
