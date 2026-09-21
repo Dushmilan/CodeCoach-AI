@@ -130,6 +130,7 @@ class RecommendationReason(str, Enum):
     DUE_FOR_REVIEW = "due_for_review"
     NEW_SKILL = "new_skill"
     STRENGTHEN = "strengthen"
+    RETRY_EASIER = "retry_easier"
 
 
 class Recommendation(BaseModel):

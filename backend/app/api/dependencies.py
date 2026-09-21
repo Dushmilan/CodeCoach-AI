@@ -239,10 +239,11 @@ async def get_skill_graph_repo_dependency(
 
 def get_skill_graph_service_dependency(
     repo=Depends(get_skill_graph_repo_dependency),
+    submissions: SubmissionRepository = Depends(get_submission_repo),
 ):
     from app.services.skill_graph_service import SkillGraphService
 
-    return SkillGraphService(repository=repo)
+    return SkillGraphService(repository=repo, submission_repository=submissions)
 
 
 def get_learner_context_service_dependency(
