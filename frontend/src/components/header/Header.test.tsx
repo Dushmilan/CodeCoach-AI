@@ -252,5 +252,55 @@ describe('Header', () => {
       render(<Header />);
       expect(screen.queryByTestId('header-dashboard-link')).not.toBeInTheDocument();
     });
+
+    it('renders exactly one desktop and one mobile dashboard entry for authenticated users (Issue #234)', () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '2', username: 'bob', email: 'b@a.com', created_at: '', is_active: true, role: 'user' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      // Header-only placement is canonical: single desktop nav entry ...
+      const desktop = screen.getAllByTestId('header-dashboard-link');
+      expect(desktop).toHaveLength(1);
+      expect(desktop[0]).toHaveAttribute('href', '/dashboard');
+      // ... plus its mobile-menu counterpart, no duplicates.
+      const mobile = screen.getAllByTestId('header-dashboard-link-mobile');
+      expect(mobile).toHaveLength(1);
+      expect(mobile[0]).toHaveAttribute('href', '/dashboard');
+    });
+
+    it('shows zero dashboard entries anywhere for guests (Issue #234)', () => {
+      mockUseAuth.mockReturnValue({
+        user: null,
+        isAuthenticated: false,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      render(<Header />);
+      expect(screen.queryByTestId('header-dashboard-link')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('header-dashboard-link-mobile')).not.toBeInTheDocument();
+    });
+
+    it('gear settings modal contains no dashboard entry (Issue #234)', async () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: '2', username: 'bob', email: 'b@a.com', created_at: '', is_active: true, role: 'user' },
+        isAuthenticated: true,
+        isHydrated: true,
+        isLoading: false,
+        logout: vi.fn(),
+      } as unknown as ReturnType<typeof mockUseAuth>);
+      const user = userEvent.setup();
+      render(<Header />);
+      await user.click(screen.getByTitle('Settings'));
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+      const dashboardLinks = dialog.querySelectorAll('a[href="/dashboard"]');
+      expect(dashboardLinks).toHaveLength(0);
+      expect(dialog.textContent).not.toMatch(/dashboard/i);
+    });
   });
 });
