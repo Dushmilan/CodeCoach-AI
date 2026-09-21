@@ -4,24 +4,24 @@
   "generated_at": "2026-08-09",
   "modules": {
     "app/services/piston_service.py": {
-      "lines": 92.3,
-      "branches": 78.9
+      "lines": 97.7,
+      "branches": 90.3
     },
     "app/services/static_code_validator.py": {
       "lines": 100.0,
       "branches": 100.0
     },
     "app/services/groq_service.py": {
-      "lines": 92.5,
-      "branches": 83.3
+      "lines": 93.5,
+      "branches": 86.7
     },
     "app/services/usage_service.py": {
       "lines": 100.0,
       "branches": 100.0
     },
     "app/services/auth_service.py": {
-      "lines": 95.4,
-      "branches": 87.5
+      "lines": 97.0,
+      "branches": 90.0
     },
     "app/api/auth_deps.py": {
       "lines": 92.3,
@@ -32,28 +32,28 @@
       "branches": 100.0
     },
     "app/services/question_validator.py": {
-      "lines": 88.4,
-      "branches": 75.0
+      "lines": 90.3,
+      "branches": 87.5
     },
     "app/use_cases/question_validation/base.py": {
       "lines": 84.0,
       "branches": 100.0
     },
     "app/use_cases/question_validation/function_signature.py": {
-      "lines": 91.1,
-      "branches": 80.8
+      "lines": 98.5,
+      "branches": 95.4
     },
     "app/use_cases/question_validation/output_format.py": {
-      "lines": 71.3,
-      "branches": 54.0
+      "lines": 100.0,
+      "branches": 100.0
     },
     "app/use_cases/question_validation/solution.py": {
       "lines": 100.0,
       "branches": 100.0
     },
     "app/use_cases/question_validation/starter_code.py": {
-      "lines": 52.5,
-      "branches": 26.7
+      "lines": 100.0,
+      "branches": 100.0
     },
     "app/use_cases/question_validation/structure.py": {
       "lines": 86.3,
@@ -64,18 +64,18 @@
       "branches": 73.6
     },
     "app/use_cases/question_validation/time_limits.py": {
-      "lines": 62.8,
-      "branches": 38.7
+      "lines": 100.0,
+      "branches": 100.0
     }
   },
   "exceptions": {
-    "app/adapters/coaching_prompts.py": {
-      "lines": 100.0,
-      "branches": 100.0
-    },
     "app/adapters/code_wrappers/base.py": {
       "lines": 100.0,
       "branches": 100.0
+    },
+    "app/adapters/coaching_prompts.py": {
+      "lines": 98.8,
+      "branches": 96.4
     }
   }
 }

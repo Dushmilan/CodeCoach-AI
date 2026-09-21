@@ -2003,3 +2003,176 @@ class TestStarterFallbackAttributionRound6:
         valid_question_data["starter"] = "just text"
         question = Question(**valid_question_data)
         assert self._use_case()._used_starter_fallback(question) is False
+
+
+# ============================================================================
+# Round 7: starter union-type hardening (solution.py).
+# ``Question.starter`` is typed ``StarterCode | str | list | dict`` but
+# ``_create_executable_solution`` dereferenced ``question.starter.python``
+# directly, so any non-model starter (a plain str survives schema
+# normalization; list/dict shapes can arrive via model_construct) raised
+# AttributeError. The narrow fix coerces inside the SOLUTION use case only
+# (the shared schema is untouched): model -> .python, dict/list -> the same
+# python mapping ``normalize_starter`` would have built, str/other -> "".
+# Non-model shapes therefore degrade to the existing "Could not create
+# executable solution" WARNING instead of crashing, and ``_create_...`` and
+# ``_used_starter_fallback`` share one helper so attribution cannot drift.
+# ============================================================================
+
+
+class TestSolutionStarterShapesRound7:
+    """Non-model starters skip cleanly; model behavior is unchanged."""
+
+    def _use_case(self, executor=None):
+        from app.services.question_validator import SolutionValidationUseCase
+
+        return SolutionValidationUseCase(executor=executor)
+
+    def test_str_starter_yields_none_not_attribute_error(self, valid_question_data):
+        valid_question_data["solution"] = "Prose only."
+        valid_question_data["starter"] = "just text"
+        question = Question(**valid_question_data)
+        assert isinstance(question.starter, str)
+        assert self._use_case()._create_executable_solution(question) is None
+
+    def test_list_starter_yields_none_not_attribute_error(self, valid_question_data):
+        valid_question_data["solution"] = "Prose only."
+        question = Question(**valid_question_data).model_copy(
+            update={"starter": ["not", "a", "mapping"]}
+        )
+        assert isinstance(question.starter, list)
+        assert self._use_case()._create_executable_solution(question) is None
+
+    def test_dict_starter_coerced_like_schema(self, valid_question_data):
+        # A dict starter carries the same python mapping normalize_starter
+        # would have built, so an executable python entry stays runnable.
+        valid_question_data["solution"] = "Prose only."
+        question = Question(**valid_question_data).model_copy(
+            update={
+                "starter": {
+                    "python": "def solve(nums):\n    return nums",
+                    "javascript": "",
+                    "java": "",
+                }
+            }
+        )
+        assert isinstance(question.starter, dict)
+        runner = self._use_case()._create_executable_solution(question)
+        assert runner is not None
+        assert "return nums" in runner
+
+    def test_dict_starter_without_python_yields_none(self, valid_question_data):
+        valid_question_data["solution"] = "Prose only."
+        question = Question(**valid_question_data).model_copy(
+            update={"starter": {"javascript": "function f(){}"}}
+        )
+        assert self._use_case()._create_executable_solution(question) is None
+
+    def test_list_of_language_entries_coerced_like_schema(self, valid_question_data):
+        valid_question_data["solution"] = "Prose only."
+        question = Question(**valid_question_data).model_copy(
+            update={
+                "starter": [
+                    {"language": "python", "code": "def solve(nums):\n    return nums"},
+                    {"language": "javascript", "code": "function solve(){ }"},
+                ]
+            }
+        )
+        runner = self._use_case()._create_executable_solution(question)
+        assert runner is not None
+        assert "return nums" in runner
+
+    @pytest.mark.asyncio
+    async def test_str_starter_end_to_end_is_warning_not_error(
+        self, valid_question_data, mock_piston_service
+    ):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        valid_question_data["solution"] = "Prose only."
+        valid_question_data["starter"] = "just text"
+        question = Question(**valid_question_data)
+        result = await self._use_case(mock_piston_service).execute(question)
+        assert result.passed is True
+        assert any(
+            i.severity == ValidationSeverity.WARNING
+            and "Could not create executable solution" in i.message
+            for i in result.issues
+        )
+        assert not any(i.severity == ValidationSeverity.ERROR for i in result.issues)
+        mock_piston_service.execute.assert_not_called()
+
+    def test_fallback_agrees_with_executable_builder_on_dict_starter(
+        self, valid_question_data
+    ):
+        # The executed artifact comes from the starter mapping, so the
+        # fallback flag must fire (otherwise the failure note would lie).
+        valid_question_data["solution"] = "Prose only."
+        question = Question(**valid_question_data).model_copy(
+            update={
+                "starter": {
+                    "python": "def solve(nums):\n    return nums",
+                    "javascript": "",
+                    "java": "",
+                }
+            }
+        )
+        uc = self._use_case()
+        assert uc._create_executable_solution(question) is not None
+        assert uc._used_starter_fallback(question) is True
+
+    def test_model_starter_behavior_unchanged(self, valid_question_data):
+        # StarterCode path is byte-identical: executable starter + prose
+        # solution still builds a runner and still reports the fallback.
+        from app.models.schemas import StarterCode
+
+        valid_question_data["solution"] = "Prose only."
+        valid_question_data["starter"]["python"] = "def solve(nums):\n    return nums"
+        question = Question(**valid_question_data)
+        assert isinstance(question.starter, StarterCode)
+        uc = self._use_case()
+        runner = uc._create_executable_solution(question)
+        assert runner is not None
+        assert "return nums" in runner
+        assert uc._used_starter_fallback(question) is True
+
+
+# ============================================================================
+# Round 7: output_format.py remaining-lines coverage.
+# The only lines the full unit suite never executes are the `[`-wrapped
+# invalid-JSON fall-through (64-65); the `{` twin is already pinned by
+# Round 3's "{oops}" case. These tests pin the fall-through as STRING (and
+# the single-output ERROR surface), proving the path is live behavior.
+# The "parses but wrong container type" edges (62->66, 68->72) are
+# provably dead by JSON grammar -- `[`...`]` that parses IS a list and
+# `{`...`}` that parses IS a dict with the default decoder -- so the
+# isinstance guards go away instead of being covered.
+# ============================================================================
+
+
+class TestOutputFormatJsonGuardsRound7:
+    """Bracket-wrapped invalid JSON falls through; guards are grammar-dead."""
+
+    def _use_case(self):
+        from app.services.question_validator import OutputFormatValidationUseCase
+
+        return OutputFormatValidationUseCase()
+
+    def test_bracket_wrapped_invalid_json_is_string(self):
+        uc = self._use_case()
+        # Starts with `[`, ends with `]`, but does not parse: not an array.
+        assert uc._detect_output_format("[abc]") == uc.FORMAT_STRING
+        assert uc._detect_output_format("[1,]") == uc.FORMAT_STRING
+        # Sanity: nearby shapes still classify as before.
+        assert uc._detect_output_format("[1,2]") == uc.FORMAT_JSON_ARRAY
+        assert uc._detect_output_format('{"a": 1}') == uc.FORMAT_JSON_OBJECT
+        assert uc._detect_output_format("{oops}") == uc.FORMAT_STRING
+
+    def test_bracket_wrapped_invalid_json_is_single_output_error(self):
+        from app.models.question_validation_schemas import ValidationSeverity
+
+        uc = self._use_case()
+        issues = uc._validate_single_output("[abc]", 0)
+        assert any(
+            i.severity == ValidationSeverity.ERROR and "invalid JSON" in i.message
+            for i in issues
+        )

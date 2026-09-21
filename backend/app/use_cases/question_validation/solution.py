@@ -2,7 +2,7 @@
 
 import json
 import re
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from app.ports.code_executor import CodeExecutor
 from app.models.schemas import Question, StarterCode
@@ -104,6 +104,37 @@ except Exception as e:
     sys.exit(1)
 """
 
+    def _starter_python_code(
+        self, starter: Union[StarterCode, str, List, Dict[str, Any], None]
+    ) -> str:
+        """Coerce a union-typed starter to its Python code, if any.
+
+        ``Question.starter`` is ``StarterCode | str | list | dict``: the
+        schema's ``normalize_starter`` turns language-name strings and
+        list/dict shapes into a model, but plain strings survive and
+        unvalidated shapes (``model_construct``/``model_copy``) can arrive
+        as list/dict. This mirrors that normalization at the narrowest
+        boundary instead of crashing on attribute access: model -> .python,
+        dict -> its ``python`` entry, list -> the ``python`` language entry,
+        anything else (str, None, ...) -> "" (treated as absent, exactly
+        like the sibling use cases' ``getattr(starter, lang, None)``).
+        """
+        if isinstance(starter, StarterCode):
+            return starter.python or ""
+        if isinstance(starter, dict):
+            code = starter.get("python", "")
+            return code if isinstance(code, str) else ""
+        if isinstance(starter, list):
+            for entry in starter:
+                if (
+                    isinstance(entry, dict)
+                    and entry.get("language") == "python"
+                    and isinstance(entry.get("code"), str)
+                ):
+                    return entry["code"]
+            return ""
+        return ""
+
     def _create_executable_solution(self, question: Question) -> Optional[str]:
         if question.is_interactive:
             return str(question.solution) if question.solution else None
@@ -118,7 +149,7 @@ except Exception as e:
         candidates = []
         if question.solution:
             candidates.append(str(question.solution))
-        starter_code = question.starter.python
+        starter_code = self._starter_python_code(question.starter)
         if starter_code:
             candidates.append(starter_code)
         for candidate in candidates:
@@ -148,8 +179,7 @@ except Exception as e:
         solution_text = str(question.solution) if question.solution else ""
         if self._executable_candidate(solution_text):
             return False
-        starter = question.starter
-        starter_python = starter.python if isinstance(starter, StarterCode) else ""
+        starter_python = self._starter_python_code(question.starter)
         return self._executable_candidate(starter_python)
 
     async def _validate_solution_with_piston(self, question: Question) -> List:
