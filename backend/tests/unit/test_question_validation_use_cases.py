@@ -2176,3 +2176,186 @@ class TestOutputFormatJsonGuardsRound7:
             i.severity == ValidationSeverity.ERROR and "invalid JSON" in i.message
             for i in issues
         )
+
+
+# ============================================================================
+# Round 8: function_signature.py starter union-type hardening.
+# ``Question.starter`` is typed ``StarterCode | str | list | dict`` but
+# ``FunctionSignatureValidationUseCase._execute_validation`` (and
+# ``_check_signature_consistency``) dereferenced ``question.starter.python``
+# directly, so any non-model starter crashed: the base ``execute()`` caught
+# the AttributeError and reported a passed=False ERROR "Validation failed
+# with error: 'str' object has no attribute 'python'". The narrow fix coerces
+# at the use-case boundary through the shared ``starter_code_for`` helper
+# (same mapping Round 7 built for solution.py): model -> per-language attr,
+# dict -> its language entry, list -> the language entry, anything else
+# (str, None, ...) -> "". Non-model shapes therefore degrade to the normal
+# absent-code findings -- byte-identical to an empty StarterCode -- instead
+# of crashing, and model-starter behavior is unchanged.
+# ============================================================================
+
+
+class TestFunctionSignatureStarterShapesRound8:
+    """Non-model starters validate cleanly; model behavior is unchanged."""
+
+    def _use_case(self):
+        from app.services.question_validator import (
+            FunctionSignatureValidationUseCase,
+        )
+
+        return FunctionSignatureValidationUseCase()
+
+    def _signature(self, result):
+        return sorted((i.severity.value, i.field, i.message) for i in result.issues)
+
+    async def test_str_starter_matches_empty_model_never_crashes(
+        self, valid_question_data
+    ):
+        from app.models.schemas import StarterCode
+
+        valid_question_data["starter"] = "just text"
+        str_question = Question(**valid_question_data)
+        assert isinstance(str_question.starter, str)
+        empty_question = Question(**{**valid_question_data, "starter": StarterCode()})
+        str_result = await self._use_case().execute(str_question)
+        empty_result = await self._use_case().execute(empty_question)
+        assert self._signature(str_result) == self._signature(empty_result)
+        assert str_result.passed == empty_result.passed
+        assert not any("has no attribute" in i.message for i in str_result.issues)
+
+    async def test_list_starter_matches_empty_model_never_crashes(
+        self, valid_question_data
+    ):
+        from app.models.schemas import StarterCode
+
+        question = Question(**valid_question_data).model_copy(
+            update={"starter": ["not", "a", "mapping"]}
+        )
+        assert isinstance(question.starter, list)
+        empty_question = Question(**{**valid_question_data, "starter": StarterCode()})
+        result = await self._use_case().execute(question)
+        empty_result = await self._use_case().execute(empty_question)
+        assert self._signature(result) == self._signature(empty_result)
+        assert not any("has no attribute" in i.message for i in result.issues)
+
+    async def test_dict_starter_coerced_like_schema(self, valid_question_data):
+        # A dict starter carries the same per-language mapping
+        # normalize_starter would have built, so each language validates the
+        # mapping entry exactly as it would the equivalent model.
+        from app.models.schemas import StarterCode
+
+        starter = {
+            "python": "def solve(nums: list) -> list:\n    return nums",
+            "javascript": "function solve(nums) {\n    return nums;\n}",
+            "java": "class Solution {\n    public int[] solve(int[] nums) {\n        return nums;\n    }\n}",
+        }
+        question = Question(**valid_question_data).model_copy(
+            update={"starter": dict(starter)}
+        )
+        assert isinstance(question.starter, dict)
+        model_question = Question(
+            **{**valid_question_data, "starter": StarterCode(**starter)}
+        )
+        result = await self._use_case().execute(question)
+        model_result = await self._use_case().execute(model_question)
+        assert self._signature(result) == self._signature(model_result)
+        assert result.passed is True
+        assert model_result.passed is True
+
+    async def test_dict_starter_without_python_matches_equivalent_model(
+        self, valid_question_data
+    ):
+        from app.models.schemas import StarterCode
+
+        question = Question(**valid_question_data).model_copy(
+            update={"starter": {"javascript": "function f(){}"}}
+        )
+        model_question = Question(
+            **{
+                **valid_question_data,
+                "starter": StarterCode(python="", javascript="function f(){}", java=""),
+            }
+        )
+        result = await self._use_case().execute(question)
+        model_result = await self._use_case().execute(model_question)
+        # The javascript entry is real code and validates; python/java fall
+        # back to the standard absent-code ERRORs -- never an AttributeError.
+        assert self._signature(result) == self._signature(model_result)
+        assert result.passed == model_result.passed
+        assert not any("has no attribute" in i.message for i in result.issues)
+
+    async def test_model_starter_behavior_unchanged(self, valid_question):
+        # The valid fixture starter passes cleanly; the boundary coercion
+        # must not alter the model path (byte-identical findings).
+        from app.models.schemas import StarterCode
+
+        assert isinstance(valid_question.starter, StarterCode)
+        result = await self._use_case().execute(valid_question)
+        assert result.passed is True
+        assert result.issues == []
+
+    async def test_degenerate_empty_param_segment_is_skipped(self, valid_question_data):
+        # Robustness, not theater: a stray empty segment between commas
+        # (adversarial or fat-fingered starter) is skipped instead of
+        # surfacing as a phantom parameter, and the real params still
+        # validate -- this pins the ``if current.strip()`` False arc.
+        from app.models.schemas import StarterCode
+
+        starter = dict(valid_question_data["starter"])
+        starter["python"] = "def solve(a: int,, b: str) -> str:\n    return str(a) + b"
+        question = Question(**{**valid_question_data, "starter": starter})
+        assert isinstance(question.starter, StarterCode)
+        result = await self._use_case().execute(question)
+        assert result.passed is True
+        assert [i for i in result.issues if i.field == "starter.python"] == []
+
+
+# ============================================================================
+# Round 8: repo-wide starter-dereference audit pins.
+# ``starter_code.py`` and ``structure.py`` reach the starter only through
+# ``getattr(starter, language, None)`` -- crash-safe for str/list/dict (a
+# missing attribute degrades to the existing "missing" ERROR instead of an
+# AttributeError). These tests pin that safety so a future refactor cannot
+# reintroduce a direct dereference without failing loudly. Dict/list shapes
+# stay "missing" there (lossy but safe); only function_signature.py and
+# solution.py coerce mappings, deliberately -- widening the getattr sites
+# would change validation outcomes and is out of scope.
+# ============================================================================
+
+
+class TestStarterGetattrSitesSafeRound8:
+    """getattr-guarded sites degrade to missing-code findings, never crash."""
+
+    @staticmethod
+    def _with_starter(valid_question_data, starter):
+        return Question(**valid_question_data).model_copy(update={"starter": starter})
+
+    async def test_starter_code_use_case_shapes_never_crash(self, valid_question_data):
+        from app.services.question_validator import StarterCodeValidationUseCase
+
+        for starter in (
+            "just text",
+            ["not", "a", "mapping"],
+            {"javascript": "function f(){}"},
+        ):
+            question = self._with_starter(valid_question_data, starter)
+            result = await StarterCodeValidationUseCase().execute(question)
+            assert not any("has no attribute" in i.message for i in result.issues), (
+                starter
+            )
+            assert any("missing" in i.message for i in result.issues), starter
+
+    async def test_structure_use_case_shapes_never_crash(self, valid_question_data):
+        from app.services.question_validator import StructureValidationUseCase
+
+        for starter in (
+            "just text",
+            ["not", "a", "mapping"],
+            {"javascript": "function f(){}"},
+        ):
+            question = self._with_starter(valid_question_data, starter)
+            result = await StructureValidationUseCase().execute(question)
+            assert not any("has no attribute" in i.message for i in result.issues), (
+                starter
+            )
+            assert any("missing or empty" in i.message for i in result.issues), starter
