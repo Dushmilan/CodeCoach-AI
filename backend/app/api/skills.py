@@ -4,7 +4,7 @@ from typing import AsyncGenerator, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth_deps import get_current_user
-from app.api.dependencies import get_question_bank, get_redis_cache
+from app.api.dependencies import get_question_bank, get_redis_cache, get_submission_repo
 from app.core.database import get_db
 from app.models.auth_schemas import UserResponse
 from app.models.schemas import Question
@@ -16,6 +16,7 @@ from app.models.skill_graph_schemas import (
     SkillGraphResponse,
 )
 from app.ports.skill_graph_repository import SkillGraphRepository
+from app.ports.submission_repository import SubmissionRepository
 from app.repositories.sql_skill_graph_repository import SqlSkillGraphRepository
 from app.services.learner_context_service import LearnerContextService
 from app.services.question_bank import QuestionBank
@@ -33,8 +34,9 @@ async def get_skill_graph_repo(
 
 def get_skill_graph_service(
     repo: SkillGraphRepository = Depends(get_skill_graph_repo),
+    submissions: SubmissionRepository = Depends(get_submission_repo),
 ) -> SkillGraphService:
-    return SkillGraphService(repository=repo)
+    return SkillGraphService(repository=repo, submission_repository=submissions)
 
 
 async def _invalidate_learner_cache(user_id: str, cache: RedisCache | None) -> None:
