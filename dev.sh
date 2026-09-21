@@ -19,7 +19,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PID_DIR="$ROOT/.dev-pids"
 BACKEND_PID="$PID_DIR/backend.pid"
 
-DEFAULT_PISTON_API_URL="http://localhost:2000/api/v2"
 DEFAULT_REDIS_URL="redis://localhost:6379/0"
 
 BACKEND_URL="http://localhost:8000"
@@ -132,7 +131,13 @@ set +a
 [[ "${GROQ_API_KEY:-}" == "" || "${GROQ_API_KEY:-}" == "your_groq_api_key_here" ]] \
   && warn "GROQ_API_KEY not set — backend will boot, AI coaching endpoints will degrade."
 
-export PISTON_API_URL="${PISTON_API_URL:-$DEFAULT_PISTON_API_URL}"
+# Piston guard (issue #228): the local backend runs on the host, where the
+# docker-internal hostname `piston` does not resolve — force the localhost
+# default and warn if .env disagrees.
+if [[ "${PISTON_API_URL:-}" != "" && "${PISTON_API_URL:-}" != "http://localhost:2000/api/v2" ]]; then
+  warn "PISTON_API_URL='${PISTON_API_URL}' ignored — forcing localhost for local dev."
+fi
+export PISTON_API_URL="http://localhost:2000/api/v2"
 export REDIS_URL="${REDIS_URL:-$DEFAULT_REDIS_URL}"
 
 # CSP guard: local dev must stay same-origin (/api rewrite). An absolute
@@ -149,28 +154,15 @@ mkdir -p "$PID_DIR"
 trap stop_backend INT TERM
 
 # ---- Infra (Docker): postgres + redis + piston ------------------------------
-# Containers are started by name when they exist; compose (no build) only
-# fills in whichever are missing. Never builds or pulls (metered-data safe).
+# One idempotent compose path (never build/pull: metered-data safe) that
+# recreates missing containers and starts stopped ones. Never start
+# containers by bare name — that bypasses compose reconciliation (issue #228).
 log "Starting Docker infra (postgres, redis, piston)..."
 docker volume inspect piston-data >/dev/null 2>&1 \
   || docker volume create piston-data >/dev/null
-need_compose=0
-for _svc in postgres redis piston; do
-  _cname="codecoach-$_svc"
-  if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$_cname"; then
-    log "$_cname already running — reusing."
-  elif docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "$_cname"; then
-    log "Starting existing container $_cname..."
-    docker start "$_cname" >/dev/null
-  else
-    need_compose=1
-  fi
-done
-if [[ "$need_compose" == "1" ]]; then
-  (cd "$ROOT" && docker compose up -d --no-build postgres redis piston)
-fi
+(cd "$ROOT" && docker compose up -d --no-build postgres redis piston)
 
-log "Waiting for infra health (60s timeout)..."
+log "Waiting for infra health (120s timeout)..."
 for i in $(seq 1 60); do
   if docker exec codecoach-postgres pg_isready -U codecoach >/dev/null 2>&1 \
     && docker exec codecoach-redis redis-cli ping 2>/dev/null | grep -q PONG \
@@ -179,7 +171,7 @@ for i in $(seq 1 60); do
     break
   fi
   if [[ "$i" == "60" ]]; then
-    fail "Infra did not become healthy in 60s — run: docker compose ps && docker compose logs postgres redis piston"
+    fail "Infra did not become healthy in 120s — run: docker compose ps && docker compose logs postgres redis piston"
   fi
   sleep 2
 done
@@ -233,11 +225,11 @@ free_port 3000
 if [[ "$WITH_VIEWER" == "1" ]]; then
   free_port 9000
 fi
-log "Press Ctrl-C to stop everything."
+log "Press Ctrl-C to stop the backend (infra keeps running; --down stops it)."
 if [[ "$WITH_VIEWER" == "1" ]]; then
   (cd "$ROOT/frontend" && pnpm dev:all) || _rc=$?
 else
   (cd "$ROOT/frontend" && pnpm dev) || _rc=$?
 fi
-teardown
+stop_backend
 exit "${_rc:-0}"
