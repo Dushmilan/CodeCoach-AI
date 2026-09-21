@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { FetchClient, HttpError } from "./fetch-client";
+import {
+  FetchClient,
+  HttpError,
+  getErrorDisplayMessage,
+} from "./fetch-client";
 import {
   getAccessToken,
   setAccessToken,
@@ -259,6 +263,72 @@ describe("FetchClient", () => {
       const err = await client.get("/api/bad").catch((e: unknown) => e);
       expect((err as HttpError).status).toBe(400);
       expect((err as HttpError).body).toBe("");
+    });
+
+    it("exposes server detail via displayMessage on 409", async () => {
+      fetchSpy.mockResolvedValue(
+        createMockResponse({
+          ok: false,
+          status: 409,
+          statusText: "Conflict",
+          text: vi
+            .fn()
+            .mockResolvedValue('{"detail":"Username already taken"}'),
+        }),
+      );
+      client = new FetchClient();
+
+      const err = await client
+        .get("/api/auth/register")
+        .catch((e: unknown) => e);
+      expect((err as HttpError).displayMessage).toBe("Username already taken");
+    });
+
+    it("exposes server detail via displayMessage on 401", async () => {
+      fetchSpy.mockResolvedValue(
+        createMockResponse({
+          ok: false,
+          status: 401,
+          statusText: "Unauthorized",
+          text: vi.fn().mockResolvedValue('{"detail":"Invalid credentials"}'),
+        }),
+      );
+      client = new FetchClient();
+
+      const err = await client
+        .get("/api/auth/login", { skipAuthRefresh: true })
+        .catch((e: unknown) => e);
+      expect((err as HttpError).displayMessage).toBe("Invalid credentials");
+    });
+
+    it("falls back to generic message on unparseable body", () => {
+      const err = new HttpError(
+        "Request failed: 500 Internal Server Error",
+        500,
+        "<html>crash</html>",
+      );
+      expect(err.displayMessage).toBe(
+        "Request failed: 500 Internal Server Error",
+      );
+    });
+
+    it("falls back to generic message on empty body", () => {
+      const err = new HttpError("Request failed: 400 Bad Request", 400, "");
+      expect(err.displayMessage).toBe("Request failed: 400 Bad Request");
+    });
+
+    it("getErrorDisplayMessage returns detail for HttpError and message otherwise", () => {
+      expect(
+        getErrorDisplayMessage(
+          new HttpError(
+            "Request failed: 409 Conflict",
+            409,
+            '{"detail":"Email already registered"}',
+          ),
+        ),
+      ).toBe("Email already registered");
+      expect(getErrorDisplayMessage(new Error("boom"))).toBe("boom");
+      expect(getErrorDisplayMessage("mystery")).toBe("mystery");
     });
   });
 
