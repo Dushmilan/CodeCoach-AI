@@ -35,6 +35,19 @@ class TestComplexityLevels:
             ("O(n!)", 7),
             ("", 0),
             ("mystery", 2),
+            # Round 4: fuzzy (non-canonical) spellings hitting each
+            # _get_complexity_level fallback branch.
+            ("logarithmic time", 1),
+            ("factorial growth n!", 7),
+            ("exponential 2^n", 6),
+            ("exponential 2**n", 6),
+            ("cubic n^3", 5),
+            ("cubic n³", 5),
+            ("quadratic n^2", 4),
+            ("quadratic n²", 4),
+            # "n log" fuzzy strings land on the "log" branch above it: any
+            # string containing "n log" also contains "log".
+            ("merge sort n log n", 1),
         ],
     )
     def test_get_complexity_level(self, complexity, expected):
@@ -53,6 +66,11 @@ class TestComplexityLevels:
             ("O(2^n)", 5, 32),
             ("O(n!)", 4, 24),
             ("O(n)", 0, 0),
+            # Round 4: unrecognized spelling falls back to n.
+            ("linear", 50, 50),
+            # Round 4: exponential/factorial guards cap runaway n.
+            ("O(2^n)", 100, 2**30),
+            ("O(n!)", 100, 2432902008176640000),
         ],
     )
     def test_estimate_operations(self, complexity, n, expected):
