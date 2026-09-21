@@ -420,3 +420,84 @@ class TestAttemptedEasierFillFanoutCap:
         assert [r.question.id for r in results] == ["easy-s", "easy-a"]
         assert [r.skill_slug for r in results] == ["strings", "arrays"]
         assert len(results) <= 2
+
+
+class TestAttemptedEasierFillFairShare:
+    """Round 3: the shared loader budget must not let newest attempts starve older ones.
+
+    Newest-first scan with a single global budget means the newest attempts'
+    candidate scans can consume the whole budget, leaving older attempts with
+    zero candidate loads even when their best pick is resolvable. The fill
+    splits the remaining budget fairly across attempts still to scan, so
+    every unsolved attempt gets a candidate scan. Best-pick (easiest
+    strictly-easier, id tiebreak) and newest-first attempt order are unchanged.
+    """
+
+    def _service_no_recs(self, repo, subs):
+        service = SkillGraphService(
+            repository=repo, submission_repository=FakeSubmissions(subs)
+        )
+
+        async def recs(*args, **kwargs):
+            return []
+
+        service.get_recommendations = recs  # type: ignore[method-assign]
+        return service
+
+    def _counting_loader(self, mapping, counter):
+        async def load(question_id: str):
+            counter["calls"] += 1
+            if question_id not in mapping:
+                return None
+            return _question(question_id, mapping[question_id])
+
+        return load
+
+    def test_older_attempt_is_not_starved_by_newer_scans(self):
+        # Newest-first history: two HARD attempts (skill "arrays") then an
+        # older MEDIUM attempt (skill "strings"). Each newest attempt has 25
+        # MEDIUM same-skill decoys (all strictly easier than HARD, none
+        # triggers the rank-0 early exit). The older attempt's skill lists 7
+        # HARD decoys (not easier: skipped, but each costs a loader call)
+        # before its EASY best pick.
+        arrays_candidates = [f"xmed-{i:02d}" for i in range(25)]
+        strings_order = ["old-q"] + [f"yhard-{i:02d}" for i in range(7)] + ["yeasy"]
+        repo = InMemorySkillGraphRepository()
+        repo.seed_skills(
+            [Skill(slug="arrays", name="Arrays"), Skill(slug="strings", name="Strings")]
+        )
+        repo.seed_question_skills(
+            [
+                QuestionSkill(question_id="new1-q", skill_slug="arrays", weight=1.0),
+                QuestionSkill(question_id="new2-q", skill_slug="arrays", weight=1.0),
+            ]
+            + [
+                QuestionSkill(question_id=qid, skill_slug="arrays", weight=1.0)
+                for qid in arrays_candidates
+            ]
+            + [
+                QuestionSkill(question_id=qid, skill_slug="strings", weight=1.0)
+                for qid in strings_order
+            ]
+        )
+        service = self._service_no_recs(
+            repo,
+            [
+                _sub("u-1", "new1-q", passed=False, seq=2),
+                _sub("u-1", "new2-q", passed=False, seq=1),
+                _sub("u-1", "old-q", passed=False, seq=0),
+            ],
+        )
+        mapping = {"new1-q": Difficulty.HARD, "new2-q": Difficulty.HARD}
+        mapping.update({qid: Difficulty.MEDIUM for qid in arrays_candidates})
+        mapping.update(
+            {"old-q": Difficulty.MEDIUM, "yeasy": Difficulty.EASY},
+        )
+        mapping.update({f"yhard-{i:02d}": Difficulty.HARD for i in range(7)})
+        counter = {"calls": 0}
+        results = _run(service, self._counting_loader(mapping, counter), limit=3)
+        assert counter["calls"] <= SkillGraphService._ATTEMPTED_FILL_MAX_LOADER_CALLS
+        # All three unsolved attempts resolve, newest-first; the oldest
+        # attempt still reaches its EASY best pick past the HARD decoys.
+        assert [r.question.id for r in results] == ["xmed-00", "xmed-01", "yeasy"]
+        assert len(results) <= 3

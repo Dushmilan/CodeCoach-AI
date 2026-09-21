@@ -57,6 +57,14 @@ class SkillGraphService:
     # ``attempts × candidates`` loader calls. Both bounds keep best-pick
     # (easiest strictly-easier, id tiebreak) in unsolved-attempt order and
     # never let the fill exceed the caller's limit.
+    #
+    # Fair-share (Round 3): the scan is newest-attempt-first against a single
+    # shared budget, so the newest attempts could consume the whole budget
+    # and starve older attempts of any candidate scan. Each attempt's
+    # candidate allowance is therefore its even share of the remaining
+    # budget after reserving one call per not-yet-scanned attempt's own
+    # question load — every unsolved attempt gets a scan, best-pick and
+    # attempt order are unchanged.
     _ATTEMPTED_FILL_MAX_LOADER_CALLS = 50
     _ATTEMPTED_FILL_MAX_CANDIDATE_LOADS_PER_ATTEMPT = 20
 
@@ -423,8 +431,8 @@ class SkillGraphService:
         ``question_loader``. If the attempted question itself cannot be
         resolved, the comparison rank is unknown and the easiest same-skill
         candidate is used. Fills remaining slots only; never exceeds the
-        caller's limit. Loader fan-out is bounded (per-attempt candidate
-        loads + total budget, rank-0 early exit); best-pick and
+        caller's limit. Loader fan-out is bounded (fair-share per-attempt
+        candidate loads + total budget, rank-0 early exit); best-pick and
         unsolved-attempt order are unchanged. Runs AFTER skill recs and
         BEFORE programme starters.
         """
@@ -453,7 +461,7 @@ class SkillGraphService:
         seen = set(exclude_ids)
         results: List[RecommendedQuestion] = []
         loader_calls = 0
-        for attempted_id in unsolved:
+        for idx, attempted_id in enumerate(unsolved):
             if len(results) >= remaining:
                 break
             if loader_calls >= self._ATTEMPTED_FILL_MAX_LOADER_CALLS:
@@ -474,13 +482,24 @@ class SkillGraphService:
             best: Optional[Question] = None
             best_rank = 0
             candidate_loads = 0
+            # Fair-share of the remaining budget across the attempts still
+            # to scan (this one included), reserving one call per future
+            # attempt's own question load so newer scans cannot starve
+            # older ones. Never exceeds the per-attempt cap.
+            attempts_left = len(unsolved) - idx
+            headroom = (
+                self._ATTEMPTED_FILL_MAX_LOADER_CALLS
+                - loader_calls
+                - (attempts_left - 1)
+            )
+            candidate_allowance = min(
+                self._ATTEMPTED_FILL_MAX_CANDIDATE_LOADS_PER_ATTEMPT,
+                max(0, headroom // attempts_left),
+            )
             for candidate_id in question_by_skill.get(skill_slug, []):
                 if best is not None and best_rank == 0:
                     break
-                if (
-                    candidate_loads
-                    >= self._ATTEMPTED_FILL_MAX_CANDIDATE_LOADS_PER_ATTEMPT
-                ):
+                if candidate_loads >= candidate_allowance:
                     break
                 if loader_calls >= self._ATTEMPTED_FILL_MAX_LOADER_CALLS:
                     break

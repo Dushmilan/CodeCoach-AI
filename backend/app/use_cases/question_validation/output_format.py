@@ -183,15 +183,6 @@ class OutputFormatValidationUseCase(BaseValidationUseCase):
                     details={"output": output},
                 )
             )
-        if output != output.strip():
-            issues.append(
-                self._create_issue(
-                    message=f"Test case {index + 1} output has leading/trailing whitespace",
-                    field=f"test_cases[{index}].expected_output",
-                    test_case_index=index,
-                    severity=ValidationSeverity.INFO,
-                )
-            )
         return issues
 
     def _check_examples_consistency(self, question: Question) -> List:
