@@ -306,6 +306,11 @@ class SolutionAnimationService:
                         kwargs["index"] = int(e.fields["index"])
                     if e.has("value"):
                         kwargs["values"] = [e.fields["value"]]
+                    if e.kind == "mark" and e.has("state"):
+                        # The mark state ("active", "match", ...) is the
+                        # semantic — without it the planner can only guess
+                        # (it hardcoded "sorted", #235).
+                        kwargs["label"] = str(e.fields["state"])[:120]
                 elif e.kind == "window":
                     if e.has("l"):
                         kwargs["low"] = int(e.fields["l"])

@@ -214,3 +214,45 @@ class TestBuildAnimation:
         targets = {op["target"] for step in animation["steps"] for op in step["motion"]}
         assert "stack_base" in targets
         assert AnimationValidator().lint_quality(animation) == []
+
+    @pytest.mark.asyncio
+    async def test_jump_game_beats_render_each_event_at_its_own_cell(self):
+        # #235: jump_game traces pointer/read/mark(active) per index. Every
+        # beat must animate its own cell — a read of index 3 must never
+        # render as a scale on cell_0, and a greedy "active" mark must never
+        # claim the cell is "sorted".
+        stdout = "\n".join(
+            [
+                '{"event":"init","values":[2,3,1,1,4],"family":"array"}',
+                '{"event":"pointer","name":"i","index":3}',
+                '{"event":"read","i":3}',
+                '{"event":"mark","i":3,"state":"active"}',
+                '{"event":"return","result":true}',
+            ]
+        )
+        executor = FakeExecutor(_ok_result(stdout=stdout))
+        service = SolutionAnimationService(executor=executor)
+        q = {
+            "id": "jump-game",
+            "title": "Jump Game",
+            "category": "Array",
+            "description": "Return true if you can reach the last index.",
+            "examples": [{"input": "nums = [2,3,1,1,4]", "output": "true"}],
+        }
+        animation = await service.build_animation(q)
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+        read_beats = [
+            s
+            for s in animation["steps"]
+            if (s.get("narration") or "").startswith("Read")
+        ]
+        assert len(read_beats) == 1
+        assert "[3]" in read_beats[0]["narration"]
+        assert "cell_3" in [op["target"] for op in read_beats[0]["motion"]]
+        mark_beats = [
+            s for s in animation["steps"] if "active" in (s.get("narration") or "")
+        ]
+        assert len(mark_beats) == 1
+        assert "sorted" not in mark_beats[0]["narration"]
