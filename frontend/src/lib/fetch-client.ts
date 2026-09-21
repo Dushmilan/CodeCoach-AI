@@ -183,6 +183,51 @@ export class HttpError extends Error {
     super(message);
     this.name = "HttpError";
   }
+
+  /** Server-provided detail (e.g. FastAPI `{detail}`) or generic message. */
+  get displayMessage(): string {
+    const detail = parseErrorDetail(this.body);
+    return detail ?? this.message;
+  }
+}
+
+/** Extract a user-facing message from a response body, if present. */
+function parseErrorDetail(body: string | undefined): string | null {
+  if (!body) return null;
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (typeof parsed === "string" && parsed.trim()) return parsed;
+    if (parsed !== null && typeof parsed === "object") {
+      const detail = (parsed as Record<string, unknown>).detail;
+      if (typeof detail === "string" && detail.trim()) return detail;
+      if (Array.isArray(detail)) {
+        const parts = detail
+          .map((item) =>
+            typeof item === "string"
+              ? item
+              : item !== null && typeof item === "object"
+                ? String(
+                    (item as Record<string, unknown>).msg ?? "",
+                  )
+                : "",
+          )
+          .map((part) => part.trim())
+          .filter(Boolean);
+        if (parts.length > 0) return parts.join("; ");
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/** User-facing message for any caught error value. Never throws. */
+export function getErrorDisplayMessage(error: unknown): string {
+  if (error instanceof HttpError) return error.displayMessage;
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string" && error) return error;
+  return "Something went wrong";
 }
 
 function anySignal(signals: AbortSignal[]): AbortSignal {
