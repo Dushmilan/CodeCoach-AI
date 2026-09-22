@@ -93,6 +93,22 @@ def _finalize_beats(
     return apply_pacing(beats)
 
 
+def _with_code_line(
+    beat: Dict[str, Any], *steps: Optional[AnimationStepSpec]
+) -> Dict[str, Any]:
+    """Attach the first step's traced source line to its beat (#284).
+
+    The dual-pane viewer highlights ``code_line`` beside the scene. Steps
+    without a traced line (intro/outro beats, synthesized search steps)
+    leave the key absent — honest absence over an invented line.
+    """
+    for step in steps:
+        if step is not None and step.line is not None:
+            beat["code_line"] = step.line
+            break
+    return beat
+
+
 def _cell_x(index: int, n: int, cell: float = 88.0, gap: float = 12.0) -> float:
     total = n * cell + (n - 1) * gap
     start = -total / 2 + cell / 2
@@ -338,7 +354,7 @@ def plan_searching(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
         beat: Dict[str, Any] = {"narration": narr[:300], "shapes": [], "motion": m}
         if camera:
             beat["camera"] = camera
-        beats.append(beat)
+        beats.append(_with_code_line(beat, step))
     beats.append(
         {
             "narration": f"Complexity {spec.complexity.time} time, {spec.complexity.space} space"[
@@ -562,7 +578,7 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             }
             if camera:
                 beat["camera"] = camera
-            beats.append(beat)
+            beats.append(_with_code_line(beat, compare_step, pointer_step))
             continue
         step = item
         narr = step.label or ""
@@ -855,7 +871,7 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
         }
         if camera:
             beat["camera"] = camera
-        beats.append(beat)
+        beats.append(_with_code_line(beat, step))
     result_text = _result_text((spec.initialState.extra or {}).get("result"))
     outro_narration = f"{spec.complexity.time} · {spec.complexity.space}"
     if result_text is not None:
@@ -943,7 +959,11 @@ def plan_stack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             m.append(
                 {"target": "stack_base", "op": "scale", "to": 1.0, "duration": 0.25}
             )
-        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
+        beats.append(
+            _with_code_line(
+                {"narration": narr[:300], "shapes": shapes, "motion": m}, step
+            )
+        )
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -1066,7 +1086,9 @@ def plan_linked_list(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             narr = f"Pointer → node {idx}"
         else:
             m.append({"target": "node_0", "op": "scale", "to": 1.0, "duration": 0.25})
-        beats.append({"narration": narr[:300], "shapes": [], "motion": m})
+        beats.append(
+            _with_code_line({"narration": narr[:300], "shapes": [], "motion": m}, step)
+        )
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -1247,7 +1269,11 @@ def plan_tree(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             m.append(
                 {"target": "tree_root", "op": "scale", "to": 1.0, "duration": 0.25}
             )
-        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
+        beats.append(
+            _with_code_line(
+                {"narration": narr[:300], "shapes": shapes, "motion": m}, step
+            )
+        )
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -1350,7 +1376,11 @@ def plan_graph(spec: AlgorithmAnimation, kind: str = "graph") -> List[Dict[str, 
             m.append({"target": sid, "op": "scale", "to": 1.05, "duration": 0.25})
         else:
             m.append({"target": root, "op": "scale", "to": 1.0, "duration": 0.25})
-        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
+        beats.append(
+            _with_code_line(
+                {"narration": narr[:300], "shapes": shapes, "motion": m}, step
+            )
+        )
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -1541,7 +1571,7 @@ def plan_intervals(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
         beat: Dict[str, Any] = {"narration": narr[:300], "shapes": [], "motion": m}
         if camera:
             beat["camera"] = camera
-        beats.append(beat)
+        beats.append(_with_code_line(beat, step))
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
@@ -1629,7 +1659,11 @@ def plan_backtrack(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             narr = f"Visit {idx}"
         else:
             m.append({"target": "bt_root", "op": "scale", "to": 1.0, "duration": 0.25})
-        beats.append({"narration": narr[:300], "shapes": shapes, "motion": m})
+        beats.append(
+            _with_code_line(
+                {"narration": narr[:300], "shapes": shapes, "motion": m}, step
+            )
+        )
     beats.append(
         {
             "narration": f"{spec.complexity.time}"[:300],
