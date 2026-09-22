@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactNode } from "react";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useCoaching } from "./coaching.hook";
+import { HttpError } from "@/lib/fetch-client";
+import { showToast } from "@/components/ui/Toast";
 import { UsageProvider } from "@/features/usage/usage.context";
 
 const { mockGetCoachResponse, mockGetUsage } = vi.hoisted(() => ({
@@ -19,6 +21,10 @@ vi.mock("@/features/usage/usage.service", () => ({
   usageService: { getUsage: mockGetUsage },
 }));
 
+vi.mock("@/components/ui/Toast", () => ({
+  showToast: vi.fn(),
+}));
+
 const wrapper = ({ children }: { children: ReactNode }) => (
   <UsageProvider>{children}</UsageProvider>
 );
@@ -32,6 +38,7 @@ function makeRateLimitedError() {
 beforeEach(() => {
   mockGetCoachResponse.mockReset();
   mockGetUsage.mockReset();
+  vi.mocked(showToast).mockClear();
   mockGetUsage.mockResolvedValue({
     daily_remaining: 20,
     daily_limit: 20,
@@ -248,6 +255,62 @@ describe("useCoaching", () => {
       });
 
       expect(result.current.error).toBe("Failed to get coaching response");
+    });
+
+    it("shows server detail inline and in toast on HttpError with detail body", async () => {
+      mockGetCoachResponse.mockRejectedValue(
+        new HttpError(
+          "Request failed: 400 Bad Request",
+          400,
+          JSON.stringify({ detail: "Coaching is unavailable for this lesson" }),
+        ),
+      );
+
+      const { result } = renderHook(() => useCoaching());
+
+      await act(async () => {
+        await result.current.sendMessage(
+          defaultArgs.message,
+          defaultArgs.mode,
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+
+      expect(result.current.error).toBe(
+        "Coaching is unavailable for this lesson",
+      );
+      expect(showToast).toHaveBeenCalledWith(
+        "Coaching is unavailable for this lesson",
+        "error",
+      );
+    });
+
+    it("falls back to generic message when HttpError has no detail body", async () => {
+      mockGetCoachResponse.mockRejectedValue(
+        new HttpError("Request failed: 500 Internal Server Error", 500),
+      );
+
+      const { result } = renderHook(() => useCoaching());
+
+      await act(async () => {
+        await result.current.sendMessage(
+          defaultArgs.message,
+          defaultArgs.mode,
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+
+      expect(result.current.error).toBe(
+        "Request failed: 500 Internal Server Error",
+      );
+      expect(showToast).toHaveBeenCalledWith(
+        "Request failed: 500 Internal Server Error",
+        "error",
+      );
     });
   });
 
