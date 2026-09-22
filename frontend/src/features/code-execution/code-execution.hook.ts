@@ -15,6 +15,7 @@ import {
   formatClientJsOutput,
 } from "@/lib/client-js-executor";
 import { showToast } from "@/components/ui/Toast";
+import { getErrorDisplayMessage } from "@/lib/fetch-client";
 
 export function useCodeExecution(): CodeExecutionFeature {
   const [isRunning, setIsRunning] = useState(false);
@@ -50,7 +51,9 @@ export function useCodeExecution(): CodeExecutionFeature {
         return result;
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to run code";
+          err instanceof Error
+            ? getErrorDisplayMessage(err)
+            : "Failed to run code";
         setError(errorMessage);
         showToast(errorMessage, "error");
         throw err;
@@ -119,7 +122,9 @@ export function useCodeExecution(): CodeExecutionFeature {
         return result;
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to validate code";
+          err instanceof Error
+            ? getErrorDisplayMessage(err)
+            : "Failed to validate code";
         setError(errorMessage);
         showToast(errorMessage, "error");
         throw err;
@@ -182,7 +187,9 @@ export function useCodeExecution(): CodeExecutionFeature {
         return result;
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to submit code";
+          err instanceof Error
+            ? getErrorDisplayMessage(err)
+            : "Failed to submit code";
         setError(errorMessage);
         showToast(errorMessage, "error");
         throw err;
@@ -207,7 +214,7 @@ export function useCodeExecution(): CodeExecutionFeature {
       } catch (err: unknown) {
         const errorMessage =
           err instanceof Error
-            ? err.message
+            ? getErrorDisplayMessage(err)
             : "An error occurred during execution";
         setError(errorMessage);
         showToast(errorMessage, "error");
