@@ -12,6 +12,7 @@ import { showToast } from '@/components/ui/Toast';
 import { useCoaching } from '@/features/coaching/coaching.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import { useLesson } from '@/features/curriculum/use-curriculum.hook';
+import { useWorkspace } from '@/features/workspace/use-workspace.hook';
 import { TestCaseResultView } from '@/features/code-execution/code-execution.types';
 import { FetchClient, HttpError, getErrorDisplayMessage } from '@/lib/fetch-client';
 import { useAuth } from '@/providers';
@@ -73,6 +74,16 @@ export default function LessonPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
   const [linkedQuestion, setLinkedQuestion] = useState<Question | null>(null);
+
+  // Monaco draft persistence (Redis, 7d TTL): keyed by lesson so learn
+  // practice never collides with problem workspace drafts for a linked
+  // question. Hydrated drafts win over starter code below.
+  const { hasDraft: hasLessonDraft } = useWorkspace({
+    questionId: lesson ? `lesson:${lesson.id}` : null,
+    language,
+    currentCode,
+    setCurrentCode,
+  });
 
   const { messages, isTyping, sendMessage } = useCoaching();
 
@@ -157,6 +168,7 @@ export default function LessonPage() {
               code: currentCode,
               stdin: tc.input,
               question_id: questionId,
+              surface: 'learn',
             })) as { stdout: string; stderr: string; exit_code?: number };
             if (res.stderr) {
               resultLines.push(`Test ${i + 1}: FAILED\n  Stderr: ${res.stderr}`);
@@ -217,6 +229,7 @@ export default function LessonPage() {
         language,
         code: currentCode,
         stdin: stdin,
+        surface: 'learn',
         ...(linkedQuestion ? { question_id: linkedQuestion.id } : {}),
       })) as { stdout: string; stderr: string; exit_code?: number };
       const stdout = res.stdout || '';
@@ -249,6 +262,7 @@ export default function LessonPage() {
           question_id: linkedQuestion.id,
           language,
           code: currentCode,
+          surface: 'learn',
         })) as {
           passed: boolean;
           total: number;
@@ -313,6 +327,7 @@ export default function LessonPage() {
           language,
           code: currentCode,
           stdin: tc.input,
+          surface: 'learn',
         })) as { stdout: string; stderr: string };
 
         const actual = (res.stdout || '').trim();
@@ -380,11 +395,11 @@ export default function LessonPage() {
 
   useEffect(() => {
     const starter = (linkedQuestion?.starter as any)?.[language] || lesson?.starter_code || '';
-    if (starter && !codeInitialized.current) {
+    if (starter && !codeInitialized.current && !hasLessonDraft) {
       setCurrentCode(starter);
       codeInitialized.current = true;
     }
-  }, [lesson?.id, linkedQuestion?.id, language, linkedQuestion?.starter, lesson?.starter_code]);
+  }, [lesson?.id, linkedQuestion?.id, language, linkedQuestion?.starter, lesson?.starter_code, hasLessonDraft]);
 
   if (isLoading) return <div>Loading...</div>;
   if (error || !lesson) return <div>Error</div>;

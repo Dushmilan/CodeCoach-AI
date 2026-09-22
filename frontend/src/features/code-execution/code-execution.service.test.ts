@@ -86,6 +86,22 @@ describe("CodeExecutionService", () => {
         expect.objectContaining({ timeout: 45000 }),
       );
     });
+
+    it("forwards the learn surface so practice runs skip moat writes", async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        stdout: "",
+        stderr: "",
+        exit_code: 0,
+      });
+
+      await service.runCode("python", "1/0", "", undefined, "q1", "learn");
+
+      expect(http.post).toHaveBeenCalledWith(
+        "/api/run/",
+        expect.objectContaining({ surface: "learn", question_id: "q1" }),
+        expect.objectContaining({ timeout: 45000 }),
+      );
+    });
   });
 
   describe("validateCode", () => {
@@ -205,6 +221,28 @@ describe("CodeExecutionService", () => {
         { timeout: 60000 },
       );
       expect(result).toEqual(expected);
+    });
+
+    it("forwards the learn surface so practice submits skip moat writes", async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        passed: true,
+        total: 0,
+        passed_count: 0,
+        results: [],
+      });
+
+      await service.submitCode("two-sum", "python", "print(input())", "learn");
+
+      expect(http.post).toHaveBeenCalledWith(
+        "/api/submit/",
+        {
+          question_id: "two-sum",
+          language: "python",
+          code: "print(input())",
+          surface: "learn",
+        },
+        { timeout: 60000 },
+      );
     });
   });
 });

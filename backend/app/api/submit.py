@@ -144,23 +144,30 @@ async def submit_code(
         for tc in question.test_cases
     ]
 
+    # Learn-surface practice grades without persisting anything:
+    # no submission rows, no mistake-memory observation, no skill events,
+    # no learner-cache invalidation (curriculum runs must not pollute the
+    # moat).
+    is_learn = submit_request.surface == "learn"
+
     # Stateful adapter contract: persist sent before grading so executor
     # crashes still leave an auditable row, then transition to graded/failed.
     # Persistence is best-effort and never breaks the graded response.
     sent = None
-    try:
-        sent = await submissions.create_sent(
-            user_id=current_user.id,
-            submission=SubmissionIn(
-                question_id=submit_request.question_id,
-                code=submit_request.code,
-                language=submit_request.language.value,
-                passed=False,
-            ),
-        )
-    except Exception:  # noqa: BLE001
-        logger.warning("Failed to persist submission sent state", exc_info=True)
-        sent = None
+    if not is_learn:
+        try:
+            sent = await submissions.create_sent(
+                user_id=current_user.id,
+                submission=SubmissionIn(
+                    question_id=submit_request.question_id,
+                    code=submit_request.code,
+                    language=submit_request.language.value,
+                    passed=False,
+                ),
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to persist submission sent state", exc_info=True)
+            sent = None
 
     try:
         results = await executor.evaluate_suite(
@@ -193,40 +200,46 @@ async def submit_code(
 
     # Transition sent -> graded for the mistake-memory data layer.
     # Best-effort: a failed write must not 500 the graded result.
+    # Skipped entirely on the learn surface (no learn submit data persists).
     persisted = None
-    try:
-        if sent is not None:
-            persisted = await submissions.mark_graded(
-                sent.id,
-                passed=passed,
-                error_signature=_error_signature(results),
-            )
-        else:
-            persisted = await submissions.add(
-                user_id=current_user.id,
-                submission=SubmissionIn(
-                    question_id=submit_request.question_id,
-                    code=submit_request.code,
-                    language=submit_request.language.value,
+    if not is_learn:
+        try:
+            if sent is not None:
+                persisted = await submissions.mark_graded(
+                    sent.id,
                     passed=passed,
                     error_signature=_error_signature(results),
-                ),
-            )
-    except Exception:  # noqa: BLE001
-        logger.warning("Failed to persist submission", exc_info=True)
+                )
+            else:
+                persisted = await submissions.add(
+                    user_id=current_user.id,
+                    submission=SubmissionIn(
+                        question_id=submit_request.question_id,
+                        code=submit_request.code,
+                        language=submit_request.language.value,
+                        passed=passed,
+                        error_signature=_error_signature(results),
+                    ),
+                )
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to persist submission", exc_info=True)
 
-    now = datetime.now(timezone.utc)
-    await _record_post_grading(
-        reviews=reviews,
-        skill_service=skill_service,
-        cache=cache,
-        user_id=current_user.id,
-        question_id=submit_request.question_id,
-        passed=passed,
-        error_signature=_error_signature(results),
-        persisted=persisted,
-        now=now,
-    )
+    # Learn-surface side effects are skipped entirely below: nothing was
+    # written, so there is no mistake-memory to observe, no skill event to
+    # emit, and cached problem context stays valid (avoids a needless refill).
+    if not is_learn:
+        now = datetime.now(timezone.utc)
+        await _record_post_grading(
+            reviews=reviews,
+            skill_service=skill_service,
+            cache=cache,
+            user_id=current_user.id,
+            question_id=submit_request.question_id,
+            passed=passed,
+            error_signature=_error_signature(results),
+            persisted=persisted,
+            now=now,
+        )
 
     return SubmitResponse(
         passed=passed,

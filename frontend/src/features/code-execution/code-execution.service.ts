@@ -8,6 +8,9 @@ import {
   ValidationResponse,
 } from "./code-execution.types";
 
+/** Client surface: questions persist attempts + moat writes, learn does not. */
+export type ExecutionSurface = "questions" | "learn";
+
 export class CodeExecutionService {
   constructor(private http: HttpClient) {}
 
@@ -17,6 +20,7 @@ export class CodeExecutionService {
     stdin?: string,
     version?: string,
     questionId?: string,
+    surface?: ExecutionSurface,
   ): Promise<CodeExecutionResult> {
     return this.http.post<CodeExecutionResult>(
       "/api/run/",
@@ -26,8 +30,11 @@ export class CodeExecutionService {
         stdin: stdin || "",
         version,
         // Question context is informational only — free runs are Redis-only
-        // (#264) and never persist, so this cannot leak an attempt.
+        // (#264) and never persist. Surface is still sent for API symmetry;
+        // the learn/problem persistence boundary lives on /api/submit/.
         question_id: questionId,
+        // Learn practice executes without persisting moat data.
+        ...(surface ? { surface } : {}),
       },
       // Piston execution + cold-start latency exceeds the client's 10s
       // default; the backend is Redis-only so 45s is pure execution budget.
@@ -40,6 +47,7 @@ export class CodeExecutionService {
     code: string,
     testCases: TestCase[],
     questionId?: string,
+    surface?: ExecutionSurface,
   ): Promise<ValidationResponse> {
     // One request per case, all in flight at once (#264): the backend is
     // Redis-only so each call is ~Piston latency, and sequential awaits
@@ -53,6 +61,7 @@ export class CodeExecutionService {
             tc.input,
             undefined,
             questionId,
+            surface,
           );
           return { ok: true as const, execResult };
         } catch (err) {
@@ -100,6 +109,7 @@ export class CodeExecutionService {
     questionId: string,
     language: string,
     code: string,
+    surface?: ExecutionSurface,
   ): Promise<SubmitResponse> {
     return this.http.post<SubmitResponse>(
       "/api/submit/",
@@ -107,6 +117,8 @@ export class CodeExecutionService {
         question_id: questionId,
         language,
         code,
+        // Learn practice grades without persisting moat data.
+        ...(surface ? { surface } : {}),
       },
       // Grading runs the full suite server-side plus Postgres persists;
       // allowed to be slow, must never trip the client's 10s default.

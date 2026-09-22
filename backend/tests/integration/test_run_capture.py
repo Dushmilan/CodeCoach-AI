@@ -1,8 +1,8 @@
-"""Integration tests: crashed free-runs inside a question workspace feed
-mistake-memory (submission history + review cards) - Ideas #1 capture half.
+"""Integration tests: free runs are Redis-only (#264) and never touch
+Postgres — no attempt history, no review cards, on any surface.
 
-Runs WITHOUT question context are never captured (scratch experiments must
-not pollute the per-question error graph).
+The learn surface is accepted for API symmetry; the learn/problem
+persistence boundary lives on /api/submit/.
 """
 
 from contextlib import contextmanager
@@ -107,9 +107,10 @@ def _run_body(question_id=None):
 
 
 @pytest.mark.asyncio
-async def test_crashed_run_with_question_persists_attempt_and_card(
+async def test_crashed_run_with_question_persists_nothing_redis_only(
     async_client, test_db, crashing_executor
 ):
+    """Free runs never touch Postgres (#264), even with question context."""
     await _seed_user_and_question(test_db)
     _override_executor(crashing_executor)
     try:
@@ -121,21 +122,39 @@ async def test_crashed_run_with_question_persists_attempt_and_card(
     assert resp.status_code == 200
     assert resp.json()["exit_code"] == 1
 
-    sub = (
-        await test_db.execute(
-            text(
-                "SELECT passed, error_signature FROM submissions "
-                "WHERE user_id = :u AND question_id = :q"
-            ),
-            {"u": USER, "q": QUESTION},
-        )
-    ).fetchone()
-    assert sub is not None
-    assert sub[0] is False
-    assert sub[1] == "ZeroDivisionError: division by zero"
+    subs = (
+        await test_db.execute(text("SELECT COUNT(*) FROM submissions"))
+    ).scalar_one()
+    cards = (
+        await test_db.execute(text("SELECT COUNT(*) FROM review_cards"))
+    ).scalar_one()
+    assert subs == 0 and cards == 0
 
-    card = (await test_db.execute(text("SELECT state FROM review_cards"))).fetchone()
-    assert card is not None and card[0] == "active"
+
+@pytest.mark.asyncio
+async def test_crashed_run_learn_surface_captures_nothing(
+    async_client, test_db, crashing_executor
+):
+    """Learn surface runs persist nothing (free runs are Redis-only)."""
+    await _seed_user_and_question(test_db)
+    _override_executor(crashing_executor)
+    try:
+        with mock_auth():
+            resp = await async_client.post(
+                "/api/run/",
+                json={**_run_body(QUESTION), "surface": "learn"},
+            )
+    finally:
+        _clear_executor()
+
+    assert resp.status_code == 200
+    subs = (
+        await test_db.execute(text("SELECT COUNT(*) FROM submissions"))
+    ).scalar_one()
+    cards = (
+        await test_db.execute(text("SELECT COUNT(*) FROM review_cards"))
+    ).scalar_one()
+    assert subs == 0 and cards == 0
 
 
 @pytest.mark.asyncio

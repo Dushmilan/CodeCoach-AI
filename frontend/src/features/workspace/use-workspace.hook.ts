@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useContext, useEffect, useRef } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Language } from "@/types";
 import { AuthContext } from "@/providers/AuthProvider";
 import { workspaceService } from "./workspace.service";
@@ -30,6 +30,9 @@ export function useWorkspace({
   const hydratedRef = useRef<string | null>(null);
   const lastSavedRef = useRef<string>("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // True once a persisted draft was applied for the current key. Pages use
+  // this so starter code never clobbers a hydrated draft on re-render.
+  const [hasDraft, setHasDraft] = useState(false);
 
   // Hydrate code + chat on question/language change
   useEffect(() => {
@@ -37,6 +40,7 @@ export function useWorkspace({
     const key = `${questionId}:${language}`;
     if (hydratedRef.current === key) return;
     hydratedRef.current = key;
+    setHasDraft(false);
     let cancelled = false;
     workspaceService
       .getCode(questionId, language)
@@ -45,6 +49,7 @@ export function useWorkspace({
         if (res.code) {
           lastSavedRef.current = res.code;
           setCurrentCode(res.code);
+          setHasDraft(true);
         }
       })
       .catch(() => {});
@@ -64,6 +69,7 @@ export function useWorkspace({
 
   useEffect(() => {
     hydratedRef.current = null;
+    setHasDraft(false);
   }, [questionId]);
 
   const scheduleSave = useCallback(
@@ -93,6 +99,7 @@ export function useWorkspace({
     try {
       await workspaceService.deleteCode(questionId, language);
       lastSavedRef.current = "";
+      setHasDraft(false);
     } catch {}
   }, [questionId, language, isAuthenticated]);
 
@@ -103,5 +110,5 @@ export function useWorkspace({
     } catch {}
   }, [questionId, isAuthenticated]);
 
-  return { deleteDraft, clearChat };
+  return { deleteDraft, clearChat, hasDraft };
 }

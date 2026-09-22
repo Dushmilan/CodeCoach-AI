@@ -803,6 +803,34 @@ class TestSubmitSideEffects:
         assert len(fakes.skill.events) == 1
         assert fakes.skill.events[0].event_type.value == "submission_passed"
 
+    def test_submit_learn_surface_skips_moat_writes(
+        self, test_client, mock_question_repo, mock_executor, fakes
+    ):
+        """Learn practice grades but persists nothing (no moat pollution)."""
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _all():
+            yield from self._override_all(
+                test_client, mock_question_repo, mock_executor, fakes
+            )
+
+        with mock_auth(), _all():
+            res = test_client.post(
+                "/api/submit/",
+                json={
+                    "question_id": "test-question",
+                    "language": "python",
+                    "code": "print(input())",
+                    "surface": "learn",
+                },
+            )
+        assert res.status_code == 200
+        assert res.json()["passed"] is True
+        assert fakes.submissions.added == []
+        assert fakes.reviews.observed == []
+        assert fakes.skill.events == []
+
     def test_submit_fail_records_mistake(
         self, test_client, mock_question_repo, mock_executor, fakes
     ):

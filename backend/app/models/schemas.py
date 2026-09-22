@@ -332,12 +332,19 @@ class CodeExecutionRequest(BaseModel):
     code: str = Field(..., description="Source code to execute")
     stdin: str = Field(default="", description="Input to provide to the program")
     version: Optional[str] = Field(None, description="Specific language version")
+    surface: CoachingSurface = Field(
+        default="questions",
+        description=(
+            "Client surface, accepted for API symmetry. Free runs are "
+            "Redis-only (#264) and never persist on either surface; the "
+            "learn/problem persistence boundary lives on /api/submit/."
+        ),
+    )
     question_id: Optional[str] = Field(
         None,
         description=(
-            "Question context for this run. When set and the execution exits "
-            "non-zero, the crash is recorded in the attempt history and "
-            "mistake-memory (best-effort)."
+            "Question context for this run (informational only; free runs "
+            "never persist)."
         ),
     )
 
@@ -525,6 +532,15 @@ class SubmitRequest(BaseModel):
     question_id: str = Field(..., description="Question ID to submit against")
     language: Language = Field(..., description="Programming language")
     code: str = Field(..., description="Source code to submit")
+    surface: CoachingSurface = Field(
+        default="questions",
+        description=(
+            "Client surface: 'questions' persists the graded attempt, "
+            "observes mistake-memory, emits skill events and invalidates "
+            "learner cache; 'learn' grades and returns without persisting "
+            "anything (curriculum practice must not pollute the moat)."
+        ),
+    )
 
 
 class SubmitResult(BaseModel):
