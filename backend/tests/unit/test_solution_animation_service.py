@@ -170,22 +170,27 @@ class TestBuildAnimation:
         # #153: pointer events carry the scan position in the `index` field
         # (trace schema), not `i`. The planner mapped `i` only, so every
         # pointer beat clamped to cell_0 and the scan highlight never moved.
+        # #240: pointer+compare now chunk into one decision beat, so the
+        # mechanical "Pointer →" narration is gone — but the pointer index
+        # must still drive the beat (stroke on the pointed cell, never a
+        # cell_0 clamp).
         executor = FakeExecutor(_ok_result())
         service = SolutionAnimationService(executor=executor)
         animation = await service.build_animation(_question())
 
         assert animation is not None
-        pointer_beats = [
+        narrations = [s.get("narration") or "" for s in animation["steps"]]
+        assert not any(n.startswith("Pointer") for n in narrations)
+        decision_beats = [
             s
             for s in animation["steps"]
-            if (s.get("narration") or "").startswith("Pointer")
+            if "Compare [0]=5 vs [1]=1" in (s.get("narration") or "")
         ]
-        assert [b["narration"] for b in pointer_beats] == [
-            "Pointer → [0]=5",
-            "Pointer → [1]=1",
-        ]
-        targets = [op["target"] for b in pointer_beats for op in b["motion"]]
-        assert targets == ["cell_0", "cell_1"]
+        assert len(decision_beats) == 1
+        ops = decision_beats[0]["motion"]
+        strokes = [op for op in ops if op["op"] == "stroke"]
+        assert "cell_0" in [op["target"] for op in strokes]
+        assert {op["target"] for op in ops} == {"cell_0", "cell_1"}
 
     @pytest.mark.asyncio
     async def test_stack_family_question_dispatches_to_stack_compiler(self):
@@ -348,5 +353,89 @@ class TestBuildAnimation:
             n.strip() in ("compare", "pointer", "mark", "custom") for n in narrations
         )
         # 7 > 6 discarded the right half before the miss closed the story.
-        assert any("discard right \u2190" in n for n in narrations)
+        assert any("discard right ←" in n for n in narrations)
         assert any("6 not in array" in n for n in narrations)
+
+    @pytest.mark.asyncio
+    async def test_linear_search_hit_ends_in_result_climax(self):
+        # #240: the returned index must close with a found climax beat on
+        # the real cell — no trailing mark(match) duplicate, no placeholder.
+        stdout = "\n".join(
+            [
+                '{"event":"init","values":[4,1,7],"family":"array"}',
+                '{"event":"pointer","name":"i","index":0}',
+                '{"event":"compare","i":0}',
+                '{"event":"pointer","name":"i","index":1}',
+                '{"event":"compare","i":1}',
+                '{"event":"pointer","name":"i","index":2}',
+                '{"event":"compare","i":2}',
+                '{"event":"mark","i":2,"state":"match"}',
+                '{"event":"return","result":2}',
+            ]
+        )
+        executor = FakeExecutor(_ok_result(stdout=stdout))
+        service = SolutionAnimationService(executor=executor)
+        q = {
+            "id": "linear-search",
+            "title": "Linear Search",
+            "category": "Array",
+            "description": "Find the target with linear search.",
+            "examples": [{"input": "values = [4,1,7], target = 7", "output": "2"}],
+        }
+        animation = await service.build_animation(q)
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+
+        narrations = [s.get("narration") or "" for s in animation["steps"]]
+        assert any("Found 7 at [2]" in n for n in narrations)
+        # The mark(match) beat folds into the climax — exactly one success
+        # beat for cell 2, and no mechanical pointer beats remain.
+        assert not any("Mark [2]" in n for n in narrations)
+        assert not any(n.startswith("Pointer") for n in narrations)
+
+    @pytest.mark.asyncio
+    async def test_linear_search_miss_ends_not_found(self):
+        stdout = "\n".join(
+            [
+                '{"event":"init","values":[4,1,7],"family":"array"}',
+                '{"event":"pointer","name":"i","index":0}',
+                '{"event":"compare","i":0}',
+                '{"event":"pointer","name":"i","index":1}',
+                '{"event":"compare","i":1}',
+                '{"event":"pointer","name":"i","index":2}',
+                '{"event":"compare","i":2}',
+                '{"event":"return","result":-1}',
+            ]
+        )
+        executor = FakeExecutor(_ok_result(stdout=stdout))
+        service = SolutionAnimationService(executor=executor)
+        q = {
+            "id": "linear-search",
+            "title": "Linear Search",
+            "category": "Array",
+            "description": "Find the target with linear search.",
+            "examples": [{"input": "values = [4,1,7], target = 9", "output": "-1"}],
+        }
+        animation = await service.build_animation(q)
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+
+        narrations = [s.get("narration") or "" for s in animation["steps"]]
+        assert any("9 not in array" in n for n in narrations)
+
+    @pytest.mark.asyncio
+    async def test_sorted_result_narrated_in_outro(self):
+        # #240: a list result cannot highlight one cell — the outro beat
+        # carries the actual result next to the complexity badge.
+        executor = FakeExecutor(_ok_result())
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(_question())
+
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+        outro = animation["steps"][-1]
+        assert "Result [1, 2, 4, 5, 8]" in (outro.get("narration") or "")
+        assert outro.get("badge") == {"time": "O(n²)", "space": "O(1)"}

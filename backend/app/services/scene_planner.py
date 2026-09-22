@@ -9,10 +9,15 @@ graph, grid, intervals, backtrack) → all 103 canonical solutions. Each planner
 is cinematic (highlight/dim/camera/badges) not literal debugger steps.
 """
 
+import json
 import math
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from app.models.animation_spec import AlgorithmAnimation, Complexity
+from app.models.animation_spec import (
+    AlgorithmAnimation,
+    AnimationStepSpec,
+    Complexity,
+)
 from app.services import animation_design_tokens as tokens
 
 
@@ -316,6 +321,101 @@ def plan_searching(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
 # ── generic array / bars (sorting, DP, two-pointers, sliding window) ─────────
 
 
+def _compare_indices(step: AnimationStepSpec) -> List[int]:
+    """Indices a compare step inspects, mirroring the planner branch."""
+    if step.indices:
+        return list(step.indices)
+    if step.index is not None:
+        return [step.index]
+    return []
+
+
+def _chunk_decision_steps(
+    steps: List[AnimationStepSpec],
+) -> List[Any]:
+    """Chunk pointer+compare pairs into single decision beats (#240).
+
+    A pointer step immediately followed by a compare over an overlapping
+    index is one decision, not two beats — the mechanical 'Pointer → [i]'
+    beat disappears and the compare beat carries the pointer's stroke.
+    Non-overlapping pairs stay separate: a distant pointer is independent
+    information, never merged.
+    """
+    chunked: List[Any] = []
+    i = 0
+    while i < len(steps):
+        step = steps[i]
+        nxt = steps[i + 1] if i + 1 < len(steps) else None
+        if (
+            step.action == "pointer"
+            and nxt is not None
+            and nxt.action == "compare"
+            and step.index is not None
+            and step.index in _compare_indices(nxt)
+        ):
+            chunked.append((step, nxt))
+            i += 2
+        else:
+            chunked.append(step)
+            i += 1
+    return chunked
+
+
+def _compare_narration(idxs: List[int], display: List[Any]) -> str:
+    """Value-bearing compare narration shared by compare and decision beats."""
+    n = len(display)
+    if len(idxs) >= 2:
+        vals = [str(display[i])[:12] if 0 <= i < n else "?" for i in idxs[:2]]
+        return (
+            f"Compare [{idxs[0]}]={vals[0]} "
+            f"vs [{idxs[1]}]={vals[1] if len(vals) > 1 else '?'}"
+        )
+    if len(idxs) == 1:
+        i0 = idxs[0]
+        v0 = str(display[i0])[:12] if 0 <= i0 < n else "?"
+        return f"Compare [{i0}]={v0}"
+    return f"Compare {idxs}"
+
+
+def _window_band_shape(low: int, high: int, n: int) -> Dict[str, Any]:
+    """Persistent window-band shape for the array family (#240).
+
+    A translucent band behind the active range. Ids are unique per range
+    (the validator rejects duplicate shape ids script-wide); the
+    cumulative renderer keeps every band visible as visited-region state.
+    """
+    x0 = _cell_x(low, n) - 54
+    x1 = _cell_x(high, n) + 54
+    return {
+        "id": f"window_band_{low}_{high}",
+        "type": "rect",
+        "x": round((x0 + x1) / 2, 2),
+        "y": tokens.ROW_Y,
+        "width": round(x1 - x0, 2),
+        "height": 112,
+        "radius": 12,
+        "fill": tokens.PALETTE["accent"],
+        "stroke": tokens.PALETTE["accent"],
+        "lineWidth": 1,
+        "opacity": 0.16,
+    }
+
+
+def _result_text(result: Any) -> Optional[str]:
+    """Short truthful rendering of a return.result for the outro beat."""
+    if result is None or isinstance(result, bool):
+        return None
+    if isinstance(result, (int, float, str)):
+        text = str(result)
+    else:
+        try:
+            text = json.dumps(result, sort_keys=True, default=str)
+        except (TypeError, ValueError):
+            return None
+    text = text.strip()
+    return text[:120] if text else None
+
+
 def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
     """Cinematic array beats: compare→highlight, swap→move, write→label, window→focus."""
     arr = list(spec.initialState.array or [])
@@ -376,12 +476,25 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             "camera": {"action": "reset", "zoom": tokens.CAMERA["zoom_full"]},
         }
     ]
-    for step in spec.steps:
+    last_band: tuple[int, int] | None = None
+    for item in _chunk_decision_steps(spec.steps):
         m: List[Dict[str, Any]] = []
+        shapes_b: List[Dict[str, Any]] = []
         camera: Dict[str, Any] | None = None
-        narr = step.label or ""
-        if step.action == "compare":
-            idxs = step.indices or ([step.index] if step.index is not None else [])
+        if isinstance(item, tuple):
+            # Decision beat: pointer stroke folds into the compare it sets
+            # up; the narration carries the compared values (#240).
+            pointer_step, compare_step = item
+            pidx = max(0, min(int(pointer_step.index or 0), n - 1))
+            m.append(
+                {
+                    "target": f"cell_{pidx}",
+                    "op": "stroke",
+                    "to": tokens.PALETTE["accent"],
+                    "duration": 0.25,
+                }
+            )
+            idxs = _compare_indices(compare_step)
             for idx in idxs[:2]:
                 idx = max(0, min(idx, n - 1))
                 m.append(
@@ -400,17 +513,44 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                         "duration": tokens.DURATION["highlight"],
                     }
                 )
-            narr = f"Compare {idxs}"
-            if len(idxs) >= 2:
-                vals = [str(display[i])[:12] if 0 <= i < n else "?" for i in idxs[:2]]
-                narr = (
-                    f"Compare [{idxs[0]}]={vals[0]} "
-                    f"vs [{idxs[1]}]={vals[1] if len(vals) > 1 else '?'}"
+            narr = _compare_narration(idxs, display)
+            camera = {
+                "action": "focus",
+                "region": idxs[:2],
+                "zoom": tokens.CAMERA["zoom_focus"],
+            }
+            beat = {
+                "narration": narr[:300],
+                "shapes": shapes_b,
+                "motion": m,
+            }
+            if camera:
+                beat["camera"] = camera
+            beats.append(beat)
+            continue
+        step = item
+        narr = step.label or ""
+        if step.action == "compare":
+            idxs = _compare_indices(step)
+            for idx in idxs[:2]:
+                idx = max(0, min(idx, n - 1))
+                m.append(
+                    {
+                        "target": f"cell_{idx}",
+                        "op": "fill",
+                        "to": tokens.PALETTE["highlight_fill"],
+                        "duration": tokens.DURATION["highlight"],
+                    }
                 )
-            elif len(idxs) == 1:
-                i0 = idxs[0]
-                v0 = str(display[i0])[:12] if 0 <= i0 < n else "?"
-                narr = f"Compare [{i0}]={v0}"
+                m.append(
+                    {
+                        "target": f"cell_{idx}",
+                        "op": "stroke",
+                        "to": tokens.PALETTE["highlight_stroke"],
+                        "duration": tokens.DURATION["highlight"],
+                    }
+                )
+            narr = _compare_narration(idxs, display)
             camera = {
                 "action": "focus",
                 "region": idxs[:2],
@@ -492,6 +632,11 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
             }
         elif step.action == "window":
             low, high = int(step.low or 0), int(step.high or 0)
+            band_range = (max(0, low), min(high, n - 1))
+            if band_range != last_band:
+                last_band = band_range
+                if band_range[0] <= band_range[1]:
+                    shapes_b.append(_window_band_shape(*band_range, n))
             for idx in range(low, min(high + 1, n)):
                 m.append(
                     {
@@ -616,16 +761,72 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                 "element": f"cell_{idx}",
                 "zoom": tokens.CAMERA["zoom_focus"],
             }
-        else:
-            m.append({"target": "cell_0", "op": "scale", "to": 1.0, "duration": 0.25})
-            narr = step.label or step.action
-        beat: Dict[str, Any] = {"narration": narr[:300], "shapes": [], "motion": m}
+        elif step.action == "found":
+            # Climax beat: the returned index resolves to a real cell (#240).
+            idx = max(0, min(int(step.index or 0), n - 1))
+            m.append(
+                {
+                    "target": f"cell_{idx}",
+                    "op": "fill",
+                    "to": tokens.PALETTE["success_fill"],
+                    "duration": tokens.DURATION["highlight"],
+                }
+            )
+            m.append(
+                {
+                    "target": f"cell_{idx}",
+                    "op": "stroke",
+                    "to": tokens.PALETTE["success_stroke"],
+                    "duration": tokens.DURATION["highlight"],
+                }
+            )
+            m.append(
+                {
+                    "target": f"cell_{idx}",
+                    "op": "scale",
+                    "to": 1.15,
+                    "duration": 0.3,
+                }
+            )
+            target = spec.initialState.target
+            if target is not None:
+                narr = f"Found {target} at [{idx}]"
+            elif 0 <= idx < n:
+                narr = f"Result [{idx}]={display[idx]}"
+            else:
+                narr = f"Result [{idx}]"
+            camera = {
+                "action": "focus",
+                "element": f"cell_{idx}",
+                "zoom": tokens.CAMERA["zoom_focus"],
+            }
+        elif step.action == "not_found":
+            target = spec.initialState.target
+            narr = f"{target} not in array" if target is not None else "Not found"
+            for idx in range(n):
+                m.append(
+                    {
+                        "target": f"cell_{idx}",
+                        "op": "fill",
+                        "to": tokens.PALETTE["dim_fill"],
+                        "duration": tokens.DURATION["dim"],
+                    }
+                )
+        beat = {
+            "narration": narr[:300],
+            "shapes": shapes_b,
+            "motion": m,
+        }
         if camera:
             beat["camera"] = camera
         beats.append(beat)
+    result_text = _result_text((spec.initialState.extra or {}).get("result"))
+    outro_narration = f"{spec.complexity.time} · {spec.complexity.space}"
+    if result_text is not None:
+        outro_narration = f"Result {result_text} · {outro_narration}"
     beats.append(
         {
-            "narration": f"{spec.complexity.time} · {spec.complexity.space}"[:300],
+            "narration": outro_narration[:300],
             "shapes": [],
             "motion": [
                 {"target": "cell_0", "op": "scale", "to": 1.0, "duration": 0.25}
