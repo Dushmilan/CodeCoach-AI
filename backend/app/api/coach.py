@@ -92,6 +92,59 @@ async def enforce_user_rate_limit(
         raise HTTPException(status_code=429, detail="User request rate limit exceeded")
 
 
+async def _fetch_context_and_begin_interaction(
+    learner_context: LearnerContextService,
+    interactions: CoachingInteractionRepository,
+    user_id: str,
+    coaching_request: CoachingRequest,
+    surface: str,
+) -> tuple[dict, object | None]:
+    """Fetch learner context and persist the sent row concurrently (#264).
+
+    The two awaits are independent (Redis/DB reads vs a DB write), so they
+    overlap instead of adding up. Both are best-effort: failures degrade
+    to empty context / no row, never to a 500.
+    """
+
+    async def _context():
+        if surface != "questions":
+            return {"skill_block": "", "submission_block": ""}
+        try:
+            ctx = await learner_context.get_context(user_id)
+            if ctx.get("skill_block"):
+                logger.debug("Coach learner skills: %s", ctx["skill_block"][:200])
+            if ctx.get("submission_block"):
+                logger.debug("Coach submissions: %s", ctx["submission_block"][:200])
+            return ctx
+        except Exception as e:  # pragma: no cover - degrade open
+            logger.debug("Learner context fetch failed: %s", e)
+            return {"skill_block": "", "submission_block": ""}
+
+    async def _sent():
+        try:
+            return await interactions.create_sent(
+                user_id=user_id,
+                question_id=None,
+                mode=coaching_request.mode.value,
+                language=coaching_request.language.value,
+                problem_hash=_chash(coaching_request.problem),
+                code_hash=_chash(coaching_request.code),
+                idempotency_key=_uuid.uuid4().hex,
+                request_payload={
+                    "mode": coaching_request.mode.value,
+                    "language": coaching_request.language.value,
+                    "difficulty": coaching_request.difficulty.value,
+                    "surface": surface,
+                },
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to persist coaching sent state", exc_info=True)
+            return None
+
+    learner_ctx, interaction = await asyncio.gather(_context(), _sent())
+    return learner_ctx, interaction
+
+
 async def _warm_learner_context(
     learner_context: LearnerContextService,
     cache: RedisCache,
@@ -215,47 +268,10 @@ async def get_coaching(
             else []
         )
 
-        # Learner context (cached skill graph + recent submissions) — only for
-        # the questions surface. The learn surface is graph-free by design:
-        # skipping the fetch saves Redis + DB roundtrips and prompt tokens.
         surface = coaching_request.surface
-        learner_ctx: dict = {"skill_block": "", "submission_block": ""}
-        if surface == "questions":
-            try:
-                learner_ctx = await learner_context.get_context(user.id)
-                if learner_ctx.get("skill_block"):
-                    logger.debug(
-                        "Coach learner skills: %s", learner_ctx["skill_block"][:200]
-                    )
-                if learner_ctx.get("submission_block"):
-                    logger.debug(
-                        "Coach submissions: %s", learner_ctx["submission_block"][:200]
-                    )
-            except Exception as e:  # pragma: no cover - degrade open
-                logger.debug("Learner context fetch failed: %s", e)
-
-        # Stateful adapter contract: persist sent before the provider call
-        # so timeouts/failures still leave an auditable row (best-effort).
-        interaction = None
-        try:
-            interaction = await interactions.create_sent(
-                user_id=user.id,
-                question_id=None,
-                mode=coaching_request.mode.value,
-                language=coaching_request.language.value,
-                problem_hash=_chash(coaching_request.problem),
-                code_hash=_chash(coaching_request.code),
-                idempotency_key=_uuid.uuid4().hex,
-                request_payload={
-                    "mode": coaching_request.mode.value,
-                    "language": coaching_request.language.value,
-                    "difficulty": coaching_request.difficulty.value,
-                    "surface": surface,
-                },
-            )
-        except Exception:  # noqa: BLE001
-            logger.warning("Failed to persist coaching sent state", exc_info=True)
-            interaction = None
+        learner_ctx, interaction = await _fetch_context_and_begin_interaction(
+            learner_context, interactions, user.id, coaching_request, surface
+        )
 
         try:
             structured_data = await provider.get_structured(
@@ -488,6 +504,9 @@ async def get_coaching_stream(
     user: UserResponse = Depends(get_current_user),
     _rate_guard: None = Depends(enforce_user_rate_limit),
     _daily_guard: None = Depends(enforce_daily_request_cap),
+    learner_context: LearnerContextService = Depends(
+        get_learner_context_service_dependency
+    ),
 ):
     """
     Get streaming AI coaching response using Server-Sent Events.
@@ -518,6 +537,15 @@ async def get_coaching_stream(
                 else []
             )
 
+            # Same personalization as the sync endpoint (#264) — the learn
+            # surface stays graph-free. Best-effort, never blocks the stream.
+            learner_ctx: dict = {"skill_block": "", "submission_block": ""}
+            if coaching_request.surface == "questions":
+                try:
+                    learner_ctx = await learner_context.get_context(user.id)
+                except Exception:  # pragma: no cover - degrade open
+                    logger.debug("Learner context fetch failed for stream")
+
             async for chunk in provider.stream(
                 problem=coaching_request.problem,
                 code=coaching_request.code,
@@ -529,6 +557,8 @@ async def get_coaching_stream(
                 chat_history=chat_history_list,
                 initial_code=coaching_request.initial_code,
                 surface=coaching_request.surface,
+                learner_context=learner_ctx.get("skill_block") or None,
+                submission_context=learner_ctx.get("submission_block") or None,
             ):
                 chunk_count += 1
                 # Format as SSE

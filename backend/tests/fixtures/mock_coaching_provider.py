@@ -151,5 +151,7 @@ class MockCoachingProvider(CoachingProvider):
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
         surface: str = "questions",
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> AsyncIterator[str]:
         yield self.RESPONSES.get(mode, "Here's some guidance for your problem.")

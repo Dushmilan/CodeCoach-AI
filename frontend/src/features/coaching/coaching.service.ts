@@ -1,4 +1,5 @@
 import { HttpClient } from "@/lib/http-client";
+import type { StreamChunkHandler } from "@/lib/http-client";
 import { FetchClient } from "@/lib/fetch-client";
 import { StructuredCoachingResponse } from "@/types";
 import { CoachingSurface } from "./coaching.types";
@@ -68,7 +69,12 @@ export class CoachingService {
     const data = await this.http.post<{
       response: string;
       structured: StructuredCoachingResponse | null;
-    }>("/api/coach/", body);
+    }>(
+      "/api/coach/",
+      body,
+      // Single Groq call routinely exceeds the client's 10s default.
+      { timeout: 90000 },
+    );
 
     return {
       response: data.response,
@@ -89,6 +95,20 @@ export class CoachingService {
     } catch {
       return { status: "error", warmed: false, ttl: 0 };
     }
+  }
+
+  async streamCoachResponse(
+    body: CoachingRequest,
+    onChunk: StreamChunkHandler,
+  ): Promise<void> {
+    if (!this.http.stream) {
+      throw new Error("Streaming is not supported by this HTTP client");
+    }
+    // Same 90s AI budget as the unary endpoint; the first token arrives in
+    // ~1s so the user never watches a spinner for the full call.
+    await this.http.stream("/api/coach/stream", body, onChunk, {
+      timeout: 90000,
+    });
   }
 }
 

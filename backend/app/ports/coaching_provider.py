@@ -42,6 +42,8 @@ class CoachingProvider(ABC):
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
         surface: str = "questions",
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         """Yield streaming text chunks from the coaching backend."""
         yield ""  # pragma: no cover — abstract; makes this an async generator

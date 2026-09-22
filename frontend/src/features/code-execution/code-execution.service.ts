@@ -18,14 +18,21 @@ export class CodeExecutionService {
     version?: string,
     questionId?: string,
   ): Promise<CodeExecutionResult> {
-    return this.http.post<CodeExecutionResult>("/api/run/", {
-      language,
-      code,
-      stdin: stdin || "",
-      version,
-      // Question context enables mistake-memory capture of crashed runs.
-      question_id: questionId,
-    });
+    return this.http.post<CodeExecutionResult>(
+      "/api/run/",
+      {
+        language,
+        code,
+        stdin: stdin || "",
+        version,
+        // Question context is informational only — free runs are Redis-only
+        // (#264) and never persist, so this cannot leak an attempt.
+        question_id: questionId,
+      },
+      // Piston execution + cold-start latency exceeds the client's 10s
+      // default; the backend is Redis-only so 45s is pure execution budget.
+      { timeout: 45000 },
+    );
   }
 
   async validateCode(
@@ -34,37 +41,51 @@ export class CodeExecutionService {
     testCases: TestCase[],
     questionId?: string,
   ): Promise<ValidationResponse> {
+    // One request per case, all in flight at once (#264): the backend is
+    // Redis-only so each call is ~Piston latency, and sequential awaits
+    // multiplied that by N (the reported 35s for 3 cases).
+    const settled = await Promise.all(
+      testCases.map(async (tc) => {
+        try {
+          const execResult = await this.runCode(
+            language,
+            code,
+            tc.input,
+            undefined,
+            questionId,
+          );
+          return { ok: true as const, execResult };
+        } catch (err) {
+          return { ok: false as const, err };
+        }
+      }),
+    );
+
     const results: TestResult[] = [];
     let passedCount = 0;
-
-    for (const tc of testCases) {
-      try {
-        const execResult = await this.runCode(
-          language,
-          code,
-          tc.input,
-          undefined,
-          questionId,
-        );
-        const actual = (execResult.stdout || "").trim();
-        const expected = tc.expected_output.trim();
-        const isPassed = compareJson(actual, expected);
-        if (isPassed) passedCount++;
-        results.push({
-          test_name: tc.description || `Test ${results.length + 1}`,
-          passed: isPassed,
-          stdout: execResult.stdout || "",
-          stderr: execResult.stderr || "",
-        });
-      } catch (err) {
+    settled.forEach((s, i) => {
+      const tc = testCases[i];
+      if (!s.ok) {
         results.push({
           test_name: tc.description || `Test ${results.length + 1}`,
           passed: false,
           stdout: "",
-          stderr: err instanceof Error ? err.message : "Execution failed",
+          stderr:
+            s.err instanceof Error ? s.err.message : "Execution failed",
         });
+        return;
       }
-    }
+      const actual = (s.execResult.stdout || "").trim();
+      const expected = tc.expected_output.trim();
+      const isPassed = compareJson(actual, expected);
+      if (isPassed) passedCount++;
+      results.push({
+        test_name: tc.description || `Test ${results.length + 1}`,
+        passed: isPassed,
+        stdout: s.execResult.stdout || "",
+        stderr: s.execResult.stderr || "",
+      });
+    });
 
     return {
       total_tests: testCases.length,
@@ -80,11 +101,17 @@ export class CodeExecutionService {
     language: string,
     code: string,
   ): Promise<SubmitResponse> {
-    return this.http.post<SubmitResponse>("/api/submit/", {
-      question_id: questionId,
-      language,
-      code,
-    });
+    return this.http.post<SubmitResponse>(
+      "/api/submit/",
+      {
+        question_id: questionId,
+        language,
+        code,
+      },
+      // Grading runs the full suite server-side plus Postgres persists;
+      // allowed to be slow, must never trip the client's 10s default.
+      { timeout: 60000 },
+    );
   }
 }
 

@@ -185,6 +185,40 @@ class TestPistonServiceExecute:
             assert payload["run_timeout"] == 3000
 
     @pytest.mark.asyncio
+    async def test_evaluate_suite_uses_extended_run_budget(self):
+        """One Piston call runs all N cases — it gets a larger run_timeout."""
+        from app.services.http_clients import reset_shared_clients
+
+        reset_shared_clients()
+        try:
+            with patch("httpx.AsyncClient") as mock_client:
+                mock_instance = AsyncMock()
+                mock_client.return_value = mock_instance
+                mock_response = MagicMock()
+                mock_response.status_code = 200
+                mock_response.json.return_value = {
+                    "run": {
+                        "stdout": "@@SUITE_RESULT@@[]@@SUITE_RESULT@@",
+                        "stderr": "",
+                        "code": 0,
+                    },
+                    "language": "python",
+                    "version": "3.10.0",
+                }
+                mock_instance.post.return_value = mock_response
+
+                service = PistonService()
+                await service.evaluate_suite(
+                    "python",
+                    "print(1)",
+                    [{"input": "1", "expected_output": "1", "hidden": False}],
+                )
+                payload = mock_instance.post.call_args[1]["json"]
+                assert payload["run_timeout"] > 3000
+        finally:
+            reset_shared_clients()
+
+    @pytest.mark.asyncio
     async def test_execute_piston_returns_non_json(self):
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()

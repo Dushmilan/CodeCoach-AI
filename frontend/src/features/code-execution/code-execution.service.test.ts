@@ -42,13 +42,33 @@ describe("CodeExecutionService", () => {
         "3.11.0",
       );
 
-      expect(http.post).toHaveBeenCalledWith("/api/run/", {
-        language: "python",
-        code: 'print("Hello")',
-        stdin: "",
-        version: "3.11.0",
-      });
+      expect(http.post).toHaveBeenCalledWith(
+        "/api/run/",
+        {
+          language: "python",
+          code: 'print("Hello")',
+          stdin: "",
+          version: "3.11.0",
+        },
+        { timeout: 45000 },
+      );
       expect(result).toEqual(expected);
+    });
+
+    it("uses a 45s timeout so Piston slowness does not trip the 10s default", async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        stdout: "",
+        stderr: "",
+        exit_code: 0,
+      });
+
+      await service.runCode("python", 'print("hi")');
+
+      expect(http.post).toHaveBeenCalledWith(
+        "/api/run/",
+        expect.anything(),
+        expect.objectContaining({ timeout: 45000 }),
+      );
     });
 
     it("defaults stdin to empty string", async () => {
@@ -63,6 +83,7 @@ describe("CodeExecutionService", () => {
       expect(http.post).toHaveBeenCalledWith(
         "/api/run/",
         expect.objectContaining({ stdin: "" }),
+        expect.objectContaining({ timeout: 45000 }),
       );
     });
   });
@@ -98,6 +119,33 @@ describe("CodeExecutionService", () => {
       expect(result.passed_tests).toBe(1);
       expect(result.results[0].passed).toBe(true);
       expect(result.results[1].passed).toBe(false);
+    });
+
+    it("runs test cases concurrently instead of sequentially", async () => {
+      const testCases: TestCase[] = [
+        { input: "1", expected_output: "1" },
+        { input: "2", expected_output: "2" },
+        { input: "3", expected_output: "3" },
+      ];
+
+      let resolveAll!: (v: unknown) => void;
+      const gate = new Promise((resolve) => {
+        resolveAll = resolve;
+      });
+      vi.mocked(http.post).mockImplementation(() => gate as Promise<never>);
+
+      const pending = service.validateCode(
+        "python",
+        "print(input())",
+        testCases,
+      );
+      // All three requests must be in flight before any resolves.
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(vi.mocked(http.post)).toHaveBeenCalledTimes(3);
+      resolveAll({ stdout: "1\n", stderr: "", exit_code: 0 });
+      const result = await pending;
+      expect(result.total_tests).toBe(3);
     });
 
     it("handles execution errors gracefully", async () => {
@@ -147,11 +195,15 @@ describe("CodeExecutionService", () => {
         "print(input())",
       );
 
-      expect(http.post).toHaveBeenCalledWith("/api/submit/", {
-        question_id: "two-sum",
-        language: "python",
-        code: "print(input())",
-      });
+      expect(http.post).toHaveBeenCalledWith(
+        "/api/submit/",
+        {
+          question_id: "two-sum",
+          language: "python",
+          code: "print(input())",
+        },
+        { timeout: 60000 },
+      );
       expect(result).toEqual(expected);
     });
   });

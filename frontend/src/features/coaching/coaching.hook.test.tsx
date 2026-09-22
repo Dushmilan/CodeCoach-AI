@@ -6,14 +6,17 @@ import { HttpError } from "@/lib/fetch-client";
 import { showToast } from "@/components/ui/Toast";
 import { UsageProvider } from "@/features/usage/usage.context";
 
-const { mockGetCoachResponse, mockGetUsage } = vi.hoisted(() => ({
+const { mockGetCoachResponse, mockStreamCoachResponse, mockGetUsage } = vi.hoisted(() => ({
   mockGetCoachResponse: vi.fn(),
+  mockStreamCoachResponse: vi.fn(),
   mockGetUsage: vi.fn(),
 }));
 
 vi.mock("./coaching.service", () => ({
   coachingService: {
     getCoachResponse: (...args: unknown[]) => mockGetCoachResponse(...args),
+    streamCoachResponse: (...args: unknown[]) =>
+      mockStreamCoachResponse(...args),
   },
 }));
 
@@ -37,6 +40,9 @@ function makeRateLimitedError() {
 
 beforeEach(() => {
   mockGetCoachResponse.mockReset();
+  mockStreamCoachResponse.mockReset();
+  // Default: streaming unavailable so legacy tests exercise the fallback.
+  mockStreamCoachResponse.mockRejectedValue(new Error("no stream"));
   mockGetUsage.mockReset();
   vi.mocked(showToast).mockClear();
   mockGetUsage.mockResolvedValue({
@@ -311,6 +317,70 @@ describe("useCoaching", () => {
         "Request failed: 500 Internal Server Error",
         "error",
       );
+    });
+  });
+
+  describe("streaming", () => {
+    const defaultArgs = {
+      message: "Help me",
+      mode: "hint" as const,
+      problem: "Two Sum",
+      code: "def two_sum(): pass",
+      language: "python",
+    };
+
+    it("renders streamed chunks live without calling the unary endpoint", async () => {
+      mockStreamCoachResponse.mockImplementation(
+        async (_body: unknown, onChunk: (c: string) => void) => {
+          onChunk("hel");
+          onChunk("lo");
+        },
+      );
+
+      const { result } = renderHook(() => useCoaching());
+
+      await act(async () => {
+        await result.current.sendMessage(
+          defaultArgs.message,
+          defaultArgs.mode,
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+
+      expect(mockGetCoachResponse).not.toHaveBeenCalled();
+      const assistant = result.current.messages.find(
+        (m) => m.role === "assistant",
+      );
+      expect(assistant?.content).toBe("hello");
+      expect(result.current.isTyping).toBe(false);
+    });
+
+    it("falls back to the unary endpoint when streaming fails", async () => {
+      mockStreamCoachResponse.mockRejectedValue(new Error("stream down"));
+      mockGetCoachResponse.mockResolvedValue({
+        response: "Try a hash map",
+        structured: null,
+      });
+
+      const { result } = renderHook(() => useCoaching());
+
+      await act(async () => {
+        await result.current.sendMessage(
+          defaultArgs.message,
+          defaultArgs.mode,
+          defaultArgs.problem,
+          defaultArgs.code,
+          defaultArgs.language,
+        );
+      });
+
+      expect(mockGetCoachResponse).toHaveBeenCalled();
+      const assistant = result.current.messages.find(
+        (m) => m.role === "assistant",
+      );
+      expect(assistant?.content).toBe("Try a hash map");
     });
   });
 
