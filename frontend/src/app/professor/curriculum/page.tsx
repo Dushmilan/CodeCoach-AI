@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { getProfessorCourses, type ProfessorCourse } from "@/features/instructor/demo";
 import { FetchClient, getErrorDisplayMessage } from "@/lib/fetch-client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/Input";
 
 const client = new FetchClient();
 
@@ -49,62 +51,80 @@ export default function ProfessorCurriculumPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Curriculum</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Curriculum</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Your owned courses (ANIMATION gate enforced on publish).
         </p>
       </div>
-      <form onSubmit={createCourse} className="flex gap-2">
-        <input
-          aria-label="New course title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="New course title"
-          className="border rounded px-3 py-1.5 text-sm"
-        />
-        <button
-          type="submit"
-          className="text-xs font-medium px-4 py-2 rounded-full bg-primary text-primary-foreground"
+
+      <section aria-label="Create a course">
+        <form
+          onSubmit={createCourse}
+          className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-4"
         >
-          Create course
-        </button>
-      </form>
-      {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="prof-curriculum">
-        {courses.map((c) => (
-          <div key={c.id} className="border rounded p-4">
-            {editingId === c.id ? (
-              <div className="flex gap-2">
-                <input
-                  aria-label="Edit course title"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="border rounded px-3 py-1.5 text-sm"
-                />
-                <button
-                  onClick={() => saveEdit(c.id)}
-                  className="text-xs px-3 py-1.5 rounded bg-primary text-primary-foreground"
-                >
-                  Save
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{c.title}</span>
-                <button
-                  onClick={() => {
-                    setEditingId(c.id);
-                    setEditTitle(c.title);
-                  }}
-                  className="text-xs underline"
-                >
-                  Edit
-                </button>
-              </div>
-            )}
+          <div className="flex-1 min-w-48">
+            <Input
+              aria-label="New course title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="New course title"
+              className="w-full"
+            />
           </div>
-        ))}
-      </div>
+          <Button type="submit" size="sm">
+            Create course
+          </Button>
+        </form>
+      </section>
+
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+
+      <section aria-label="Owned courses">
+        <div
+          className="grid grid-cols-1 gap-4 md:grid-cols-2"
+          data-testid="prof-curriculum"
+        >
+          {courses.map((c) => (
+            <div
+              key={c.id}
+              className="rounded-2xl border border-border bg-card p-4"
+            >
+              {editingId === c.id ? (
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex-1 min-w-40">
+                    <Input
+                      aria-label="Edit course title"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <Button size="sm" onClick={() => saveEdit(c.id)}>
+                    Save
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium">{c.title}</span>
+                  <button
+                    onClick={() => {
+                      setEditingId(c.id);
+                      setEditTitle(c.title);
+                    }}
+                    className="text-xs font-medium rounded-full px-3 py-1.5 hover:bg-muted transition-colors"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

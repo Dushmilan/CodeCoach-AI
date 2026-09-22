@@ -33,11 +33,18 @@ const SCOPED_FILES: string[] = [
   "src/components/ui/separator.tsx",
   "src/components/ui/Skeleton.tsx",
   "src/components/ui/Toast.tsx",
+  "src/components/ui/Input.tsx",
   "src/components/instructor/InstructorWidgets.tsx",
   "src/components/instructor/InstructorSidebar.tsx",
+  // Rendered fixture copy for instructor pages (issue #292 gate).
+  "src/data/instructor-demo.json",
 ];
 
-const SCOPED_DIRS = ["src/app/admin", "src/components/admin"];
+const SCOPED_DIRS = [
+  "src/app/admin",
+  "src/app/professor",
+  "src/components/admin",
+];
 
 function collectScopedFiles(): string[] {
   const files = [...SCOPED_FILES];
@@ -115,6 +122,8 @@ function scanScopedSources(): string[] {
   }
   return failures;
 }
+
+// JSON fixtures carry no comments to strip, but stripComments is harmless.
 
 // --- token contrast helpers -------------------------------------------------
 

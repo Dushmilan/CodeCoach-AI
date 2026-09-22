@@ -34,7 +34,7 @@ test.describe('Instructor role flow', () => {
     await page.goto('/professor/classrooms');
     await expect(page.getByText('CS101 · Section A')).toBeVisible();
     await page.getByRole('link', { name: 'Open classroom' }).first().click();
-    await expect(page.getByText('Roster — manage enrollment')).toBeVisible();
+    await expect(page.getByText('Roster and enrollment')).toBeVisible();
     await expect(page.getByTestId('roster-table')).toBeVisible();
     await expect(page.getByText('At risk')).toBeVisible();
   });

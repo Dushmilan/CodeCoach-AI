@@ -10,7 +10,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const sizeStyles: Record<string, string> = {
   sm: "px-3 py-1.5 text-xs",
-  md: "px-3 py-2 text-sm",
+  md: "px-4 py-2 text-sm",
   lg: "px-4 py-3 text-base",
 };
 
@@ -26,29 +26,31 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs font-medium text-foreground/70 tracking-wide"
+            className="block text-xs font-medium text-foreground tracking-wide"
           >
             {label}
           </label>
         )}
         <div
           className={cn(
-            "rounded-2xl bg-white/[0.03] ring-1 ring-white/5 p-0.5",
-            "transition-all duration-300",
-            "focus-within:ring-primary/40 focus-within:shadow-[0_0_0_1px_hsl(var(--primary)/0.2)]",
-            error && "ring-red-500/40 focus-within:ring-red-500/60",
+            "rounded-full bg-muted/50 ring-1 ring-border transition-all duration-300",
+            "focus-within:ring-ring/60",
+            error && "ring-destructive/60",
           )}
         >
           <div className="flex items-center gap-2">
             {Icon && (
-              <Icon className="h-4 w-4 text-muted-foreground/40 ml-2 flex-shrink-0" />
+              <Icon
+                className="h-4 w-4 text-muted-foreground ml-2 flex-shrink-0"
+                aria-hidden="true"
+              />
             )}
             <input
               id={inputId}
               ref={ref}
               className={cn(
-                "w-full bg-transparent text-foreground/80 placeholder:text-muted-foreground/40",
-                "rounded-[calc(1rem-0.125rem)] focus:outline-none",
+                "w-full bg-transparent text-foreground placeholder:text-muted-foreground",
+                "rounded-full focus:outline-none",
                 sizeStyles[inputSize],
                 className,
               )}
@@ -56,7 +58,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             />
           </div>
         </div>
-        {error && <p className="text-[11px] text-red-400/80 pl-1">{error}</p>}
+        {error && <p className="text-[11px] text-destructive pl-1">{error}</p>}
       </div>
     );
   },
