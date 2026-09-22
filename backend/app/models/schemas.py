@@ -180,6 +180,14 @@ class AnimationStep(BaseModel):
     motion: List[MotionOp] = Field(
         default_factory=list, description="Tweens applied to shapes this step"
     )
+    code_line: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description=(
+            "1-based line of the animated display code this frame "
+            "choreographs; absent when the beat has no traced line"
+        ),
+    )
 
 
 class AnimationScript(BaseModel):

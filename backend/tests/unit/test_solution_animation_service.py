@@ -14,6 +14,8 @@ from fastapi import HTTPException
 from app.ports.code_executor import ExecutionResult
 from app.services.solution_animation_service import SolutionAnimationService
 from app.services.animation_validator import AnimationValidator
+from app.services.reference_solutions import get_reference_solution
+from app.services.trace_instrumenter import display_code_and_map
 
 BUBBLE_STDOUT = "\n".join(
     [
@@ -439,3 +441,166 @@ class TestBuildAnimation:
         outro = animation["steps"][-1]
         assert "Result [1, 2, 4, 5, 8]" in (outro.get("narration") or "")
         assert outro.get("badge") == {"time": "O(n²)", "space": "O(1)"}
+
+
+# Real bubble_sort reference lines (#284): init=2, pointer=6, compare=7,
+# swap=10, mark=11. See reference_solutions.REFERENCE_SOLUTIONS.
+BUBBLE_STDOUT_LINED = "\n".join(
+    [
+        '{"event":"init","values":[5,1,4,2,8],"family":"array","line":2}',
+        '{"event":"pointer","name":"j","index":0,"line":6}',
+        '{"event":"compare","i":0,"j":1,"line":7}',
+        '{"event":"swap","i":0,"j":1,"line":10}',
+        '{"event":"mark","i":4,"state":"sorted","line":11}',
+        '{"event":"return","result":[1,2,4,5,8]}',
+    ]
+)
+
+# Real linear_search reference lines: pointer=4, compare=5, mark=7.
+LINEAR_STDOUT_LINED = "\n".join(
+    [
+        '{"event":"init","values":[4,1,7],"family":"array","line":2}',
+        '{"event":"pointer","name":"i","index":2,"line":4}',
+        '{"event":"compare","i":2,"line":5}',
+        '{"event":"mark","i":2,"state":"match","line":7}',
+        '{"event":"return","result":2}',
+    ]
+)
+
+
+class TestCodeLineDisplaySync:
+    """#284: beats highlight the display-code line they choreograph."""
+
+    @staticmethod
+    def _question_for(title, category, qid, description, example_input):
+        return {
+            "id": qid,
+            "title": title,
+            "category": category,
+            "description": description,
+            "examples": [{"input": example_input, "output": "x"}],
+        }
+
+    @pytest.mark.asyncio
+    async def test_beats_carry_lines_mapped_to_display_code(self):
+        executor = FakeExecutor(_ok_result(stdout=BUBBLE_STDOUT_LINED))
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(_question())
+
+        assert animation is not None
+        display, line_map = display_code_and_map(
+            get_reference_solution("bubble_sort")["code"]
+        )
+        # The pane shows instrument-free code, never the __trace harness.
+        assert animation["animated_code"] == display
+        assert "__trace" not in display
+
+        beats = animation["steps"]  # intro, decision, swap, mark, outro
+        assert beats[1].get("code_line") == line_map[7]
+        # Compare beat highlights the `for j` line; swap beat the assignment.
+        assert display.splitlines()[beats[1]["code_line"] - 1].strip() == (
+            "for j in range(n - i - 1):"
+        )
+        assert beats[2].get("code_line") == line_map[10]
+        assert (
+            "values[j], values[j + 1]"
+            in display.splitlines()[beats[2]["code_line"] - 1]
+        )
+        assert beats[3].get("code_line") == line_map[11]
+        # Intro/outro are not trace-backed.
+        assert "code_line" not in beats[0]
+        assert "code_line" not in beats[-1]
+
+        total = len(display.splitlines())
+        assert all(1 <= b["code_line"] <= total for b in beats if "code_line" in b)
+
+    @pytest.mark.asyncio
+    async def test_lineless_events_ship_code_but_silent_beats(self):
+        # Existing animations (events without lines) keep working: the pane
+        # can render the code, no beat claims a line it does not know.
+        executor = FakeExecutor(_ok_result())
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(_question())
+
+        assert animation is not None
+        assert animation.get("animated_code")
+        assert "__trace" not in animation["animated_code"]
+        assert all("code_line" not in b for b in animation["steps"])
+
+    @pytest.mark.asyncio
+    async def test_out_of_range_line_is_dropped_not_guessed(self):
+        # A wrapper-level line (beyond the canonical solution) has no
+        # display line: honest absence beats a wrong highlight.
+        stdout = "\n".join(
+            [
+                '{"event":"init","values":[5,1],"family":"array","line":2}',
+                '{"event":"pointer","name":"j","index":0,"line":99999}',
+                '{"event":"return","result":[1,5]}',
+            ]
+        )
+        executor = FakeExecutor(_ok_result(stdout=stdout))
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(_question())
+
+        assert animation is not None
+        assert animation.get("animated_code")
+        assert all("code_line" not in b for b in animation["steps"])
+
+    @pytest.mark.asyncio
+    async def test_found_climax_inherits_the_replaced_marks_line(self):
+        # The found climax replaces the mark(match) beat on the same cell —
+        # it inherits the mark's line so the highlight never drops out at
+        # the most important beat.
+        executor = FakeExecutor(_ok_result(stdout=LINEAR_STDOUT_LINED))
+        service = SolutionAnimationService(executor=executor)
+        q = self._question_for(
+            "Linear Search",
+            "Array",
+            "linear-search",
+            "Find the target.",
+            "values = [4,1,7], target = 7",
+        )
+        animation = await service.build_animation(q)
+
+        assert animation is not None
+        display, line_map = display_code_and_map(
+            get_reference_solution("linear_search")["code"]
+        )
+        climax = next(
+            b for b in animation["steps"] if "Found 7" in (b.get("narration") or "")
+        )
+        assert climax.get("code_line") == line_map[7]
+        # The mark's __trace sits right after `if v == target:`.
+        assert display.splitlines()[climax["code_line"] - 1].strip() == (
+            "if v == target:"
+        )
+
+    @pytest.mark.asyncio
+    async def test_binary_search_translated_beats_carry_no_code_line(self):
+        # _translate_search_events synthesizes steps the trace never traced
+        # to a single line — those beats stay honest (no code_line).
+        stdout = "\n".join(
+            [
+                '{"event":"init","values":[1,3,5,7,9],"family":"array","line":2}',
+                '{"event":"pointer","name":"low","index":0,"line":4}',
+                '{"event":"pointer","name":"high","index":4,"line":5}',
+                '{"event":"pointer","name":"mid","index":2,"line":6}',
+                '{"event":"compare","i":2,"line":7}',
+                '{"event":"mark","i":3,"state":"match","line":8}',
+                '{"event":"return","result":3}',
+            ]
+        )
+        executor = FakeExecutor(_ok_result(stdout=stdout))
+        service = SolutionAnimationService(executor=executor)
+        q = self._question_for(
+            "Binary Search",
+            "Binary Search",
+            "binary-search",
+            "Find the target.",
+            "nums = [1,3,5,7,9], target = 7",
+        )
+        animation = await service.build_animation(q)
+
+        assert animation is not None
+        assert animation.get("animated_code")
+        assert all("code_line" not in b for b in animation["steps"])

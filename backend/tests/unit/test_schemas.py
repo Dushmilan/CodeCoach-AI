@@ -99,6 +99,16 @@ class TestAnimationStep:
         assert step.shapes == []
         assert step.motion == []
 
+    def test_code_line_defaults_to_none(self):
+        assert AnimationStep(narration="x").code_line is None
+
+    def test_code_line_rejects_non_positive(self):
+        import pytest
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            AnimationStep(narration="x", code_line=0)
+
 
 class TestAnimationScript:
     def test_generic_scene_round_trips(self):
@@ -161,3 +171,25 @@ class TestAnimateRequest:
         )
         assert req.question is not None
         assert req.question.title == "Two Sum"
+
+
+class TestAnimateResponseCodeLine:
+    """#284: beats reach the viewer only through declared response fields."""
+
+    def test_code_line_survives_the_response_model(self):
+        # The endpoint builds AnimateResponse from the validated dict; an
+        # undeclared code_line would be silently dropped at the boundary
+        # and the dual-pane highlight would never reach the frontend.
+        from app.models.schemas import AnimateResponse
+
+        resp = AnimateResponse(
+            animation={
+                "title": "Two Sum",
+                "data": {"family": "array"},
+                "animated_code": "def two_sum(nums):\n    return nums",
+                "steps": [{"narration": "Compare", "code_line": 2}],
+            }
+        )
+        dumped = resp.model_dump()
+        assert dumped["animation"]["steps"][0]["code_line"] == 2
+        assert dumped["animation"]["animated_code"].startswith("def two_sum")
