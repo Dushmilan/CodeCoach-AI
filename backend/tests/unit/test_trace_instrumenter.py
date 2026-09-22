@@ -13,7 +13,10 @@ import io
 import sys
 import json
 
-from app.services.trace_instrumenter import wrap_traced_solution
+from app.services.trace_instrumenter import (
+    display_code_and_map,
+    wrap_traced_solution,
+)
 from app.services.trace_parser import parse_trace
 
 BUBBLE_SORT = """\
@@ -142,3 +145,89 @@ class TestWrapTracedSolution:
         assert "def __trace" in code
         assert "def bubble_sort" in code
         assert "__TRACE" in code
+
+
+class TestLineCapture:
+    def test_events_carry_solution_relative_line(self):
+        code = wrap_traced_solution(BUBBLE_SORT, "bubble_sort")
+        events = parse_trace(_run(code, json.dumps({"values": [5, 1, 4, 2, 8]})))
+        # BUBBLE_SORT's `__trace("pointer", ...)` is on line 6 of the solution.
+        pointer = next(e for e in events if e.kind == "pointer")
+        assert pointer.line == 6
+        # `__trace("init", ...)` is on line 2.
+        assert events[0].line == 2
+
+    def test_offset_is_stable_across_functions(self):
+        code = wrap_traced_solution(LINEAR_SEARCH, "linear_search")
+        events = parse_trace(
+            _run(code, json.dumps({"values": [4, 2, 7, 1], "target": 7}))
+        )
+        compare = next(e for e in events if e.kind == "compare")
+        assert compare.line == 5
+
+
+TRACE_DISPLAY_SAMPLE = """\
+def total(values):
+    __trace("init", values=values, family="array")
+    acc = 0
+    for i, v in enumerate(values):
+        __trace("pointer", name="i", index=i)
+        acc += v
+        __trace("mark", i=i, state="seen")
+    return acc
+"""
+
+
+class TestDisplayCodeAndMap:
+    def test_strips_standalone_trace_calls(self):
+        display, _ = display_code_and_map(TRACE_DISPLAY_SAMPLE)
+        assert "__trace" not in display
+        assert "acc += v" in display
+        assert "return acc" in display
+
+    def test_maps_trace_lines_to_preceding_statement(self):
+        _, mapping = display_code_and_map(TRACE_DISPLAY_SAMPLE)
+        # pointer's __trace is line 5 -> the `for` header (display line 3)
+        assert mapping[5] == 3
+        # mark's __trace is line 7 -> `acc += v` (display line 4)
+        assert mapping[7] == 4
+
+    def test_init_with_no_preceding_statement_maps_forward(self):
+        display, mapping = display_code_and_map(
+            'def f(x):\n    __trace("init", x=x)\n    return x\n'
+        )
+        assert mapping[2] == 1  # def f(x):
+        assert "return x" in display
+
+    def test_non_statement_trace_call_is_kept(self):
+        code = 'def f(x):\n    y = __trace("init", x=x)\n    return y\n'
+        display, mapping = display_code_and_map(code)
+        assert "__trace" in display
+        assert mapping[2] == 2
+
+    def test_syntax_error_returns_identity_map(self):
+        bad = "def f(:\n    pass\n"
+        display, mapping = display_code_and_map(bad)
+        assert display == bad
+        assert mapping == {1: 1, 2: 2}
+
+    def test_multiline_trace_call_is_fully_stripped(self):
+        code = (
+            "def f(x):\n"
+            "    __trace(\n"
+            '        "init",\n'
+            "        x=x,\n"
+            "    )\n"
+            "    return x\n"
+        )
+        display, mapping = display_code_and_map(code)
+        assert "__trace" not in display
+        assert display == "def f(x):\n    return x"
+        # Every original line of the call maps to the def line (display 1).
+        assert mapping[2] == mapping[3] == mapping[4] == mapping[5] == 1
+
+    def test_code_with_only_trace_calls_returns_identity_map(self):
+        code = '__trace("init")\n__trace("mark")\n'
+        display, mapping = display_code_and_map(code)
+        assert display == code
+        assert mapping == {1: 1, 2: 2}

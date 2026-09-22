@@ -94,6 +94,12 @@ class TraceEvent:
     def has(self, name: str) -> bool:
         return name in self.fields
 
+    @property
+    def line(self) -> Optional[int]:
+        """1-based source line in the canonical solution, or None."""
+        value = self.fields.get("line")
+        return value if isinstance(value, int) and not isinstance(value, bool) else None
+
 
 def _parse_payload(payload: Any) -> Optional[TraceEvent]:
     if not isinstance(payload, dict):
@@ -106,6 +112,11 @@ def _parse_payload(payload: Any) -> Optional[TraceEvent]:
             raise ValueError(f"event {kind!r} missing required field {required!r}")
     fields = dict(payload)
     fields.pop("event", None)
+    # A source line is optional metadata: keep it only when it is a positive
+    # int, never coerce a string/bool/zero into a misleading line number.
+    line = fields.get("line")
+    if isinstance(line, bool) or not isinstance(line, int) or line <= 0:
+        fields.pop("line", None)
     return TraceEvent(kind, **fields)
 
 

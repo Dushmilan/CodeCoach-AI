@@ -200,3 +200,19 @@ class TestTraceEvent:
         assert e.i == 4
         assert e.state == "sorted"
         assert e.fields.get("j") is None
+
+
+class TestTraceLine:
+    def test_parses_valid_line(self):
+        events = parse_trace(_line("compare", i=0, j=1, line=7))
+        assert events[0].line == 7
+
+    def test_absent_line_is_none(self):
+        events = parse_trace(_line("compare", i=0, j=1))
+        assert events[0].line is None
+
+    @pytest.mark.parametrize("bad", [0, -3, "4", True])
+    def test_invalid_line_is_dropped(self, bad):
+        events = parse_trace(_line("compare", i=0, j=1, line=bad))
+        assert events[0].line is None
+        assert "line" not in events[0].fields
