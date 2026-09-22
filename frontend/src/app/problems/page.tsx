@@ -82,6 +82,10 @@ export default function ProblemsPage() {
       );
       if (extraSolvedId) solved.add(extraSolvedId);
       if (!solved.has(prev.question_id)) return prev;
+      // The catalog may not have loaded yet: without it the next stop is
+      // unknowable, so keep the banner instead of hiding it for good (#277).
+      // The effect below re-runs once questions arrive and advances then.
+      if (allQuestions.length === 0) return prev;
       const next = allQuestions.find((q) => !solved.has(q.id));
       return next ? { question_id: next.id, language: prev.language } : null;
     },
