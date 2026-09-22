@@ -202,6 +202,7 @@ vi.mock('@/components/layout/elements', () => ({
 }));
 
 import { MainWorkspace } from './MainWorkspace';
+import { Sidebar } from '@/components/sidebar/Sidebar';
 
 const questions: QuestionSummary[] = [
   {
@@ -576,5 +577,28 @@ describe('MainWorkspace', () => {
     await user.click(screen.getByText('Submit Code'));
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'learner-context-invalidated' }));
     spy.mockRestore();
+  });
+
+  it('passes solved userProgress from useCodeRunner to Sidebar', () => {
+    mockUseCodeRunner.mockImplementation(() => ({
+      userProgress: { '1': 'solved' },
+      setUserProgress: vi.fn(),
+      handleRunCode: mockValidateCode,
+      handleSubmitCode: mockSubmitCode,
+      isRunning: false,
+      output: '',
+      executionError: null,
+      clearOutput: mockClearOutput,
+      clearExecutionError: mockClearExecutionError,
+    }));
+    act(() => {
+      render(<MainWorkspace />);
+    });
+    const calls = vi.mocked(Sidebar).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    const lastProps = calls[calls.length - 1][0] as {
+      userProgress: Record<string, 'attempted' | 'solved'>;
+    };
+    expect(lastProps.userProgress).toEqual({ '1': 'solved' });
   });
 });

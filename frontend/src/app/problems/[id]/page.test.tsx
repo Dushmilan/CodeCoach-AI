@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { HttpError } from '@/lib/fetch-client';
 import ProblemWorkspacePage from './page';
@@ -7,6 +8,7 @@ import { Question } from '@/types';
 
 const mockAnimateLauncher = vi.hoisted(() => vi.fn());
 const mockGetQuestion = vi.hoisted(() => vi.fn());
+const mockHandleSubmitCode = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 
 vi.mock('@/components/animate/AnimateLauncher', () => ({
   AnimateLauncher: (props: unknown) => {
@@ -28,7 +30,14 @@ vi.mock('@/components/layout/elements/AIChatPanelContainer', () => ({
 }));
 
 vi.mock('@/components/layout/elements/CodeEditorContainer', () => ({
-  CodeEditorContainer: () => <div>Editor</div>,
+  CodeEditorContainer: ({ onSubmitCode }: { onSubmitCode: () => void }) => (
+    <div>
+      Editor
+      <button data-testid="mock-submit" onClick={() => void onSubmitCode()}>
+        Submit
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('@/components/layout/lessons', () => ({
@@ -66,7 +75,7 @@ vi.mock('@/features/question/use-code-runner.hook', () => ({
     executionError: null,
     lastSubmitResult: null,
     handleRunCode: vi.fn(),
-    handleSubmitCode: vi.fn(),
+    handleSubmitCode: mockHandleSubmitCode,
     isAuthenticated: true,
   }),
 }));
@@ -142,6 +151,24 @@ describe('ProblemWorkspacePage Animate wiring', () => {
       render(<ProblemWorkspacePage />);
 
       expect(await screen.findByText('Question not found')).toBeTruthy();
+    });
+  });
+
+  describe('submit wiring', () => {
+    it('dispatches learner-context-invalidated after submit so moat UI refreshes', async () => {
+      mockHandleSubmitCode.mockClear();
+      const user = userEvent.setup();
+      const spy = vi.fn();
+      window.addEventListener('learner-context-invalidated', spy);
+      try {
+        render(<ProblemWorkspacePage />);
+
+        await user.click(await screen.findByTestId('mock-submit'));
+        await waitFor(() => expect(mockHandleSubmitCode).toHaveBeenCalled());
+        await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+      } finally {
+        window.removeEventListener('learner-context-invalidated', spy);
+      }
     });
   });
 });
