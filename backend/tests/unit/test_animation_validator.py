@@ -596,3 +596,29 @@ class TestGroqIntegration:
 class TestValidatorInstance:
     def test_module_level_singleton(self):
         assert isinstance(animation_validator, AnimationValidator)
+
+
+class TestAdditiveBeatKeys:
+    def test_extra_beat_keys_do_not_break_validation(self):
+        first = _step(
+            shapes=[_shape(), _shape(id="b", x=120)],
+            motion=[_motion(), _motion(target="b")],
+        )
+        first["code_line"] = 2
+
+        second = _step(motion=[_motion(op="move", to=[200, 0])])
+        second["code_line"] = 3
+        second["annotation"] = {"text": "why"}
+        second["role"] = "climax"
+
+        third = _step(motion=[_motion(op="fill", to="#22c55e")])
+        third["code_line"] = 4
+        third["badge"] = {"time": "O(n)", "space": "O(1)"}
+
+        validated, reason = animation_validator.validate(_scene([first, second, third]))
+        assert validated is not None, reason
+        # The additive keys must survive validation untouched: workstream A
+        # reads code_line, B reads annotation, C reads role.
+        assert validated["steps"][1]["code_line"] == 3
+        assert validated["steps"][1]["role"] == "climax"
+        assert validated["steps"][1]["annotation"] == {"text": "why"}
