@@ -237,13 +237,29 @@ browser-use: a real browser run against the running app, with screenshots
 fed into the vision model and each journey classified pass/fail/blocked.
 Unit/Vitest results alone never close a test task.
 
-- **Tooling:** `chrome-devtools` MCP (`npx -y chrome-devtools-mcp@latest`,
-  registered in `.opencode/opencode.json`) for interactive debugging;
-  Playwright (`frontend/e2e/`, `pnpm test:e2e`) plus scripted screenshot
-  capture for repeatable evidence. If the direct browser tool cannot launch
-  (e.g. missing Chrome channel), fall back to Playwright-bundled Chromium
-  screenshots saved under `/tmp/opencode/` — never to claims without
-  rendered evidence.
+- **Tooling:** the **Playwright MCP** is the only sanctioned driver for
+  browser-use (`playwright` server in `.opencode/opencode.json`, running
+  `npx -y @playwright/mcp@latest --headless`). Drive the journey through its
+  tools — `browser_navigate`, `browser_snapshot`, `browser_click` /
+  `browser_type` / `browser_fill_form`, `browser_evaluate`,
+  `browser_wait_for` / `browser_find`, `browser_resize`,
+  `browser_console_messages`, `browser_network_requests`, and
+  `browser_take_screenshot`.
+- **Screenshot location:** write artifacts **inside the workspace** —
+  `.playwright-mcp/` (gitignored) is an allowed root. The MCP rejects paths
+  outside its allowed roots, so `/tmp/opencode/` fails with "File access
+  denied"; move files out with the shell afterwards if you must.
+- **Chrome install:** the MCP launches Google Chrome's `chrome` channel from
+  `/opt/google/chrome/chrome`. On Ubuntu/Debian: `npx playwright install
+  chrome`. That installer aborts on other distros (`ERROR: cannot install on
+  pop distribution`), so install the browser directly instead — download
+  `google-chrome-stable_current_amd64.deb` from
+  <https://dl.google.com/linux/direct/> and `sudo apt install
+  ./google-chrome-stable_current_amd64.deb`.
+- **No fallback.** If the Playwright MCP cannot launch, repair the install
+  first — scripted screenshot runs, Playwright-bundled Chromium, or any other
+  driver are not acceptable substitutes, and no rendered-evidence claim may
+  be made without a journey executed through the MCP.
 - **Scope:** every feature change and every QA pass exercises the affected
   journeys in a real browser at desktop (1280x800) and mobile (390x844)
   viewports: render, interact (click/type/navigate), screenshot, classify.
