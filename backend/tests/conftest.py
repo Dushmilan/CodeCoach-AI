@@ -1205,3 +1205,18 @@ def _reset_rate_limiter_state():
     """
     yield
     app.state.limiter.reset()
+
+
+@pytest.fixture(autouse=True)
+def _reset_shared_http_clients():
+    """Drop process-wide httpx clients between tests (#264).
+
+    The holders in app.services.http_clients are process-global; without a
+    reset, a client built from one test's patched httpx.AsyncClient leaks
+    into the next test and breaks its mock assertions.
+    """
+    from app.services.http_clients import reset_shared_clients
+
+    reset_shared_clients()
+    yield
+    reset_shared_clients()

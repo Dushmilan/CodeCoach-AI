@@ -62,15 +62,19 @@ describe('CoachingService', () => {
         defaultArgs.difficulty,
       );
 
-      expect(http.post).toHaveBeenCalledWith('/api/coach/', {
-        problem: 'Two Sum',
-        code: 'def two_sum(nums, target): pass',
-        message: 'Help me optimize',
-        mode: 'hint',
-        language: 'python',
-        difficulty: 'medium',
-        surface: 'questions',
-      });
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/coach/',
+        {
+          problem: 'Two Sum',
+          code: 'def two_sum(nums, target): pass',
+          message: 'Help me optimize',
+          mode: 'hint',
+          language: 'python',
+          difficulty: 'medium',
+          surface: 'questions',
+        },
+        { timeout: 90000 },
+      );
       expect(result.response).toBe('Try using a hash map');
       expect(result.structured).toBeNull();
     });
@@ -99,6 +103,7 @@ describe('CoachingService', () => {
           mode: 'animate',
           initial_code: 'def two_sum(nums, target):\n    pass',
         }),
+        expect.objectContaining({ timeout: 90000 }),
       );
     });
 
@@ -139,10 +144,11 @@ describe('CoachingService', () => {
       expect(http.post).toHaveBeenCalledWith(
         '/api/coach/',
         expect.objectContaining({ difficulty: 'medium' }),
+        expect.objectContaining({ timeout: 90000 }),
       );
     });
 
-    it('does not pass request options to http.post', async () => {
+    it('uses a 90s timeout so AI latency does not trip the 10s default', async () => {
       vi.mocked(http.post).mockResolvedValue({
         response: 'Sure',
         structured: null,
@@ -156,7 +162,7 @@ describe('CoachingService', () => {
         defaultArgs.mode,
       );
 
-      expect(vi.mocked(http.post).mock.calls[0][2]).toBeUndefined();
+      expect(vi.mocked(http.post).mock.calls[0][2]).toEqual({ timeout: 90000 });
     });
 
     it('returns structured response when present', async () => {
@@ -202,6 +208,7 @@ describe('CoachingService', () => {
           mode: 'hint',
           language: 'python',
         }),
+        expect.objectContaining({ timeout: 90000 }),
       );
     });
 
@@ -236,6 +243,7 @@ describe('CoachingService', () => {
       expect(http.post).toHaveBeenCalledWith(
         '/api/coach/',
         expect.objectContaining({ surface: 'questions' }),
+        expect.objectContaining({ timeout: 90000 }),
       );
     });
 
@@ -264,6 +272,7 @@ describe('CoachingService', () => {
           surface: 'learn',
           lesson_context: 'Loops 101',
         }),
+        expect.objectContaining({ timeout: 90000 }),
       );
     });
 
@@ -280,6 +289,57 @@ describe('CoachingService', () => {
           defaultArgs.mode,
         ),
       ).rejects.toThrow('Request failed: 429 Too Many Requests');
+    });
+  });
+
+  describe('streamCoachResponse', () => {
+    function createStreamingHttp() {
+      const base = createMockHttp();
+      return { ...base, stream: vi.fn() };
+    }
+
+    it('streams POST /api/coach/stream with a 90s timeout', async () => {
+      const streamingHttp = createStreamingHttp();
+      const streamingService = new CoachingService(streamingHttp);
+      vi.mocked(streamingHttp.stream).mockResolvedValue(undefined);
+
+      const onChunk = vi.fn();
+      await streamingService.streamCoachResponse(
+        {
+          problem: 'Two Sum',
+          code: 'x',
+          message: 'hint?',
+          mode: 'hint',
+          language: 'python',
+          difficulty: 'medium',
+          surface: 'questions',
+        },
+        onChunk,
+      );
+
+      expect(streamingHttp.stream).toHaveBeenCalledWith(
+        '/api/coach/stream',
+        expect.objectContaining({ problem: 'Two Sum', mode: 'hint' }),
+        onChunk,
+        expect.objectContaining({ timeout: 90000 }),
+      );
+    });
+
+    it('throws when the http client cannot stream', async () => {
+      await expect(
+        service.streamCoachResponse(
+          {
+            problem: 'Two Sum',
+            code: 'x',
+            message: 'hint?',
+            mode: 'hint',
+            language: 'python',
+            difficulty: 'medium',
+            surface: 'questions',
+          },
+          vi.fn(),
+        ),
+      ).rejects.toThrow();
     });
   });
 

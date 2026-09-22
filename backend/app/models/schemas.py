@@ -335,17 +335,16 @@ class CodeExecutionRequest(BaseModel):
     surface: CoachingSurface = Field(
         default="questions",
         description=(
-            "Client surface: 'questions' records crashed runs in attempt "
-            "history and mistake-memory; 'learn' executes without persisting "
-            "anything (curriculum practice must not pollute the moat)."
+            "Client surface, accepted for API symmetry. Free runs are "
+            "Redis-only (#264) and never persist on either surface; the "
+            "learn/problem persistence boundary lives on /api/submit/."
         ),
     )
     question_id: Optional[str] = Field(
         None,
         description=(
-            "Question context for this run. When set and the execution exits "
-            "non-zero, the crash is recorded in the attempt history and "
-            "mistake-memory (best-effort)."
+            "Question context for this run (informational only; free runs "
+            "never persist)."
         ),
     )
 

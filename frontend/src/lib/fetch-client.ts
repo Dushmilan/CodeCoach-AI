@@ -1,4 +1,5 @@
 import { HttpClient, HttpMethod, HttpRequestOptions } from "./http-client";
+import type { StreamChunkHandler } from "./http-client";
 import { getAccessToken, setAccessToken, getCsrfToken } from "./auth-session";
 
 declare const process: { env: { NEXT_PUBLIC_API_URL?: string } };
@@ -51,6 +52,110 @@ export class FetchClient implements HttpClient {
 
   async delete<T>(path: string, options?: HttpRequestOptions): Promise<T> {
     return this.request<T>("DELETE", path, undefined, options);
+  }
+
+  async stream(
+    path: string,
+    body: unknown,
+    onChunk: StreamChunkHandler,
+    options?: HttpRequestOptions,
+  ): Promise<void> {
+    const controller = new AbortController();
+    // Streams stay open while the model writes; 90s matches the coach
+    // budget instead of the 10s default for unary requests.
+    const timeoutMs = options?.timeout ?? 90000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const signal = options?.signal
+      ? anySignal([options.signal, controller.signal])
+      : controller.signal;
+
+    try {
+      const token = this.getToken();
+      const csrfToken = getCsrfToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+        ...options?.headers,
+      };
+
+      const response = await fetch(`${this.baseUrl}${path}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        // No token-refresh retry here (unlike request()): the hook falls
+        // back to the unary endpoint, which performs the refresh.
+        const errorBody = await response.text().catch(() => "");
+        throw new HttpError(
+          `Request failed: ${response.status} ${response.statusText}`,
+          response.status,
+          errorBody,
+        );
+      }
+
+      if (!response.body) {
+        throw new HttpError("Empty stream response", 500);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+        for (const event of events) {
+          for (const rawLine of event.split("\n")) {
+            const line = rawLine.trim();
+            if (!line.startsWith("data:")) {
+              continue;
+            }
+            let parsed: unknown;
+            try {
+              parsed = JSON.parse(line.slice(5).trim());
+            } catch {
+              continue;
+            }
+            if (parsed !== null && typeof parsed === "object") {
+              const record = parsed as Record<string, unknown>;
+              if (typeof record.chunk === "string") {
+                onChunk(record.chunk);
+              } else if (record.done) {
+                clearTimeout(timeoutId);
+                return;
+              } else if (typeof record.error === "string") {
+                throw new HttpError("Stream interrupted", 500, record.error);
+              }
+            }
+          }
+        }
+      }
+      clearTimeout(timeoutId);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof HttpError) {
+        throw error;
+      }
+      const isAbort =
+        error instanceof DOMException
+          ? error.name === "AbortError"
+          : error instanceof Error && error.name === "AbortError";
+      if (isAbort) {
+        throw new HttpError("Request timeout", 408);
+      }
+      throw error;
+    }
   }
 
   private async refreshAccessToken(): Promise<boolean> {

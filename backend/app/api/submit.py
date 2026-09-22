@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.models.schemas import SubmitRequest, SubmitResponse, SubmitResult
 from app.models.submission_schemas import SubmissionIn
@@ -48,6 +50,69 @@ async def _invalidate_learner_cache(user_id: str, cache: RedisCache | None) -> N
         await svc.invalidate(user_id)
     except Exception:  # pragma: no cover
         pass
+
+
+async def _record_post_grading(
+    reviews: ReviewService,
+    skill_service: SkillGraphService | None,
+    cache: RedisCache | None,
+    user_id: str,
+    question_id: str,
+    passed: bool,
+    error_signature: str | None,
+    persisted,
+    now: datetime,
+) -> None:
+    """Record grading side effects concurrently (#264).
+
+    Mistake-memory observation, skill-graph emission, and learner-cache
+    invalidation are independent best-effort writes — they overlap instead
+    of adding up. Failures degrade to warnings, never to a 500.
+    """
+
+    async def _observe():
+        try:
+            await reviews.observe_submission(
+                user_id=user_id,
+                question_id=question_id,
+                passed=passed,
+                error_signature=error_signature,
+                now=now,
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to record mistake-memory observation", exc_info=True)
+
+    async def _skill():
+        if persisted is None or skill_service is None:
+            return
+        try:
+            event = LearningEvent(
+                id=f"sub:{persisted.id}",
+                user_id=user_id,
+                event_type=LearningEventType.SUBMISSION_PASSED
+                if passed
+                else LearningEventType.SUBMISSION_FAILED,
+                question_id=question_id,
+                metadata={"error_signature": error_signature}
+                if not passed and error_signature
+                else {},
+                occurred_at=persisted.created_at or now,
+            )
+            await skill_service.ingest_events([event], user_id=user_id)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "Failed to emit skill-graph event for %s",
+                question_id,
+                exc_info=True,
+            )
+
+    async def _invalidate():
+        try:
+            await _invalidate_learner_cache(user_id, cache)
+        except Exception:
+            pass
+
+    await asyncio.gather(_observe(), _skill(), _invalidate())
 
 
 @router.post("", response_model=SubmitResponse)
@@ -159,55 +224,22 @@ async def submit_code(
         except Exception:  # noqa: BLE001
             logger.warning("Failed to persist submission", exc_info=True)
 
-    # Mistake-memory observation (Ideas #1): failures open/refresh review
-    # cards; passes promote conquered bugs into the SM-2 rotation.
-    # Best-effort, same contract as the submission persist above.
-    # Skipped on the learn surface.
+    # Learn-surface side effects are skipped entirely below: nothing was
+    # written, so there is no mistake-memory to observe, no skill event to
+    # emit, and cached problem context stays valid (avoids a needless refill).
     if not is_learn:
-        try:
-            await reviews.observe_submission(
-                user_id=current_user.id,
-                question_id=submit_request.question_id,
-                passed=passed,
-                error_signature=_error_signature(results),
-                now=datetime.now(timezone.utc),
-            )
-        except Exception:  # noqa: BLE001
-            logger.warning("Failed to record mistake-memory observation", exc_info=True)
-
-    # Skill-graph emission — uses persisted submission id for idempotency.
-    # Unreachable on the learn surface (persisted stays None), so practice
-    # never emits skill events.
-    if persisted is not None and skill_service is not None:
-        try:
-            event = LearningEvent(
-                id=f"sub:{persisted.id}",
-                user_id=current_user.id,
-                event_type=LearningEventType.SUBMISSION_PASSED
-                if passed
-                else LearningEventType.SUBMISSION_FAILED,
-                question_id=submit_request.question_id,
-                metadata={"error_signature": _error_signature(results)}
-                if not passed and _error_signature(results)
-                else {},
-                occurred_at=persisted.created_at or datetime.now(timezone.utc),
-            )
-            await skill_service.ingest_events([event], user_id=current_user.id)
-        except Exception:  # noqa: BLE001
-            logger.warning(
-                "Failed to emit skill-graph event for %s",
-                submit_request.question_id,
-                exc_info=True,
-            )
-
-    # Invalidate cached learner context (skill graph + submissions + coach ctx).
-    # Skipped on the learn surface: nothing was written, so cached problem
-    # context stays valid (avoids a needless DB refill).
-    if not is_learn:
-        try:
-            await _invalidate_learner_cache(current_user.id, cache)
-        except Exception:
-            pass
+        now = datetime.now(timezone.utc)
+        await _record_post_grading(
+            reviews=reviews,
+            skill_service=skill_service,
+            cache=cache,
+            user_id=current_user.id,
+            question_id=submit_request.question_id,
+            passed=passed,
+            error_signature=_error_signature(results),
+            persisted=persisted,
+            now=now,
+        )
 
     return SubmitResponse(
         passed=passed,

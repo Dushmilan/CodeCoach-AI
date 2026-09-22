@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import json
 import logging
 from typing import (
@@ -21,12 +22,18 @@ from app.core.config import get_settings
 from app.ports.coaching_provider import CoachingProvider
 from app.services.animation_validator import AnimationValidator
 from app.services.redis_service import RedisCache, _content_hash
+from app.services.http_clients import get_shared_client
 from app.services.reference_solutions import get_reference_solution, resolve_algorithm
 
 if TYPE_CHECKING:  # pragma: no cover - typing only, avoids import weight
     from app.ports.code_executor import CodeExecutor
 
 logger = logging.getLogger(__name__)
+
+
+# Advisory Piston shadow-check budget (#264): the check must never stall
+# coaching. On timeout the model output is trusted (degrade open).
+_SHADOW_CHECK_TIMEOUT_S = 5.0
 
 
 # One-shot animate self-correction: appended as a follow-up user message when
@@ -297,8 +304,16 @@ class GroqService(CoachingProvider):
         endpoint: str = "coach_stream",
         initial_code: Optional[str] = None,
         surface: str = "questions",
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> AsyncIterator[str]:
         model = self.models["stream"]
+
+        # Defense in depth: the Learn surface is graph-free even if a caller
+        # passes graph blocks directly (mirrors the structured path).
+        if surface == "learn":
+            learner_context = None
+            submission_context = None
 
         system_prompt, user_prompt = self.prompts.build(
             mode=mode,
@@ -310,6 +325,8 @@ class GroqService(CoachingProvider):
             lesson_context=lesson_context,
             initial_code=initial_code,
             surface=surface,
+            learner_context=learner_context,
+            submission_context=submission_context,
         )
 
         messages = [
@@ -332,29 +349,29 @@ class GroqService(CoachingProvider):
             payload["temperature"] = 0.3
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                async with client.stream(
-                    "POST",
-                    f"{self.base_url}/chat/completions",
-                    headers=self.headers,
-                    json=payload,
-                ) as response:
-                    if response.status_code != 200:
-                        error_body = await response.aread()
-                        self._raise_for_groq_status(
-                            response.status_code, response.headers, error_body.decode()
-                        )
+            async with get_shared_client("groq").stream(
+                "POST",
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json=payload,
+                timeout=30.0,
+            ) as response:
+                if response.status_code != 200:
+                    error_body = await response.aread()
+                    self._raise_for_groq_status(
+                        response.status_code, response.headers, error_body.decode()
+                    )
 
-                    usage: Dict[str, Any] = {}
-                    async for line in response.aiter_lines():
-                        chunk = self.parser.parse_stream_chunk(line)
-                        if chunk:
-                            yield chunk
-                        stream_usage = self._parse_stream_usage(line)
-                        if stream_usage:
-                            usage = stream_usage
+                usage: Dict[str, Any] = {}
+                async for line in response.aiter_lines():
+                    chunk = self.parser.parse_stream_chunk(line)
+                    if chunk:
+                        yield chunk
+                    stream_usage = self._parse_stream_usage(line)
+                    if stream_usage:
+                        usage = stream_usage
 
-                    await self._record_usage(model, {"usage": usage}, endpoint)
+                await self._record_usage(model, {"usage": usage}, endpoint)
 
         except httpx.TimeoutException:
             raise HTTPException(status_code=504, detail="Groq API timeout")
@@ -452,6 +469,8 @@ class GroqService(CoachingProvider):
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
         surface: str = "questions",
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         async for chunk in self.get_coaching_response(
             problem=problem,
@@ -464,6 +483,8 @@ class GroqService(CoachingProvider):
             chat_history=chat_history,
             initial_code=initial_code,
             surface=surface,
+            learner_context=learner_context,
+            submission_context=submission_context,
         ):
             yield chunk
 
@@ -550,19 +571,22 @@ class GroqService(CoachingProvider):
             "top_p": 0.9,
             "stream": False,
         }
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{self.base_url}/chat/completions",
-                headers=self.headers,
-                json=payload,
+        # Shared client: no per-call TCP+TLS handshake. Never used as a
+        # context manager — exiting would close it for everyone.
+        client = get_shared_client("groq")
+        response = await client.post(
+            f"{self.base_url}/chat/completions",
+            headers=self.headers,
+            json=payload,
+            timeout=60.0,
+        )
+        if response.status_code != 200:
+            self._raise_for_groq_status(
+                response.status_code, response.headers, response.text
             )
-            if response.status_code != 200:
-                self._raise_for_groq_status(
-                    response.status_code, response.headers, response.text
-                )
-            result = response.json()
-            content = result["choices"][0]["message"]["content"]
-            return self.parser.parse_structured(content), result
+        result = response.json()
+        content = result["choices"][0]["message"]["content"]
+        return self.parser.parse_structured(content), result
 
     @staticmethod
     def _resolve_verified_code(
@@ -721,12 +745,21 @@ class GroqService(CoachingProvider):
                 + f"__shadow_result = {func.name}(**__shadow_kwargs)\n"
                 + "print(__shadow_json.dumps(__shadow_result, sort_keys=True, default=str))\n"
             )
-            exec_result = await self.executor.execute(
-                language="python", code=driver, stdin=""
+            exec_result = await asyncio.wait_for(
+                self.executor.execute(language="python", code=driver, stdin=""),
+                timeout=_SHADOW_CHECK_TIMEOUT_S,
             )
         except HTTPException as e:
             # Transport/infra failure — never punish the model for it.
             logger.warning("Shadow-check execution unavailable: %s", e.detail)
+            return True, None
+        except (asyncio.TimeoutError, TimeoutError):
+            # Piston is slow — the check is advisory, so degrade open and
+            # trust the anchored model output instead of stalling coaching.
+            logger.warning(
+                "Shadow-check timed out after %ss, trusting model output",
+                _SHADOW_CHECK_TIMEOUT_S,
+            )
             return True, None
         except Exception:  # noqa: BLE001 - defensive
             logger.warning("Shadow-check execution raised", exc_info=True)

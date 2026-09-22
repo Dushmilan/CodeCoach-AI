@@ -21,6 +21,7 @@ from app.adapters.code_wrappers.output_comparator import outputs_match
 from app.adapters.execution_result_formatter import ExecutionResultFormatter
 from app.services.static_code_validator import StaticCodeValidator, get_file_extension
 from app.services.redis_service import RedisCache, _content_hash
+from app.services.http_clients import get_shared_client
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +114,12 @@ class PistonService(CodeExecutor):
         }
 
     async def execute(
-        self, language: str, code: str, stdin: str = "", version: Optional[str] = None
+        self,
+        language: str,
+        code: str,
+        stdin: str = "",
+        version: Optional[str] = None,
+        run_timeout_ms: int = 3000,
     ) -> ExecutionResult:
         if language not in self.languages:
             raise HTTPException(
@@ -145,42 +151,40 @@ class PistonService(CodeExecutor):
             "stdin": stdin,
             "args": [],
             "compile_timeout": 10000,
-            "run_timeout": 3000,
+            "run_timeout": run_timeout_ms,
         }
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            client = get_shared_client("piston")
+            response = await client.post(
+                f"{self.base_url}/execute",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=self.timeout,
+            )
+            if response.status_code == 400 and await self._refresh_versions(language):
+                # Pinned runtime likely drifted (image updated) — retry once
+                # with the freshly resolved version.
+                payload["version"] = self.languages[language]["version"]
                 response = await client.post(
                     f"{self.base_url}/execute",
                     json=payload,
                     headers={"Content-Type": "application/json"},
+                    timeout=self.timeout,
                 )
-                if response.status_code == 400 and await self._refresh_versions(
-                    language
-                ):
-                    # Pinned runtime likely drifted (image updated) — retry once
-                    # with the freshly resolved version.
-                    payload["version"] = self.languages[language]["version"]
-                    response = await client.post(
-                        f"{self.base_url}/execute",
-                        json=payload,
-                        headers={"Content-Type": "application/json"},
-                    )
-                if response.status_code != 200:
-                    raise HTTPException(
-                        status_code=response.status_code,
-                        detail=f"Piston API error: {response.text}",
-                    )
-                raw = response.json()
-                processed = self.formatter.format(raw)
-                result = ExecutionResult(**processed)
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Piston API error: {response.text}",
+                )
+            raw = response.json()
+            processed = self.formatter.format(raw)
+            result = ExecutionResult(**processed)
 
-                if self.cache and cache_key:
-                    await self.cache.set(
-                        cache_key, dataclasses.asdict(result), ttl=3600
-                    )
+            if self.cache and cache_key:
+                await self.cache.set(cache_key, dataclasses.asdict(result), ttl=3600)
 
-                return result
+            return result
         except httpx.TimeoutException:
             raise HTTPException(status_code=504, detail="Code execution timeout")
         except HTTPException:
@@ -229,21 +233,23 @@ class PistonService(CodeExecutor):
                 return cached
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.get(f"{self.base_url}/runtimes")
-                if response.status_code != 200:
-                    raise HTTPException(
-                        status_code=response.status_code,
-                        detail="Failed to fetch runtimes",
-                    )
-                result = response.json()
+            client = get_shared_client("piston")
+            response = await client.get(
+                f"{self.base_url}/runtimes", timeout=self.timeout
+            )
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail="Failed to fetch runtimes",
+                )
+            result = response.json()
 
-                if self.cache:
-                    await self.cache.set(
-                        RedisCache.key("piston", "runtimes"), result, ttl=3600
-                    )
+            if self.cache:
+                await self.cache.set(
+                    RedisCache.key("piston", "runtimes"), result, ttl=3600
+                )
 
-                return result
+            return result
         except Exception as e:
             logger.error(f"Error fetching runtimes: {str(e)}")
             raise HTTPException(
@@ -280,6 +286,9 @@ class PistonService(CodeExecutor):
             language=language,
             code=runner_code,
             stdin="",
+            # One Piston call runs the whole suite — give all N cases room
+            # instead of the single-execution budget (#264).
+            run_timeout_ms=10000,
         )
 
         results = self._parse_suite_output(exec_result, test_cases)

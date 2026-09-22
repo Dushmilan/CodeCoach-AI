@@ -66,6 +66,76 @@ export function useCoaching(): CoachingFeature & { hydrateMessages: (msgs: ChatM
       }));
 
       const handleSend = async () => {
+        // Prefer streaming (#264): first token lands in ~1s while the full
+        // AI call runs for seconds. Any stream failure falls back to the
+        // unary endpoint below — never a dead end.
+        if (typeof coachingService.streamCoachResponse === "function") {
+          const streamId = (Date.now() + 1).toString();
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: streamId,
+              role: "assistant",
+              content: "",
+              timestamp: new Date(),
+            },
+          ]);
+          try {
+            let accumulated = "";
+            await coachingService.streamCoachResponse(
+              {
+                problem,
+                code,
+                message,
+                mode: mode.toLowerCase(),
+                language: language.toLowerCase(),
+                difficulty: difficulty || "medium",
+                ...(lessonContext ? { lesson_context: lessonContext } : {}),
+                ...(chatHistory.length > 0
+                  ? { chat_history: chatHistory }
+                  : {}),
+                ...(initialCode !== undefined
+                  ? { initial_code: initialCode }
+                  : {}),
+                surface,
+                ...(questionId ? { question_id: questionId } : {}),
+              },
+              (chunk: string) => {
+                accumulated += chunk;
+                const snapshot = accumulated;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === streamId ? { ...m, content: snapshot } : m,
+                  ),
+                );
+              },
+            );
+            clearLimitReached();
+            refreshUsage();
+            return;
+          } catch (streamErr) {
+            setMessages((prev) => prev.filter((m) => m.id !== streamId));
+            if (isRateLimited(streamErr)) {
+              markLimitReached();
+              refreshUsage();
+              setError("You've reached your daily AI message limit.");
+              showToast("Daily AI message limit reached", "info");
+              const errorAssistantMessage: ChatMessage = {
+                id: (Date.now() + 2).toString(),
+                role: "assistant",
+                content:
+                  "You've reached your daily AI message limit. Try again tomorrow.",
+                timestamp: new Date(),
+              };
+              setMessages((prev) => [...prev, errorAssistantMessage]);
+              return;
+            }
+            // Otherwise fall through to the unary endpoint.
+          } finally {
+            setIsTyping(false);
+          }
+          setIsTyping(true);
+        }
         try {
           const data = await coachingService.getCoachResponse(
             problem,
