@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getProfessorCourses, type ProfessorCourse } from "@/features/instructor/demo";
-import { FetchClient } from "@/lib/fetch-client";
+import { FetchClient, getErrorDisplayMessage } from "@/lib/fetch-client";
 
 const client = new FetchClient();
 
@@ -29,7 +29,7 @@ export default function ProfessorCurriculumPage() {
       setCourses((prev) => [...prev, created]);
       setTitle("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+      setError(getErrorDisplayMessage(err) || "Create failed");
     }
   }
 
@@ -42,7 +42,7 @@ export default function ProfessorCurriculumPage() {
       );
       setEditingId(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(getErrorDisplayMessage(err) || "Update failed");
     }
   }
 

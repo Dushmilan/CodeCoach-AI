@@ -4,11 +4,16 @@ import { useLesson } from "./use-curriculum.hook";
 
 const mockGet = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/fetch-client", () => ({
-  FetchClient: vi.fn().mockImplementation(function () {
-    return { get: mockGet };
-  }),
-}));
+vi.mock("@/lib/fetch-client", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/fetch-client")>();
+  return {
+    ...actual,
+    FetchClient: vi.fn().mockImplementation(function () {
+      return { get: mockGet };
+    }),
+  };
+});
 
 describe("useLesson", () => {
   beforeEach(() => {
