@@ -68,7 +68,12 @@ export class CoachingService {
     const data = await this.http.post<{
       response: string;
       structured: StructuredCoachingResponse | null;
-    }>("/api/coach/", body);
+    }>(
+      "/api/coach/",
+      body,
+      // Single Groq call routinely exceeds the client's 10s default.
+      { timeout: 90000 },
+    );
 
     return {
       response: data.response,

@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import json
 import logging
 from typing import (
@@ -27,6 +28,11 @@ if TYPE_CHECKING:  # pragma: no cover - typing only, avoids import weight
     from app.ports.code_executor import CodeExecutor
 
 logger = logging.getLogger(__name__)
+
+
+# Advisory Piston shadow-check budget (#264): the check must never stall
+# coaching. On timeout the model output is trusted (degrade open).
+_SHADOW_CHECK_TIMEOUT_S = 5.0
 
 
 # One-shot animate self-correction: appended as a follow-up user message when
@@ -721,12 +727,21 @@ class GroqService(CoachingProvider):
                 + f"__shadow_result = {func.name}(**__shadow_kwargs)\n"
                 + "print(__shadow_json.dumps(__shadow_result, sort_keys=True, default=str))\n"
             )
-            exec_result = await self.executor.execute(
-                language="python", code=driver, stdin=""
+            exec_result = await asyncio.wait_for(
+                self.executor.execute(language="python", code=driver, stdin=""),
+                timeout=_SHADOW_CHECK_TIMEOUT_S,
             )
         except HTTPException as e:
             # Transport/infra failure — never punish the model for it.
             logger.warning("Shadow-check execution unavailable: %s", e.detail)
+            return True, None
+        except (asyncio.TimeoutError, TimeoutError):
+            # Piston is slow — the check is advisory, so degrade open and
+            # trust the anchored model output instead of stalling coaching.
+            logger.warning(
+                "Shadow-check timed out after %ss, trusting model output",
+                _SHADOW_CHECK_TIMEOUT_S,
+            )
             return True, None
         except Exception:  # noqa: BLE001 - defensive
             logger.warning("Shadow-check execution raised", exc_info=True)
