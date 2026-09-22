@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { HttpError } from '@/lib/fetch-client';
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -74,6 +75,34 @@ describe('AdminDashboard hierarchy section', () => {
     render(<AdminDashboard />);
     await waitFor(() =>
       expect(screen.getByText(/no professors/i)).toBeInTheDocument(),
+    );
+  });
+
+  it('shows the thrown message when stats fail to load', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: false, json: async () => ({}) }) as Response),
+    );
+    render(<AdminDashboard />);
+    await waitFor(() =>
+      expect(screen.getByText('Failed to fetch stats')).toBeInTheDocument(),
+    );
+  });
+
+  it('surfaces server detail when the failure carries an HttpError body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new HttpError(
+          'Request failed: 500 Internal Server Error',
+          500,
+          JSON.stringify({ detail: 'DB down' }),
+        );
+      }),
+    );
+    render(<AdminDashboard />);
+    await waitFor(() =>
+      expect(screen.getByText('DB down')).toBeInTheDocument(),
     );
   });
 });

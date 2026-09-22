@@ -191,6 +191,33 @@ describe("AnimateLauncher", () => {
     );
   });
 
+  it("surfaces the server detail for non-502 failures", async () => {
+    mockGenerateAnimation.mockRejectedValue(
+      new HttpError(
+        "Request failed: 500 Internal Server Error",
+        500,
+        JSON.stringify({ detail: "Trace failed" }),
+      ),
+    );
+    const { dialog } = await openAndGetIframe();
+    const iframe = within(dialog).getByTitle(
+      "Animation viewer",
+    ) as HTMLIFrameElement;
+    const postMessage = vi
+      .spyOn(iframe.contentWindow!, "postMessage")
+      .mockImplementation(() => {});
+    fireEvent.load(iframe);
+
+    await waitFor(() => expect(postMessage).toHaveBeenCalled());
+    const [payload] = postMessage.mock.calls[0];
+    expect(payload.type).toBe(ANIMATION_ERROR_MESSAGE_TYPE);
+    expect(payload.message).toBe("Trace failed");
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "Trace failed",
+    );
+  });
+
   it("closes the modal from the close button", async () => {
     mockGenerateAnimation.mockResolvedValue(animationFixture);
     const user = userEvent.setup();

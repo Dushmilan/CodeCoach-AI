@@ -88,4 +88,16 @@ describe("Admin classroom detail page", () => {
 
     expect(await screen.findByText(/classroom not found/i)).toBeInTheDocument();
   });
+
+  it("shows the not-found state when the detail request fails", async () => {
+    mockId.current = "room-1";
+    server.use(
+      http.get("/api/instructor/classrooms/:id", () =>
+        HttpResponse.json({ detail: "boom" }, { status: 500 }),
+      ),
+    );
+    render(<AdminClassroomDetailPage />);
+
+    expect(await screen.findByText(/classroom not found/i)).toBeInTheDocument();
+  });
 });

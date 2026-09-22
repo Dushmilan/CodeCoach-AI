@@ -13,7 +13,7 @@ import { useCoaching } from '@/features/coaching/coaching.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import { useLesson } from '@/features/curriculum/use-curriculum.hook';
 import { TestCaseResultView } from '@/features/code-execution/code-execution.types';
-import { FetchClient, HttpError } from '@/lib/fetch-client';
+import { FetchClient, HttpError, getErrorDisplayMessage } from '@/lib/fetch-client';
 import { useAuth } from '@/providers';
 import { Language, LessonSummary, Question } from '@/types';
 import { motion } from 'framer-motion';
@@ -144,9 +144,9 @@ export default function LessonPage() {
       setRunError(res.stderr || '');
     } catch (err) {
       if (err instanceof HttpError) {
-        setRunError(`Execution failed (${err.status}): ${err.body || err.message}`);
+        setRunError(`Execution failed (${err.status}): ${err.displayMessage}`);
       } else {
-        setRunError(err instanceof Error ? err.message : 'Execution failed');
+        setRunError(getErrorDisplayMessage(err) || 'Execution failed');
       }
     } finally {
       setIsRunning(false);
