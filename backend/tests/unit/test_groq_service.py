@@ -1142,3 +1142,295 @@ class TestGroqServiceAnimateScript:
         # code_comparison JSON is long; 1000 tokens truncates it into a
         # brace-repaired response with no usable animation.
         assert payload["max_completion_tokens"] == 2000
+
+
+VALID_ANIMATED_CODE = "def add(a, b):\n    return a + b\n"
+
+WRONG_ANIMATED_CODE = "def add(a, b):\n    return a - b\n"
+
+CUSTOM_ADD_QUESTION = {
+    "title": "Custom: pairwise total",
+    "description": "Given two integers a and b, return their total.",
+    "examples": [{"input": {"a": 2, "b": 3}, "output": "5"}],
+}
+
+BANK_TWO_SUM_QUESTION = {
+    "title": "Two Sum",
+    "description": (
+        "Given an array of integers nums and an integer target, "
+        "return indices of the two numbers that add up to target."
+    ),
+    "examples": [{"input": "[2, 7, 11, 15], 9", "output": "[0, 1]"}],
+}
+
+
+def _anim_content(animated_code):
+    import json as _json
+
+    return _json.dumps(
+        {
+            "summary": "Watch the addition unfold?",
+            "hints": [],
+            "code_review": None,
+            "complexity_analysis": None,
+            "suggestions": [],
+            "edge_cases": [],
+            "explanation": None,
+            "debug_help": None,
+            "animation": {
+                "title": "Adding 2 and 3",
+                "animated_code": animated_code,
+                "data": {"values": [2, 3]},
+                "steps": [
+                    {
+                        "narration": "a",
+                        "shapes": [
+                            {"id": "c", "type": "rect", "width": 10, "height": 10},
+                            {"id": "d", "type": "rect", "width": 10, "height": 10},
+                        ],
+                        "motion": [{"target": "c", "op": "appear", "duration": 0.3}],
+                    },
+                    {
+                        "narration": "b",
+                        "motion": [
+                            {
+                                "target": "c",
+                                "op": "move",
+                                "to": [10, 0],
+                                "duration": 0.3,
+                            }
+                        ],
+                    },
+                    {
+                        "narration": "c",
+                        "motion": [
+                            {
+                                "target": "d",
+                                "op": "fill",
+                                "to": "#22c55e",
+                                "duration": 0.3,
+                            }
+                        ],
+                    },
+                ],
+            },
+        }
+    )
+
+
+class LocalExecExecutor:
+    """Test double that really executes the shadow driver locally."""
+
+    async def execute(self, language, code, stdin="", version=None):
+        import io
+        import contextlib
+        from app.ports.code_executor import ExecutionResult
+
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                exec(compile(code, "<shadow>", "exec"), {})
+        except Exception as e:  # noqa: BLE001
+            return ExecutionResult(
+                stdout="", stderr=str(e), exit_code=1, language=language
+            )
+        return ExecutionResult(
+            stdout=buf.getvalue(), stderr="", exit_code=0, language=language
+        )
+
+    async def evaluate_suite(self, language, code, test_cases):
+        return []
+
+    async def get_runtimes(self):
+        return []
+
+
+class TestAnimateReferenceAnchor:
+    @pytest.fixture
+    def mock_async_client(self):
+        with patch("httpx.AsyncClient") as mock_cls:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_cls.return_value = mock_instance
+            yield mock_instance
+
+    def _make_response(self, status_code=200, body=None):
+        mock_response = MagicMock()
+        mock_response.status_code = status_code
+        mock_response.text = "error body"
+        mock_response.headers = {"retry-after": "5"}
+        if body is not None:
+            mock_response.json.return_value = body
+        return mock_response
+
+    @pytest.mark.asyncio
+    async def test_bank_question_injects_resolved_canonical_code(
+        self, mock_async_client
+    ):
+        body = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT_WITH_ANIMATION}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+        from app.services.reference_solutions import REFERENCE_SOLUTIONS
+        import json as _json
+
+        service = GroqService(api_key="gsk_test")
+        await service.get_structured_coaching_response(
+            problem="Two Sum: Given an array of integers nums and an integer "
+            "target, return indices of the two numbers that add up to target.",
+            code="def f(): pass",
+            language="python",
+            message="animate",
+            mode="animate",
+            difficulty="medium",
+            question=BANK_TWO_SUM_QUESTION,
+        )
+
+        sent = mock_async_client.post.call_args.kwargs["json"]
+        user_data = _json.loads(sent["messages"][-1]["content"])
+        assert (
+            user_data["verified_optimal_code"] == REFERENCE_SOLUTIONS["two_sum"]["code"]
+        )
+
+    @pytest.mark.asyncio
+    async def test_hidden_test_cases_never_sent_with_anchor(self, mock_async_client):
+        body = {
+            "choices": [{"message": {"content": STRUCTURED_CONTENT_WITH_ANIMATION}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+        import json as _json
+
+        service = GroqService(api_key="gsk_test")
+        question = dict(BANK_TWO_SUM_QUESTION)
+        question["test_cases"] = [{"input": "top-secret", "output": "x"}]
+        await service.get_structured_coaching_response(
+            problem="Two Sum problem",
+            code="def f(): pass",
+            language="python",
+            message="animate",
+            mode="animate",
+            difficulty="medium",
+            question=question,
+        )
+
+        sent = mock_async_client.post.call_args.kwargs["json"]
+        raw = sent["messages"][-1]["content"]
+        assert "top-secret" not in raw
+        user_data = _json.loads(raw)
+        assert "test_cases" not in user_data["question"]
+
+
+class TestAnimateShadowCheck:
+    @pytest.fixture
+    def mock_async_client(self):
+        with patch("httpx.AsyncClient") as mock_cls:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_cls.return_value = mock_instance
+            yield mock_instance
+
+    def _make_response(self, status_code=200, body=None):
+        mock_response = MagicMock()
+        mock_response.status_code = status_code
+        mock_response.text = "error body"
+        mock_response.headers = {"retry-after": "5"}
+        if body is not None:
+            mock_response.json.return_value = body
+        return mock_response
+
+    @pytest.mark.asyncio
+    async def test_matching_code_passes_with_single_call(self, mock_async_client):
+        body = {
+            "choices": [{"message": {"content": _anim_content(VALID_ANIMATED_CODE)}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", executor=LocalExecExecutor())
+        result = await service.get_structured_coaching_response(
+            problem="Custom: pairwise total",
+            code="def f(): pass",
+            language="python",
+            message="animate",
+            mode="animate",
+            difficulty="medium",
+            question=CUSTOM_ADD_QUESTION,
+        )
+
+        assert mock_async_client.post.call_count == 1
+        assert result["animation"]["title"] == "Adding 2 and 3"
+
+    @pytest.mark.asyncio
+    async def test_wrong_code_rejected_and_retried_once(self, mock_async_client):
+        bodies = [
+            {
+                "choices": [
+                    {"message": {"content": _anim_content(WRONG_ANIMATED_CODE)}}
+                ],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+            },
+            {
+                "choices": [
+                    {"message": {"content": _anim_content(WRONG_ANIMATED_CODE)}}
+                ],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+            },
+        ]
+        mock_async_client.post.side_effect = [
+            self._make_response(200, bodies[0]),
+            self._make_response(200, bodies[1]),
+        ]
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test", executor=LocalExecExecutor())
+        result = await service.get_structured_coaching_response(
+            problem="Custom: pairwise total",
+            code="def f(): pass",
+            language="python",
+            message="animate",
+            mode="animate",
+            difficulty="medium",
+            question=CUSTOM_ADD_QUESTION,
+        )
+
+        # Retried exactly once, then the bad animation is dropped, not shown.
+        assert mock_async_client.post.call_count == 2
+        assert "animation" not in result
+        assert isinstance(result["summary"], str)
+        # The retry re-prompts at temperature 0.0 with the failure reason.
+        retry_payload = mock_async_client.post.call_args_list[1].kwargs["json"]
+        assert retry_payload["temperature"] == 0.0
+        assert "shadow" in retry_payload["messages"][-1]["content"].lower()
+
+    @pytest.mark.asyncio
+    async def test_no_executor_skips_shadow_check(self, mock_async_client):
+        body = {
+            "choices": [{"message": {"content": _anim_content(WRONG_ANIMATED_CODE)}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 8},
+        }
+        mock_async_client.post.return_value = self._make_response(200, body)
+
+        from app.services.groq_service import GroqService
+
+        service = GroqService(api_key="gsk_test")
+        result = await service.get_structured_coaching_response(
+            problem="Custom: pairwise total",
+            code="def f(): pass",
+            language="python",
+            message="animate",
+            mode="animate",
+            difficulty="medium",
+            question=CUSTOM_ADD_QUESTION,
+        )
+
+        assert mock_async_client.post.call_count == 1
+        assert result["animation"]["title"] == "Adding 2 and 3"

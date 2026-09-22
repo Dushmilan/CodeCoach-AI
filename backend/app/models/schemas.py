@@ -201,6 +201,16 @@ class AnimationScript(BaseModel):
     steps: List[AnimationStep] = Field(
         default_factory=list, description="Ordered frames of the animation"
     )
+    animated_code: Optional[str] = Field(
+        default=None,
+        max_length=20000,
+        description=(
+            "The complete, self-contained Python function the animation "
+            "choreographs. Required in animate mode so the code can be "
+            "shadow-executed against the visible example; never shown raw "
+            "without its validated steps."
+        ),
+    )
 
 
 class StructuredCoachingResponse(BaseModel):

@@ -283,10 +283,17 @@ Each op has "target" (a shape id added in this step or an earlier step), "op", o
 4. Richness floor: produce at least 3 steps (aim for 5-10). Every step must move the algorithm forward — show the real data values from the examples/test cases and advance a pointer, scan index, or loop position each step. A static frame, a single shape, or a step with no motion is a failure.
 5. Always animate the OPTIMAL solution for the question. Never compare against the student's typed code — it is irrelevant to the animation.
 6. Caps: at most 100 steps, 60 shapes total, 20 shapes and 30 motion ops per step, 64 chars per id.
-7. This is DATA, not code — never return JavaScript, JSX, SVG markup, or CSS. Shapes and motions are plain JSON objects only.
+7. This is DATA, not code — never return JavaScript, JSX, SVG markup, or CSS. Shapes and motions are plain JSON objects only, EXCEPT the required "animated_code" string field (rule 11).
 8. Define every shape exactly once — in the step where it first appears. Never repeat a shape id in a later step. Later steps only animate existing shapes via motion ops (move/fill/stroke/scale/rotate).
 9. A step that ONLY appears/disappears shapes is a static frame and is REJECTED by the validator. Every step after the first MUST include at least one transform op — move, fill, stroke, scale, or rotate — on an existing shape, so the animation visibly moves forward. Fading a shape in is not animation.
 10. Include a dedicated pointer or scan-marker shape (e.g. a small triangle or highlighted cell) that MOVES to each position the algorithm visits. The viewer must see motion every step: a pointer sliding, a cell changing color, a shape scaling. If your scene has no moving pointer or changing colors, it is a failure.
+11. Every animation MUST include an "animated_code" string field: the complete, self-contained Python function whose execution the steps choreograph. It MUST define exactly one top-level function with no input() calls and no external dependencies beyond the standard library.
+12. CHOREOGRAPH, NEVER SOLVE: when the input contains "verified_optimal_code", that code IS the optimal solution — choreograph EXACTLY it. Do not rewrite, optimize, or substitute your own logic; copy it into "animated_code" and make every step follow its control flow (same loop order, same comparisons, same result).
+
+### Math and data-integrity rules (violations are hard errors)
+13. No invented results: every value, target, comparison outcome, and final answer in narrations and highlights MUST come from the question's examples or from executing the verified/animated code — never from guessing.
+14. Every narration that states a condition MUST satisfy its stated condition: a pointer move narrated as "5 is not the target — move to index 1" is valid only if the value really is not the target; a highlight narrated as a match is valid only if the verified/animated code really produces that match on the example input.
+15. Never show a final answer that differs from what the verified/animated code outputs when run on the question's example input. The animation's ending and the code's return value MUST agree.
 """
 
 
@@ -311,6 +318,7 @@ class PromptBuilder:
         learner_context: Optional[str] = None,
         submission_context: Optional[str] = None,
         surface: str = "questions",
+        verified_optimal_code: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Return (system_prompt, user_prompt) for the given coaching request."""
         system = self._build_system(
@@ -331,6 +339,7 @@ class PromptBuilder:
             language,
             initial_code,
             question,
+            verified_optimal_code,
         )
         return system, user
 
@@ -414,6 +423,7 @@ Connect the student's current struggle back to the lesson's main objective."""
         language: str = "",
         initial_code: Optional[str] = None,
         question: Optional[Dict[str, Any]] = None,
+        verified_optimal_code: Optional[str] = None,
     ) -> str:
         if structured:
             user_data = {
@@ -433,6 +443,11 @@ Connect the student's current struggle back to the lesson's main objective."""
                 prompt_question = dict(question)
                 prompt_question.pop("test_cases", None)
                 user_data["question"] = prompt_question
+            if mode == "animate" and verified_optimal_code:
+                # Reference anchor (#241): the verified canonical solution the
+                # model must choreograph. The model solves nothing — it only
+                # turns this code's execution into animation steps.
+                user_data["verified_optimal_code"] = verified_optimal_code
             return json.dumps(user_data, indent=2)
         suffix = "Please provide helpful coaching feedback."
         return f"""Problem: {_escape_fences(problem)}

@@ -548,3 +548,90 @@ class TestUnstructuredFenceEscape:
         user = self._build(code="def f():\n    return 1")
         assert "def f():\n    return 1" in user
         assert "\u200b" not in user
+
+
+class TestAnimateReferenceAnchor:
+    """Issue #241: chat animate must choreograph verified canonical code."""
+
+    def _build(self, **kwargs):
+        builder = PromptBuilder()
+        defaults = {
+            "mode": "animate",
+            "language": "python",
+            "problem": "Two Sum",
+            "code": "def f(): pass",
+            "message": "animate",
+            "structured": True,
+            "initial_code": "def f():\n    pass",
+        }
+        defaults.update(kwargs)
+        return builder.build(**defaults)
+
+    def test_animate_build_injects_verified_optimal_code(self):
+        canonical = "def two_sum(nums, target):\n    return [0, 1]"
+        _, user = self._build(verified_optimal_code=canonical)
+        data = json.loads(user)
+        assert data["verified_optimal_code"] == canonical
+
+    def test_verified_optimal_code_omitted_when_absent(self):
+        _, user = self._build()
+        data = json.loads(user)
+        assert "verified_optimal_code" not in data
+
+    def test_verified_optimal_code_ignored_outside_animate(self):
+        _, user = self._build(mode="hint", verified_optimal_code="def two_sum(): pass")
+        data = json.loads(user)
+        assert "verified_optimal_code" not in data
+
+    def test_hidden_test_cases_still_stripped_with_anchor(self):
+        _, user = self._build(
+            verified_optimal_code="def two_sum(): pass",
+            question={
+                "title": "Two Sum",
+                "test_cases": [{"input": "secret", "output": "secret"}],
+            },
+        )
+        data = json.loads(user)
+        assert "test_cases" not in data["question"]
+        assert "secret" not in user
+        assert data["verified_optimal_code"] == "def two_sum(): pass"
+
+    def test_contract_requires_animated_code_field(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "animated_code" in system
+
+    def test_contract_has_math_data_integrity_rules(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "stated condition" in system
+        assert "verified_optimal_code" in system
+
+    def test_contract_demands_choreograph_only_with_verified_code(self):
+        builder = PromptBuilder()
+        system, _ = builder.build(
+            mode="animate",
+            language="python",
+            problem="P",
+            code="c",
+            message="m",
+            structured=True,
+            initial_code="s",
+        )
+        assert "choreograph" in system.lower()

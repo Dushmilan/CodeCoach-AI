@@ -60,6 +60,7 @@ def get_coaching_provider(
     cache: Optional[RedisCache] = Depends(get_redis_cache),
     user: UserResponse = Depends(get_current_user),
     usage_service: UsageService = Depends(get_usage_service),
+    executor: CodeExecutor = Depends(get_executor),
 ) -> CoachingProvider:
     # Platform-owned key: clients never supply their own. The key is used
     # server-side to call Groq; per-user token usage is metered via the
@@ -72,6 +73,7 @@ def get_coaching_provider(
         cache=cache,
         usage_recorder=usage_service,
         user_id=user.id,
+        executor=executor,
     )
 
 
