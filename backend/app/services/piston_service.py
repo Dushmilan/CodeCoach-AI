@@ -286,9 +286,10 @@ class PistonService(CodeExecutor):
             language=language,
             code=runner_code,
             stdin="",
-            # One Piston call runs the whole suite — give all N cases room
-            # instead of the single-execution budget (#264).
-            run_timeout_ms=10000,
+            # One Piston call runs the whole suite but the deployed Piston
+            # caps run_timeout at 3000ms — anything higher is rejected with
+            # 400 (#271). Keep the suite within the server limit.
+            run_timeout_ms=3000,
         )
 
         results = self._parse_suite_output(exec_result, test_cases)

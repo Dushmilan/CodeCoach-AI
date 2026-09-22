@@ -185,8 +185,12 @@ class TestPistonServiceExecute:
             assert payload["run_timeout"] == 3000
 
     @pytest.mark.asyncio
-    async def test_evaluate_suite_uses_extended_run_budget(self):
-        """One Piston call runs all N cases — it gets a larger run_timeout."""
+    async def test_evaluate_suite_stays_within_server_limit(self):
+        """One Piston call runs all N cases — it stays within the server limit.
+
+        Regression #271: the deployed Piston rejects run_timeout > 3000, so
+        the suite budget must not exceed the single-execution budget.
+        """
         from app.services.http_clients import reset_shared_clients
 
         reset_shared_clients()
@@ -214,7 +218,7 @@ class TestPistonServiceExecute:
                     [{"input": "1", "expected_output": "1", "hidden": False}],
                 )
                 payload = mock_instance.post.call_args[1]["json"]
-                assert payload["run_timeout"] > 3000
+                assert payload["run_timeout"] <= 3000
         finally:
             reset_shared_clients()
 
