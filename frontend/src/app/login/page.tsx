@@ -4,6 +4,7 @@ import { Header } from '@/components/header/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/providers/AuthProvider';
+import { getErrorDisplayMessage } from '@/lib/fetch-client';
 import { motion } from 'framer-motion';
 import { Lock, LogIn, User } from 'lucide-react';
 import Link from 'next/link';
@@ -47,7 +48,7 @@ export default function LoginPage() {
           router.push('/');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Login failed');
+        setError(getErrorDisplayMessage(err) || 'Login failed');
       } finally {
         setIsLoading(false);
       }

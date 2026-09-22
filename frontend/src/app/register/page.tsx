@@ -4,6 +4,7 @@ import { Header } from "@/components/header/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/providers/AuthProvider";
+import { getErrorDisplayMessage } from "@/lib/fetch-client";
 import { motion } from "framer-motion";
 import { Lock, Mail, User, UserPlus } from "lucide-react";
 import Link from "next/link";
@@ -51,7 +52,7 @@ export default function RegisterPage() {
         await register(username, email, password);
         router.push("/");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Registration failed");
+        setError(getErrorDisplayMessage(err) || "Registration failed");
       } finally {
         setIsLoading(false);
       }

@@ -5,6 +5,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/providers";
+import { getErrorDisplayMessage } from "@/lib/fetch-client";
 import { Button } from "@/components/ui/button";
 
 export default function AdminLogin() {
@@ -25,7 +26,7 @@ export default function AdminLogin() {
         await login(username, password);
         router.push("/admin/dashboard");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Invalid credentials");
+        setError(getErrorDisplayMessage(err) || "Invalid credentials");
       } finally {
         setIsLoading(false);
       }

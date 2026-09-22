@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { HttpError } from '@/lib/fetch-client';
 import LoginPage from './page';
 
 const mockUseAuth = vi.hoisted(() => vi.fn());
@@ -89,5 +90,22 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByTestId('login-submit'));
     await waitFor(() => expect(mockLogin).toHaveBeenCalled());
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/demonstrator'));
+  });
+
+  it('renders server detail when login fails with 401 + detail body', async () => {
+    const mockLogin = vi.fn().mockRejectedValue(
+      new HttpError(
+        'Request failed: 401 Unauthorized',
+        401,
+        JSON.stringify({ detail: 'Invalid credentials' }),
+      ),
+    );
+    mockUseAuth.mockReturnValue({ login: mockLogin } as unknown as ReturnType<typeof mockUseAuth>);
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'bob' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'wrongpassword' } });
+    fireEvent.click(screen.getByTestId('login-submit'));
+    await waitFor(() => expect(mockLogin).toHaveBeenCalled());
+    expect(await screen.findByText('Invalid credentials')).toBeTruthy();
   });
 });
