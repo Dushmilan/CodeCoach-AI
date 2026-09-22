@@ -33,6 +33,7 @@ from app.models.animation_spec import (
 )
 from app.services import animation_design_tokens as tokens
 from app.services import scene_planner
+from app.services.animation_pacing import apply_pacing
 from app.services.reference_solutions import (
     get_reference_solution,
     resolve_algorithm,
@@ -378,6 +379,15 @@ class SolutionAnimationService:
             events, entry, algorithm, fallback_title, target=kwargs.get("target")
         )
         if planner_animation is not None:
+            # #285 boundary: consume transient pacing roles where beats are
+            # finalized so an unfinalized planner path can never leak
+            # `role` past validation into the renderer output. No-op when
+            # the planner already ran apply_pacing (roles stripped there).
+            # A payload without a steps list is left untouched so the
+            # validator rejects it and the pipeline degrades to fallback.
+            steps = planner_animation.get("steps")
+            if isinstance(steps, list):
+                planner_animation["steps"] = apply_pacing(steps)
             validated, reason = self._validator.validate(planner_animation)
             if validated is not None:
                 self._log_quality(algorithm, validated)
