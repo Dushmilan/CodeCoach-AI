@@ -554,7 +554,8 @@ class TestPythonWrapWithTests:
         assert "def threeSum(nums):" in runner
         assert 'json.dumps(__out, separators=(",", ":"))' in runner
         assert "__out, __in_val = __run_test(__tc)" in runner
-        assert "threeSum(__parsed)" in runner
+        assert "threeSum(*__args)" in runner
+        assert "__unpack_args(__inp, 1, 1)" in runner
         assert "hidden" not in runner
 
     def test_two_param_int_return(self):
@@ -563,7 +564,8 @@ class TestPythonWrapWithTests:
             {"input": "[1]\n1", "expected_output": "1", "hidden": False},
         ]
         runner = self._wrap(code, test_cases)
-        assert "subarraySum(__a, __b)" in runner
+        assert "subarraySum(*__args)" in runner
+        assert "__unpack_args(__inp, 2, 2)" in runner
         assert "str(__out)" in runner
 
     def test_inplace_modification(self):
@@ -612,9 +614,9 @@ class TestPythonWrapWithTests:
             {"input": "1\n2\n3", "expected_output": "6", "hidden": False},
         ]
         runner = self._wrap(code, test_cases)
-        assert "__parsed_args = [json.loads(ln)" in runner
-        assert "bypass(*__parsed_args)" in runner
-        assert "__parsed_args[0]" in runner
+        assert "__args = __unpack_args(__inp, 3, 3)" in runner
+        assert "bypass(*__args)" in runner
+        assert "return __result, __args[0]" in runner
 
     def test_hidden_not_in_runner(self):
         test_cases = [

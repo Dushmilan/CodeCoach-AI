@@ -696,6 +696,61 @@ class TestStringReturningRunnerEndToEnd:
         assert proc.returncode == 0, proc.stderr
         assert proc.stdout.strip() == "[0,1]"
 
+    def test_python_wrap_multiline_multi_arg_stdin(self):
+        """Run-button path: newline-separated stdin must unpack like the suite.
+
+        Regression for the 108-question bank, whose test cases store one
+        argument per line (e.g. ``"[2,7,11,15]\\n9"``). Before the fix the
+        single-run wrapper passed the whole blob as one argument and raised
+        ``two_sum() missing 1 required positional argument: 'target'``.
+        """
+        code = (
+            "def two_sum(nums: List[int], target: int) -> List[int]:\n"
+            "    seen = {}\n"
+            "    for i, n in enumerate(nums):\n"
+            "        if target - n in seen:\n"
+            "            return [seen[target - n], i]\n"
+            "        seen[n] = i"
+        )
+        proc = self._run_python_single(code, "[2,7,11,15]\n9")
+        assert proc.returncode == 0, proc.stderr
+        assert proc.stdout.strip() == "[0,1]"
+
+    def test_python_wrap_multiline_three_arg_stdin(self):
+        """Run-button path: three newline-separated args must unpack."""
+        code = (
+            "def range_sum(nums, start, end):\n"
+            "    prefix = [0]\n"
+            "    for n in nums:\n"
+            "        prefix.append(prefix[-1] + n)\n"
+            "    return prefix[end + 1] - prefix[start]"
+        )
+        proc = self._run_python_single(code, "[1,2,3,4,5]\n1\n3")
+        assert proc.returncode == 0, proc.stderr
+        assert proc.stdout.strip() == "9"
+
+    def test_python_run_and_submit_agree_on_multi_arg_inputs(self):
+        """Run (wrap) and Submit (wrap_with_tests) share one unpacking rule."""
+        code = (
+            "def two_sum(nums, target):\n"
+            "    seen = {}\n"
+            "    for i, n in enumerate(nums):\n"
+            "        if target - n in seen:\n"
+            "            return [seen[target - n], i]\n"
+            "        seen[n] = i"
+        )
+        for stdin in ("[2,7,11,15]\n9", "[2,7,11,15], 9"):
+            proc = self._run_python_single(code, stdin)
+            assert proc.returncode == 0, (stdin, proc.stderr)
+            assert proc.stdout.strip() == "[0,1]", (stdin, proc.stdout)
+            suite = self._parse_suite(
+                self._run_python_runner(
+                    code,
+                    [{"input": stdin, "expected_output": "[0,1]", "hidden": False}],
+                )
+            )
+            assert suite[0]["passed"] is True, (stdin, suite)
+
     def test_python_arrays_booleans_numbers_still_pass(self):
         cases = [
             ("def arr(x):\n    return x", [1, 2, 3], "[1,2,3]"),

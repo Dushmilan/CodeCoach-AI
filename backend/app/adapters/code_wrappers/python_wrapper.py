@@ -18,41 +18,6 @@ from .base import CodeWrapper
 from .output_comparator import PYTHON_OUTPUT_MATCH
 
 
-def _split_top_level(text: str) -> List[str]:
-    """Split on commas that sit outside brackets and string literals."""
-    parts: List[str] = []
-    current: List[str] = []
-    depth = 0
-    quote: str | None = None
-    i = 0
-    while i < len(text):
-        ch = text[i]
-        if quote is not None:
-            current.append(ch)
-            if ch == "\\" and i + 1 < len(text):
-                current.append(text[i + 1])
-                i += 1
-            elif ch == quote:
-                quote = None
-        elif ch in ("'", '"'):
-            quote = ch
-            current.append(ch)
-        elif ch in "[{(":
-            depth += 1
-            current.append(ch)
-        elif ch in "]})":
-            depth = max(0, depth - 1)
-            current.append(ch)
-        elif ch == "," and depth == 0:
-            parts.append("".join(current))
-            current = []
-        else:
-            current.append(ch)
-        i += 1
-    parts.append("".join(current))
-    return parts
-
-
 def _function_arity(code: str, func_name: str) -> tuple[int, int]:
     """(total, required) positional params of the named function.
 
@@ -69,23 +34,6 @@ def _function_arity(code: str, func_name: str) -> tuple[int, int]:
             required = total - len(node.args.defaults)
             return (total, required)
     return (1, 1)
-
-
-def _maybe_split_input(text: str, total: int, required: int) -> str:
-    """Unpack a single-line multi-arg input into newline-separated args.
-
-    The suite runner already unpacks multi-line inputs positionally; a
-    one-line ``"[2,7,11,15], 9"`` for ``def two_sum(nums, target)`` would
-    otherwise arrive as a single string and fail with a missing-argument
-    error even for correct solutions. Only rewrites when the part count
-    matches the function's arity, so ambiguous inputs keep old behavior.
-    """
-    if total <= 1 or "\n" in text:
-        return text
-    parts = [p.strip() for p in _split_top_level(text)]
-    if len(parts) > 1 and len(parts) in (required, total):
-        return "\n".join(parts)
-    return text
 
 
 # Typing names students commonly use bare in annotations (e.g. LeetCode
@@ -229,6 +177,26 @@ def __to_arg(__s):
         return __s
 """
 
+    # Shared argument-unpacking rule embedded in BOTH runners (Run via
+    # ``wrap`` and Submit via ``wrap_with_tests``) so the two paths cannot
+    # diverge on how one raw input maps to positional arguments: one arg per
+    # line, or single-line top-level-comma separated, split only when the
+    # part count matches the function's arity.
+    _ARG_UNPACK_HELPER = """
+def __unpack_args(__text, __required, __total):
+    if not isinstance(__text, str):
+        return [__text]
+    if __total <= 1:
+        return [__to_arg(__text)]
+    if "\\n" in __text:
+        __parts = __text.split("\\n")
+    else:
+        __parts = [__p.strip() for __p in __split_top_level(__text)]
+    if len(__parts) > 1 and len(__parts) in (__required, __total):
+        return [__to_arg(__p) for __p in __parts]
+    return [__to_arg(__text)]
+"""
+
     def wrap(self, code: str) -> str:
         if "input(" in code or "sys.stdin" in code or "print(" in code:
             return code
@@ -242,14 +210,9 @@ def __to_arg(__s):
         if total <= 1:
             single_call = "result = {func_name}(parsed_line)"
         else:
-            single_call = """if __raw and isinstance(parsed_line, str):
-            __split = [__p.strip() for __p in __split_top_level(parsed_line)]
-            if len(__split) > 1 and len(__split) in ({required}, {total}):
-                result = {func_name}(*[__to_arg(__p) for __p in __split])
-            else:
-                result = {func_name}(parsed_line)
-        else:
-            result = {func_name}(parsed_line)"""
+            single_call = (
+                "result = {func_name}(*__unpack_args(parsed_line, {required}, {total}))"
+            )
         typing_imports = _typing_import_block(code)
         future_block, body = _split_future_imports(code)
         header = "import sys\nimport json"
@@ -264,16 +227,15 @@ def __to_arg(__s):
 """
         if total > 1:
             runner += self._SPLIT_HELPER
+            runner += self._ARG_UNPACK_HELPER
         runner += f"""
 try:
     line = sys.stdin.read().strip()
     if line:
         try:
             parsed_line = json.loads(line)
-            __raw = False
         except:
             parsed_line = line
-            __raw = True
         {single_call.format(func_name=func_name, required=required, total=total)}
     else:
         result = {func_name}("")
@@ -300,7 +262,7 @@ except Exception as e:
         total, required = _function_arity(code, func_name)
         tc_clean = [
             {
-                "input": _maybe_split_input(tc["input"], total, required),
+                "input": tc["input"],
                 "expected": tc["expected_output"],
                 "index": i + 1,
             }
@@ -319,6 +281,9 @@ except Exception as e:
 
 {body}
 
+{self._SPLIT_HELPER}
+{self._ARG_UNPACK_HELPER}
+
 {PYTHON_OUTPUT_MATCH}
 
 def run_suite():
@@ -327,29 +292,9 @@ def run_suite():
 
     def __run_test(__tc):
         __inp = __tc["input"]
-        try:
-            __lines = __inp.split("\\n") if __inp else [""]
-            if len(__lines) == 1:
-                try:
-                    __parsed = json.loads(__lines[0])
-                except Exception:
-                    __parsed = __lines[0]
-                __result = {func_name}(__parsed)
-                return __result, __parsed
-            elif len(__lines) == 2:
-                try:
-                    __a = json.loads(__lines[0])
-                    __b = json.loads(__lines[1]) if (__lines[1].strip().lstrip("-").isdigit() or __lines[1].strip().startswith("[")) else __lines[1]
-                except Exception:
-                    __a, __b = __lines[0], __lines[1]
-                __result = {func_name}(__a, __b)
-                return __result, __a
-            else:
-                __parsed_args = [json.loads(ln) if ln.strip() else ln for ln in __lines]
-                __result = {func_name}(*__parsed_args)
-                return __result, __parsed_args[0]
-        except Exception as e:
-            raise e
+        __args = __unpack_args(__inp, {required}, {total})
+        __result = {func_name}(*__args)
+        return __result, __args[0]
 
     for __tc in __test_cases:
         __idx = __tc["index"]
