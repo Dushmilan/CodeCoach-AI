@@ -142,14 +142,10 @@ class StructureValidationUseCase(BaseValidationUseCase):
                     message="At least one test case is required", field="test_cases"
                 )
             )
-        elif len(test_cases) < self.MIN_TEST_CASES:
-            issues.append(
-                self._create_issue(
-                    message=f"At least {self.MIN_TEST_CASES} test case(s) required",
-                    field="test_cases",
-                    details={"actual_count": len(test_cases)},
-                )
-            )
+        # NOTE (Round 9): the historic ``elif len(test_cases) < MIN_TEST_CASES``
+        # arm was removed as provably dead -- MIN_TEST_CASES is 1 and
+        # ``test_cases`` is a schema-validated list, so a truthy value always
+        # has len >= 1 and could never enter that arm. No outcome changes.
         else:
             for i, tc in enumerate(test_cases):
                 if not tc.input and tc.input != "":
@@ -180,15 +176,9 @@ class StructureValidationUseCase(BaseValidationUseCase):
                     severity=ValidationSeverity.WARNING,
                 )
             )
-        elif len(examples) < self.MIN_EXAMPLES:
-            issues.append(
-                self._create_issue(
-                    message=f"At least {self.MIN_EXAMPLES} example(s) recommended",
-                    field="examples",
-                    severity=ValidationSeverity.WARNING,
-                    details={"actual_count": len(examples)},
-                )
-            )
+        # NOTE (Round 9): the historic ``elif len(examples) < MIN_EXAMPLES``
+        # arm was removed as provably dead -- same proof as _validate_test_cases
+        # (MIN_EXAMPLES is 1; a truthy list always has len >= 1).
         return issues
 
     def _validate_difficulty(self, difficulty) -> List:

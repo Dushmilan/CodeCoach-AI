@@ -59,6 +59,71 @@ class TestRequireInstructor:
         assert exc.value.status_code == 403
 
 
+class TestRequireAdmin:
+    @pytest.mark.asyncio
+    async def test_allows_admin_and_super_admin(self):
+        from app.api.auth_deps import require_admin
+
+        for role in ("admin", "super_admin"):
+            result = await require_admin(_user(role))
+            assert result.role == role
+
+    @pytest.mark.asyncio
+    async def test_denies_non_admin_with_403(self):
+        # Round 9 probe pin: this deny branch (auth_deps.py:55) was covered
+        # only via integration HTTP tests, so unit-only coverage measured
+        # 92.3% lines while combined measured 98.4%. Pinning it here makes
+        # the branch independent of integration execution/timing/order.
+        from app.api.auth_deps import require_admin
+
+        for role in ("user", "ta", "professor"):
+            with pytest.raises(HTTPException) as exc:
+                await require_admin(_user(role))
+            assert exc.value.status_code == 403
+
+
+class TestRequireSuperAdmin:
+    @pytest.mark.asyncio
+    async def test_allows_super_admin(self):
+        # Round 9: the allow path (auth_deps.py:70) was the single line
+        # missing from COMBINED coverage -- no test, unit or integration,
+        # exercised it. Pinned here.
+        from app.api.auth_deps import require_super_admin
+
+        result = await require_super_admin(_user("super_admin"))
+        assert result.role == "super_admin"
+
+    @pytest.mark.asyncio
+    async def test_denies_non_super_admin_with_403(self):
+        from app.api.auth_deps import require_super_admin
+
+        for role in ("user", "ta", "professor", "admin"):
+            with pytest.raises(HTTPException) as exc:
+                await require_super_admin(_user(role))
+            assert exc.value.status_code == 403
+
+
+class TestRequireCourseEditor:
+    @pytest.mark.asyncio
+    async def test_allows_professor_and_admins(self):
+        from app.api.auth_deps import require_course_editor
+
+        for role in ("professor", "admin", "super_admin"):
+            result = await require_course_editor(_user(role))
+            assert result.role == role
+
+    @pytest.mark.asyncio
+    async def test_denies_ta_and_student_with_403(self):
+        # Round 9 probe pin: deny branch (auth_deps.py:111), same story as
+        # require_admin above -- integration-only coverage until now.
+        from app.api.auth_deps import require_course_editor
+
+        for role in ("user", "ta"):
+            with pytest.raises(HTTPException) as exc:
+                await require_course_editor(_user(role))
+            assert exc.value.status_code == 403
+
+
 class TestTAPermissionMatrix:
     def test_roster_management_is_professor_only(self):
         from app.api.auth_deps import instructor_can_manage_roster
