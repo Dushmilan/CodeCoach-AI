@@ -13,6 +13,7 @@ import { useCoachWarm } from '@/features/coaching/use-coach-warm.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
+import { dispatchSolvedEvents, isFullPass } from '@/lib/solved-event';
 import { getErrorDisplayMessage } from '@/lib/fetch-client';
 import { Language, Question } from '@/types';
 import { ChevronLeft, Loader2 } from 'lucide-react';
@@ -130,11 +131,11 @@ export default function ProblemWorkspacePage() {
   );
 
   const handleSubmitWithInvalidation = useCallback(async () => {
-    await handleSubmitCode();
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("learner-context-invalidated"));
+    const result = await handleSubmitCode();
+    if (questionId && isFullPass(result)) {
+      dispatchSolvedEvents(questionId);
     }
-  }, [handleSubmitCode]);
+  }, [handleSubmitCode, questionId]);
 
   const handleResetCode = useCallback(() => {
     setCurrentCode(starterCode);

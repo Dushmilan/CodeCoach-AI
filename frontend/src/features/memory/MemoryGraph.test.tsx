@@ -124,4 +124,12 @@ describe("MemoryGraph", () => {
     await waitFor(() => expect(mockedGetGraph).toHaveBeenCalled());
     expect(await screen.findByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
+
+  it("refetches on question-solved so the graph updates after a solve (#277)", async () => {
+    mockedGetGraph.mockResolvedValue({ topics: [], totalDue: 0, totalCards: 0, oldestDueDays: null });
+    render(<MemoryGraph />);
+    await waitFor(() => expect(mockedGetGraph).toHaveBeenCalledTimes(1));
+    window.dispatchEvent(new CustomEvent("question-solved", { detail: { questionId: "two-sum" } }));
+    await waitFor(() => expect(mockedGetGraph).toHaveBeenCalledTimes(2));
+  });
 });

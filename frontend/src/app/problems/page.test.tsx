@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import ProblemsPage from './page';
 import type { QuestionSummary } from '@/types';
 
@@ -33,6 +33,12 @@ vi.mock('@/features/skill-graph/RecommendedQuestions', () => ({
 
 vi.mock('@/hooks', () => ({
   useLocalStorage: () => [mockProgress, vi.fn()],
+}));
+
+vi.mock('@/features/workspace/workspace.service', () => ({
+  workspaceService: {
+    getLastVisited: vi.fn(() => Promise.resolve(null)),
+  },
 }));
 
 vi.mock('@/lib/shuffle', () => ({
@@ -188,5 +194,67 @@ describe('ProblemsPage', () => {
     mockError = 'Failed to load questions';
     render(<ProblemsPage />);
     expect(screen.getByText('Failed to load questions')).toBeInTheDocument();
+  });
+
+  describe('continue banner on question-solved (#277)', () => {
+    async function renderWithLastVisited(visitedId: string) {
+      const { workspaceService } = await import('@/features/workspace/workspace.service');
+      vi.mocked(workspaceService.getLastVisited).mockResolvedValue({
+        question_id: visitedId,
+        language: 'python',
+        visited_at: '2026-09-22T00:00:00Z',
+      });
+      const { AuthContext } = await import('@/providers/AuthProvider');
+      render(
+        <AuthContext.Provider value={{ isAuthenticated: true } as never}>
+          <ProblemsPage />
+        </AuthContext.Provider>,
+      );
+      await screen.findByText(/Continue where you left off/);
+    }
+
+    it('advances past the solved question to the next unsolved one', async () => {
+      await renderWithLastVisited('1');
+      expect(screen.getByText(/Continue where you left off/).textContent).toContain('Two Sum');
+      fireEvent(window, new CustomEvent('question-solved', { detail: { questionId: '1' } }));
+      await waitFor(() => {
+        expect(screen.getByText(/Continue where you left off/).textContent).toContain('Valid Parentheses');
+      });
+    });
+
+    it('hides the banner when nothing is left unsolved', async () => {
+      mockProgress = { '1': 'solved', '2': 'solved', '3': 'solved' };
+      const { workspaceService } = await import('@/features/workspace/workspace.service');
+      vi.mocked(workspaceService.getLastVisited).mockResolvedValue({
+        question_id: '3',
+        language: 'python',
+        visited_at: '2026-09-22T00:00:00Z',
+      });
+      const { AuthContext } = await import('@/providers/AuthProvider');
+      render(
+        <AuthContext.Provider value={{ isAuthenticated: true } as never}>
+          <ProblemsPage />
+        </AuthContext.Provider>,
+      );
+      fireEvent(window, new CustomEvent('question-solved', { detail: { questionId: '3' } }));
+      await waitFor(() => {
+        expect(screen.queryByText(/Continue where you left off/)).toBeNull();
+      });
+    });
+
+    it('leaves the banner alone when another question was solved', async () => {
+      await renderWithLastVisited('1');
+      fireEvent(window, new CustomEvent('question-solved', { detail: { questionId: '2' } }));
+      await new Promise((r) => setTimeout(r, 50));
+      expect(screen.getByText(/Continue where you left off/).textContent).toContain('Two Sum');
+    });
+
+    it('advances past an already-solved banner target on mount (#277)', async () => {
+      mockProgress = { '1': 'solved' };
+      await renderWithLastVisited('1');
+      await waitFor(() => {
+        expect(screen.getByText(/Continue where you left off/).textContent).toContain('Valid Parentheses');
+      });
+    });
   });
 });

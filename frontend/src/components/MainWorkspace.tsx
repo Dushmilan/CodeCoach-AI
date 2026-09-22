@@ -8,6 +8,7 @@ import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { Question, QuestionSummary, Language } from '@/types';
 import { useQuestion } from '@/features/question/question.hook';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
+import { dispatchSolvedEvents, isFullPass } from '@/lib/solved-event';
 import { useCoaching } from '@/features/coaching/coaching.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import {
@@ -81,11 +82,12 @@ export function MainWorkspace() {
   };
 
   const handleSubmitWrapper = useCallback(async () => {
-    await handleSubmitCode();
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("learner-context-invalidated"));
+    const result = await handleSubmitCode();
+    const solvedId = fullQuestion?.id ?? selectedQuestion?.id ?? null;
+    if (solvedId && isFullPass(result)) {
+      dispatchSolvedEvents(solvedId);
     }
-  }, [handleSubmitCode]);
+  }, [handleSubmitCode, fullQuestion?.id, selectedQuestion?.id]);
 
   const buildProblemContext = useCallback(() => {
     if (!displayQuestion) return "";

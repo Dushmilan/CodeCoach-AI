@@ -7,6 +7,7 @@ import { Brain, AlertCircle } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { memoryService, MemoryGraphResponse, TopicMemoryItem } from "./memory.service";
+import { QUESTION_SOLVED_EVENT } from "@/lib/solved-event";
 
 function energyCopy(topic: TopicMemoryItem): string {
   if (topic.daysSinceLastTouch !== null && topic.daysSinceLastTouch >= 6) {
@@ -46,6 +47,15 @@ export function MemoryGraph() {
       alive = false;
     };
   }, []);
+
+  // Refresh after a solve so the graph reflects the new memory state (#277).
+  useEffect(() => {
+    const handler = () => fetchGraph();
+    if (typeof window !== "undefined") {
+      window.addEventListener(QUESTION_SOLVED_EVENT, handler);
+      return () => window.removeEventListener(QUESTION_SOLVED_EVENT, handler);
+    }
+  }, [fetchGraph]);
 
   if (error) {
     return (

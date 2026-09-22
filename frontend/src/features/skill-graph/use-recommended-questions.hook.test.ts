@@ -246,5 +246,16 @@ describe('useRecommendedQuestions', () => {
       await new Promise((r) => setTimeout(r, 50));
       expect(mockGetRecommendedQuestions).not.toHaveBeenCalled();
     });
+
+    it('silent refresh on question-solved (#277)', async () => {
+      mockGetRecommendedQuestions.mockResolvedValue([sampleRecommendation]);
+      renderHook(() => useRecommendedQuestions());
+      await waitFor(() => expect(mockGetRecommendedQuestions).toHaveBeenCalledTimes(1));
+      mockGetRecommendedQuestions.mockClear();
+      act(() => {
+        window.dispatchEvent(new CustomEvent('question-solved', { detail: { questionId: 'two-sum' } }));
+      });
+      await waitFor(() => expect(mockGetRecommendedQuestions).toHaveBeenCalledTimes(1));
+    });
   });
 });

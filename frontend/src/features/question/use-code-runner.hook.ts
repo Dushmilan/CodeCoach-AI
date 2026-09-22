@@ -25,7 +25,7 @@ interface UseCodeRunnerReturn {
     ) => Record<string, "attempted" | "solved">,
   ) => void;
   handleRunCode: (stdin?: string) => Promise<void>;
-  handleSubmitCode: () => Promise<void>;
+  handleSubmitCode: () => Promise<SubmitResponse | null>;
   isRunning: boolean;
   output: string;
   testResults: TestCaseResultView[] | null;
@@ -107,11 +107,11 @@ export function useCodeRunner({
     ],
   );
 
-  const handleSubmitCode = useCallback(async () => {
-    if (!fullQuestion) return;
+  const handleSubmitCode = useCallback(async (): Promise<SubmitResponse | null> => {
+    if (!fullQuestion) return null;
     if (!isAuthenticated) {
       showToast("Please sign in to submit code", "error");
-      return;
+      return null;
     }
 
     try {
@@ -130,8 +130,10 @@ export function useCodeRunner({
           "info",
         );
       }
+      return result;
     } catch (err) {
       console.error("Submit error:", err);
+      return null;
     }
   }, [
     fullQuestion,

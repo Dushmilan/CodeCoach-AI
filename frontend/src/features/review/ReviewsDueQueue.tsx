@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { reviewService, ReviewCardItem } from "./review.service";
+import { QUESTION_SOLVED_EVENT } from "@/lib/solved-event";
 
 interface ReviewsDueQueueProps {
   /**
@@ -27,6 +28,17 @@ const GRADE_ACTIONS = [
 export function ReviewsDueQueue({ resolveTitle }: ReviewsDueQueueProps) {
   const [cards, setCards] = useState<ReviewCardItem[] | null>(null);
 
+  const fetchDue = useCallback(() => {
+    reviewService
+      .getDue()
+      .then((res) => {
+        setCards(res.cards);
+      })
+      .catch(() => {
+        setCards([]);
+      });
+  }, []);
+
   useEffect(() => {
     let alive = true;
     reviewService
@@ -41,6 +53,13 @@ export function ReviewsDueQueue({ resolveTitle }: ReviewsDueQueueProps) {
       alive = false;
     };
   }, []);
+
+  // A solve can schedule new review cards — refetch on the solved event (#277).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.addEventListener(QUESTION_SOLVED_EVENT, fetchDue);
+    return () => window.removeEventListener(QUESTION_SOLVED_EVENT, fetchDue);
+  }, [fetchDue]);
 
   if (!cards || cards.length === 0) return null;
 

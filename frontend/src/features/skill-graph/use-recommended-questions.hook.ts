@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/providers';
 import { RecommendedQuestion } from '@/types';
 import { skillGraphService } from './skill-graph.service';
+import { LEARNER_CONTEXT_INVALIDATED_EVENT, QUESTION_SOLVED_EVENT } from '@/lib/solved-event';
 
 interface UseRecommendedQuestionsReturn {
   recommendations: RecommendedQuestion[];
@@ -64,13 +65,18 @@ export function useRecommendedQuestions(): UseRecommendedQuestionsReturn {
   }, [isAuthenticated, isHydrated, loadRecommendations]);
 
   // Silent refresh when learner context is invalidated (submit / coach personalization)
+  // or a question is solved (full pass) — both mean recommendations may change.
   useEffect(() => {
     const handler = () => {
       void loadRecommendations();
     };
     if (typeof window !== "undefined") {
-      window.addEventListener("learner-context-invalidated", handler);
-      return () => window.removeEventListener("learner-context-invalidated", handler);
+      window.addEventListener(LEARNER_CONTEXT_INVALIDATED_EVENT, handler);
+      window.addEventListener(QUESTION_SOLVED_EVENT, handler);
+      return () => {
+        window.removeEventListener(LEARNER_CONTEXT_INVALIDATED_EVENT, handler);
+        window.removeEventListener(QUESTION_SOLVED_EVENT, handler);
+      };
     }
   }, [loadRecommendations]);
 

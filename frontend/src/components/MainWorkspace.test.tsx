@@ -542,7 +542,7 @@ describe('MainWorkspace', () => {
     expect(mockSelectQuestion).toHaveBeenCalled();
   });
 
-  it('dispatches learner-context-invalidated on submit', async () => {
+  it('dispatches question-solved + learner-context-invalidated on a full-pass submit', async () => {
     const fullQuestion: Question = {
       id: '1',
       title: 'Two Sum',
@@ -569,14 +569,66 @@ describe('MainWorkspace', () => {
       selectQuestion: mockSelectQuestion,
       clearError: mockClearError,
     }));
+    mockSubmitCode.mockResolvedValue({ passed_count: 3, total: 3, results: [] });
     const spy = vi.spyOn(window, 'dispatchEvent');
-    act(() => {
-      render(<MainWorkspace />);
-    });
-    const user = userEvent.setup();
-    await user.click(screen.getByText('Submit Code'));
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'learner-context-invalidated' }));
-    spy.mockRestore();
+    const solvedSpy = vi.fn();
+    window.addEventListener('question-solved', solvedSpy);
+    try {
+      act(() => {
+        render(<MainWorkspace />);
+      });
+      const user = userEvent.setup();
+      await user.click(screen.getByText('Submit Code'));
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'learner-context-invalidated' }));
+      expect(solvedSpy).toHaveBeenCalledTimes(1);
+      expect((solvedSpy.mock.calls[0][0] as CustomEvent).detail).toEqual({ questionId: '1' });
+    } finally {
+      window.removeEventListener('question-solved', solvedSpy);
+      spy.mockRestore();
+    }
+  });
+
+  it('dispatches no solved events on a partial-pass submit', async () => {
+    const fullQuestion: Question = {
+      id: '1',
+      title: 'Two Sum',
+      difficulty: 'easy',
+      category: 'arrays',
+      company_tags: [],
+      description: 'test',
+      examples: [],
+      hints: [],
+      starter: { python: '', javascript: '', java: '', cpp: '', c: '', go: '', rust: '', typescript: '' },
+      solution: '',
+      time_complexity: '',
+      space_complexity: '',
+      test_cases: [],
+    };
+    mockUseQuestion.mockImplementation(() => ({
+      questions,
+      selectedQuestion: questions[0],
+      fullQuestion,
+      isLoading: false,
+      isLoadingQuestion: false,
+      error: null,
+      loadQuestions: mockLoadQuestions,
+      selectQuestion: mockSelectQuestion,
+      clearError: mockClearError,
+    }));
+    mockSubmitCode.mockResolvedValue({ passed_count: 1, total: 3, results: [] });
+    const spy = vi.spyOn(window, 'dispatchEvent');
+    try {
+      act(() => {
+        render(<MainWorkspace />);
+      });
+      const user = userEvent.setup();
+      await user.click(screen.getByText('Submit Code'));
+      const types = spy.mock.calls.map((c) => (c[0] as Event).type);
+      expect(types).not.toContain('learner-context-invalidated');
+      expect(types).not.toContain('question-solved');
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('passes solved userProgress from useCodeRunner to Sidebar', () => {
