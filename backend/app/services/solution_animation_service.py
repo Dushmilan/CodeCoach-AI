@@ -160,6 +160,146 @@ _EVENT_TO_ACTION = {
 }
 
 
+def _translate_search_events(
+    events, values=None, target=None
+) -> List[AnimationStepSpec]:
+    """Translate a binary-search trace into search-region semantics.
+
+    The reference solution traces ``pointer`` (low/high/mid) + ``compare``
+    + ``mark`` (match) events, which ``plan_searching`` does not understand
+    (#243). Every emitted step is derived from observed trace state only:
+
+    - ``set_bounds`` when the [low..high] region changes (seen at compare),
+    - ``inspect_mid`` for each compared mid index,
+    - ``discard_left``/``discard_right`` when the next iteration's bound
+      moves past mid (``until`` matches the planner's dim ranges),
+    - ``found`` on a match mark, ``not_found`` when the stream ends
+      without one (honoring an explicit ``return`` result when present).
+
+    The loop's final bound change is never traced (pointers emit at loop
+    top only), so on a miss the closing discard is derived from the data
+    itself (``values[mid]`` vs ``target`` — the same comparison the
+    algorithm performed). It is skipped whenever the data is unavailable
+    or incomparable, never invented.
+    """
+    steps: List[AnimationStepSpec] = []
+    low: Optional[int] = None
+    high: Optional[int] = None
+    emitted_bounds: Optional[tuple] = None
+    compared_bounds: Optional[tuple] = None
+    pending_mid: Optional[int] = None
+    found = False
+    return_result = None
+
+    def _bounds() -> Optional[tuple]:
+        if low is None or high is None:
+            return None
+        return (low, high)
+
+    for e in events:
+        if e.kind == "init":
+            continue
+        if e.kind == "pointer" and e.fields.get("name") in ("low", "high", "mid"):
+            if e.fields["name"] == "low":
+                low = int(e.fields["index"])
+            elif e.fields["name"] == "high":
+                high = int(e.fields["index"])
+            bounds = _bounds()
+            if (
+                pending_mid is not None
+                and bounds is not None
+                and compared_bounds is not None
+                and bounds != compared_bounds
+            ):
+                prev_low, prev_high = compared_bounds
+                if low is not None and low > prev_low:
+                    steps.append(
+                        AnimationStepSpec(
+                            action="discard_left", index=pending_mid, until=low
+                        )
+                    )
+                if high is not None and high < prev_high:
+                    steps.append(
+                        AnimationStepSpec(
+                            action="discard_right",
+                            index=pending_mid,
+                            until=high + 1,
+                        )
+                    )
+                compared_bounds = bounds
+                pending_mid = None
+            continue
+        if e.kind == "compare" and e.has("i"):
+            mid = int(e.fields["i"])
+            bounds = _bounds()
+            if bounds is not None and bounds != emitted_bounds:
+                steps.append(
+                    AnimationStepSpec(
+                        action="set_bounds", low=bounds[0], high=bounds[1]
+                    )
+                )
+                emitted_bounds = bounds
+            steps.append(AnimationStepSpec(action="inspect_mid", index=mid))
+            pending_mid = mid
+            compared_bounds = bounds
+            continue
+        if e.kind == "mark" and e.has("i"):
+            if e.fields.get("state") == "match":
+                steps.append(
+                    AnimationStepSpec(action="found", index=int(e.fields["i"]))
+                )
+                found = True
+            continue
+        if e.kind == "return":
+            return_result = e.fields.get("result")
+            continue
+        # Any other event kind keeps the generic 1:1 mapping.
+        action = _EVENT_TO_ACTION.get(e.kind, "custom")
+        kwargs: Dict[str, Any] = {"action": action}
+        if e.has("i"):
+            kwargs["index"] = int(e.fields["i"])
+        steps.append(AnimationStepSpec(**kwargs))
+
+    if not found:
+        if isinstance(return_result, int) and return_result >= 0:
+            steps.append(AnimationStepSpec(action="found", index=return_result))
+            return steps
+        _append_terminal_discard(steps, values, target, pending_mid)
+        steps.append(AnimationStepSpec(action="not_found"))
+    return steps
+
+
+def _append_terminal_discard(steps, values, target, pending_mid) -> None:
+    """Emit the untraced closing discard of a missed binary search.
+
+    Derived from the data (values[mid] vs target), never invented: when
+    the loop exits, the side the algorithm discarded last is exactly the
+    side the comparison ruled out. Skips silently without usable data.
+    """
+    if pending_mid is None or not isinstance(values, list) or target is None:
+        return
+    if not 0 <= pending_mid < len(values):
+        return
+    try:
+        mid_value = values[pending_mid]
+        if mid_value is None:
+            return
+        if mid_value < target:
+            steps.append(
+                AnimationStepSpec(
+                    action="discard_left", index=pending_mid, until=pending_mid + 1
+                )
+            )
+        elif mid_value > target:
+            steps.append(
+                AnimationStepSpec(
+                    action="discard_right", index=pending_mid, until=pending_mid
+                )
+            )
+    except TypeError:
+        return
+
+
 class SolutionAnimationService:
     """Generate algorithm animations from the canonical solution trace."""
 
@@ -233,7 +373,9 @@ class SolutionAnimationService:
             title or entry.get("title") or algorithm.replace("_", " ").title()
         )
 
-        planner_animation = self._try_planner(events, entry, algorithm, fallback_title)
+        planner_animation = self._try_planner(
+            events, entry, algorithm, fallback_title, target=kwargs.get("target")
+        )
         if planner_animation is not None:
             validated, reason = self._validator.validate(planner_animation)
             if validated is not None:
@@ -258,7 +400,12 @@ class SolutionAnimationService:
         return validated
 
     def _try_planner(
-        self, events, entry: Dict[str, Any], algorithm: str, title: str
+        self,
+        events,
+        entry: Dict[str, Any],
+        algorithm: str,
+        title: str,
+        target: Any = None,
     ) -> Optional[Dict[str, Any]]:
         try:
             init = next((e for e in events if e.kind == "init"), None)
@@ -331,13 +478,22 @@ class SolutionAnimationService:
                     if e.has("value"):
                         kwargs["values"] = [e.fields["value"]]
                 steps.append(AnimationStepSpec(**kwargs))
+            if algorithm == "binary_search":
+                # #243: generic pointer/compare/mark actions render as
+                # placeholder beats in plan_searching — translate the trace
+                # into search-region semantics instead. Falls back to the
+                # generic steps if translation yields nothing.
+                steps = (
+                    _translate_search_events(events, values=values, target=target)
+                    or steps
+                )
             if not steps:
                 return None
             steps = downsample_steps(steps, limit=96)
             spec = AlgorithmAnimation(
                 algorithm=algorithm,
                 visualization=viz,  # type: ignore[arg-type]
-                initialState=InitialState(array=values, extra={}),
+                initialState=InitialState(array=values, target=target, extra={}),
                 steps=steps,
                 complexity=Complexity(time=time_c, space=space_c),
                 title=title,
