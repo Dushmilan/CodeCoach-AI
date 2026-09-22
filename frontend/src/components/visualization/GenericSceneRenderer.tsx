@@ -145,6 +145,35 @@ function applyMotions(
   return overrides;
 }
 
+function mergeOverrides(
+  into: Map<string, ShapeOverride>,
+  from: Map<string, ShapeOverride>,
+): void {
+  from.forEach((override, target) => {
+    const prev = into.get(target);
+    into.set(
+      target,
+      prev
+        ? {
+            ...prev,
+            ...override,
+            duration: Math.max(prev.duration, override.duration),
+          }
+        : override,
+    );
+  });
+}
+
+function stepShapes(step: unknown): SceneShape[] {
+  const shapes = (step as { shapes?: unknown })?.shapes;
+  return Array.isArray(shapes) ? (shapes as SceneShape[]) : [];
+}
+
+function stepMotions(step: unknown): MotionOp[] {
+  const motion = (step as { motion?: unknown })?.motion;
+  return Array.isArray(motion) ? (motion as MotionOp[]) : [];
+}
+
 function resolveCenter(
   shapes: SceneShape[],
   camera: Camera | undefined,
@@ -190,28 +219,51 @@ function pointsToAttr(points: [number, number][] | undefined): string {
 }
 
 export function GenericSceneRenderer({ script, step, stepIndex }: VisualizerProps) {
-  const shapes = useMemo(
-    () => (Array.isArray(step?.shapes) ? (step.shapes as SceneShape[]) : []),
-    [step],
-  );
-  const motions = useMemo(
-    () => (Array.isArray(step?.motion) ? (step.motion as MotionOp[]) : []),
-    [step],
-  );
+  // Cumulative scene state (#240): planners emit shapes only in the intro
+  // beat, so resolving camera/motion targets against the current step's
+  // shapes leaves every action beat with an empty scene, a dead camera,
+  // and skipped motions. Fold shapes by id over all beats up to the
+  // current one (current beat wins) and fold motions in play order so
+  // highlights persist across beats.
+  const sceneShapes = useMemo(() => {
+    const byId = new Map<string, SceneShape>();
+    const steps = Array.isArray(script?.steps) ? script.steps : [];
+    const end = Math.max(0, Math.min(stepIndex, steps.length - 1));
+    for (let i = 0; i <= end; i++) {
+      for (const shape of stepShapes(steps[i])) {
+        if (shape?.id) byId.set(shape.id, shape);
+      }
+    }
+    for (const shape of stepShapes(step)) {
+      if (shape?.id) byId.set(shape.id, shape);
+    }
+    return Array.from(byId.values());
+  }, [script, step, stepIndex]);
+  const motions = useMemo(() => stepMotions(step), [step]);
+
+  const overrides = useMemo(() => {
+    const folded = new Map<string, ShapeOverride>();
+    const steps = Array.isArray(script?.steps) ? script.steps : [];
+    const end = Math.max(0, Math.min(stepIndex, steps.length - 1));
+    for (let i = 0; i <= end; i++) {
+      mergeOverrides(folded, applyMotions(sceneShapes, stepMotions(steps[i])));
+    }
+    mergeOverrides(folded, applyMotions(sceneShapes, motions));
+    return folded;
+  }, [script, motions, sceneShapes, stepIndex]);
+
   const extras = (step ?? {}) as AnimationStep & StepExtras;
   const badge = extras.badge;
   const camera = extras.camera;
 
-  const overrides = useMemo(() => applyMotions(shapes, motions), [shapes, motions]);
-
   const viewBox = useMemo(() => {
-    const center = resolveCenter(shapes, camera);
+    const center = resolveCenter(sceneShapes, camera);
     if (!center) return FULL_VIEWBOX;
     const zoom = TOKENS.camera.zoom_focus;
     const w = BASE_W / zoom;
     const h = BASE_H / zoom;
     return `${center.x - w / 2} ${center.y - h / 2} ${w} ${h}`;
-  }, [shapes, camera]);
+  }, [sceneShapes, camera]);
 
   const narration = step?.narration ?? script?.title ?? "animation";
 
@@ -219,7 +271,7 @@ export function GenericSceneRenderer({ script, step, stepIndex }: VisualizerProp
     <div className="space-y-3" data-testid={`generic-scene-${stepIndex}`}>
       <style>{`@media (prefers-reduced-motion: reduce) { .a1-shape { transition: none !important; } }`}</style>
       <svg viewBox={viewBox} role="img" aria-label={narration} className="h-auto w-full">
-        {shapes.map((shape) => {
+        {sceneShapes.map((shape) => {
           const override = overrides.get(shape.id);
           const duration = override?.duration ?? TOKENS.duration.highlight;
           const style = { transition: `all ${duration}s ease-out` };
