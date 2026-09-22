@@ -10,7 +10,7 @@ interface SkeletonProps {
 const variantStyles: Record<string, string> = {
   text: "h-4 w-full rounded-full",
   circle: "rounded-full",
-  card: "rounded-3xl border border-white/[0.04] bg-white/[0.01] p-8",
+  card: "rounded-3xl border border-border bg-muted/50 p-8",
   custom: "",
 };
 
@@ -28,7 +28,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        "animate-pulse bg-white/[0.04]",
+        "animate-pulse bg-muted",
         variantStyles[variant],
         className,
       )}

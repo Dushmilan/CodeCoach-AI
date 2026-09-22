@@ -23,7 +23,7 @@ export function StatCard({
 }: {
   label: string;
   value: string | number;
-  sub?: string;
+  sub?: React.ReactNode;
   testId?: string;
   /** Visual variation: emerald tinted hero cell with a larger value. */
   featured?: boolean;

@@ -19,7 +19,11 @@ import path from "node:path";
 
 const ROOT = path.resolve(process.cwd());
 
-/** Files scanned by the copy/shape gates (grown per slice). */
+/**
+ * Files scanned by the copy/shape gates. Directories are walked so each
+ * slice only has to add its surface; test files and the auth login page are
+ * never scanned (login is out of scope for issue #292).
+ */
 const SCOPED_FILES: string[] = [
   "src/components/ui/card.tsx",
   "src/components/ui/button.tsx",
@@ -27,13 +31,38 @@ const SCOPED_FILES: string[] = [
   "src/components/ui/avatar.tsx",
   "src/components/ui/tabs.tsx",
   "src/components/ui/separator.tsx",
+  "src/components/ui/Skeleton.tsx",
+  "src/components/ui/Toast.tsx",
   "src/components/instructor/InstructorWidgets.tsx",
   "src/components/instructor/InstructorSidebar.tsx",
-  "src/components/admin/AdminSidebar.tsx",
-  "src/app/admin/layout.tsx",
-  "src/app/professor/layout.tsx",
-  "src/app/demonstrator/layout.tsx",
 ];
+
+const SCOPED_DIRS = ["src/app/admin", "src/components/admin"];
+
+function collectScopedFiles(): string[] {
+  const files = [...SCOPED_FILES];
+  for (const dir of SCOPED_DIRS) {
+    const abs = path.join(ROOT, dir);
+    if (!fs.existsSync(abs)) continue;
+    const stack = [abs];
+    while (stack.length > 0) {
+      const current = stack.pop() as string;
+      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+        const full = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          stack.push(full);
+          continue;
+        }
+        if (!/\.(tsx?|css)$/.test(entry.name)) continue;
+        if (entry.name.includes(".test.")) continue;
+        const rel = path.relative(ROOT, full).split(path.sep).join("/");
+        if (rel.includes("/admin/login/")) continue; // auth, out of scope
+        files.push(rel);
+      }
+    }
+  }
+  return files;
+}
 
 const LAYOUT_FILES = [
   "src/app/admin/layout.tsx",
@@ -78,7 +107,7 @@ const BANNED_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
 
 function scanScopedSources(): string[] {
   const failures: string[] = [];
-  for (const rel of SCOPED_FILES) {
+  for (const rel of collectScopedFiles()) {
     const src = stripComments(read(rel));
     for (const { name, pattern } of BANNED_PATTERNS) {
       if (pattern.test(src)) failures.push(`${rel}: ${name}`);

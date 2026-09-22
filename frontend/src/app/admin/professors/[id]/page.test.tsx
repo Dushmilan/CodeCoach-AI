@@ -2,6 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
+import {
+  expectEyebrowBudget,
+  expectNoDash,
+  expectNoDuplicateCtas,
+} from "@/test-helpers/taste";
 import ProfessorDetailPage from "./page";
 
 vi.mock("@/providers", () => ({
@@ -105,5 +110,21 @@ describe("Admin professor detail page", () => {
 
     await screen.findByText("professor.grace");
     expect(screen.getByText(/no classrooms/i)).toBeInTheDocument();
+  });
+
+  it("shows the professor identity as an avatar and passes taste gates", async () => {
+    mockId.current = "prof-ada-01";
+    server.use(
+      http.get("/api/admin/hierarchy", () =>
+        HttpResponse.json(hierarchyPayload),
+      ),
+    );
+    const { container } = render(<ProfessorDetailPage />);
+
+    expect(await screen.findByText("professor.ada")).toBeInTheDocument();
+    expect(screen.getByTestId("professor-detail-avatar")).toBeInTheDocument();
+    expectNoDash(container, "admin professor detail");
+    expectEyebrowBudget(container, "admin professor detail");
+    expectNoDuplicateCtas(container, "admin professor detail");
   });
 });

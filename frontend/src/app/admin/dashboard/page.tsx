@@ -4,7 +4,14 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { StatCard } from "@/components/instructor/InstructorWidgets";
 import { getErrorDisplayMessage } from "@/lib/fetch-client";
+import { Activity, Database, FileText, Users } from "lucide-react";
+import Link from "next/link";
 
 interface AdminStats {
   users?: { total: number; active: number; admin: number; inactive: number };
@@ -40,6 +47,22 @@ interface HierarchyTree {
   professors?: HierarchyProfessor[];
 }
 
+const QUICK_ACTIONS = [
+  { href: "/admin/users", label: "Users", hint: "Manage accounts", icon: Users },
+  {
+    href: "/admin/questions",
+    label: "Questions",
+    hint: "Review & import",
+    icon: FileText,
+  },
+  {
+    href: "/admin/curriculum",
+    label: "Curriculum",
+    hint: "Manage courses",
+    icon: Database,
+  },
+] as const;
+
 export default function AdminDashboard() {
   const { user, token } = useAuth();
   const [stats, setStats] = useState<AdminStats>({});
@@ -73,213 +96,222 @@ export default function AdminDashboard() {
     fetchStats();
   }, [token]);
 
+  const totalUsers = stats.users?.total ?? 0;
+  const activePct =
+    totalUsers > 0
+      ? Math.round(((stats.users?.active ?? 0) / totalUsers) * 100)
+      : 0;
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Welcome back, {user?.username} ({user?.role})
         </p>
       </div>
 
       {error && (
-        <div className="text-sm text-red-400 bg-red-500/10 rounded-lg px-4 py-2">
+        <div className="text-sm text-destructive bg-destructive/10 rounded-2xl px-4 py-2">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <section aria-busy="true" aria-label="Platform statistics">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-36 rounded-2xl" />
+            ))}
+          </div>
+        </section>
       ) : (
         <>
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Users
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {stats.users?.total ?? 0}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.users?.active ?? 0} active, {stats.users?.admin ?? 0}{" "}
-                  admins
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Questions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {stats.questions?.total ?? 0}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.questions?.by_difficulty
-                    ? Object.entries(stats.questions.by_difficulty).map(
+          {/* Stats: bento rhythm, featured cell spans and meters */}
+          <section aria-label="Platform statistics">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                featured
+                icon={Users}
+                label="Total Users"
+                value={totalUsers}
+                sub={`${stats.users?.active ?? 0} active, ${stats.users?.admin ?? 0} admins`}
+                progress={activePct}
+              />
+              <StatCard
+                icon={FileText}
+                label="Questions"
+                value={stats.questions?.total ?? 0}
+                sub={
+                  stats.questions?.by_difficulty ? (
+                    <span className="flex flex-wrap gap-1.5">
+                      {Object.entries(stats.questions.by_difficulty).map(
                         ([d, c]) => (
-                          <span key={d} className="mr-2">
+                          <span
+                            key={d}
+                            className="rounded-full bg-muted px-2 py-0.5 text-foreground/80"
+                          >
                             {d}: {c}
                           </span>
                         ),
-                      )
-                    : "No data"}
-                </p>
-              </CardContent>
-            </Card>
+                      )}
+                    </span>
+                  ) : (
+                    "No data"
+                  )
+                }
+              />
+              <StatCard
+                icon={Database}
+                label="Courses"
+                value={stats.courses?.total ?? 0}
+                sub={`${stats.courses?.modules ?? 0} modules, ${stats.courses?.lessons ?? 0} lessons`}
+              />
+              <StatCard
+                icon={Activity}
+                label="Generation jobs"
+                value={stats.generation?.total_jobs ?? 0}
+                testId="admin-stat-generation"
+                sub={`${stats.generation?.pending ?? 0} pending, ${stats.generation?.completed ?? 0} completed`}
+              />
+            </div>
+          </section>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Courses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {stats.courses?.total ?? 0}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.courses?.modules ?? 0} modules,{" "}
-                  {stats.courses?.lessons ?? 0} lessons
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <a
-                href="/admin/users"
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold">
-                  U
-                </div>
-                <div>
-                  <div className="text-sm font-medium">Users</div>
-                  <div className="text-xs text-muted-foreground">
-                    Manage accounts
-                  </div>
-                </div>
-              </a>
-              <a
-                href="/admin/questions"
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500 font-bold">
-                  Q
-                </div>
-                <div>
-                  <div className="text-sm font-medium">Questions</div>
-                  <div className="text-xs text-muted-foreground">
-                    Review & import
-                  </div>
-                </div>
-              </a>
-              <a
-                href="/admin/curriculum"
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500 font-bold">
-                  C
-                </div>
-                <div>
-                  <div className="text-sm font-medium">Curriculum</div>
-                  <div className="text-xs text-muted-foreground">
-                    Manage courses
-                  </div>
-                </div>
-                </a>
-              </CardContent>
-            </Card>
+          {/* Quick Actions: pill action row, one emerald accent */}
+          <section aria-label="Quick actions">
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">
+                Quick Actions
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {QUICK_ACTIONS.map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className="group inline-flex items-center gap-2.5 rounded-full border border-border bg-background py-2 pl-2 pr-5 transition-colors hover:bg-accent"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="flex h-8 w-8 items-center justify-center rounded-2xl bg-brand/10 text-brand ring-1 ring-brand/20"
+                    >
+                      <action.icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm font-medium">{action.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {action.hint}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
 
           {/* Professor hierarchy: admin → professors → courses/classrooms */}
-          <Card data-testid="hierarchy-section">
-            <CardHeader>
-              <CardTitle>Professor hierarchy</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(hierarchy.professors ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No professors found.
-                </p>
-              ) : (
-                (hierarchy.professors ?? []).map((prof) => (
-                  <div
-                    key={prof.id}
-                    className="rounded-lg border border-border p-4 space-y-3"
-                  >
-                    <div className="font-medium">{prof.username}</div>
-                    <div>
-                      <div className="text-xs uppercase text-muted-foreground mb-1">
-                        Courses
+          <section>
+            <Card data-testid="hierarchy-section" className="rounded-2xl">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Professor hierarchy
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(hierarchy.professors ?? []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No professors found.
+                  </p>
+                ) : (
+                  (hierarchy.professors ?? []).map((prof) => (
+                    <div
+                      key={prof.id}
+                      className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          data-testid="hierarchy-avatar"
+                          className="h-8 w-8"
+                        >
+                          <AvatarFallback>
+                            {prof.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{prof.username}</span>
                       </div>
-                      {prof.courses.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No courses.
-                        </p>
-                      ) : (
-                        <ul className="text-sm space-y-1">
-                          {prof.courses.map((course) => (
-                            <li key={course.id}>
-                              {course.title}{" "}
-                              <span className="text-muted-foreground">
-                                ({course.lessons} lessons)
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-xs uppercase text-muted-foreground mb-1">
-                        Classrooms
+                      <div>
+                        <div className="text-xs uppercase text-muted-foreground mb-1">
+                          Courses
+                        </div>
+                        {prof.courses.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No courses.
+                          </p>
+                        ) : (
+                          <ul className="text-sm">
+                            {prof.courses.map((course, i) => (
+                              <li key={course.id}>
+                                {i > 0 && <Separator />}
+                                <div className="py-2">
+                                  {course.title}{" "}
+                                  <span className="text-muted-foreground">
+                                    ({course.lessons} lessons)
+                                  </span>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
-                      {prof.classrooms.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No classrooms.
-                        </p>
-                      ) : (
-                        <ul className="text-sm space-y-1">
-                          {prof.classrooms.map((room) => (
-                            <li key={room.id}>
-                              <span className="font-medium">{room.name}</span>{" "}
-                              <span className="text-muted-foreground">
-                                {room.invite_code}
-                              </span>{" "}
-                              <span className="text-muted-foreground">
-                                · {room.students} students ·{" "}
-                                {room.avg_completion}% avg completion
-                              </span>
-                              {room.tas.length > 0 && (
-                                <span className="text-muted-foreground">
-                                  {" "}
-                                  · TAs: <span>{room.tas.join(", ")}</span>
-                                </span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <div>
+                        <div className="text-xs uppercase text-muted-foreground mb-1">
+                          Classrooms
+                        </div>
+                        {prof.classrooms.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No classrooms.
+                          </p>
+                        ) : (
+                          <ul className="text-sm">
+                            {prof.classrooms.map((room, i) => (
+                              <li key={room.id}>
+                                {i > 0 && <Separator />}
+                                <div className="space-y-1.5 py-2">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="font-medium">
+                                      {room.name}
+                                    </span>
+                                    <span className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+                                      {room.invite_code}
+                                    </span>
+                                  </div>
+                                  <span className="text-muted-foreground">
+                                    · {room.students} students ·{" "}
+                                    {room.avg_completion}% avg completion
+                                    {room.tas.length > 0 && (
+                                      <>
+                                        {" "}
+                                        · TAs:{" "}
+                                        <span>
+                                          {room.tas.join(", ")}
+                                        </span>
+                                      </>
+                                    )}
+                                  </span>
+                                  <Progress
+                                    value={room.avg_completion}
+                                    aria-label={`${room.name} completion`}
+                                    className="h-1.5"
+                                  />
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </section>
         </>
       )}
     </div>

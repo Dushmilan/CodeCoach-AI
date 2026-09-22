@@ -19,11 +19,9 @@ const VARIANT_ICONS: Record<ToastVariant, typeof CheckCircle> = {
 };
 
 const VARIANT_STYLES: Record<ToastVariant, string> = {
-  success:
-    "bg-green-500/10 text-green-400 ring-1 ring-green-500/20 shadow-[inset_0_1px_1px_rgba(34,197,94,0.15)]",
-  error:
-    "bg-destructive/10 text-red-400 ring-1 ring-destructive/20 shadow-[inset_0_1px_1px_rgba(239,68,68,0.15)]",
-  info: "bg-white/[0.04] text-foreground/90 ring-1 ring-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]",
+  success: "bg-success/10 text-success ring-1 ring-success/20",
+  error: "bg-destructive/10 text-destructive ring-1 ring-destructive/20",
+  info: "bg-secondary text-secondary-foreground ring-1 ring-border",
 };
 
 let toastListeners: Array<(toast: ToastData) => void> = [];
@@ -78,7 +76,7 @@ export function ToastContainer() {
             </span>
             <button
               onClick={() => dismiss(toast.id)}
-              className="p-1 -mr-1 opacity-40 hover:opacity-100 hover:bg-white/5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+              className="p-1 -mr-1 opacity-40 hover:opacity-100 hover:bg-foreground/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               <X className="h-3 w-3" />
             </button>
