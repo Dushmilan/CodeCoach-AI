@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from typing import Optional
 import logging
 
@@ -29,6 +29,7 @@ def get_course_service(
         progress_repo=progress_repo,
         cache=cache,
         list_ttl=settings.COURSE_LIST_TTL_SECONDS,
+        learn_ttl=settings.COURSE_LEARN_TTL_SECONDS,
     )
 
 
@@ -39,8 +40,18 @@ async def list_courses(
     request: Request,
     current_user: Optional[UserResponse] = Depends(get_optional_current_user),
     course_service: CourseService = Depends(get_course_service),
+    view: Optional[str] = Query(
+        default=None,
+        pattern="^(learn)$",
+        description="Minimal single-fetch shape for the Learn landing page",
+    ),
 ):
     try:
+        if view == "learn":
+            summaries = await course_service.list_learn_summaries(
+                user_id=current_user.id if current_user else None
+            )
+            return {"courses": summaries}
         courses = await course_service.list_courses(
             user_id=current_user.id if current_user else None
         )

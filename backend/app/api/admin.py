@@ -18,7 +18,10 @@ from app.api.dependencies import (
     get_redis_cache,
     get_usage_repo,
 )
-from app.services.course_service import invalidate_anonymous_course_list_cache
+from app.services.course_service import (
+    bump_learn_catalog_version,
+    invalidate_anonymous_course_list_cache,
+)
 from app.services.redis_service import RedisCache
 from app.services.question_validator import QuestionValidatorService
 from app.models.schemas import Question
@@ -57,6 +60,9 @@ async def _invalidate_course_caches(cache: Optional[RedisCache]) -> None:
     waiting out the anonymous-list (30s) and detail (1h) TTLs.
     """
     await invalidate_anonymous_course_list_cache(cache)
+    # Retire versioned learn-summary entries (per-user keys can't be
+    # fan-out deleted; the bump makes them unreachable).
+    await bump_learn_catalog_version(cache)
     if cache is not None:
         try:
             await cache.delete(RedisCache.key("courses", "detail", "*"))

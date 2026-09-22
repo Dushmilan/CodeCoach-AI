@@ -85,6 +85,12 @@ class Settings(BaseSettings):
     # Anonymous course-list cache (PostgreSQL pooler ~1.5s per query on cold pool)
     COURSE_LIST_TTL_SECONDS: int = 30
 
+    # Authenticated learn-summary cache (issue #268). Long TTL is safe
+    # because progress writes invalidate the owner's entry and catalog
+    # writes bump the version embedded in the key — freshness comes from
+    # invalidation, not expiry.
+    COURSE_LEARN_TTL_SECONDS: int = 3600
+
     # Piston
     PISTON_API_URL: str = "http://piston:2000/api/v2"
 

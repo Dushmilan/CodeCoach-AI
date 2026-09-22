@@ -2,9 +2,40 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { FetchClient, getErrorDisplayMessage } from "@/lib/fetch-client";
-import { CourseSummary, CourseDetail, LessonSummary } from "@/types";
+import {
+  CourseLearnSummary,
+  CourseDetail,
+  LessonSummary,
+} from "@/types";
 
 const api = new FetchClient();
+
+// Dedupe concurrent mounts (Learn page + StrictMode double-effects fired
+// two identical course-list requests on every load): one module-shared
+// in-flight promise, cleared on settle. Never blocks — losers await it.
+let coursesInFlight: Promise<CourseLearnSummary[]> | null = null;
+
+function fetchLearnSummaries(): Promise<CourseLearnSummary[]> {
+  if (!coursesInFlight) {
+    coursesInFlight = fetchWithRetry(
+      () =>
+        api.get<{ courses: CourseLearnSummary[] }>("/api/courses/?view=learn", {
+          timeout: 15000,
+        }),
+      2,
+    ).then(
+      (data) => {
+        coursesInFlight = null;
+        return data.courses;
+      },
+      (err) => {
+        coursesInFlight = null;
+        throw err;
+      },
+    );
+  }
+  return coursesInFlight;
+}
 
 async function fetchWithRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
   let lastErr: unknown;
@@ -25,7 +56,7 @@ async function fetchWithRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> 
 }
 
 export function useCurriculum() {
-  const [courses, setCourses] = useState<CourseSummary[]>([]);
+  const [courses, setCourses] = useState<CourseLearnSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,11 +64,7 @@ export function useCurriculum() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchWithRetry(
-        () => api.get<{ courses: CourseSummary[] }>("/api/courses/", { timeout: 15000 }),
-        2,
-      );
-      setCourses(data.courses);
+      setCourses(await fetchLearnSummaries());
     } catch (err) {
       setError(getErrorDisplayMessage(err) || "Failed to load courses");
     } finally {

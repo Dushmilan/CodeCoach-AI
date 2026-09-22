@@ -182,6 +182,16 @@ export interface CourseSummary {
   progress: number;
 }
 
+export interface CourseLearnSummary {
+  id: string;
+  title: string;
+  description: string;
+  language: string;
+  progress: number;
+  completed_lessons_count: number;
+  last_accessed_lesson_id: string | null;
+}
+
 export interface CourseDetail {
   id: string;
   title: string;

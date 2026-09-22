@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
 
 from app.ports.course_repository import CourseRepository
 from app.ports.progress_repository import ProgressRepository
 from app.services.course_service import CourseService
+from app.services.redis_service import RedisCache
 from app.api.auth_deps import get_current_user
-from app.api.dependencies import get_course_repo, get_progress_repo
+from app.api.dependencies import get_course_repo, get_progress_repo, get_redis_cache
+from app.core.config import Settings, get_settings
 from app.models.auth_schemas import UserResponse
 
 router = APIRouter()
@@ -13,8 +16,15 @@ router = APIRouter()
 def get_course_service(
     course_repo: CourseRepository = Depends(get_course_repo),
     progress_repo: ProgressRepository = Depends(get_progress_repo),
+    cache: Optional[RedisCache] = Depends(get_redis_cache),
+    settings: Settings = Depends(get_settings),
 ) -> CourseService:
-    return CourseService(course_repo=course_repo, progress_repo=progress_repo)
+    return CourseService(
+        course_repo=course_repo,
+        progress_repo=progress_repo,
+        cache=cache,
+        learn_ttl=settings.COURSE_LEARN_TTL_SECONDS,
+    )
 
 
 @router.get("")
@@ -68,6 +78,9 @@ async def mark_lesson_complete(
         progress = await course_service.mark_lesson_complete(
             current_user.id, course_id, lesson_id
         )
+        # The hour-long learn-summary TTL is safe only with explicit
+        # invalidation: a completion must show on the next Learn visit.
+        await course_service.invalidate_learn_cache(current_user.id)
         return progress
     except HTTPException:
         raise
@@ -97,6 +110,7 @@ async def track_lesson_access(
 
         await course_service.track_lesson_access(current_user.id, course_id, lesson_id)
 
+        await course_service.invalidate_learn_cache(current_user.id)
         return {"status": "ok", "last_accessed_lesson_id": lesson_id}
     except HTTPException:
         raise

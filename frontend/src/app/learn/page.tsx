@@ -2,23 +2,13 @@
 
 import { Header } from '@/components/header/Header';
 import { useCurriculum } from '@/features/curriculum/use-curriculum.hook';
-import { FetchClient } from '@/lib/fetch-client';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers';
-import type { CourseSummary } from '@/types';
+import type { CourseLearnSummary } from '@/types';
 import { motion } from 'framer-motion';
 import { BookOpen, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { memo, ReactNode, useEffect, useState } from 'react';
-
-const api = new FetchClient();
-
-interface ProgressMap {
-  [courseId: string]: {
-    completed_lessons: string[];
-    last_accessed_lesson_id: string | null;
-  };
-}
 
 const languageConfig: Record<string, { icon: ReactNode; label: string }> = {
   python: { icon: <BookOpen width={20} height={20} />, label: 'Python' },
@@ -53,7 +43,7 @@ const ProgressBar = memo(function ProgressBar({ value }: { value: number }) {
 });
 
 interface CourseCardProps {
-  course: CourseSummary;
+  course: CourseLearnSummary;
   completedCount: number;
   lastLessonId: string | null;
   isAuthenticated: boolean;
@@ -151,32 +141,11 @@ function SkeletonCard({ className }: { className?: string }) {
 export default function LearnPage() {
   const { courses, isLoading, error } = useCurriculum();
   const { isAuthenticated, isHydrated } = useAuth();
-  const [progressMap, setProgressMap] = useState<ProgressMap>({});
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated || !isHydrated) return;
-    const fetchProgress = async () => {
-      try {
-        const data = await api.get<{ progress: any[] }>('/api/progress/');
-        const map: ProgressMap = {};
-        data.progress.forEach((p: any) => {
-          map[p.course_id] = {
-            completed_lessons: p.completed_lessons || [],
-            last_accessed_lesson_id: p.last_accessed_lesson_id || null,
-          };
-        });
-        setProgressMap(map);
-      } catch (err) {
-        console.error('Failed to fetch progress:', err);
-      }
-    };
-    fetchProgress();
-  }, [isAuthenticated, isHydrated]);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
@@ -215,9 +184,8 @@ export default function LearnPage() {
         {!isLoading && !error && mounted && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {courses.map((course, i) => {
-              const prog = progressMap[course.id];
-              const completedCount = prog?.completed_lessons?.length || 0;
-              const lastLessonId = prog?.last_accessed_lesson_id;
+              const completedCount = course.completed_lessons_count;
+              const lastLessonId = course.last_accessed_lesson_id;
 
               const isHero = i === 0;
 
