@@ -30,6 +30,46 @@ describe("GenericSceneRenderer", () => {
     expect(screen.getByText("Complexity O(n²) time, O(1) space")).toBeInTheDocument();
     expect(screen.getByText("O(n²)")).toBeInTheDocument();
   });
+  it("keeps intro shapes visible on beats with empty shapes (#240)", () => {
+    // Planners emit shapes only in the intro beat; later beats carry
+    // shapes: [] with action motions. The scene must persist.
+    const { container } = render(
+      <GenericSceneRenderer script={script as never} step={script.steps[1] as never} stepIndex={1} />,
+    );
+    expect(container.querySelector('rect')).toBeInTheDocument();
+  });
+  it("zooms focus camera on beats with empty shapes (#240)", () => {
+    const actionBeat = {
+      narration: "Search region [0..1]",
+      shapes: [],
+      motion: [{ target: "cell_0", op: "stroke", to: "#facc15", duration: 0.35 }],
+      camera: { action: "focus", region: [0, 1] },
+    };
+    const scene = { ...script, steps: [script.steps[0], actionBeat] };
+    const { container } = render(
+      <GenericSceneRenderer script={scene as never} step={actionBeat as never} stepIndex={1} />,
+    );
+    // Resolved against the cumulative scene (cell_0 x=-50): must not fall
+    // back to the full viewBox.
+    expect(container.querySelector("svg")?.getAttribute("viewBox")).not.toBe(
+      "-960 -540 1920 1080",
+    );
+  });
+  it("persists prior-beat highlight overrides (#240)", () => {
+    const highlightBeat = {
+      narration: "Inspect mid",
+      shapes: [],
+      motion: [{ target: "cell_0", op: "fill", to: "#1d4ed8", duration: 0.35 }],
+    };
+    const laterBeat = { narration: "Search region", shapes: [], motion: [] };
+    const scene = { ...script, steps: [script.steps[0], highlightBeat, laterBeat] };
+    const { container } = render(
+      <GenericSceneRenderer script={scene as never} step={laterBeat as never} stepIndex={2} />,
+    );
+    const rects = container.querySelectorAll("rect");
+    expect(rects.length).toBeGreaterThan(0);
+    expect(rects[0].getAttribute("fill")).toBe("#1d4ed8");
+  });
   it("skips unknown motion targets without crashing", () => {
     const bad = { ...script.steps[0], motion: [{ target: "nope", op: "fill", to: "#1d4ed8", duration: 0.3 }] };
     const { container } = render(<GenericSceneRenderer script={script as never} step={bad as never} stepIndex={0} />);
