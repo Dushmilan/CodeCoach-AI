@@ -129,6 +129,8 @@ export interface AnimationScript {
   title?: string;
   data: Record<string, unknown>;
   steps: AnimationStep[];
+  // The code the steps choreograph (animate mode); shadow-checked server-side.
+  animated_code?: string;
 }
 
 export interface StructuredCoachingResponse {
