@@ -7,7 +7,7 @@ import {
   animationService,
   buildAnimateQuestion,
 } from "@/features/animation/animation.service";
-import { HttpError } from "@/lib/fetch-client";
+import { HttpError, getErrorDisplayMessage } from "@/lib/fetch-client";
 import { Question } from "@/types";
 import {
   Dialog,
@@ -40,9 +40,7 @@ function animationErrorMessage(err: unknown): string {
   if (err instanceof HttpError && err.status === 502) {
     return ANIMATE_502_MESSAGE;
   }
-  return err instanceof Error
-    ? err.message
-    : "Failed to generate the animation.";
+  return getErrorDisplayMessage(err) || "Failed to generate the animation.";
 }
 
 interface AnimateLauncherProps {

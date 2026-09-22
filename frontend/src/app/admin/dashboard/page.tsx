@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getErrorDisplayMessage } from "@/lib/fetch-client";
 
 interface AdminStats {
   users?: { total: number; active: number; admin: number; inactive: number };
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
           setHierarchy((await treeRes.json()) as HierarchyTree);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error loading stats");
+        setError(getErrorDisplayMessage(err) || "Error loading stats");
       } finally {
         setLoading(false);
       }

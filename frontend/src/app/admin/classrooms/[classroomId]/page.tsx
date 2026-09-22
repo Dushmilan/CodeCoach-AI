@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient, type ClassroomDetail } from "@/lib/api-client";
-import { HttpError } from "@/lib/fetch-client";
 
 export default function AdminClassroomDetailPage() {
   const params = useParams();
@@ -22,13 +21,12 @@ export default function AdminClassroomDetailPage() {
       try {
         const loaded = await apiClient.getClassroomDetail(classroomId);
         if (live) setDetail(loaded);
-      } catch (error) {
+      } catch {
+        // Status-only handling: unknown ids (404) and other failures both
+        // render the not-found state. The status check stays trivial to
+        // re-add via HttpError if a future detail message is needed.
         if (live) {
-          if (error instanceof HttpError && error.status === 404) {
-            setDetail(null);
-          } else {
-            setDetail(null);
-          }
+          setDetail(null);
         }
       }
     })();
