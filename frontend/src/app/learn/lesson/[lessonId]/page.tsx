@@ -134,14 +134,99 @@ export default function LessonPage() {
     setIsRunning(true);
     setRunError('');
     setTestResults(null);
+    setOutput('');
     try {
+      // Non-interactive linked exercise: a raw stdin run of function-only
+      // starter code returns empty stdout, leaving the output panel blank.
+      // Run the visible test cases instead (mirrors the problems workspace
+      // useCodeRunner.validateCode path) so Run always shows feedback.
+      const visibleCases =
+        linkedQuestion && !linkedQuestion.is_interactive
+          ? (linkedQuestion.test_cases || []).filter((tc) => !tc.hidden).slice(0, 3)
+          : null;
+      if (linkedQuestion && visibleCases && visibleCases.length > 0) {
+        const questionId = linkedQuestion.id;
+        let passedCount = 0;
+        const resultLines: string[] = [];
+        const structuredResults: TestCaseResultView[] = [];
+        for (let i = 0; i < visibleCases.length; i++) {
+          const tc = visibleCases[i];
+          try {
+            const res = (await api.post('/api/run/', {
+              language,
+              code: currentCode,
+              stdin: tc.input,
+              question_id: questionId,
+            })) as { stdout: string; stderr: string; exit_code?: number };
+            if (res.stderr) {
+              resultLines.push(`Test ${i + 1}: FAILED\n  Stderr: ${res.stderr}`);
+              structuredResults.push({
+                index: i + 1,
+                passed: false,
+                testName: `Test ${i + 1}`,
+                input: tc.input,
+                expected: tc.expected_output,
+                actual: (res.stdout || '').trim(),
+                error: res.stderr,
+                hidden: false,
+              });
+              continue;
+            }
+            const actual = (res.stdout || '').trim();
+            const expected = (tc.expected_output || '').trim();
+            const passed = actual === expected;
+            if (passed) passedCount++;
+            resultLines.push(
+              `Test ${i + 1}: ${passed ? 'PASSED' : 'FAILED'}\n  Input: ${
+                tc.input
+              }\n  Expected: ${expected}\n  Actual: ${actual || '(empty)'}`,
+            );
+            structuredResults.push({
+              index: i + 1,
+              passed,
+              testName: `Test ${i + 1}`,
+              input: tc.input,
+              expected,
+              actual,
+              hidden: false,
+            });
+          } catch (err) {
+            resultLines.push(
+              `Test ${i + 1}: ERROR - ${err instanceof Error ? err.message : 'Execution failed'}`,
+            );
+            structuredResults.push({
+              index: i + 1,
+              passed: false,
+              testName: `Test ${i + 1}`,
+              input: tc.input,
+              expected: tc.expected_output,
+              actual: '',
+              error: err instanceof Error ? err.message : 'Execution failed',
+              hidden: false,
+            });
+          }
+        }
+        setTestResults(structuredResults);
+        setOutput(
+          `Run Results: ${passedCount}/${visibleCases.length} passed\n\n` +
+            resultLines.join('\n'),
+        );
+        return;
+      }
       const res = (await api.post('/api/run/', {
         language,
         code: currentCode,
         stdin: stdin,
-      })) as { stdout: string; stderr: string };
-      setOutput(res.stdout || '');
-      setRunError(res.stderr || '');
+        ...(linkedQuestion ? { question_id: linkedQuestion.id } : {}),
+      })) as { stdout: string; stderr: string; exit_code?: number };
+      const stdout = res.stdout || '';
+      const stderr = res.stderr || '';
+      if (!stdout && !stderr) {
+        setOutput(`(no output — exit ${res.exit_code ?? 0})`);
+      } else {
+        setOutput(stdout);
+        setRunError(stderr);
+      }
     } catch (err) {
       if (err instanceof HttpError) {
         setRunError(`Execution failed (${err.status}): ${err.displayMessage}`);
