@@ -256,5 +256,37 @@ describe('ProblemsPage', () => {
         expect(screen.getByText(/Continue where you left off/).textContent).toContain('Valid Parentheses');
       });
     });
+
+    it('keeps the banner while the question list is still loading (#277)', async () => {
+      // last-visited resolves before the catalog: the banner must not
+      // collapse to hidden just because the next stop is unknowable yet.
+      mockQuestions = [];
+      mockProgress = { '1': 'solved' };
+      const { workspaceService } = await import('@/features/workspace/workspace.service');
+      vi.mocked(workspaceService.getLastVisited).mockResolvedValue({
+        question_id: '1',
+        language: 'python',
+        visited_at: '2026-09-22T00:00:00Z',
+      });
+      const { AuthContext } = await import('@/providers/AuthProvider');
+      const view = render(
+        <AuthContext.Provider value={{ isAuthenticated: true } as never}>
+          <ProblemsPage />
+        </AuthContext.Provider>,
+      );
+      await waitFor(() => {
+        expect(screen.getByText(/Continue where you left off/).textContent).toContain('1');
+      });
+      // Catalog arrives late: the banner then advances past the solved target.
+      mockQuestions = sample;
+      view.rerender(
+        <AuthContext.Provider value={{ isAuthenticated: true } as never}>
+          <ProblemsPage />
+        </AuthContext.Provider>,
+      );
+      await waitFor(() => {
+        expect(screen.getByText(/Continue where you left off/).textContent).toContain('Valid Parentheses');
+      });
+    });
   });
 });
