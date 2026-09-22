@@ -63,6 +63,15 @@ class AnimationStepSpec(BaseModel):
     indices: Optional[List[int]] = None
     values: Optional[List[Any]] = None
     label: Optional[str] = Field(None, max_length=120)
+    line: Optional[int] = Field(
+        None, ge=1, description="1-based source line in the canonical solution"
+    )
+    annotation: Optional[str] = Field(
+        None, max_length=200, description="Causal callout text for the beat"
+    )
+    role: Optional[Literal["intro", "loop", "climax", "outro"]] = Field(
+        None, description="Pacing role, consumed and stripped by the planner"
+    )
 
 
 class AlgorithmAnimation(BaseModel):
