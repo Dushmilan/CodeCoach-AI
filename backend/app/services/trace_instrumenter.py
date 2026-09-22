@@ -13,16 +13,32 @@ Buffering (instead of one line per event) keeps stdout far under the sandbox
 output cap — Piston SIGKILLs runners whose stdout exceeds the limit.
 """
 
-_TRACE_HELPER = """\
+_TRACE_HELPER_TEMPLATE = """\
 import json as __json
 import sys as __sys
 
 __TRACE = []
+__CODE_OFFSET = 0
 
 
 def __trace(event, **fields):
+    __frame = __sys._getframe(1) if hasattr(__sys, "_getframe") else None
+    if __frame is not None and "line" not in fields:
+        fields["line"] = __frame.f_lineno - __CODE_OFFSET
     __TRACE.append({"event": event, **fields})
 """
+
+
+def _build_helper() -> str:
+    """Finalize the helper, injecting the wrapped-file line offset.
+
+    The placeholder line keeps the template's line count stable, so the offset
+    computed here stays correct after substitution.
+    """
+    offset = _TRACE_HELPER_TEMPLATE.count("\n") + 1
+    return _TRACE_HELPER_TEMPLATE.replace(
+        "__CODE_OFFSET = 0", f"__CODE_OFFSET = {offset}"
+    )
 
 
 def _dump_trace() -> str:
@@ -34,6 +50,7 @@ def _dump_trace() -> str:
 
 def wrap_traced_solution(code: str, function: str) -> str:
     """Wrap canonical solution code so it emits the JSON-array execution trace."""
+    helper = _build_helper()
     wrapper = f"""\
 __inp = __sys.stdin.read().strip()
 if not __inp:
@@ -44,4 +61,4 @@ if not isinstance(__arg, dict):
 __result = {function}(**__arg)
 {_dump_trace()}
 """
-    return f"{_TRACE_HELPER}\n{code}\n\n{wrapper}".strip()
+    return f"{helper}\n{code}\n\n{wrapper}".strip()

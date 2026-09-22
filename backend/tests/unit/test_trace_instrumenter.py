@@ -142,3 +142,22 @@ class TestWrapTracedSolution:
         assert "def __trace" in code
         assert "def bubble_sort" in code
         assert "__TRACE" in code
+
+
+class TestLineCapture:
+    def test_events_carry_solution_relative_line(self):
+        code = wrap_traced_solution(BUBBLE_SORT, "bubble_sort")
+        events = parse_trace(_run(code, json.dumps({"values": [5, 1, 4, 2, 8]})))
+        # BUBBLE_SORT's `__trace("pointer", ...)` is on line 6 of the solution.
+        pointer = next(e for e in events if e.kind == "pointer")
+        assert pointer.line == 6
+        # `__trace("init", ...)` is on line 2.
+        assert events[0].line == 2
+
+    def test_offset_is_stable_across_functions(self):
+        code = wrap_traced_solution(LINEAR_SEARCH, "linear_search")
+        events = parse_trace(
+            _run(code, json.dumps({"values": [4, 2, 7, 1], "target": 7}))
+        )
+        compare = next(e for e in events if e.kind == "compare")
+        assert compare.line == 5
