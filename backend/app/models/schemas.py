@@ -332,6 +332,14 @@ class CodeExecutionRequest(BaseModel):
     code: str = Field(..., description="Source code to execute")
     stdin: str = Field(default="", description="Input to provide to the program")
     version: Optional[str] = Field(None, description="Specific language version")
+    surface: CoachingSurface = Field(
+        default="questions",
+        description=(
+            "Client surface: 'questions' records crashed runs in attempt "
+            "history and mistake-memory; 'learn' executes without persisting "
+            "anything (curriculum practice must not pollute the moat)."
+        ),
+    )
     question_id: Optional[str] = Field(
         None,
         description=(
@@ -525,6 +533,15 @@ class SubmitRequest(BaseModel):
     question_id: str = Field(..., description="Question ID to submit against")
     language: Language = Field(..., description="Programming language")
     code: str = Field(..., description="Source code to submit")
+    surface: CoachingSurface = Field(
+        default="questions",
+        description=(
+            "Client surface: 'questions' persists the graded attempt, "
+            "observes mistake-memory, emits skill events and invalidates "
+            "learner cache; 'learn' grades and returns without persisting "
+            "anything (curriculum practice must not pollute the moat)."
+        ),
+    )
 
 
 class SubmitResult(BaseModel):

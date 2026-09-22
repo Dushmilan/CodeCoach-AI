@@ -139,6 +139,32 @@ async def test_crashed_run_with_question_persists_attempt_and_card(
 
 
 @pytest.mark.asyncio
+async def test_crashed_run_learn_surface_captures_nothing(
+    async_client, test_db, crashing_executor
+):
+    """Learn practice runs never feed mistake-memory, even with question_id."""
+    await _seed_user_and_question(test_db)
+    _override_executor(crashing_executor)
+    try:
+        with mock_auth():
+            resp = await async_client.post(
+                "/api/run/",
+                json={**_run_body(QUESTION), "surface": "learn"},
+            )
+    finally:
+        _clear_executor()
+
+    assert resp.status_code == 200
+    subs = (
+        await test_db.execute(text("SELECT COUNT(*) FROM submissions"))
+    ).scalar_one()
+    cards = (
+        await test_db.execute(text("SELECT COUNT(*) FROM review_cards"))
+    ).scalar_one()
+    assert subs == 0 and cards == 0
+
+
+@pytest.mark.asyncio
 async def test_successful_run_captures_nothing(async_client, test_db, healthy_executor):
     await _seed_user_and_question(test_db)
     _override_executor(healthy_executor)

@@ -79,23 +79,30 @@ async def submit_code(
         for tc in question.test_cases
     ]
 
+    # Learn-surface practice grades without persisting anything:
+    # no submission rows, no mistake-memory observation, no skill events,
+    # no learner-cache invalidation (curriculum runs must not pollute the
+    # moat).
+    is_learn = submit_request.surface == "learn"
+
     # Stateful adapter contract: persist sent before grading so executor
     # crashes still leave an auditable row, then transition to graded/failed.
     # Persistence is best-effort and never breaks the graded response.
     sent = None
-    try:
-        sent = await submissions.create_sent(
-            user_id=current_user.id,
-            submission=SubmissionIn(
-                question_id=submit_request.question_id,
-                code=submit_request.code,
-                language=submit_request.language.value,
-                passed=False,
-            ),
-        )
-    except Exception:  # noqa: BLE001
-        logger.warning("Failed to persist submission sent state", exc_info=True)
-        sent = None
+    if not is_learn:
+        try:
+            sent = await submissions.create_sent(
+                user_id=current_user.id,
+                submission=SubmissionIn(
+                    question_id=submit_request.question_id,
+                    code=submit_request.code,
+                    language=submit_request.language.value,
+                    passed=False,
+                ),
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to persist submission sent state", exc_info=True)
+            sent = None
 
     try:
         results = await executor.evaluate_suite(
@@ -128,43 +135,49 @@ async def submit_code(
 
     # Transition sent -> graded for the mistake-memory data layer.
     # Best-effort: a failed write must not 500 the graded result.
+    # Skipped entirely on the learn surface (no learn submit data persists).
     persisted = None
-    try:
-        if sent is not None:
-            persisted = await submissions.mark_graded(
-                sent.id,
-                passed=passed,
-                error_signature=_error_signature(results),
-            )
-        else:
-            persisted = await submissions.add(
-                user_id=current_user.id,
-                submission=SubmissionIn(
-                    question_id=submit_request.question_id,
-                    code=submit_request.code,
-                    language=submit_request.language.value,
+    if not is_learn:
+        try:
+            if sent is not None:
+                persisted = await submissions.mark_graded(
+                    sent.id,
                     passed=passed,
                     error_signature=_error_signature(results),
-                ),
-            )
-    except Exception:  # noqa: BLE001
-        logger.warning("Failed to persist submission", exc_info=True)
+                )
+            else:
+                persisted = await submissions.add(
+                    user_id=current_user.id,
+                    submission=SubmissionIn(
+                        question_id=submit_request.question_id,
+                        code=submit_request.code,
+                        language=submit_request.language.value,
+                        passed=passed,
+                        error_signature=_error_signature(results),
+                    ),
+                )
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to persist submission", exc_info=True)
 
     # Mistake-memory observation (Ideas #1): failures open/refresh review
     # cards; passes promote conquered bugs into the SM-2 rotation.
     # Best-effort, same contract as the submission persist above.
-    try:
-        await reviews.observe_submission(
-            user_id=current_user.id,
-            question_id=submit_request.question_id,
-            passed=passed,
-            error_signature=_error_signature(results),
-            now=datetime.now(timezone.utc),
-        )
-    except Exception:  # noqa: BLE001
-        logger.warning("Failed to record mistake-memory observation", exc_info=True)
+    # Skipped on the learn surface.
+    if not is_learn:
+        try:
+            await reviews.observe_submission(
+                user_id=current_user.id,
+                question_id=submit_request.question_id,
+                passed=passed,
+                error_signature=_error_signature(results),
+                now=datetime.now(timezone.utc),
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to record mistake-memory observation", exc_info=True)
 
-    # Skill-graph emission — uses persisted submission id for idempotency
+    # Skill-graph emission — uses persisted submission id for idempotency.
+    # Unreachable on the learn surface (persisted stays None), so practice
+    # never emits skill events.
     if persisted is not None and skill_service is not None:
         try:
             event = LearningEvent(
@@ -187,11 +200,14 @@ async def submit_code(
                 exc_info=True,
             )
 
-    # Invalidate cached learner context (skill graph + submissions + coach ctx)
-    try:
-        await _invalidate_learner_cache(current_user.id, cache)
-    except Exception:
-        pass
+    # Invalidate cached learner context (skill graph + submissions + coach ctx).
+    # Skipped on the learn surface: nothing was written, so cached problem
+    # context stays valid (avoids a needless DB refill).
+    if not is_learn:
+        try:
+            await _invalidate_learner_cache(current_user.id, cache)
+        except Exception:
+            pass
 
     return SubmitResponse(
         passed=passed,

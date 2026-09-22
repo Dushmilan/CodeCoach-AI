@@ -8,6 +8,9 @@ import {
   ValidationResponse,
 } from "./code-execution.types";
 
+/** Client surface: questions persist attempts + moat writes, learn does not. */
+export type ExecutionSurface = "questions" | "learn";
+
 export class CodeExecutionService {
   constructor(private http: HttpClient) {}
 
@@ -17,6 +20,7 @@ export class CodeExecutionService {
     stdin?: string,
     version?: string,
     questionId?: string,
+    surface?: ExecutionSurface,
   ): Promise<CodeExecutionResult> {
     return this.http.post<CodeExecutionResult>("/api/run/", {
       language,
@@ -25,6 +29,8 @@ export class CodeExecutionService {
       version,
       // Question context enables mistake-memory capture of crashed runs.
       question_id: questionId,
+      // Learn practice executes without persisting moat data.
+      ...(surface ? { surface } : {}),
     });
   }
 
@@ -33,6 +39,7 @@ export class CodeExecutionService {
     code: string,
     testCases: TestCase[],
     questionId?: string,
+    surface?: ExecutionSurface,
   ): Promise<ValidationResponse> {
     const results: TestResult[] = [];
     let passedCount = 0;
@@ -45,6 +52,7 @@ export class CodeExecutionService {
           tc.input,
           undefined,
           questionId,
+          surface,
         );
         const actual = (execResult.stdout || "").trim();
         const expected = tc.expected_output.trim();
@@ -79,11 +87,14 @@ export class CodeExecutionService {
     questionId: string,
     language: string,
     code: string,
+    surface?: ExecutionSurface,
   ): Promise<SubmitResponse> {
     return this.http.post<SubmitResponse>("/api/submit/", {
       question_id: questionId,
       language,
       code,
+      // Learn practice grades without persisting moat data.
+      ...(surface ? { surface } : {}),
     });
   }
 }

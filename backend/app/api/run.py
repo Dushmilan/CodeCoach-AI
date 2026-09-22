@@ -106,8 +106,11 @@ async def execute_code(
 
         # Mistake-memory capture (Ideas #1): a crashed free-run inside a
         # question workspace is an attempt. Best-effort, mirroring submit.py.
+        # Learn-surface practice never records (curriculum runs must not
+        # pollute attempt history or the mistake-memory moat).
         if (
             execution_request.question_id
+            and execution_request.surface != "learn"
             and result.exit_code != 0
             and current_user is not None
         ):

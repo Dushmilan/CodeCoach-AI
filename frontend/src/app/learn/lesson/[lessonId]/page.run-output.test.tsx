@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/mocks/server';
+import { AuthContext } from '@/providers/AuthProvider';
 import LessonPage from './page';
 import type { LessonSummary } from '@/types';
 
@@ -115,5 +116,62 @@ describe('LessonPage exercise Run output (Issue #263)', () => {
     expect(output.textContent).toMatch(/PASSED/i);
     const results = await screen.findByTestId('test-results');
     expect(results.textContent).toBe('1');
+  });
+
+  it('tags lesson runs with the learn surface so the moat is untouched', async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    server.use(
+      http.post('/api/run/', async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>);
+        return HttpResponse.json({
+          stdout: 'hello',
+          stderr: '',
+          exit_code: 0,
+          language: 'python',
+          version: '3.10.0',
+        });
+      }),
+    );
+    render(<LessonPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Run' }));
+    await screen.findByTestId('run-output');
+    expect(bodies.length).toBeGreaterThan(0);
+    for (const b of bodies) {
+      expect(b.surface).toBe('learn');
+    }
+  });
+
+  it('hydrates Monaco drafts from a lesson-scoped workspace key', async () => {
+    const paths: string[] = [];
+    server.use(
+      http.get('/api/workspace/code/:id', ({ params }) => {
+        paths.push(params.id as string);
+        return HttpResponse.json({
+          code: '',
+          language: 'python',
+          updated_at: null,
+          question_id: params.id,
+        });
+      }),
+    );
+    render(
+      <AuthContext.Provider
+        value={
+          {
+            isAuthenticated: true,
+            isHydrated: true,
+            user: { id: 'u1', username: 'stu' },
+          } as never
+        }
+      >
+        <LessonPage />
+      </AuthContext.Provider>,
+    );
+    await screen.findByRole('button', { name: 'Run' });
+    await waitFor(() => expect(paths.length).toBeGreaterThan(0));
+    // Lesson drafts must not collide with problem drafts for a linked question.
+    for (const p of paths) {
+      expect(decodeURIComponent(p)).toContain('lesson:');
+    }
   });
 });

@@ -72,25 +72,7 @@ export default function ProblemWorkspacePage() {
   // Fire-and-forget: never blocks question load or chat, degrades open.
   useCoachWarm(fullQuestion?.id ?? null);
 
-  useEffect(() => {
-    if (
-      fullQuestion?.starter &&
-      typeof fullQuestion.starter === 'object' &&
-      language in fullQuestion.starter
-    ) {
-      const starter = fullQuestion.starter[language as keyof typeof fullQuestion.starter];
-      setCurrentCode(typeof starter === 'string' ? starter : '');
-    } else {
-      setCurrentCode('');
-    }
-  }, [language, fullQuestion]);
-
-  const starterCode =
-    fullQuestion?.starter && typeof fullQuestion.starter === 'object'
-      ? fullQuestion.starter[language as keyof typeof fullQuestion.starter] || ''
-      : '';
-
-  const { deleteDraft } = useWorkspace({
+  const { deleteDraft, hasDraft } = useWorkspace({
     questionId: questionId || null,
     language,
     currentCode,
@@ -107,6 +89,26 @@ export default function ProblemWorkspacePage() {
       if (hydrated.length) hydrateMessages(hydrated as import('@/types').ChatMessage[]);
     },
   });
+
+  useEffect(() => {
+    // A hydrated Redis draft wins over starter code: never clobber it.
+    if (hasDraft) return;
+    if (
+      fullQuestion?.starter &&
+      typeof fullQuestion.starter === 'object' &&
+      language in fullQuestion.starter
+    ) {
+      const starter = fullQuestion.starter[language as keyof typeof fullQuestion.starter];
+      setCurrentCode(typeof starter === 'string' ? starter : '');
+    } else {
+      setCurrentCode('');
+    }
+  }, [language, fullQuestion, hasDraft]);
+
+  const starterCode =
+    fullQuestion?.starter && typeof fullQuestion.starter === 'object'
+      ? fullQuestion.starter[language as keyof typeof fullQuestion.starter] || ''
+      : '';
 
   const handleSendMessage = useCallback(
     async (message: string, mode: CoachingMode) => {
