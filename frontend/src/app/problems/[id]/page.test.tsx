@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { HttpError } from '@/lib/fetch-client';
 import ProblemWorkspacePage from './page';
 import { Question } from '@/types';
 
@@ -127,5 +128,20 @@ describe('ProblemWorkspacePage Animate wiring', () => {
     expect(props.difficulty).toBe('easy');
     expect(props.initialCode).toBe(lcpQuestion.starter.python);
     expect(props.question).toEqual(lcpQuestion);
+  });
+
+  describe('error display', () => {
+    it('renders server detail when question load fails with 404 + detail body', async () => {
+      mockGetQuestion.mockRejectedValue(
+        new HttpError(
+          'Request failed: 404 Not Found',
+          404,
+          JSON.stringify({ detail: 'Question not found' }),
+        ),
+      );
+      render(<ProblemWorkspacePage />);
+
+      expect(await screen.findByText('Question not found')).toBeTruthy();
+    });
   });
 });

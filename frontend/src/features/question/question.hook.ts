@@ -5,6 +5,7 @@ import { Question, QuestionSummary } from '@/types';
 import { questionService } from './question.service';
 import { QuestionFilters } from './question.types';
 import { showToast } from '@/components/ui/Toast';
+import { getErrorDisplayMessage } from '@/lib/fetch-client';
 
 interface UseQuestionOptions {
   initialFilters?: QuestionFilters;
@@ -51,7 +52,8 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
       setQuestions(data);
       setVisibleCount(PAGE_SIZE);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load questions';
+      const errorMessage =
+        err instanceof Error ? getErrorDisplayMessage(err) : 'Failed to load questions';
       setError(errorMessage);
       showToast(errorMessage, 'error');
       console.error('Failed to load questions:', err);
@@ -68,7 +70,8 @@ export function useQuestion(options: UseQuestionOptions = {}): UseQuestionReturn
       const data = await questionService.getQuestion(question.id);
       setFullQuestion(data);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load question details';
+      const errorMessage =
+        err instanceof Error ? getErrorDisplayMessage(err) : 'Failed to load question details';
       setError(errorMessage);
       showToast(errorMessage, 'error');
       console.error('Failed to load question details:', err);

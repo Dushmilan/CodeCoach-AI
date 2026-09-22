@@ -13,6 +13,7 @@ import { useCoachWarm } from '@/features/coaching/use-coach-warm.hook';
 import { CoachingMode } from '@/features/coaching/coaching.types';
 import { questionService } from '@/features/question/question.service';
 import { useCodeRunner } from '@/features/question/use-code-runner.hook';
+import { getErrorDisplayMessage } from '@/lib/fetch-client';
 import { Language, Question } from '@/types';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -40,7 +41,10 @@ export default function ProblemWorkspacePage() {
         if (!cancelled) setFullQuestion(data);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load question');
+        if (!cancelled)
+          setError(
+            err instanceof Error ? getErrorDisplayMessage(err) : 'Failed to load question',
+          );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
