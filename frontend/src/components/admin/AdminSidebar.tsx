@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { isAdmin, isProfessor } from "@/lib/roles";
 import { useAuth } from "@/providers";
-import { useTheme } from "next-themes";
-
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   LayoutDashboard,
   Users,
@@ -31,7 +30,6 @@ export default function AdminSidebar({
 }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
 
   const navItems: NavItem[] = [
     {
@@ -78,10 +76,17 @@ export default function AdminSidebar({
     hasPermission(item.permission),
   );
 
+  // The most specific matching destination wins so /admin/users highlights
+  // Users instead of also lighting up the Dashboard root.
+  const activeHref = filteredNavItems
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
+
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-full w-64 bg-card border-r border-border",
+        "fixed left-0 top-0 z-40 h-full w-64 rounded-r-2xl bg-card border-r border-border",
         "transform transition-transform duration-300",
         open ? "translate-x-0" : "-translate-x-full",
         "md:translate-x-0",
@@ -91,9 +96,12 @@ export default function AdminSidebar({
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-border">
           <Link href="/admin" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
-            </div>
+            <span
+              aria-hidden="true"
+              className="w-8 h-8 rounded-2xl bg-brand text-brand-foreground flex items-center justify-center font-bold text-sm"
+            >
+              A
+            </span>
             <span className="font-bold text-lg">Admin</span>
           </Link>
         </div>
@@ -101,21 +109,21 @@ export default function AdminSidebar({
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1">
           {filteredNavItems.map((item) => {
-            const isActive =
-              pathname === item.href || pathname.startsWith(item.href + "/");
+            const isActive = item.href === activeHref;
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 onClick={() => window.innerWidth < 768 && onClose()}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                  "flex items-center gap-3 rounded-full px-4 py-2.5 text-sm transition-colors",
                   isActive
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "bg-brand text-brand-foreground font-medium shadow-sm"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-4 w-4" aria-hidden="true" />
                 <span>{item.title}</span>
               </Link>
             );
@@ -124,12 +132,15 @@ export default function AdminSidebar({
 
         {/* User Info */}
         <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-muted/50">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-sm font-medium">
+          <div className="flex items-center gap-3 rounded-full bg-muted/50 py-1.5 pl-1.5 pr-4">
+            <Avatar
+              data-testid="admin-sidebar-avatar"
+              className="h-8 w-8"
+            >
+              <AvatarFallback>
                 {user?.username.charAt(0).toUpperCase()}
-              </span>
-            </div>
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{user?.username}</p>
               <p className="text-xs text-muted-foreground truncate">

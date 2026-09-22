@@ -11,23 +11,27 @@
   --popover-foreground: 240 10% 3.9%;
   --primary: 160 84% 39%;
   --primary-foreground: 0 0% 100%;
+  /* AA-safe interaction shade of the single emerald accent (issue #292):
+     white text on 24% emerald is 5.5:1, emerald text on light is 5.5:1. */
+  --brand: 160 74% 24%;
+  --brand-foreground: 0 0% 100%;
   --secondary: 240 5.9% 90%;
   --secondary-foreground: 240 5.9% 10%;
   --muted: 240 5.9% 92%;
   --muted-foreground: 240 3.8% 46.1%;
   --accent: 240 5.9% 90%;
   --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --success: 142 71% 45%;
+  --success: 142 70% 27%;
   --success-foreground: 0 0% 100%;
-  --warning: 38 92% 50%;
+  --warning: 38 92% 30%;
   --warning-foreground: 0 0% 100%;
   --info: 210 80% 56%;
   --info-foreground: 0 0% 100%;
   --border: 240 5.9% 88%;
   --input: 240 5.9% 88%;
-  --ring: 160 84% 39%;
+  --ring: 160 74% 24%;
   --radius: 0.5rem;
 }
 
@@ -40,10 +44,13 @@
   --popover-foreground: 0 0% 98%;
   --primary: 160 84% 50%;
   --primary-foreground: 0 0% 100%;
+  /* Dark CTA: bright emerald fill with near-black text (11.8:1). */
+  --brand: 160 84% 50%;
+  --brand-foreground: 0 0% 4%;
   --secondary: 0 0% 9%;
   --secondary-foreground: 0 0% 98%;
   --muted: 0 0% 9%;
-  --muted-foreground: 0 0% 45%;
+  --muted-foreground: 0 0% 50%;
   --accent: 0 0% 9%;
   --accent-foreground: 0 0% 98%;
   --destructive: 0 84.2% 60.2%;
@@ -182,6 +189,17 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   .sort-bar {
     animation: none;
+  }
+
+  /* Issue #230 taste gate: collapse all motion when the user asks for it.
+     framer-motion handles its own collapse via MotionConfig reducedMotion. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

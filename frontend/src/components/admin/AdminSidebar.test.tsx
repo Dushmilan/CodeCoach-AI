@@ -3,12 +3,10 @@ import { render, screen } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
-  useTheme: vi.fn(),
   usePathname: vi.fn(),
 }));
 
 vi.mock('@/providers', () => ({ useAuth: mocks.useAuth }));
-vi.mock('next-themes', () => ({ useTheme: mocks.useTheme }));
 vi.mock('next/navigation', () => ({ usePathname: mocks.usePathname }));
 
 import AdminSidebar from './AdminSidebar';
@@ -21,11 +19,6 @@ describe('AdminSidebar', () => {
       isAuthenticated: true,
       isLoading: false,
       logout: vi.fn(),
-    });
-    mocks.useTheme.mockReturnValue({
-      theme: 'dark',
-      setTheme: vi.fn(),
-      resolvedTheme: 'dark',
     });
     mocks.usePathname.mockReturnValue('/admin');
   });
@@ -69,5 +62,22 @@ describe('AdminSidebar', () => {
   it('does not render removed Settings nav item', () => {
     render(<AdminSidebar open={false} onClose={vi.fn()} />);
     expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+  });
+
+  it('marks only the deepest matching nav item as an active pill', () => {
+    mocks.usePathname.mockReturnValue('/admin/users');
+    render(<AdminSidebar open={false} onClose={vi.fn()} />);
+    const current = document.querySelectorAll('[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent('Users');
+    expect(current[0].className).toMatch(/rounded-full/);
+    expect(current[0].className).toMatch(/bg-brand\b/);
+  });
+
+  it('shows the signed-in user as an avatar chip', () => {
+    render(<AdminSidebar open={false} onClose={vi.fn()} />);
+    expect(screen.getByTestId('admin-sidebar-avatar')).toBeInTheDocument();
+    // Username and role both render "admin" in this fixture.
+    expect(screen.getAllByText('admin').length).toBeGreaterThanOrEqual(1);
   });
 });
