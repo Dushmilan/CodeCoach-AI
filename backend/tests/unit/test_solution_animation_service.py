@@ -256,3 +256,97 @@ class TestBuildAnimation:
         ]
         assert len(mark_beats) == 1
         assert "sorted" not in mark_beats[0]["narration"]
+
+    @pytest.mark.asyncio
+    async def test_binary_search_beats_narrate_true_bounds_mid_discard(self):
+        # #243: the binary_search reference traces pointer(low/high/mid) +
+        # compare + mark(match). _try_planner mapped those 1:1 to generic
+        # pointer/compare/mark actions, which plan_searching does not
+        # understand — every step fell into the placeholder branch (a no-op
+        # scale on cell_0 narrated with the raw action name). Beats must
+        # instead narrate the true search-region state of each iteration.
+        stdout = "\n".join(
+            [
+                '{"event":"init","values":[1,3,5,7,9],"family":"array"}',
+                '{"event":"pointer","name":"low","index":0}',
+                '{"event":"pointer","name":"high","index":4}',
+                '{"event":"pointer","name":"mid","index":2}',
+                '{"event":"compare","i":2}',
+                '{"event":"pointer","name":"low","index":3}',
+                '{"event":"pointer","name":"high","index":4}',
+                '{"event":"pointer","name":"mid","index":3}',
+                '{"event":"compare","i":3}',
+                '{"event":"mark","i":3,"state":"match"}',
+                '{"event":"return","result":3}',
+            ]
+        )
+        executor = FakeExecutor(_ok_result(stdout=stdout))
+        service = SolutionAnimationService(executor=executor)
+        q = {
+            "id": "binary-search",
+            "title": "Binary Search",
+            "category": "Binary Search",
+            "description": "Find the target with binary search.",
+            "examples": [{"input": "nums = [1,3,5,7,9], target = 7", "output": "3"}],
+        }
+        animation = await service.build_animation(q)
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+
+        narrations = [s.get("narration") or "" for s in animation["steps"]]
+        # No placeholder beats: raw action names must never narrate a beat.
+        assert not any(
+            n.strip() in ("compare", "pointer", "mark", "custom") for n in narrations
+        )
+        # Iteration 1 searched [0..4] and inspected mid [2] = 5.
+        assert any("Search region [0..4]" in n for n in narrations)
+        assert any("Inspect mid [2]" in n for n in narrations)
+        # 5 < 7 discarded the left half; iteration 2 searched [3..4].
+        assert any("discard" in n.lower() for n in narrations)
+        assert any("Search region [3..4]" in n for n in narrations)
+        assert any("Inspect mid [3]" in n for n in narrations)
+        # The match at index 3 closes the story with the true target.
+        assert any("Found 7 at [3]" in n for n in narrations)
+
+    @pytest.mark.asyncio
+    async def test_binary_search_miss_narrates_final_discard_then_not_found(self):
+        # #243: when the loop exits without a match, the last bound change
+        # is never traced (pointers emit at loop top only). The closing
+        # discard is still a fact about the data (values[mid] vs target),
+        # so the story must end discard → not found, never a placeholder.
+        stdout = "\n".join(
+            [
+                '{"event":"init","values":[1,3,5,7,9],"family":"array"}',
+                '{"event":"pointer","name":"low","index":0}',
+                '{"event":"pointer","name":"high","index":4}',
+                '{"event":"pointer","name":"mid","index":2}',
+                '{"event":"compare","i":2}',
+                '{"event":"pointer","name":"low","index":3}',
+                '{"event":"pointer","name":"high","index":4}',
+                '{"event":"pointer","name":"mid","index":3}',
+                '{"event":"compare","i":3}',
+                '{"event":"return","result":-1}',
+            ]
+        )
+        executor = FakeExecutor(_ok_result(stdout=stdout))
+        service = SolutionAnimationService(executor=executor)
+        q = {
+            "id": "binary-search",
+            "title": "Binary Search",
+            "category": "Binary Search",
+            "description": "Find the target with binary search.",
+            "examples": [{"input": "nums = [1,3,5,7,9], target = 6", "output": "-1"}],
+        }
+        animation = await service.build_animation(q)
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+
+        narrations = [s.get("narration") or "" for s in animation["steps"]]
+        assert not any(
+            n.strip() in ("compare", "pointer", "mark", "custom") for n in narrations
+        )
+        # 7 > 6 discarded the right half before the miss closed the story.
+        assert any("discard right \u2190" in n for n in narrations)
+        assert any("6 not in array" in n for n in narrations)
