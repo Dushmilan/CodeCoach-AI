@@ -129,6 +129,13 @@ export default function ProblemWorkspacePage() {
     [fullQuestion, currentCode, language, sendMessage, starterCode, questionId],
   );
 
+  const handleSubmitWithInvalidation = useCallback(async () => {
+    await handleSubmitCode();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("learner-context-invalidated"));
+    }
+  }, [handleSubmitCode]);
+
   const handleResetCode = useCallback(() => {
     setCurrentCode(starterCode);
     void deleteDraft();
@@ -213,7 +220,7 @@ export default function ProblemWorkspacePage() {
           onResetCode={handleResetCode}
           onLanguageChange={setLanguage}
           onRunCode={handleRunCode}
-          onSubmitCode={handleSubmitCode}
+          onSubmitCode={handleSubmitWithInvalidation}
           isAuthenticated={isAuthenticated}
         />
       </div>

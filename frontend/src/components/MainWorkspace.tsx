@@ -48,6 +48,7 @@ export function MainWorkspace() {
     handleRunCode,
     handleSubmitCode,
     isAuthenticated,
+    userProgress,
   } = useCodeRunner({ currentCode, language, fullQuestion });
 
   const { messages, isTyping, sendMessage } = useCoaching();
@@ -136,7 +137,7 @@ export function MainWorkspace() {
         selectedQuestion={selectedQuestion}
         fullQuestion={fullQuestion}
         onSelectQuestion={selectQuestion}
-        userProgress={{}}
+        userProgress={userProgress}
       />
 
       <MainContentContainer>
