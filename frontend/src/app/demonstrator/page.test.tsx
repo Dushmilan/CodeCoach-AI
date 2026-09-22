@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import {
+  expectBentoStats,
+  expectEyebrowBudget,
+  expectNoDash,
+  expectNoDuplicateCtas,
+} from "@/test-helpers/taste";
 import DemonstratorOverviewPage from "./page";
 
 vi.mock("@/providers", () => ({
@@ -30,5 +36,15 @@ describe("DemonstratorOverviewPage", () => {
     expect(
       screen.getByRole("link", { name: /class analytics/i }),
     ).toBeInTheDocument();
+  });
+
+  it("lays stats out as a varied bento and passes taste gates", async () => {
+    const { container } = render(<DemonstratorOverviewPage />);
+    await screen.findByText(/demonstrator dashboard/i);
+    expect(container.querySelectorAll("[data-stat]")).toHaveLength(2);
+    expectBentoStats(container);
+    expectNoDash(container, "demonstrator overview");
+    expectEyebrowBudget(container, "demonstrator overview");
+    expectNoDuplicateCtas(container, "demonstrator overview");
   });
 });

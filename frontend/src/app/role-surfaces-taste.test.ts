@@ -43,6 +43,7 @@ const SCOPED_FILES: string[] = [
 const SCOPED_DIRS = [
   "src/app/admin",
   "src/app/professor",
+  "src/app/demonstrator",
   "src/components/admin",
 ];
 
