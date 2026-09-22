@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { FetchClient } from "@/lib/fetch-client";
+import { FetchClient, getErrorDisplayMessage } from "@/lib/fetch-client";
 import { CourseSummary, CourseDetail, LessonSummary } from "@/types";
 
 const api = new FetchClient();
@@ -39,7 +39,7 @@ export function useCurriculum() {
       );
       setCourses(data.courses);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load courses");
+      setError(getErrorDisplayMessage(err) || "Failed to load courses");
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +71,7 @@ export function useCourse(courseId: string) {
       );
       setCourse(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load course");
+      setError(getErrorDisplayMessage(err) || "Failed to load course");
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +103,7 @@ export function useLesson(lessonId: string) {
       );
       setLesson(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load lesson");
+      setError(getErrorDisplayMessage(err) || "Failed to load lesson");
     } finally {
       setIsLoading(false);
     }

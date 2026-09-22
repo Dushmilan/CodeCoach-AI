@@ -4,14 +4,16 @@ import { useCurriculum } from "./use-curriculum.hook";
 import { FetchClient } from "@/lib/fetch-client";
 
 // Mock FetchClient
-vi.mock("@/lib/fetch-client", () => {
+vi.mock("@/lib/fetch-client", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/fetch-client")>();
   const MockFetchClient = vi.fn(function FetchClient() {
     return {
       get: vi.fn(),
       post: vi.fn(),
     };
   });
-  return { FetchClient: MockFetchClient };
+  return { ...actual, FetchClient: MockFetchClient };
 });
 
 describe("useCurriculum", () => {
