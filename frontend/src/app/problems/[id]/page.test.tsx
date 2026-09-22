@@ -19,6 +19,7 @@ vi.mock('@/components/animate/AnimateLauncher', () => ({
 
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'lcp' }),
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 vi.mock('@/components/header/Header', () => ({

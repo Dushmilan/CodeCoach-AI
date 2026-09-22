@@ -18,8 +18,10 @@ import { getErrorDisplayMessage } from '@/lib/fetch-client';
 import { Language, Question } from '@/types';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { SolvedTakeover } from '@/components/solved/SolvedTakeover';
+import { shouldOpenSolvedOverlay } from '@/components/solved/should-open';
 
 export default function ProblemWorkspacePage() {
   const params = useParams();
@@ -59,11 +61,23 @@ export default function ProblemWorkspacePage() {
     isRunning,
     output,
     testResults,
+    lastSubmitResult,
     executionError,
     handleRunCode,
     handleSubmitCode,
     isAuthenticated,
   } = useCodeRunner({ fullQuestion, language, currentCode });
+  const router = useRouter();
+  const [solvedOpen, setSolvedOpen] = useState(false);
+  const [solvedShownFor, setSolvedShownFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!fullQuestion || !lastSubmitResult) return;
+    if (shouldOpenSolvedOverlay(lastSubmitResult, solvedShownFor, fullQuestion.id)) {
+      setSolvedShownFor(fullQuestion.id);
+      setSolvedOpen(true);
+    }
+  }, [fullQuestion, lastSubmitResult, solvedShownFor]);
 
   const { messages, isTyping, sendMessage, hydrateMessages } = useCoaching() as ReturnType<typeof useCoaching> & { hydrateMessages: (msgs: import('@/types').ChatMessage[]) => void };
   const { ref: workspaceRef, mode } = useWorkspaceMode();
@@ -347,6 +361,21 @@ export default function ProblemWorkspacePage() {
           )}
         </div>
       </div>
+      {fullQuestion && (
+        <SolvedTakeover
+          open={solvedOpen}
+          onClose={() => setSolvedOpen(false)}
+          questionTitle={fullQuestion.title}
+          difficulty={fullQuestion.difficulty}
+          passed={lastSubmitResult?.passed_count ?? 0}
+          total={lastSubmitResult?.total ?? 0}
+          replay={{ status: "empty" }}
+          onNext={() => {
+            setSolvedOpen(false);
+            router.push("/problems");
+          }}
+        />
+      )}
     </div>
   );
 }
