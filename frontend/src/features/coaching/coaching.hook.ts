@@ -5,6 +5,7 @@ import { ChatMessage } from "@/types";
 import { coachingService } from "./coaching.service";
 import { CoachingFeature, CoachingMode, CoachingSurface } from "./coaching.types";
 import { showToast } from "@/components/ui/Toast";
+import { getErrorDisplayMessage } from "@/lib/fetch-client";
 import { useUsage } from "@/features/usage/usage.context";
 
 function isRateLimited(err: unknown): boolean {
@@ -94,7 +95,7 @@ export function useCoaching(): CoachingFeature & { hydrateMessages: (msgs: ChatM
         } catch (err) {
           const errorMessage =
             err instanceof Error
-              ? err.message
+              ? getErrorDisplayMessage(err)
               : "Failed to get coaching response";
           if (isRateLimited(err)) {
             markLimitReached();
