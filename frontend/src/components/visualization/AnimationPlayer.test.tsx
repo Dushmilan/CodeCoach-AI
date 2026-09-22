@@ -45,4 +45,19 @@ describe("AnimationPlayer auto-advance", () => {
     });
     expect(screen.getByText("Two")).toBeInTheDocument();
   });
+
+  it("clamps the index when a shorter script replaces the steps", () => {
+    // #240 browser pass: switching scripts (e.g. planner → fallback) left
+    // currentIndex past the end, rendering a blank scene with counter N/M.
+    const { rerender } = render(
+      <AnimationPlayer steps={steps as never}>{(s) => <div>{(s as { narration: string }).narration}</div>}</AnimationPlayer>,
+    );
+    fireEvent.change(screen.getByRole("slider", { name: /animation progress/i }), { target: { value: "2" } });
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    rerender(
+      <AnimationPlayer steps={[{ narration: "Solo" }] as never}>{(s) => <div>{(s as { narration: string }).narration}</div>}</AnimationPlayer>,
+    );
+    expect(screen.getByText("Solo")).toBeInTheDocument();
+    expect(screen.getByText("1 / 1")).toBeInTheDocument();
+  });
 });
