@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import LearningSignals from "./LearningSignals";
 import { AnalyticsService } from "./analytics.service";
@@ -41,5 +41,14 @@ describe("LearningSignals", () => {
     render(<LearningSignals />);
     const items = await screen.findAllByTestId("analytics-signal");
     expect(items).toHaveLength(2);
+  });
+
+  it("refetches on question-solved so signals update after a solve (#277)", async () => {
+    vi.mocked(AnalyticsService.getSignals).mockResolvedValue({ signals: [], total: 0 });
+    render(<LearningSignals />);
+    expect(await screen.findByText(/No learning signals/i)).toBeInTheDocument();
+    expect(AnalyticsService.getSignals).toHaveBeenCalledTimes(1);
+    window.dispatchEvent(new CustomEvent("question-solved", { detail: { questionId: "two-sum" } }));
+    await waitFor(() => expect(AnalyticsService.getSignals).toHaveBeenCalledTimes(2));
   });
 });

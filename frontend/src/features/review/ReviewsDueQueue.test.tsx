@@ -162,4 +162,18 @@ describe('ReviewsDueQueue', () => {
     });
     expect(screen.getByRole('link', { name: 'Two Sum' })).toBeInTheDocument();
   });
+
+  it('refetches the queue on question-solved so new reviews appear after a solve (#277)', async () => {
+    vi.mocked(reviewService.getDue).mockResolvedValue({ cards: [], total: 0 });
+
+    render(<ReviewsDueQueue />);
+
+    await waitFor(() => {
+      expect(reviewService.getDue).toHaveBeenCalledTimes(1);
+    });
+    window.dispatchEvent(new CustomEvent('question-solved', { detail: { questionId: 'two-sum' } }));
+    await waitFor(() => {
+      expect(reviewService.getDue).toHaveBeenCalledTimes(2);
+    });
+  });
 });

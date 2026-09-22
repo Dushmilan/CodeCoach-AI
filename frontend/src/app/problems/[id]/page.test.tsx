@@ -8,7 +8,7 @@ import { Question } from '@/types';
 
 const mockAnimateLauncher = vi.hoisted(() => vi.fn());
 const mockGetQuestion = vi.hoisted(() => vi.fn());
-const mockHandleSubmitCode = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+const mockHandleSubmitCode = vi.hoisted(() => vi.fn((): Promise<unknown> => Promise.resolve(null)));
 
 vi.mock('@/components/animate/AnimateLauncher', () => ({
   AnimateLauncher: (props: unknown) => {
@@ -155,19 +155,47 @@ describe('ProblemWorkspacePage Animate wiring', () => {
   });
 
   describe('submit wiring', () => {
-    it('dispatches learner-context-invalidated after submit so moat UI refreshes', async () => {
+    it('dispatches question-solved + learner-context-invalidated on full pass so moat UI refreshes', async () => {
       mockHandleSubmitCode.mockClear();
+      mockHandleSubmitCode.mockResolvedValue({ passed_count: 12, total: 12, results: [] });
       const user = userEvent.setup();
-      const spy = vi.fn();
-      window.addEventListener('learner-context-invalidated', spy);
+      const legacy = vi.fn();
+      const solved = vi.fn();
+      window.addEventListener('learner-context-invalidated', legacy);
+      window.addEventListener('question-solved', solved);
       try {
         render(<ProblemWorkspacePage />);
 
         await user.click(await screen.findByTestId('mock-submit'));
         await waitFor(() => expect(mockHandleSubmitCode).toHaveBeenCalled());
-        await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(legacy).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(solved).toHaveBeenCalledTimes(1));
+        expect((solved.mock.calls[0][0] as CustomEvent).detail).toEqual({ questionId: 'lcp' });
       } finally {
-        window.removeEventListener('learner-context-invalidated', spy);
+        window.removeEventListener('learner-context-invalidated', legacy);
+        window.removeEventListener('question-solved', solved);
+      }
+    });
+
+    it('dispatches no solved events on partial pass', async () => {
+      mockHandleSubmitCode.mockClear();
+      mockHandleSubmitCode.mockResolvedValue({ passed_count: 1, total: 12, results: [] });
+      const user = userEvent.setup();
+      const legacy = vi.fn();
+      const solved = vi.fn();
+      window.addEventListener('learner-context-invalidated', legacy);
+      window.addEventListener('question-solved', solved);
+      try {
+        render(<ProblemWorkspacePage />);
+
+        await user.click(await screen.findByTestId('mock-submit'));
+        await waitFor(() => expect(mockHandleSubmitCode).toHaveBeenCalled());
+        await new Promise((r) => setTimeout(r, 100));
+        expect(legacy).not.toHaveBeenCalled();
+        expect(solved).not.toHaveBeenCalled();
+      } finally {
+        window.removeEventListener('learner-context-invalidated', legacy);
+        window.removeEventListener('question-solved', solved);
       }
     });
   });

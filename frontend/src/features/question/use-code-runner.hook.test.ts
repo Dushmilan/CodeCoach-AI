@@ -263,6 +263,30 @@ describe('useCodeRunner', () => {
       expect(mockLocalStorageSetter).toHaveBeenCalled();
     });
 
+    it('returns the submit result so callers can detect a full pass (#277)', async () => {
+      const fullPass = {
+        passed_count: 3,
+        total: 3,
+        results: [],
+      };
+      mockSubmitCode.mockResolvedValue(fullPass);
+
+      const { result } = renderHook(() =>
+        useCodeRunner({
+          fullQuestion: question,
+          language: 'python',
+          currentCode: 'code',
+        }),
+      );
+
+      let returned: unknown;
+      await act(async () => {
+        returned = await result.current.handleSubmitCode();
+      });
+
+      expect(returned).toEqual(fullPass);
+    });
+
     it('does nothing when fullQuestion is null', async () => {
       const { result } = renderHook(() =>
         useCodeRunner({

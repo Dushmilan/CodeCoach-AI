@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { workspaceService } from '@/features/workspace/workspace.service';
+import { QUESTION_SOLVED_EVENT, type QuestionSolvedDetail } from '@/lib/solved-event';
 import { AuthContext } from '@/providers/AuthProvider';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -63,12 +64,51 @@ export default function ProblemsPage() {
     loadQuestions();
   }, [loadQuestions]);
 
+  // On a solve, move Continue past the solved question to the next unsolved
+  // one (or hide it when nothing is left). The event carries the solved id
+  // because local progress state does not sync across hook instances (#277).
+  // The same correction runs whenever questions/progress load so a stale
+  // backend last-visited never pins the banner to a solved question.
+  const advancePastSolved = useCallback(
+    (
+      prev: { question_id: string; language: string | null } | null,
+      extraSolvedId: string | null,
+    ) => {
+      if (!prev) return prev;
+      const solved = new Set(
+        Object.entries(progress)
+          .filter(([, v]) => v === "solved")
+          .map(([k]) => k),
+      );
+      if (extraSolvedId) solved.add(extraSolvedId);
+      if (!solved.has(prev.question_id)) return prev;
+      const next = allQuestions.find((q) => !solved.has(q.id));
+      return next ? { question_id: next.id, language: prev.language } : null;
+    },
+    [allQuestions, progress],
+  );
+
   useEffect(() => {
     if (!isAuthenticated) return;
     workspaceService.getLastVisited().then((data) => {
-      if (data?.question_id) setLastVisited(data);
+      if (data?.question_id) setLastVisited(advancePastSolved(data, null));
     }).catch(() => {});
-  }, [isAuthenticated]);
+  }, [isAuthenticated, advancePastSolved]);
+
+  useEffect(() => {
+    setLastVisited((prev) => advancePastSolved(prev, null));
+  }, [advancePastSolved]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (e: Event) => {
+      const solvedId = (e as CustomEvent<QuestionSolvedDetail>).detail?.questionId;
+      if (!solvedId) return;
+      setLastVisited((prev) => advancePastSolved(prev, solvedId));
+    };
+    window.addEventListener(QUESTION_SOLVED_EVENT, handler);
+    return () => window.removeEventListener(QUESTION_SOLVED_EVENT, handler);
+  }, [advancePastSolved]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
