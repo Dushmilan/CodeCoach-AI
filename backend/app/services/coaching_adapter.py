@@ -126,6 +126,8 @@ class CoachingAdapter(CoachingProvider):
         chat_history: Optional[list] = None,
         initial_code: Optional[str] = None,
         surface: str = "questions",
+        learner_context: Optional[str] = None,
+        submission_context: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         async for chunk in self.inner.stream(
             problem=problem,
@@ -138,6 +140,8 @@ class CoachingAdapter(CoachingProvider):
             chat_history=chat_history,
             initial_code=initial_code,
             surface=surface,
+            learner_context=learner_context,
+            submission_context=submission_context,
         ):
             yield chunk
 
