@@ -14,6 +14,10 @@ const REWRITE_TARGET = process.env.API_URL || 'http://localhost:8000';
 
 const nextConfig = {
   skipTrailingSlashRedirect: true,
+  images: {
+    // Taste 4.8 placeholder photography for the #230 landing surfaces.
+    remotePatterns: [{ protocol: "https", hostname: "picsum.photos" }],
+  },
   env: {
     NEXT_PUBLIC_API_URL: resolvePublicApiUrl(process.env),
   },
