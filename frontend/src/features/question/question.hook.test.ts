@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { HttpError } from '@/lib/fetch-client';
 import { useQuestion } from './question.hook';
 import { QuestionSummary, Question } from '@/types';
 
@@ -154,6 +155,24 @@ describe('useQuestion', () => {
 
       expect(result.current.error).toBe('Failed to load questions');
     });
+
+    it('surfaces server detail when load fails with HttpError + detail body', async () => {
+      mockGetQuestions.mockRejectedValue(
+        new HttpError(
+          'Request failed: 500 Internal Server Error',
+          500,
+          JSON.stringify({ detail: 'Database unavailable' }),
+        ),
+      );
+
+      const { result } = renderHook(() => useQuestion());
+
+      await act(async () => {
+        await result.current.loadQuestions();
+      });
+
+      expect(result.current.error).toBe('Database unavailable');
+    });
   });
 
   describe('selectQuestion', () => {
@@ -208,6 +227,36 @@ describe('useQuestion', () => {
       expect(result.current.error).toBe('Question not found');
       expect(result.current.selectedQuestion).toBeTruthy();
       expect(result.current.fullQuestion).toBeNull();
+    });
+
+    it('surfaces server detail when details load fails with HttpError + detail body', async () => {
+      mockGetQuestion.mockRejectedValue(
+        new HttpError(
+          'Request failed: 404 Not Found',
+          404,
+          JSON.stringify({ detail: 'Question expired' }),
+        ),
+      );
+
+      const { result } = renderHook(() => useQuestion());
+
+      await act(async () => {
+        await result.current.selectQuestion(sampleQuestions[0]);
+      });
+
+      expect(result.current.error).toBe('Question expired');
+    });
+
+    it('falls back when details load rejects with non-Error', async () => {
+      mockGetQuestion.mockRejectedValue('unknown error');
+
+      const { result } = renderHook(() => useQuestion());
+
+      await act(async () => {
+        await result.current.selectQuestion(sampleQuestions[0]);
+      });
+
+      expect(result.current.error).toBe('Failed to load question details');
     });
   });
 
