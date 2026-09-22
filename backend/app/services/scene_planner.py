@@ -19,6 +19,31 @@ from app.models.animation_spec import (
     Complexity,
 )
 from app.services import animation_design_tokens as tokens
+from app.services.animation_pacing import apply_pacing
+
+
+def _is_climax_narration(narration: Any) -> bool:
+    """Climax = the Aha! reveal beat (#285): found / base case / final return.
+
+    Matches the narrations planners actually emit for the reveal: bare or
+    prefixed ``found`` (``Found 13 at [4]``), ``result`` reveals
+    (``Result [2]=7``), the ``mark(state="match")`` close
+    (``Mark [2]=7 match`` / bare ``match``), and trace labels carrying
+    ``base case`` / ``return``. Compared lower-cased; every other middle
+    beat defaults to the rhythmic loop role. The dedupe pass appends
+    ``" (cont.)"`` to repeated narrations, so the base narration is
+    matched — a second finalize pass must re-tag the same roles.
+    """
+    text = str(narration or "").strip().lower()
+    text = text.split(" (cont.", 1)[0].strip()
+    return (
+        text.startswith("found")
+        or text.startswith("result")
+        or text == "match"
+        or text.endswith(" match")
+        or "base case" in text
+        or "return" in text
+    )
 
 
 def _finalize_beats(
@@ -28,7 +53,12 @@ def _finalize_beats(
 
     Dedupe consecutive narrations with a repeat counter (A2 precedent),
     ensure the intro beat carries camera.reset, and ensure the final beat
-    carries the complexity badge. Idempotent — safe to apply over beats
+    carries the complexity badge. Then tag each beat with its transient
+    pacing role (#285) — intro = first, outro = badge beat, climax = the
+    reveal, loop = everything else — and run ``apply_pacing``, which
+    rewrites motion durations by role (clamped to 0.1-5.0s) and strips
+    ``role`` so it never leaves the planner. A pre-existing ``role`` is
+    honored, never overwritten. Idempotent — safe to apply over beats
     that already went through a per-family post-pass.
     """
     if not beats:
@@ -54,7 +84,13 @@ def _finalize_beats(
             "time": complexity.time,
             "space": complexity.space,
         }
-    return beats
+    beats[0].setdefault("role", "intro")
+    beats[-1].setdefault("role", "outro")
+    for b in beats[1:-1]:
+        if "role" in b:
+            continue
+        b["role"] = "climax" if _is_climax_narration(b.get("narration")) else "loop"
+    return apply_pacing(beats)
 
 
 def _cell_x(index: int, n: int, cell: float = 88.0, gap: float = 12.0) -> float:
