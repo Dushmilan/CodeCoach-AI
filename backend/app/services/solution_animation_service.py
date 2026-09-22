@@ -31,6 +31,7 @@ from app.models.animation_spec import (
     Complexity,
     InitialState,
 )
+from app.services import animation_design_tokens as tokens
 from app.services import scene_planner
 from app.services.reference_solutions import (
     get_reference_solution,
@@ -390,6 +391,7 @@ class SolutionAnimationService:
             logger.warning("Animation for %s could not be compiled", algorithm)
             return None
 
+        animation = self._enrich_fallback_animation(animation, entry, algorithm)
         validated, reason = self._validator.validate(animation)
         if validated is None:
             logger.warning(
@@ -398,6 +400,57 @@ class SolutionAnimationService:
             return None
         self._log_quality(algorithm, validated)
         return validated
+
+    def _enrich_fallback_animation(
+        self,
+        animation: Dict[str, Any],
+        entry: Dict[str, Any],
+        algorithm: str,
+    ) -> Dict[str, Any]:
+        """Give compiler-fallback beats the planner path's camera guarantees.
+
+        Family compilers emit shapes + motion only — no camera, no badge —
+        so the viewer holds a dead static frame with no complexity badge.
+        Attach beat-0 reset, per-action-beat focus on the beat's own first
+        motion target, and the final-beat complexity badge. The focus target
+        is always one of the beat's motion targets, which the validator
+        resolves against cumulative shape ids — so the camera can never
+        point at nothing. Idempotent: never overwrites an existing camera
+        or badge. No motion/shapes are added, so validator caps are
+        unaffected.
+        """
+        steps = animation.get("steps")
+        if not isinstance(steps, list) or not steps:
+            return animation
+        if isinstance(steps[0], dict) and "camera" not in steps[0]:
+            steps[0]["camera"] = {
+                "action": "reset",
+                "zoom": tokens.CAMERA["zoom_full"],
+            }
+        for step in steps[1:]:
+            if not isinstance(step, dict) or "camera" in step:
+                continue
+            target = next(
+                (
+                    m.get("target")
+                    for m in (step.get("motion") or [])
+                    if isinstance(m, dict)
+                    and isinstance(m.get("target"), str)
+                    and m.get("target")
+                ),
+                None,
+            )
+            if target is not None:
+                step["camera"] = {
+                    "action": "focus",
+                    "element": target,
+                    "zoom": tokens.CAMERA["zoom_focus"],
+                }
+        last = steps[-1]
+        if isinstance(last, dict) and "badge" not in last:
+            time_c, space_c = resolve_complexity(entry, algorithm)
+            last["badge"] = {"time": time_c, "space": space_c}
+        return animation
 
     def _try_planner(
         self,

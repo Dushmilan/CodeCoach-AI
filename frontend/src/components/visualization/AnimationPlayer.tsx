@@ -40,6 +40,12 @@ export function AnimationPlayer({
   const stepCount = steps.length;
   const currentStep = steps[currentIndex] as AnimationStep | undefined;
 
+  // #240: a new script (fewer beats) must never strand the index past the
+  // end — that rendered a blank scene with a stale "N / M" counter.
+  useEffect(() => {
+    setCurrentIndex((prev) => Math.max(0, Math.min(prev, stepCount - 1)));
+  }, [stepCount]);
+
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
