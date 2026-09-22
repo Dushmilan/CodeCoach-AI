@@ -519,7 +519,7 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                 "region": idxs[:2],
                 "zoom": tokens.CAMERA["zoom_focus"],
             }
-            beat: Dict[str, Any] = {
+            beat = {
                 "narration": narr[:300],
                 "shapes": shapes_b,
                 "motion": m,
@@ -812,7 +812,7 @@ def plan_array(spec: AlgorithmAnimation) -> List[Dict[str, Any]]:
                         "duration": tokens.DURATION["dim"],
                     }
                 )
-        beat: Dict[str, Any] = {
+        beat = {
             "narration": narr[:300],
             "shapes": shapes_b,
             "motion": m,
