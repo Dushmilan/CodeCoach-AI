@@ -285,4 +285,19 @@ describe("role surface token gates (issues #292/#230)", () => {
   it("keeps accent hues (primary, ring, brand) in the emerald band", () => {
     expect(hueFailures(css)).toEqual([]);
   });
+
+  it("wires the brand tokens into the Tailwind color config", async () => {
+    // Browser evidence for issue #292: an unwired key makes every bg-brand /
+    // text-brand class a silent no-op (blue default rings, invisible meters).
+    const mod = await import("../../tailwind.config");
+    const colors = (mod.default.theme?.extend?.colors ?? {}) as Record<
+      string,
+      unknown
+    >;
+    expect(colors.brand, "tailwind colors.brand is missing").toBeDefined();
+    expect(JSON.stringify(colors.brand)).toContain("hsl(var(--brand))");
+    expect(JSON.stringify(colors.brand)).toContain(
+      "hsl(var(--brand-foreground))",
+    );
+  });
 });
