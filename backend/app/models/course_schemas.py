@@ -68,6 +68,29 @@ class CourseSummary(BaseModel):
     progress: float = Field(default=0.0, description="User progress percentage 0-100")
 
 
+class CourseLearnSummary(BaseModel):
+    """Minimal per-course row for the Learn landing page (issue #268).
+
+    Served from a single cached fetch (`GET /api/courses/?view=learn`) so
+    the page needs no second `/api/progress/` roundtrip. Extra scalar fields
+    (`completed_lessons_count`, `last_accessed_lesson_id`) come from the same
+    already-fetched progress row at zero extra query cost and preserve the
+    existing card UI (completed count + resume link).
+    """
+
+    id: str = Field(..., description="Course ID")
+    title: str = Field(..., description="Course title")
+    description: str = Field(..., description="Short description (card body)")
+    language: str = Field(..., description="Programming language")
+    progress: float = Field(default=0.0, description="User progress percentage 0-100")
+    completed_lessons_count: int = Field(
+        default=0, description="Number of completed lessons"
+    )
+    last_accessed_lesson_id: Optional[str] = Field(
+        default=None, description="Resume target for 'continue' links"
+    )
+
+
 class CourseProgress(BaseModel):
     user_id: str = Field(..., description="User ID")
     course_id: str = Field(..., description="Course ID")
