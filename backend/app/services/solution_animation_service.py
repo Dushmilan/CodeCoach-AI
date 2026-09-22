@@ -419,8 +419,36 @@ class SolutionAnimationService:
                 viz = "bars"
             time_c, space_c = resolve_complexity(entry, algorithm)
             steps: List[AnimationStepSpec] = []
+            return_result: Any = None
+            last_match_index: Optional[int] = None
             for e in events:
-                if e.kind in ("init", "return"):
+                if e.kind == "init":
+                    continue
+                if e.kind == "return":
+                    # #240: the return value closes the story — an index
+                    # result becomes a found climax beat (replacing a
+                    # trailing mark(match) on the same cell), -1 with a
+                    # known target becomes not_found, and anything else
+                    # rides the outro beat via extra. Binary search owns
+                    # its return via _translate_search_events.
+                    return_result = e.fields.get("result")
+                    if algorithm != "binary_search":
+                        if (
+                            isinstance(return_result, int)
+                            and not isinstance(return_result, bool)
+                            and 0 <= return_result < len(values)
+                        ):
+                            if (
+                                steps
+                                and steps[-1].action == "mark"
+                                and last_match_index == return_result
+                            ):
+                                steps.pop()
+                            steps.append(
+                                AnimationStepSpec(action="found", index=return_result)
+                            )
+                        elif return_result == -1 and target is not None:
+                            steps.append(AnimationStepSpec(action="not_found"))
                     continue
                 action = _EVENT_TO_ACTION.get(e.kind, "custom")
                 kwargs: Dict[str, Any] = {"action": action}
@@ -458,6 +486,8 @@ class SolutionAnimationService:
                         # semantic — without it the planner can only guess
                         # (it hardcoded "sorted", #235).
                         kwargs["label"] = str(e.fields["state"])[:120]
+                        if e.fields["state"] == "match" and e.has("i"):
+                            last_match_index = int(e.fields["i"])
                 elif e.kind == "window":
                     if e.has("l"):
                         kwargs["low"] = int(e.fields["l"])
@@ -493,7 +523,13 @@ class SolutionAnimationService:
             spec = AlgorithmAnimation(
                 algorithm=algorithm,
                 visualization=viz,  # type: ignore[arg-type]
-                initialState=InitialState(array=values, target=target, extra={}),
+                initialState=InitialState(
+                    array=values,
+                    target=target,
+                    extra={"result": return_result}
+                    if return_result is not None
+                    else {},
+                ),
                 steps=steps,
                 complexity=Complexity(time=time_c, space=space_c),
                 title=title,
