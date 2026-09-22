@@ -504,6 +504,9 @@ async def get_coaching_stream(
     user: UserResponse = Depends(get_current_user),
     _rate_guard: None = Depends(enforce_user_rate_limit),
     _daily_guard: None = Depends(enforce_daily_request_cap),
+    learner_context: LearnerContextService = Depends(
+        get_learner_context_service_dependency
+    ),
 ):
     """
     Get streaming AI coaching response using Server-Sent Events.
@@ -534,6 +537,15 @@ async def get_coaching_stream(
                 else []
             )
 
+            # Same personalization as the sync endpoint (#264) — the learn
+            # surface stays graph-free. Best-effort, never blocks the stream.
+            learner_ctx: dict = {"skill_block": "", "submission_block": ""}
+            if coaching_request.surface == "questions":
+                try:
+                    learner_ctx = await learner_context.get_context(user.id)
+                except Exception:  # pragma: no cover - degrade open
+                    logger.debug("Learner context fetch failed for stream")
+
             async for chunk in provider.stream(
                 problem=coaching_request.problem,
                 code=coaching_request.code,
@@ -545,6 +557,8 @@ async def get_coaching_stream(
                 chat_history=chat_history_list,
                 initial_code=coaching_request.initial_code,
                 surface=coaching_request.surface,
+                learner_context=learner_ctx.get("skill_block") or None,
+                submission_context=learner_ctx.get("submission_block") or None,
             ):
                 chunk_count += 1
                 # Format as SSE

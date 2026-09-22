@@ -1,5 +1,8 @@
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
+/** Receives one text chunk from a streaming (SSE) response. */
+export type StreamChunkHandler = (chunk: string) => void;
+
 export interface HttpRequestOptions {
   headers?: Record<string, string>;
   signal?: AbortSignal;
@@ -22,4 +25,11 @@ export interface HttpClient {
     options?: HttpRequestOptions,
   ): Promise<T>;
   delete<T>(path: string, options?: HttpRequestOptions): Promise<T>;
+  /** POST + Server-Sent Events. Optional so test doubles can omit it. */
+  stream?(
+    path: string,
+    body: unknown,
+    onChunk: StreamChunkHandler,
+    options?: HttpRequestOptions,
+  ): Promise<void>;
 }

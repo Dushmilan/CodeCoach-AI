@@ -29,9 +29,7 @@ class TestPistonServiceImplementsCodeExecutor:
         )
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
-                return_value=mock_response
-            )
+            mock_client.return_value.post = AsyncMock(return_value=mock_response)
             result = await service.execute("python", "print(1)")
 
         assert isinstance(result, ExecutionResult)
@@ -57,9 +55,7 @@ class TestPistonServiceImplementsCodeExecutor:
         )
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
-                return_value=mock_response
-            )
+            mock_client.return_value.get = AsyncMock(return_value=mock_response)
             runtimes = await service.get_runtimes()
 
         assert isinstance(runtimes, list)

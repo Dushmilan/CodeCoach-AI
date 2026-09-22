@@ -292,6 +292,57 @@ describe('CoachingService', () => {
     });
   });
 
+  describe('streamCoachResponse', () => {
+    function createStreamingHttp() {
+      const base = createMockHttp();
+      return { ...base, stream: vi.fn() };
+    }
+
+    it('streams POST /api/coach/stream with a 90s timeout', async () => {
+      const streamingHttp = createStreamingHttp();
+      const streamingService = new CoachingService(streamingHttp);
+      vi.mocked(streamingHttp.stream).mockResolvedValue(undefined);
+
+      const onChunk = vi.fn();
+      await streamingService.streamCoachResponse(
+        {
+          problem: 'Two Sum',
+          code: 'x',
+          message: 'hint?',
+          mode: 'hint',
+          language: 'python',
+          difficulty: 'medium',
+          surface: 'questions',
+        },
+        onChunk,
+      );
+
+      expect(streamingHttp.stream).toHaveBeenCalledWith(
+        '/api/coach/stream',
+        expect.objectContaining({ problem: 'Two Sum', mode: 'hint' }),
+        onChunk,
+        expect.objectContaining({ timeout: 90000 }),
+      );
+    });
+
+    it('throws when the http client cannot stream', async () => {
+      await expect(
+        service.streamCoachResponse(
+          {
+            problem: 'Two Sum',
+            code: 'x',
+            message: 'hint?',
+            mode: 'hint',
+            language: 'python',
+            difficulty: 'medium',
+            surface: 'questions',
+          },
+          vi.fn(),
+        ),
+      ).rejects.toThrow();
+    });
+  });
+
   describe('warmContext', () => {
     it('posts question_id to /api/coach/warm', async () => {
       vi.mocked(http.post).mockResolvedValue({

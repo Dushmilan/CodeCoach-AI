@@ -82,6 +82,10 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         await _app.state.redis_cache.close()
         logger.info("Redis cache connection closed")
 
+    from app.services.http_clients import aclose_shared_clients
+
+    await aclose_shared_clients()
+
 
 settings = get_settings()
 

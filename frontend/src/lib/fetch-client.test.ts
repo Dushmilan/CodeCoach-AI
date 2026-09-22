@@ -239,6 +239,57 @@ describe("FetchClient", () => {
       });
     });
 
+    describe("stream", () => {
+      function sseResponse(payload: string): Response {
+        const bytes = new TextEncoder().encode(payload);
+        const body = new ReadableStream({
+          start(controller) {
+            controller.enqueue(bytes);
+            controller.close();
+          },
+        });
+        return createMockResponse({ body: body as Response["body"] });
+      }
+
+      it("delivers chunk events to onChunk and resolves on done", async () => {
+        fetchSpy.mockResolvedValue(
+          sseResponse(
+            'data: {"chunk": "hel"}\n\ndata: {"chunk": "lo"}\n\ndata: {"done": true}\n\n',
+          ),
+        );
+        client = new FetchClient();
+
+        const seen: string[] = [];
+        await client.stream("/api/coach/stream", { problem: "x" }, (c) =>
+          seen.push(c),
+        );
+
+        expect(seen).toEqual(["hel", "lo"]);
+      });
+
+      it("throws HttpError when the server interrupts the stream", async () => {
+        fetchSpy.mockResolvedValue(
+          sseResponse('data: {"error": "Stream interrupted"}\n\n'),
+        );
+        client = new FetchClient();
+
+        await expect(
+          client.stream("/api/coach/stream", {}, () => {}),
+        ).rejects.toMatchObject({ status: 500 });
+      });
+
+      it("throws HttpError 408 when the stream aborts", async () => {
+        const abortError = new Error("The operation was aborted");
+        abortError.name = "AbortError";
+        fetchSpy.mockRejectedValue(abortError);
+        client = new FetchClient();
+
+        await expect(
+          client.stream("/api/coach/stream", {}, () => {}),
+        ).rejects.toMatchObject({ status: 408 });
+      });
+    });
+
     it("re-throws HttpError as-is", async () => {
       fetchSpy.mockRejectedValue(
         new HttpError("Custom error", 403, "forbidden"),
