@@ -434,6 +434,11 @@ class SolutionAnimationService:
             return None
 
         animation = self._enrich_fallback_animation(animation, entry, algorithm)
+        # #284: the family-compiler fallback is still build_animation's
+        # output — ship the same instrument-free display code the dual-pane
+        # viewer renders. Fallback beats carry no traced line, so their
+        # code_line stays absent (null in the payload).
+        self._attach_display_code(animation, entry["code"])
         validated, reason = self._validator.validate(animation)
         if validated is None:
             logger.warning(

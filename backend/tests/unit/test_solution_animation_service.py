@@ -168,6 +168,23 @@ class TestBuildAnimation:
         assert animation["title"]  # non-empty fallback
 
     @pytest.mark.asyncio
+    async def test_fallback_animation_still_ships_animated_code(self, monkeypatch):
+        # #284: the family-compiler fallback is still build_animation's
+        # output, so the dual-pane viewer must get the display code there
+        # too. Fallback beats carry no traced line, so every code_line is
+        # absent (rendered as null) — honest absence, never a wrong line.
+        executor = FakeExecutor(_ok_result())
+        service = SolutionAnimationService(executor=executor)
+        monkeypatch.setattr(service, "_try_planner", lambda *args, **kwargs: None)
+        animation = await service.build_animation(_question())
+        assert animation is not None
+        expected_display, _ = display_code_and_map(
+            get_reference_solution("bubble_sort")["code"]
+        )
+        assert animation["animated_code"] == expected_display
+        assert all(step.get("code_line") is None for step in animation["steps"])
+
+    @pytest.mark.asyncio
     async def test_pointer_beats_carry_event_index(self):
         # #153: pointer events carry the scan position in the `index` field
         # (trace schema), not `i`. The planner mapped `i` only, so every
