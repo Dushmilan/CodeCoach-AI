@@ -42,6 +42,7 @@ function postViewerStep(state: {
   step?: number;
   total?: number;
   narration?: string;
+  annotation?: string;
 }): void {
   let playing = false;
   try {
@@ -95,6 +96,8 @@ interface AnimationStepData {
   narration?: string;
   shapes?: SceneShape[];
   motion?: MotionOp[];
+  /** Causal intent callout (#287), e.g. {text: "5 < 7 → search right →"} */
+  annotation?: {text?: string};
 }
 
 interface AnimationData {
@@ -335,6 +338,38 @@ function* renderGenericScene(
 
   const nodes = new Map<string, any>();
 
+  // Intent callout ("math bubble", #287): one Rect+Txt pair reused across
+  // beats. Shown near the beat's focus target while an annotated beat
+  // plays; faded out as soon as the player advances to a beat without one.
+  const bubble = createRef<Rect>();
+  const bubbleText = createRef<Txt>();
+  view.add(
+    <Rect
+      ref={bubble}
+      width={880}
+      height={150}
+      radius={16}
+      fill={'#0f172a'}
+      stroke={'#facc15'}
+      lineWidth={2}
+      opacity={0}
+      x={0}
+      y={-180}
+    >
+      <Txt
+        ref={bubbleText}
+        text={''}
+        fontSize={26}
+        fill={'#e2e8f0'}
+        fontFamily={'JetBrains Mono, monospace'}
+        width={840}
+        textWrap
+        textAlign={'center'}
+      />
+    </Rect>,
+  );
+  let bubbleVisible = false;
+
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     const shapes = Array.isArray(step.shapes) ? step.shapes : [];
@@ -354,13 +389,46 @@ function* renderGenericScene(
 
     yield* narration().text(step.narration || '...', 0.25);
     yield* progress().text(`${i + 1} / ${Math.max(steps.length, 1)}`, 0.2);
+    const annotation =
+      typeof step.annotation?.text === 'string' && step.annotation.text.trim()
+        ? step.annotation.text
+        : '';
     postViewerStep({
       state: 'running',
       step: i + 1,
       total: steps.length,
       narration: step.narration || '',
+      annotation,
     });
     const camera: any = (step as any).camera;
+    if (!annotation && bubbleVisible) {
+      // The beat carries no "why": the callout disappears with the beat.
+      yield* bubble().opacity(0, 0.2);
+      bubbleVisible = false;
+    }
+    if (annotation) {
+      bubbleText().text(annotation);
+      // Anchor to the camera's focus element, else the first motion
+      // target — the same shape the beat is visibly acting on.
+      const camEl = typeof camera?.element === 'string' ? camera.element : undefined;
+      const anchorId =
+        camEl && nodes.has(camEl)
+          ? camEl
+          : motion.map((op) => op.target).find((t) => nodes.has(t));
+      if (anchorId) {
+        const node = nodes.get(anchorId);
+        bubble().position(new Vector2(node.x(), node.y() - 96));
+      } else {
+        bubble().position(new Vector2(0, -180));
+      }
+      // Keep the callout above shapes added by this beat.
+      bubble().remove();
+      view.add(bubble());
+      if (!bubbleVisible) {
+        yield* bubble().opacity(1, 0.25);
+        bubbleVisible = true;
+      }
+    }
     if (camera?.action === 'focus' || camera?.action === 'panTo') {
       const target = camera.element as string | undefined;
       const region = camera.region as [number, number] | undefined;

@@ -29,6 +29,8 @@ interface StepState {
   step?: number;
   total?: number;
   narration?: string;
+  /** Intent callout text (#287) — present only on decision beats. */
+  annotation?: string;
 }
 
 const SPEEDS = [
@@ -73,6 +75,13 @@ function buildOverlay(player: Player): void {
   const overlay = document.createElement('div');
   overlay.id = 'viewer-overlay';
 
+  // Top stack: narration bar + intent callout mirror (#287). The two live
+  // in one column so `justify-content: space-between` keeps them pinned to
+  // the top with the controls at the bottom.
+  const head = document.createElement('div');
+  head.id = 'viewer-head';
+  overlay.append(head);
+
   // Narration bar (top)
   const narration = document.createElement('div');
   narration.id = 'viewer-narration';
@@ -83,7 +92,16 @@ function buildOverlay(player: Player): void {
   narrationText.id = 'viewer-narration-text';
   narrationText.textContent = 'Preparing the animation…';
   narration.append(stepChip, narrationText);
-  overlay.append(narration);
+  head.append(narration);
+
+  // Intent callout mirror (top, below narration): the canvas draws the
+  // bubble near the active shape; this line mirrors the beat's
+  // `annotation` for legibility and screen readers. Hidden by default.
+  const annotationEl = document.createElement('div');
+  annotationEl.id = 'viewer-annotation';
+  annotationEl.setAttribute('role', 'note');
+  annotationEl.textContent = '';
+  head.append(annotationEl);
 
   // Control bar (bottom)
   const controls = document.createElement('div');
@@ -161,6 +179,9 @@ function buildOverlay(player: Player): void {
     stepChip.textContent = formatNarration(state);
     stepChip.style.display = formatNarration(state) ? '' : 'none';
     narrationText.textContent = state.narration || '';
+    const annotation = state.state === 'running' ? state.annotation || '' : '';
+    annotationEl.textContent = annotation;
+    annotationEl.style.display = annotation ? 'block' : 'none';
   };
 
   const setProgress = (frame: number, duration: number): void => {
@@ -237,6 +258,7 @@ function buildOverlay(player: Player): void {
       step: data.step,
       total: data.total,
       narration: typeof data.narration === 'string' ? data.narration : '',
+      annotation: typeof data.annotation === 'string' ? data.annotation : '',
     };
     if (state.state === 'complete') {
       if (maxFrameSeen < timelineMaxFrames(player) - COMPLETE_EPSILON_FRAMES) return;

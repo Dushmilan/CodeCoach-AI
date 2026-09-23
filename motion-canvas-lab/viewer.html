@@ -52,6 +52,14 @@
         line-height: 1.4;
       }
 
+      /* Top stack: narration pill + intent callout pill (#287) */
+      #viewer-head {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
       #viewer-step-chip {
         flex-shrink: 0;
         padding: 2px 10px;
@@ -69,6 +77,21 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      /* Intent callout ("math bubble") mirror (#287): hidden until a
+         decision beat carries `annotation`. */
+      #viewer-annotation {
+        display: none;
+        max-width: min(680px, calc(100vw - 48px));
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: rgba(250, 204, 21, 0.1);
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        color: #fde68a;
+        font-size: 12px;
+        line-height: 1.4;
+        text-align: center;
       }
 
       #viewer-narration.viewer-narration-error {
@@ -219,6 +242,11 @@
           padding: 6px 12px;
         }
 
+        #viewer-annotation {
+          font-size: 11px;
+          padding: 5px 10px;
+        }
+
         #viewer-controls {
           gap: 6px;
           padding: 8px 10px;
@@ -235,6 +263,7 @@
 
       @media (prefers-reduced-motion: reduce) {
         #viewer-narration,
+        #viewer-annotation,
         #viewer-controls {
           backdrop-filter: none;
         }
