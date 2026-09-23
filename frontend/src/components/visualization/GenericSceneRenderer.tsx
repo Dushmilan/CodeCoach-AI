@@ -218,6 +218,37 @@ function pointsToAttr(points: [number, number][] | undefined): string {
     .join(" ");
 }
 
+function annotationText(step: unknown): string | null {
+  const annotation = (step as { annotation?: unknown })?.annotation;
+  if (!annotation || typeof annotation !== "object") return null;
+  const text = (annotation as { text?: unknown }).text;
+  return typeof text === "string" && text.trim() ? text : null;
+}
+
+// Callout typography: the backend caps intent text at 200 chars, so wrapping
+// at 44 chars yields at most 5 lines inside the ±960/±540 canvas.
+const ANNOTATION_WRAP = 44;
+const ANNOTATION_MAX_LINES = 5;
+const ANNOTATION_FONT = 22;
+const ANNOTATION_LINE_H = 26;
+
+function wrapAnnotation(text: string): string[] {
+  const lines: string[] = [];
+  let remaining = text;
+  while (remaining.length > ANNOTATION_WRAP && lines.length < ANNOTATION_MAX_LINES - 1) {
+    const chunk = remaining.slice(0, ANNOTATION_WRAP);
+    const cut = chunk.lastIndexOf(" ");
+    const idx = cut > ANNOTATION_WRAP * 0.5 ? cut : ANNOTATION_WRAP;
+    lines.push(remaining.slice(0, idx).trim());
+    remaining = remaining.slice(idx).trim();
+  }
+  if (remaining.length > ANNOTATION_WRAP) {
+    remaining = `${remaining.slice(0, ANNOTATION_WRAP - 1).trimEnd()}…`;
+  }
+  lines.push(remaining);
+  return lines;
+}
+
 export function GenericSceneRenderer({ script, step, stepIndex }: VisualizerProps) {
   // Cumulative scene state (#240): planners emit shapes only in the intro
   // beat, so resolving camera/motion targets against the current step's
@@ -256,20 +287,86 @@ export function GenericSceneRenderer({ script, step, stepIndex }: VisualizerProp
   const badge = extras.badge;
   const camera = extras.camera;
 
+  const center = useMemo(
+    () => resolveCenter(sceneShapes, camera),
+    [sceneShapes, camera],
+  );
+
   const viewBox = useMemo(() => {
-    const center = resolveCenter(sceneShapes, camera);
     if (!center) return FULL_VIEWBOX;
     const zoom = TOKENS.camera.zoom_focus;
     const w = BASE_W / zoom;
     const h = BASE_H / zoom;
     return `${center.x - w / 2} ${center.y - h / 2} ${w} ${h}`;
-  }, [sceneShapes, camera]);
+  }, [center]);
 
   const narration = step?.narration ?? script?.title ?? "animation";
+  const annotation = annotationText(step);
+
+  // The callout ("math bubble", #287) floats 96 units above the beat's
+  // focus target, clamped to stay inside the canvas; beats without an
+  // annotation render nothing. Appear/hold/disappear is beat-driven: it
+  // mounts with the decision beat and unmounts when the player advances.
+  const bubble = (() => {
+    if (!annotation) return null;
+    const lines = wrapAnnotation(annotation);
+    const padX = 16;
+    const padY = 12;
+    const width = Math.min(
+      BASE_W - 32,
+      Math.max(...lines.map((l) => l.length)) * ANNOTATION_FONT * 0.55 + padX * 2,
+    );
+    const height = lines.length * ANNOTATION_LINE_H + padY * 2;
+    const anchor = center ?? { x: 0, y: 0 };
+    const cx = Math.max(-BOUND_X + width / 2, Math.min(BOUND_X - width / 2, anchor.x));
+    const cy = Math.max(
+      -BOUND_Y + height / 2 + 10,
+      Math.min(BOUND_Y - height / 2, anchor.y - 96),
+    );
+    return (
+      <g
+        data-testid="annotation-bubble"
+        className="a1-annotation"
+        transform={`translate(${cx} ${cy})`}
+        role="note"
+      >
+        <polygon
+          points={`-7,${height / 2} 7,${height / 2} 0,${height / 2 + 11}`}
+          fill={TOKENS.palette.dim_fill}
+          stroke={TOKENS.palette.accent}
+          strokeWidth={1.5}
+        />
+        <rect
+          x={-width / 2}
+          y={-height / 2}
+          width={width}
+          height={height}
+          rx={10}
+          fill={TOKENS.palette.dim_fill}
+          stroke={TOKENS.palette.accent}
+          strokeWidth={1.5}
+        />
+        {lines.map((line, i) => (
+          <text
+            key={i}
+            x={0}
+            y={-height / 2 + padY + ANNOTATION_LINE_H * i + ANNOTATION_LINE_H * 0.7}
+            fontSize={ANNOTATION_FONT}
+            fill={TOKENS.palette.text}
+            textAnchor="middle"
+          >
+            {line}
+          </text>
+        ))}
+      </g>
+    );
+  })();
 
   return (
     <div className="space-y-3" data-testid={`generic-scene-${stepIndex}`}>
-      <style>{`@media (prefers-reduced-motion: reduce) { .a1-shape { transition: none !important; } }`}</style>
+      <style>{`@keyframes a1-annotation-in { from { opacity: 0 } to { opacity: 1 } }
+.a1-annotation { animation: a1-annotation-in 0.25s ease-out; }
+@media (prefers-reduced-motion: reduce) { .a1-shape, .a1-annotation { transition: none !important; animation: none !important; } }`}</style>
       <svg viewBox={viewBox} role="img" aria-label={narration} className="h-auto w-full">
         {sceneShapes.map((shape) => {
           const override = overrides.get(shape.id);
@@ -387,6 +484,7 @@ export function GenericSceneRenderer({ script, step, stepIndex }: VisualizerProp
               return null;
           }
         })}
+        {bubble}
       </svg>
       <p aria-live="polite" className="text-sm text-foreground/80">
         {step?.narration}
