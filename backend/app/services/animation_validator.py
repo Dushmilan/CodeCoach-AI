@@ -112,6 +112,12 @@ class AnimationValidator:
             ):
                 return None, f"Step {i} narration must be under {MAX_NARRATION} chars"
 
+            annotation = step.get("annotation")
+            if annotation is not None:
+                ok, reason = self._validate_annotation(annotation, f"Step {i}")
+                if not ok:
+                    return None, reason
+
             shapes = step.get("shapes") or []
             if not isinstance(shapes, list):
                 return None, f"Step {i} shapes must be a list"
@@ -196,6 +202,30 @@ class AnimationValidator:
         return script, ""
 
     # ── internal ──────────────────────────────────────────────────────
+
+    @staticmethod
+    def _validate_annotation(annotation: Any, label: str) -> Tuple[bool, str]:
+        """Validate the beat-level causal callout object (#287).
+
+        Shape: exactly ``{"text": <non-empty str, <=200 chars>}``. A
+        dedicated annotation shape type was rejected — a callout IS text;
+        as a beat key it rides the decision beat's own appear/hold/
+        disappear lifecycle without consuming shape caps or forcing
+        lifecycle motion ops onto beats that already animate. Unknown
+        fields are rejected (not ignored) so a typo can never ship a
+        callout the viewer silently drops.
+        """
+        if not isinstance(annotation, dict):
+            return False, f"{label} annotation must be an object"
+        unknown = sorted(k for k in annotation if k != "text")
+        if unknown:
+            return False, f"{label} annotation has unknown fields {unknown}"
+        text = annotation.get("text")
+        if not isinstance(text, str) or not text.strip():
+            return False, f"{label} annotation requires a non-empty text string"
+        if len(text) > MAX_TEXT_LENGTH:
+            return False, f"{label} annotation text exceeds {MAX_TEXT_LENGTH} chars"
+        return True, ""
 
     @staticmethod
     def _validate_shape(shape: Dict[str, Any], label: str) -> Tuple[bool, str]:

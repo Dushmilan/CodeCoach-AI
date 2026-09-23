@@ -193,3 +193,33 @@ class TestAnimateResponseCodeLine:
         dumped = resp.model_dump()
         assert dumped["animation"]["steps"][0]["code_line"] == 2
         assert dumped["animation"]["animated_code"].startswith("def two_sum")
+
+
+class TestAnimateResponseAnnotation:
+    """#287: beats reach the viewer only through declared response fields."""
+
+    def test_annotation_survives_the_response_model(self):
+        # The endpoint builds AnimateResponse from the validated dict; an
+        # undeclared annotation would be silently dropped at the boundary
+        # and the intent bubble would never reach the frontend.
+        from app.models.schemas import AnimateResponse
+
+        resp = AnimateResponse(
+            animation={
+                "title": "Two Sum II",
+                "data": {"family": "array"},
+                "steps": [
+                    {
+                        "narration": "Compare [0]=2 vs [3]=15",
+                        "annotation": {"text": "sum 17 > 9 → move right pointer left"},
+                    }
+                ],
+            }
+        )
+        dumped = resp.model_dump()
+        assert dumped["animation"]["steps"][0]["annotation"] == {
+            "text": "sum 17 > 9 → move right pointer left"
+        }
+
+    def test_step_annotation_defaults_to_none(self):
+        assert AnimationStep(narration="x").annotation is None

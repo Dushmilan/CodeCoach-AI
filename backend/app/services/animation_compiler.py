@@ -181,8 +181,15 @@ class AnimationCompiler:
         """Clamp an index into the rendered array (guards off-range pointers)."""
         return max(0, min(int(index), self.n - 1))
 
-    def _make_step(self, narration: str, motion: List[dict]) -> dict:
-        return {"narration": narration[:300], "shapes": [], "motion": motion}
+    def _make_step(
+        self, narration: str, motion: List[dict], annotation: Optional[str] = None
+    ) -> dict:
+        step = {"narration": narration[:300], "shapes": [], "motion": motion}
+        if annotation:
+            # #287: the step an event becomes carries that event's causal
+            # intent so the fallback path never silently drops the "why".
+            step["annotation"] = {"text": annotation}
+        return step
 
     # ── compile ─────────────────────────────────────────────────────────
 
@@ -518,7 +525,7 @@ class AnimationCompiler:
 
             if not motion:
                 continue
-            steps.append(self._make_step(narration, motion))
+            steps.append(self._make_step(narration, motion, e.intent))
 
         if len(steps) < 3:
             return None

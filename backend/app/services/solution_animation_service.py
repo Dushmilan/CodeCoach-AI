@@ -244,7 +244,9 @@ def _translate_search_events(
                     )
                 )
                 emitted_bounds = bounds
-            steps.append(AnimationStepSpec(action="inspect_mid", index=mid))
+            steps.append(
+                AnimationStepSpec(action="inspect_mid", index=mid, annotation=e.intent)
+            )
             pending_mid = mid
             compared_bounds = bounds
             continue
@@ -327,7 +329,9 @@ class SolutionAnimationService:
         stripped copy, so each beat's ``code_line`` is rewritten through
         the original→display map. Lines outside the map (wrapper-level,
         never displayable) are dropped — honest absence over a wrong
-        highlight. Beats without ``code_line`` are untouched.
+        highlight. Beats without ``code_line`` are untouched. The beat's
+        ``annotation`` (#287) is text, not a line: it passes through
+        unchanged.
         """
         display_code, line_map = display_code_and_map(code)
         animation["animated_code"] = display_code
@@ -545,13 +549,16 @@ class SolutionAnimationService:
                             ):
                                 # The climax replaces the mark beat on the
                                 # same cell — inherit its line so the
-                                # highlight never drops at the peak (#284).
+                                # highlight never drops at the peak (#284),
+                                # and its annotation so the "why" never
+                                # drops either (#287).
                                 replaced = steps.pop()
                                 steps.append(
                                     AnimationStepSpec(
                                         action="found",
                                         index=return_result,
                                         line=replaced.line,
+                                        annotation=replaced.annotation,
                                     )
                                 )
                             else:
@@ -624,6 +631,11 @@ class SolutionAnimationService:
                     # #284: the beat this step becomes highlights the trace
                     # call's own line in the dual-pane viewer.
                     kwargs["line"] = e.line
+                if e.intent is not None:
+                    # #287: the beat this step becomes shows the real causal
+                    # intent ("why") as its annotation — parsed intent is
+                    # already a non-empty string capped at 200 chars.
+                    kwargs["annotation"] = e.intent
                 steps.append(AnimationStepSpec(**kwargs))
             if algorithm == "binary_search":
                 # #243: generic pointer/compare/mark actions render as
