@@ -15,16 +15,16 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantStyles: Record<string, string> = {
   default:
-    "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
+    "bg-brand text-brand-foreground hover:bg-brand/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
   "primary-pill":
-    "rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
+    "rounded-full bg-brand text-brand-foreground hover:bg-brand/90 px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
   destructive:
     "bg-destructive text-destructive-foreground hover:bg-destructive/90",
   outline:
-    "border border-white/10 bg-white/5 hover:bg-white/10 hover:text-accent-foreground backdrop-blur-xl",
+    "border border-border bg-card text-foreground hover:bg-accent backdrop-blur-xl",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-  ghost: "hover:bg-white/5 hover:text-accent-foreground",
-  link: "text-primary underline-offset-4 hover:underline",
+  ghost: "hover:bg-accent hover:text-accent-foreground",
+  link: "text-brand underline-offset-4 hover:underline",
 };
 
 const sizeStyles: Record<string, string> = {

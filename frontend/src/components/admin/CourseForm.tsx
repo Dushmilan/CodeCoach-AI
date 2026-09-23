@@ -70,8 +70,10 @@ export default function CourseForm({ initial, saving, onSave, onCancel }: Course
   };
 
   const inputClass = (field: string) =>
-    `w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border outline-none transition-all duration-200 ${
-      errors[field] ? 'border-destructive ring-1 ring-destructive/20' : 'border-border'
+    `w-full text-sm bg-muted/50 rounded-full px-4 py-2 border outline-none transition-all duration-200 placeholder:text-muted-foreground focus:ring-1 ${
+      errors[field]
+        ? 'border-destructive ring-destructive/20'
+        : 'border-border focus:border-ring focus:ring-ring/40'
     } ${field === 'id' ? 'font-mono' : ''}`;
 
   return (
@@ -121,7 +123,7 @@ export default function CourseForm({ initial, saving, onSave, onCancel }: Course
       <div>
         <label className="text-xs text-muted-foreground block mb-1">Description</label>
         <textarea
-          className="w-full h-20 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y"
+          className="w-full h-20 text-sm bg-muted/50 rounded-2xl px-3 py-2 border border-border outline-none resize-y focus:border-ring"
           value={f.description}
           onChange={(e) => set('description', e.target.value)}
         />

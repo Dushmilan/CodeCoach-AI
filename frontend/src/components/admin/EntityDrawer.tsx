@@ -56,7 +56,7 @@ export default function EntityDrawer({
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`relative h-full bg-card border-l border-border shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`relative h-full overflow-hidden rounded-l-2xl bg-card border-l border-border shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           wide ? "w-full max-w-2xl" : "w-full max-w-lg"
         }`}
         style={{
@@ -66,7 +66,7 @@ export default function EntityDrawer({
         }}
       >
         {/* Glass morphism outer ring effect */}
-        <div className="absolute inset-0 rounded-none ring-1 ring-white/5 pointer-events-none" />
+        <div className="absolute inset-0 ring-1 ring-inset ring-border pointer-events-none" />
 
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border bg-card/80 backdrop-blur-xl">
@@ -78,7 +78,7 @@ export default function EntityDrawer({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-muted transition-colors duration-200"
+            className="p-2 rounded-full hover:bg-muted transition-colors duration-200"
           >
             <X className="h-4 w-4" />
           </button>

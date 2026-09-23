@@ -2,6 +2,12 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
+import {
+  expectBentoStats,
+  expectEyebrowBudget,
+  expectNoDash,
+  expectNoDuplicateCtas,
+} from "@/test-helpers/taste";
 import ProfessorOverviewPage from "./page";
 
 vi.mock("@/providers", () => ({
@@ -69,5 +75,15 @@ describe("ProfessorOverviewPage", () => {
     render(<ProfessorOverviewPage />);
     expect(await screen.findByText("Live CS101")).toBeInTheDocument();
     expect(await screen.findByText(/LIVE-2026/)).toBeInTheDocument();
+  });
+
+  it("lays stats out as a varied bento and passes rendered taste gates", async () => {
+    const { container } = render(<ProfessorOverviewPage />);
+    await screen.findByText(/professor dashboard/i);
+    expect(container.querySelectorAll("[data-stat]")).toHaveLength(3);
+    expectBentoStats(container);
+    expectNoDash(container, "professor overview");
+    expectEyebrowBudget(container, "professor overview");
+    expectNoDuplicateCtas(container, "professor overview");
   });
 });

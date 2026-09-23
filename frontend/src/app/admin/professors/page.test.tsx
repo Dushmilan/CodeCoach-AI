@@ -2,6 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
+import {
+  expectEyebrowBudget,
+  expectNoDash,
+  expectNoDuplicateCtas,
+} from "@/test-helpers/taste";
 import ProfessorsPage from "./page";
 
 vi.mock("@/providers", () => ({
@@ -88,5 +93,20 @@ describe("Admin Professors roster page", () => {
     );
     render(<ProfessorsPage />);
     expect(await screen.findByText(/no professors/i)).toBeInTheDocument();
+  });
+
+  it("renders avatar chips plus taste gates for each professor card", async () => {
+    server.use(
+      http.get("/api/admin/hierarchy", () =>
+        HttpResponse.json(hierarchyPayload),
+      ),
+    );
+    const { container } = render(<ProfessorsPage />);
+
+    expect(await screen.findByText("professor.ada")).toBeInTheDocument();
+    expect(screen.getAllByTestId("professor-avatar")).toHaveLength(2);
+    expectNoDash(container, "admin professors");
+    expectEyebrowBudget(container, "admin professors");
+    expectNoDuplicateCtas(container, "admin professors");
   });
 });

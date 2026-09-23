@@ -169,8 +169,10 @@ export default function LessonForm({
   };
 
   const inputClass = (field: string) =>
-    `w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border outline-none transition-all duration-200 ${
-      errors[field] ? 'border-destructive ring-1 ring-destructive/20' : 'border-border'
+    `w-full text-sm bg-muted/50 rounded-full px-4 py-2 border outline-none transition-all duration-200 placeholder:text-muted-foreground focus:ring-1 ${
+      errors[field]
+        ? 'border-destructive ring-destructive/20'
+        : 'border-border focus:border-ring focus:ring-ring/40'
     } ${field === 'id' ? 'font-mono' : ''}`;
 
   return (
@@ -200,7 +202,7 @@ export default function LessonForm({
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Type</label>
           <select
-            className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
+            className="w-full text-sm bg-muted/50 rounded-full px-4 py-2 border border-border outline-none focus:border-ring"
             value={f.type}
             onChange={(e) => set('type', e.target.value)}
           >
@@ -226,15 +228,15 @@ export default function LessonForm({
           <label className="text-xs text-muted-foreground">
             Content (Markdown)
             {f.type === 'exercise' && !questionData.title && (
-              <span className="ml-2 text-yellow-400">No question data — add test cases below</span>
+              <span className="ml-2 text-warning">No question data. Add test cases below.</span>
             )}
           </label>
           <div className="flex gap-1">
             <button
               onClick={() => setContentTab('edit')}
-              className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${
                 contentTab === 'edit'
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-brand/10 text-brand'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -242,9 +244,9 @@ export default function LessonForm({
             </button>
             <button
               onClick={() => setContentTab('preview')}
-              className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${
                 contentTab === 'preview'
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-brand/10 text-brand'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -252,10 +254,10 @@ export default function LessonForm({
             </button>
           </div>
         </div>
-        <div className="border border-border rounded-lg overflow-hidden" style={{ minHeight: 200 }}>
+        <div className="border border-border rounded-2xl overflow-hidden" style={{ minHeight: 200 }}>
           {contentTab === 'edit' ? (
             <textarea
-              className="w-full h-48 text-sm bg-muted/50 px-3 py-2 border-0 outline-none resize-y font-mono"
+              className="w-full h-48 text-sm bg-muted/50 px-3 py-2 border-0 outline-none resize-y font-mono focus:ring-1 focus:ring-inset focus:ring-ring/40"
               value={f.content}
               onChange={(e) => set('content', e.target.value)}
               placeholder="# Lesson title&#10;&#10;Content here..."
@@ -270,7 +272,7 @@ export default function LessonForm({
 
       {/* Exercise: Question Editor with test cases */}
       {f.type === 'exercise' && (
-        <div className="border border-border rounded-lg p-4 space-y-4 bg-muted/20">
+        <div className="border border-border rounded-2xl p-4 space-y-4 bg-muted/20">
           <div className="flex items-center justify-between">
             <label className="text-xs font-medium text-muted-foreground">
               Question & Test Cases

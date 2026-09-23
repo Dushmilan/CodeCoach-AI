@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { HttpError } from '@/lib/fetch-client';
+import {
+  expectBentoStats,
+  expectEyebrowBudget,
+  expectNoDash,
+  expectNoDuplicateCtas,
+} from '@/test-helpers/taste';
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -104,5 +110,35 @@ describe('AdminDashboard hierarchy section', () => {
     await waitFor(() =>
       expect(screen.getByText('DB down')).toBeInTheDocument(),
     );
+  });
+
+  it("lays the stats out as a four-cell varied bento grid", async () => {
+    const { container } = render(<AdminDashboard />);
+    await waitFor(() =>
+      expect(screen.getByText('professor.ada')).toBeInTheDocument(),
+    );
+    expect(container.querySelectorAll('[data-stat]')).toHaveLength(4);
+    expectBentoStats(container);
+    expect(screen.getByTestId('admin-stat-generation')).toBeInTheDocument();
+  });
+
+  it("shows avatar chips on hierarchy professor rows", async () => {
+    render(<AdminDashboard />);
+    await waitFor(() =>
+      expect(screen.getByText('professor.ada')).toBeInTheDocument(),
+    );
+    expect(
+      screen.getAllByTestId('hierarchy-avatar').length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("passes rendered taste gates (dashes, eyebrows, duplicate CTAs)", async () => {
+    const { container } = render(<AdminDashboard />);
+    await waitFor(() =>
+      expect(screen.getByText('professor.ada')).toBeInTheDocument(),
+    );
+    expectNoDash(container, 'admin dashboard');
+    expectEyebrowBudget(container, 'admin dashboard');
+    expectNoDuplicateCtas(container, 'admin dashboard');
   });
 });

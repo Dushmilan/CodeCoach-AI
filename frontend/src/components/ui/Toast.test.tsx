@@ -23,6 +23,20 @@ describe("showToast", () => {
     expect(screen.getByText("Hello world")).toBeInTheDocument();
   });
 
+  it("styles variants with semantic tokens, not raw hues (issue #292)", () => {
+    const { container } = render(<ToastContainer />);
+    act(() => {
+      showToast("Done", "success");
+    });
+    act(() => {
+      showToast("Broken", "error");
+    });
+    const html = container.innerHTML;
+    expect(html).toContain("text-success");
+    expect(html).toContain("text-destructive");
+    expect(html).not.toMatch(/text-green-\d|text-red-\d|ring-green-\d/);
+  });
+
   it("defaults to info variant", () => {
     render(<ToastContainer />);
     act(() => {

@@ -2,6 +2,12 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
+import {
+  expectBentoStats,
+  expectEyebrowBudget,
+  expectNoDash,
+  expectNoDuplicateCtas,
+} from "@/test-helpers/taste";
 import AdminClassroomDetailPage from "./page";
 
 vi.mock("@/providers", () => ({
@@ -99,5 +105,27 @@ describe("Admin classroom detail page", () => {
     render(<AdminClassroomDetailPage />);
 
     expect(await screen.findByText(/classroom not found/i)).toBeInTheDocument();
+  });
+
+  it("renders a varied stat bento with avatar roster and passes taste gates", async () => {
+    mockId.current = "room-1";
+    server.use(
+      http.get("/api/instructor/classrooms/:id", () =>
+        HttpResponse.json(detailPayload),
+      ),
+    );
+    const { container } = render(<AdminClassroomDetailPage />);
+
+    expect(await screen.findByText("CS101 · Section A")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-stat]")).toHaveLength(3);
+    expectBentoStats(container);
+    expect(screen.getAllByTestId("roster-avatar")).toHaveLength(1);
+    expect(
+      container.querySelectorAll('[role="progressbar"]').length,
+    ).toBeGreaterThan(0);
+
+    expectNoDash(container, "admin classroom detail");
+    expectEyebrowBudget(container, "admin classroom detail");
+    expectNoDuplicateCtas(container, "admin classroom detail");
   });
 });

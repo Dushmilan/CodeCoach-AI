@@ -227,8 +227,8 @@ export default function CurriculumPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Database className="h-5 w-5 text-primary" />
+                    <div className="w-10 h-10 rounded-2xl bg-brand/10 flex items-center justify-center ring-1 ring-brand/20">
+                      <Database className="h-5 w-5 text-brand" />
                     </div>
                     <div>
                       <CardTitle className="text-base">
@@ -245,21 +245,21 @@ export default function CurriculumPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => openDrawer("course", course)}
-                      className="text-xs p-1.5 rounded hover:bg-muted transition-colors"
+                      className="text-xs p-2 rounded-full hover:bg-muted transition-colors"
                       title="Edit course"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => del("course", course.id)}
-                      className="text-xs p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+                      className="text-xs p-2 rounded-full hover:bg-destructive/10 text-destructive transition-colors"
                       title="Delete course"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => toggle(course.id)}
-                      className="text-xs p-1.5 rounded hover:bg-muted transition-colors"
+                      className="text-xs p-2 rounded-full hover:bg-muted transition-colors"
                     >
                       {expanded[course.id] ? (
                         <ChevronDown className="h-4 w-4" />
@@ -285,7 +285,7 @@ export default function CurriculumPage() {
 
                   {tree.modules.filter((m) => m.course_id === course.id)
                     .length === 0 ? (
-                    <p className="text-xs text-muted-foreground pl-13 ml-6">
+                    <p className="text-xs text-muted-foreground ml-6">
                       No modules
                     </p>
                   ) : (
@@ -312,21 +312,21 @@ export default function CurriculumPage() {
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => openDrawer("module", mod)}
-                                className="text-xs p-1 rounded hover:bg-muted transition-colors"
+                                className="text-xs p-1.5 rounded-full hover:bg-muted transition-colors"
                                 title="Edit module"
                               >
                                 <Edit3 className="h-3 w-3" />
                               </button>
                               <button
                                 onClick={() => del("module", mod.id)}
-                                className="text-xs p-1 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+                                className="text-xs p-1.5 rounded-full hover:bg-destructive/10 text-destructive transition-colors"
                                 title="Delete module"
                               >
                                 <Trash2 className="h-3 w-3" />
                               </button>
                               <button
                                 onClick={() => toggle(mod.id)}
-                                className="text-xs p-1 rounded hover:bg-muted transition-colors"
+                                className="text-xs p-1.5 rounded-full hover:bg-muted transition-colors"
                               >
                                 {expanded[mod.id] ? (
                                   <ChevronDown className="h-3.5 w-3.5" />
@@ -346,7 +346,7 @@ export default function CurriculumPage() {
                                   openDrawer("lesson", undefined, mod.id)
                                 }
                               >
-                                <Plus className="h-3 h-3.5 w-3.5 mr-1" /> Add
+                                <Plus className="h-3.5 w-3.5 mr-1" /> Add
                                 Lesson
                               </Button>
 
@@ -372,10 +372,10 @@ export default function CurriculumPage() {
                                           </span>
                                           {les.type && (
                                             <span
-                                              className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                              className={`text-[10px] px-2 py-0.5 rounded-full ring-1 ring-inset ${
                                                 les.type === "exercise"
-                                                  ? "bg-blue-500/20 text-blue-400"
-                                                  : "bg-muted/50 text-muted-foreground"
+                                                  ? "bg-brand/10 text-brand ring-brand/20"
+                                                  : "bg-muted text-muted-foreground ring-border"
                                               }`}
                                             >
                                               {les.type}
@@ -387,7 +387,7 @@ export default function CurriculumPage() {
                                             onClick={() =>
                                               openDrawer("lesson", les)
                                             }
-                                            className="text-xs p-1 rounded hover:bg-muted transition-colors"
+                                            className="text-xs p-1.5 rounded-full hover:bg-muted transition-colors"
                                             title="Edit lesson"
                                           >
                                             <Edit3 className="h-3 w-3" />
@@ -396,7 +396,7 @@ export default function CurriculumPage() {
                                             onClick={() =>
                                               del("lesson", les.id)
                                             }
-                                            className="text-xs p-1 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+                                            className="text-xs p-1.5 rounded-full hover:bg-destructive/10 text-destructive transition-colors"
                                             title="Delete lesson"
                                           >
                                             <Trash2 className="h-3 w-3" />

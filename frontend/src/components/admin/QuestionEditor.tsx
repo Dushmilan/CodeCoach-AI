@@ -192,7 +192,7 @@ export default function QuestionEditor({
                 Question Title *
               </label>
               <input
-                className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
+                className="w-full text-sm bg-muted/50 rounded-full px-4 py-2 border border-border outline-none placeholder:text-muted-foreground"
                 value={title}
                 onChange={(e) => {
                   setTitle(e.target.value);
@@ -206,7 +206,7 @@ export default function QuestionEditor({
                 Difficulty
               </label>
               <select
-                className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
+                className="w-full text-sm bg-muted/50 rounded-full px-4 py-2 border border-border outline-none placeholder:text-muted-foreground"
                 value={difficulty}
                 onChange={(e) => {
                   setDifficulty(e.target.value);
@@ -225,7 +225,7 @@ export default function QuestionEditor({
               Category
             </label>
             <input
-              className="w-full text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none"
+              className="w-full text-sm bg-muted/50 rounded-full px-4 py-2 border border-border outline-none placeholder:text-muted-foreground"
               value={category}
               onChange={(e) => {
                 setCategory(e.target.value);
@@ -243,7 +243,7 @@ export default function QuestionEditor({
           Description (Markdown)
         </label>
         <textarea
-          className="w-full h-32 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y font-mono"
+          className="w-full h-32 text-sm bg-muted/50 rounded-2xl px-3 py-2 border border-border outline-none resize-y font-mono"
           value={description}
           onChange={(e) => {
             setDescription(e.target.value);
@@ -263,9 +263,9 @@ export default function QuestionEditor({
             <button
               key={lang}
               onClick={() => setActiveLang(lang)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-all duration-200 ${
+              className={`text-xs px-3.5 py-1.5 rounded-full border transition-all duration-200 ${
                 activeLang === lang
-                  ? "bg-primary/10 text-primary border-primary/20"
+                  ? "bg-brand/10 text-brand border-brand/30"
                   : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50"
               }`}
             >
@@ -274,7 +274,7 @@ export default function QuestionEditor({
           ))}
         </div>
         <textarea
-          className="w-full h-32 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y font-mono"
+          className="w-full h-32 text-sm bg-muted/50 rounded-2xl px-3 py-2 border border-border outline-none resize-y font-mono"
           value={starterCode[activeLang]}
           onChange={(e) => updateStarterCode(activeLang, e.target.value)}
           placeholder={
@@ -304,7 +304,7 @@ export default function QuestionEditor({
           {examples.map((ex, idx) => (
             <div
               key={idx}
-              className="bg-muted/30 rounded-lg p-3 border border-border/50 space-y-2"
+              className="bg-muted/30 rounded-2xl p-3 border border-border/50 space-y-2"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground">
@@ -321,20 +321,20 @@ export default function QuestionEditor({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <input
-                  className="text-xs bg-muted/50 rounded px-2 py-1.5 border border-border outline-none font-mono"
+                  className="text-xs bg-muted/50 rounded-full px-3 py-1.5 border border-border outline-none font-mono placeholder:text-muted-foreground"
                   placeholder="Input"
                   value={ex.input}
                   onChange={(e) => updateExample(idx, "input", e.target.value)}
                 />
                 <input
-                  className="text-xs bg-muted/50 rounded px-2 py-1.5 border border-border outline-none font-mono"
+                  className="text-xs bg-muted/50 rounded-full px-3 py-1.5 border border-border outline-none font-mono placeholder:text-muted-foreground"
                   placeholder="Expected Output"
                   value={ex.output}
                   onChange={(e) => updateExample(idx, "output", e.target.value)}
                 />
               </div>
               <input
-                className="w-full text-xs bg-muted/50 rounded px-2 py-1.5 border border-border outline-none"
+                className="w-full text-xs bg-muted/50 rounded-full px-3 py-1.5 border border-border outline-none placeholder:text-muted-foreground"
                 placeholder="Explanation (optional)"
                 value={ex.explanation}
                 onChange={(e) =>
@@ -363,7 +363,7 @@ export default function QuestionEditor({
           {testCases.map((tc, idx) => (
             <div
               key={idx}
-              className="bg-muted/30 rounded-lg p-3 border border-border/50 space-y-2"
+              className="bg-muted/30 rounded-2xl p-3 border border-border/50 space-y-2"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -380,11 +380,11 @@ export default function QuestionEditor({
                       aria-checked={tc.hidden}
                       onClick={() => updateTestCase(idx, "hidden", !tc.hidden)}
                       className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                        tc.hidden ? "bg-primary" : "bg-muted"
+                        tc.hidden ? "bg-brand" : "bg-muted"
                       }`}
                     >
                       <span
-                        className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out mt-[1px] ${
+                        className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-card shadow-lg ring-0 transition-transform duration-200 ease-in-out mt-[1px] ${
                           tc.hidden
                             ? "translate-x-3.5 ml-[1px]"
                             : "translate-x-0 ml-[1px]"
@@ -404,14 +404,14 @@ export default function QuestionEditor({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <textarea
-                  className="text-xs bg-muted/50 rounded px-2 py-1.5 border border-border outline-none resize-y font-mono"
+                  className="text-xs bg-muted/50 rounded-2xl px-3 py-1.5 border border-border outline-none resize-y font-mono placeholder:text-muted-foreground"
                   placeholder="Input"
                   rows={2}
                   value={tc.input}
                   onChange={(e) => updateTestCase(idx, "input", e.target.value)}
                 />
                 <textarea
-                  className="text-xs bg-muted/50 rounded px-2 py-1.5 border border-border outline-none resize-y font-mono"
+                  className="text-xs bg-muted/50 rounded-2xl px-3 py-1.5 border border-border outline-none resize-y font-mono placeholder:text-muted-foreground"
                   placeholder="Expected Output"
                   rows={2}
                   value={tc.expected_output}
@@ -421,7 +421,7 @@ export default function QuestionEditor({
                 />
               </div>
               <input
-                className="w-full text-xs bg-muted/50 rounded px-2 py-1.5 border border-border outline-none"
+                className="w-full text-xs bg-muted/50 rounded-full px-3 py-1.5 border border-border outline-none placeholder:text-muted-foreground"
                 placeholder="Description (optional)"
                 value={tc.description}
                 onChange={(e) =>
@@ -440,7 +440,7 @@ export default function QuestionEditor({
             Hints (one per line)
           </label>
           <textarea
-            className="w-full h-24 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y"
+            className="w-full h-24 text-sm bg-muted/50 rounded-2xl px-3 py-2 border border-border outline-none resize-y"
             value={hints}
             onChange={(e) => {
               setHints(e.target.value);
@@ -454,7 +454,7 @@ export default function QuestionEditor({
             Constraints (one per line)
           </label>
           <textarea
-            className="w-full h-24 text-sm bg-muted/50 rounded-lg px-3 py-2 border border-border outline-none resize-y"
+            className="w-full h-24 text-sm bg-muted/50 rounded-2xl px-3 py-2 border border-border outline-none resize-y"
             value={constraints}
             onChange={(e) => {
               setConstraints(e.target.value);
