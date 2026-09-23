@@ -119,17 +119,29 @@ export default function CoursePage() {
 
   useEffect(() => {
     if (!isAuthenticated || !courseId) return;
+    // Cancelled flag + abort: a progress response that settles after the
+    // course changed (or after unmount) must not replace this course's
+    // progress state — issue #308.
+    let cancelled = false;
+    const controller = new AbortController();
     const fetchProgress = async () => {
       try {
         const data = await api.get<{ completed_lessons: string[] }>(
           `/api/progress/${courseId}`,
+          { signal: controller.signal },
         );
+        if (cancelled) return;
         setCompletedLessons(new Set(data.completed_lessons || []));
       } catch (err) {
+        if (cancelled) return;
         console.error("Failed to fetch progress:", err);
       }
     };
     fetchProgress();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [courseId, isAuthenticated]);
 
   const totalLessons =
