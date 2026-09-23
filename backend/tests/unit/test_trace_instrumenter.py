@@ -166,6 +166,33 @@ class TestLineCapture:
         assert compare.line == 5
 
 
+INTENT_SOLUTION = """\
+def pick(values, target):
+    __trace("init", values=list(values), family="array")
+    for i, v in enumerate(values):
+        __trace("pointer", name="i", index=i)
+        __trace("compare", i=i, intent=f"{v} = {target} -> found" if v == target else f"{v} != {target} -> keep scanning")
+        if v == target:
+            return i
+    return -1
+"""
+
+
+class TestIntentAndLineCapture:
+    """#287: string intent fields ride the event without disturbing the
+    __CODE_OFFSET line math — only ``line`` enters the offset path."""
+
+    def test_intent_rides_events_and_lines_stay_solution_relative(self):
+        code = wrap_traced_solution(INTENT_SOLUTION, "pick")
+        events = parse_trace(_run(code, json.dumps({"values": [4, 2], "target": 2})))
+        intents = [e.intent for e in events if e.kind == "compare"]
+        assert intents == ["4 != 2 -> keep scanning", "2 = 2 -> found"]
+        # The pointer __trace sits on line 4 of the solution — identical to
+        # a run where the intent kwarg never existed.
+        pointer = next(e for e in events if e.kind == "pointer")
+        assert pointer.line == 4
+
+
 TRACE_DISPLAY_SAMPLE = """\
 def total(values):
     __trace("init", values=values, family="array")

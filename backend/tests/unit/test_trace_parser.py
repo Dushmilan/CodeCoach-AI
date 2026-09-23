@@ -216,3 +216,38 @@ class TestTraceLine:
         events = parse_trace(_line("compare", i=0, j=1, line=bad))
         assert events[0].line is None
         assert "line" not in events[0].fields
+
+
+class TestTraceIntent:
+    """#287: decision events may carry a causal intent string.
+
+    ``intent`` is free text computed by the reference solution from real
+    runtime values. Only a non-empty string survives parsing — everything
+    else is dropped like an invalid ``line`` so the planner can never
+    receive a non-string annotation (and ``AnimationStepSpec.annotation``'s
+    200-char cap is enforced at the boundary, not by a ValidationError
+    deep inside the planner).
+    """
+
+    def test_parses_valid_intent(self):
+        events = parse_trace(_line("compare", i=0, j=1, intent="sum_too_large"))
+        assert events[0].intent == "sum_too_large"
+
+    def test_absent_intent_is_none(self):
+        events = parse_trace(_line("compare", i=0, j=1))
+        assert events[0].intent is None
+
+    @pytest.mark.parametrize("bad", [5, True, ["x"], {"a": 1}, "", "   "])
+    def test_non_string_or_blank_intent_is_dropped(self, bad):
+        events = parse_trace(_line("compare", i=0, j=1, intent=bad))
+        assert events[0].intent is None
+        assert "intent" not in events[0].fields
+
+    def test_overlong_intent_is_truncated_to_the_annotation_cap(self):
+        events = parse_trace(_line("compare", i=0, intent="x" * 500))
+        assert events[0].intent == "x" * 200
+
+    def test_typed_accessor_sanitizes_direct_construction(self):
+        assert TraceEvent(kind="compare", intent="ok").intent == "ok"
+        assert TraceEvent(kind="compare", intent=7).intent is None
+        assert TraceEvent(kind="compare").intent is None

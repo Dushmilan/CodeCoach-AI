@@ -6,6 +6,14 @@ anything that is not a well-formed, known event (stray prints, blank lines,
 unknown event kinds) so the compiler only ever sees a clean, ordered event
 stream.
 
+Any event may additionally carry an optional ``intent`` string (#287): a
+causal "why" computed by the reference solution from live runtime values
+(e.g. ``"sum 17 > 9 → move right pointer left"``). It rides the event into
+the beat's ``annotation`` so the viewer can show real causality — never
+hardcoded narration. Only a non-empty string survives parsing, truncated to
+200 chars to match ``AnimationStepSpec.annotation``'s cap. Like ``line``,
+string fields never enter the __CODE_OFFSET line path.
+
 Known event kinds:
 
 - init:       values/data — the primary structure the algorithm operates on
@@ -31,6 +39,8 @@ Known event kinds:
 
 import json
 from typing import Any, List, Optional
+
+MAX_INTENT_LENGTH = 200  # mirrors AnimationStepSpec.annotation max_length
 
 KNOWN_KINDS = frozenset(
     {
@@ -100,6 +110,18 @@ class TraceEvent:
         value = self.fields.get("line")
         return value if isinstance(value, int) and not isinstance(value, bool) else None
 
+    @property
+    def intent(self) -> Optional[str]:
+        """Causal intent text (#287), or None when absent or invalid.
+
+        Defensive mirror of the parse-time sanitization: only a non-empty
+        string survives, capped at MAX_INTENT_LENGTH.
+        """
+        value = self.fields.get("intent")
+        if not isinstance(value, str) or not value.strip():
+            return None
+        return value[:MAX_INTENT_LENGTH]
+
 
 def _parse_payload(payload: Any) -> Optional[TraceEvent]:
     if not isinstance(payload, dict):
@@ -117,6 +139,15 @@ def _parse_payload(payload: Any) -> Optional[TraceEvent]:
     line = fields.get("line")
     if isinstance(line, bool) or not isinstance(line, int) or line <= 0:
         fields.pop("line", None)
+    # Intent (#287) is optional causal text: only a non-empty string is kept
+    # (dropped, never coerced), capped so a long trace string can never blow
+    # past AnimationStepSpec.annotation's 200-char validation downstream.
+    if "intent" in fields:
+        intent = fields["intent"]
+        if not isinstance(intent, str) or not intent.strip():
+            fields.pop("intent", None)
+        elif len(intent) > MAX_INTENT_LENGTH:
+            fields["intent"] = intent[:MAX_INTENT_LENGTH]
     return TraceEvent(kind, **fields)
 
 

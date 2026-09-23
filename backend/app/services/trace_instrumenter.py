@@ -2,12 +2,17 @@
 
 A curated reference solution is written against a tiny __trace API — each
 semantic step (compare/swap/pointer/mark/write/visit/push/pop/dp_update/...)
-appends one event object to an in-memory list. The canonical solution emits
-its own ``init`` event (it knows its real structure — a DP array, a character
-list, a tree, ...), and this module injects the __trace helper plus a
-stdin-driven main that parses the example input (a JSON kwargs dict produced
-by the input normalizer) and invokes the canonical solution, then prints the
-whole trace as a single compact JSON array.
+appends one event object to an in-memory list. Decision events may also
+carry ``intent="..."`` (#287): a causal string the solution computes from
+its own runtime values (e.g. ``"sum 17 > 9 → move right pointer left"``).
+The helper passes it through verbatim — keyword fields ride the event
+untouched and never interact with the ``__CODE_OFFSET`` line remapping,
+which only ever reads the implicit ``line`` capture. The canonical solution
+emits its own ``init`` event (it knows its real structure — a DP array, a
+character list, a tree, ...), and this module injects the __trace helper
+plus a stdin-driven main that parses the example input (a JSON kwargs dict
+produced by the input normalizer) and invokes the canonical solution, then
+prints the whole trace as a single compact JSON array.
 
 Buffering (instead of one line per event) keeps stdout far under the sandbox
 output cap — Piston SIGKILLs runners whose stdout exceeds the limit.
