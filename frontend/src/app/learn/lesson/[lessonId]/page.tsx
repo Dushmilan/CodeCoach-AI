@@ -34,12 +34,25 @@ function useAdjacentLessons(lesson: LessonSummary | null) {
 
   useEffect(() => {
     if (!lesson) return;
+    let cancelled = false;
+    const controller = new AbortController();
     api
       .get<{ prev_id: string | null; next_id: string | null }>(
         `/api/courses/lessons/${lesson.id}/adjacent`,
+        { signal: controller.signal },
       )
-      .then((d) => setAdjacent({ prevId: d.prev_id, nextId: d.next_id }))
-      .catch((err) => console.error('Failed to fetch adjacent lessons:', err));
+      .then((d) => {
+        if (cancelled) return;
+        setAdjacent({ prevId: d.prev_id, nextId: d.next_id });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Failed to fetch adjacent lessons:', err);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [lesson]);
   return adjacent;
 }
@@ -87,23 +100,50 @@ export default function LessonPage() {
 
   const { messages, isTyping, sendMessage } = useCoaching();
 
-  // Load progress
+  // Load progress. The cancelled flag + abort keep a stale response (or a
+  // rejection) from dispatching state after this effect was cleaned up —
+  // issue #308: wrong-lesson progress and post-teardown `window` crashes.
   useEffect(() => {
     if (!lesson || !isAuthenticated) return;
+    let cancelled = false;
+    const controller = new AbortController();
     api
-      .get<{ completed_lessons: string[] }>(`/api/progress/${lesson.course_id}`)
-      .then((p) => setIsCompleted(p.completed_lessons?.includes(lesson.id) ?? false))
-      .catch(() => setIsCompleted(false));
+      .get<{ completed_lessons: string[] }>(`/api/progress/${lesson.course_id}`, {
+        signal: controller.signal,
+      })
+      .then((p) => {
+        if (cancelled) return;
+        setIsCompleted(p.completed_lessons?.includes(lesson.id) ?? false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setIsCompleted(false);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [lesson, lesson?.course_id, isAuthenticated]);
 
   // Load linked question data
   useEffect(() => {
-    if (lesson?.question_id) {
-      api
-        .get<Question>(`/api/questions/${lesson.question_id}`)
-        .then(setLinkedQuestion)
-        .catch(console.error);
-    }
+    if (!lesson?.question_id) return;
+    let cancelled = false;
+    const controller = new AbortController();
+    api
+      .get<Question>(`/api/questions/${lesson.question_id}`, { signal: controller.signal })
+      .then((q) => {
+        if (cancelled) return;
+        setLinkedQuestion(q);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error(err);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [lesson?.question_id]);
 
   const resolvedStarterCode =
