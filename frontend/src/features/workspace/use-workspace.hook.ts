@@ -30,9 +30,26 @@ export function useWorkspace({
   const hydratedRef = useRef<string | null>(null);
   const lastSavedRef = useRef<string>("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pages pass an inline onHydrateChat arrow whose identity changes every
+  // render. Keep it in a ref so the one-shot hydration below never re-runs
+  // (or cancels its in-flight getChat) on a mere callback identity change —
+  // the animation dual-pane (#284) lives in that hydrated history.
+  const onHydrateChatRef = useRef(onHydrateChat);
   // True once a persisted draft was applied for the current key. Pages use
   // this so starter code never clobbers a hydrated draft on re-render.
   const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    onHydrateChatRef.current = onHydrateChat;
+  });
+
+  // Reset the guard BEFORE the hydration effect runs in the same commit, so
+  // the key it sets is never wiped (which would defeat the one-shot dedupe
+  // and let every later render re-fetch). A question change still resets.
+  useEffect(() => {
+    hydratedRef.current = null;
+    setHasDraft(false);
+  }, [questionId]);
 
   // Hydrate code + chat on question/language change
   useEffect(() => {
@@ -53,24 +70,20 @@ export function useWorkspace({
         }
       })
       .catch(() => {});
-    if (onHydrateChat) {
+    if (onHydrateChatRef.current) {
       workspaceService
         .getChat(questionId)
         .then((res) => {
           if (cancelled) return;
-          if (res.messages?.length) onHydrateChat(res.messages as never);
+          if (res.messages?.length)
+            onHydrateChatRef.current?.(res.messages as never);
         })
         .catch(() => {});
     }
     return () => {
       cancelled = true;
     };
-  }, [questionId, language, isAuthenticated, setCurrentCode, onHydrateChat]);
-
-  useEffect(() => {
-    hydratedRef.current = null;
-    setHasDraft(false);
-  }, [questionId]);
+  }, [questionId, language, isAuthenticated, setCurrentCode]);
 
   const scheduleSave = useCallback(
     (code: string) => {
