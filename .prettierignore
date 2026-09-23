@@ -1,0 +1,4 @@
+# Machine-generated golden test fixtures (issue #286) are compared
+# byte-for-byte by backend/tests/unit/test_family_golden_pins_286.py —
+# formatters must never rewrite them.
+backend/tests/fixtures/family_golden_286/
