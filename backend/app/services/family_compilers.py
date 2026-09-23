@@ -4,7 +4,14 @@ One compiler per visualization family, each deterministically producing the
 generic AnimationScript contract the Motion Canvas viewer already renders.
 The canonical traced solution only emits semantic events at runtime
 (push/pop, visit, edge, dp_update, choose/backtrack, compare/swap/...); this
-module owns every visual: layout, colors, arrows, containers and narration.
+module owns how those events compose into beats.
+
+The visual vocabulary itself — palette, motion durations, node base shape and
+layout builders — is read from the visual metaphor registry
+(``visual_metaphors.metaphor_for``) at compile time (#286); this module no
+longer hardcodes hex colors or duration literals. Golden pins
+(``tests/unit/test_family_golden_pins_286.py``) guarantee the wiring is a
+byte-identical extraction.
 
 All output is structurally validated by AnimationValidator before returning,
 so a bad compile can never reach the viewer. ``compile_family`` returns None
@@ -18,22 +25,27 @@ from typing import Any, Dict, List, Optional
 from app.services.trace_parser import TraceEvent
 from app.services.animation_compiler import AnimationCompiler
 from app.services.scene_planner import tree_layout as _tree_layout
+from app.services.visual_metaphors import VisualMetaphor, metaphor_for
 
 logger = logging.getLogger(__name__)
 
-# ── shared palette ──────────────────────────────────────────────────────────
-IDLE_FILL = "#1e293b"
-IDLE_STROKE = "#334155"
-CHECK_FILL = "#1d4ed8"
-CHECK_STROKE = "#3b82f6"
-SWAP_FILL = "#713f12"
-SWAP_STROKE = "#facc15"
-DONE_FILL = "#14532d"
-DONE_STROKE = "#22c55e"
-ACTIVE_FILL = "#3b0764"
-ACTIVE_STROKE = "#a855f7"
-TEXT_FILL = "#e2e8f0"
-MUTED_FILL = "#0f172a"
+# ── shared palette — sourced from the visual metaphor registry (#286) ────────
+# Every family's registry entry carries this same base palette; the module
+# level names feed the shared shape helpers' defaults, while each _compile_*
+# reads its own metaphor.colors at compile time for motion targets.
+_BASE_PALETTE = metaphor_for("array").colors
+IDLE_FILL = _BASE_PALETTE["idle_fill"]
+IDLE_STROKE = _BASE_PALETTE["idle_stroke"]
+CHECK_FILL = _BASE_PALETTE["highlight_fill"]
+CHECK_STROKE = _BASE_PALETTE["highlight_stroke"]
+SWAP_FILL = _BASE_PALETTE["swap_fill"]
+SWAP_STROKE = _BASE_PALETTE["accent"]
+DONE_FILL = _BASE_PALETTE["success_fill"]
+DONE_STROKE = _BASE_PALETTE["success_stroke"]
+ACTIVE_FILL = _BASE_PALETTE["active_fill"]
+ACTIVE_STROKE = _BASE_PALETTE["active_stroke"]
+TEXT_FILL = _BASE_PALETTE["text"]
+MUTED_FILL = _BASE_PALETTE["muted"]
 
 MAX_SHAPES_TOTAL = 60
 MAX_STEP_SHAPES = 40
@@ -104,8 +116,24 @@ def _polygon(sid: str, x: float, y: float, points: List[List[float]], **kw) -> d
         "x": round(x, 2),
         "y": round(y, 2),
         "points": points,
-        "fill": kw.get("fill", "#facc15"),
+        "fill": kw.get("fill", SWAP_STROKE),
     }
+
+
+def _node_shape(
+    metaphor: VisualMetaphor, sid: str, x: float, y: float, w: float, h: float, **kw
+) -> dict:
+    """Data-node shape, selected by the registry's base_shape (rect|ellipse)."""
+    if metaphor.base_shape == "ellipse":
+        return _ellipse(sid, x, y, w, h, **kw)
+    if metaphor.base_shape == "rect":
+        return _rect(sid, x, y, w, h, **kw)
+    raise ValueError(f"unsupported node base_shape: {metaphor.base_shape!r}")
+
+
+def _duration(profile: Dict[str, Dict[str, Any]], role: str) -> float:
+    """Motion duration for ``role`` from a registry motion_profile."""
+    return float(profile[role]["duration"])
 
 
 def _step(
@@ -114,21 +142,31 @@ def _step(
     return {"narration": narration[:300], "shapes": shapes or [], "motion": motion}
 
 
-def _split_intro(shapes: List[dict], first_narration: str) -> List[dict]:
+def _split_intro(
+    shapes: List[dict], first_narration: str, motion_profile: Dict[str, Dict[str, Any]]
+) -> List[dict]:
     """Chunked appear intro; later chunks carry a scale transform (validator).
 
     Chunked at 15 shapes so each intro step stays under the 30-motion cap even
-    for grids that create two shapes per cell.
+    for grids that create two shapes per cell. Durations come from the
+    registry's motion_profile (role ``intro``).
     """
+    intro_duration = _duration(motion_profile, "intro")
     steps = []
     for idx in range(0, len(shapes), 15):
         chunk = shapes[idx : idx + 15]
         motion = [
-            {"target": shape["id"], "op": "appear", "duration": 0.25} for shape in chunk
+            {"target": shape["id"], "op": "appear", "duration": intro_duration}
+            for shape in chunk
         ]
         if idx > 0:
             motion.append(
-                {"target": chunk[0]["id"], "op": "scale", "to": 1.0, "duration": 0.25}
+                {
+                    "target": chunk[0]["id"],
+                    "op": "scale",
+                    "to": 1.0,
+                    "duration": intro_duration,
+                }
             )
         steps.append(
             _step(
@@ -151,6 +189,9 @@ def _init_events(events: List[TraceEvent]) -> List[TraceEvent]:
 
 
 # ── array / backtrack (delegates to the array compiler) ─────────────────────
+# Visuals for these two families are owned by AnimationCompiler; this module
+# hardcodes no vocabulary for them, so there is nothing here to source from
+# metaphor_for (their registry entries stay parity-pinned instead, #286).
 def _compile_array(events: List[TraceEvent], title: str) -> Optional[Dict[str, Any]]:
     return AnimationCompiler().compile(events, title=title)
 
@@ -163,7 +204,38 @@ STACK_MAX_ITEMS = 10
 STACK_MAX_OPS = 14
 
 
+def _stack_layout(n_ops: int) -> Dict[str, Any]:
+    """vertical_stack: ops tape laid out above, container to the right."""
+    cell_w = min(64.0, 2 * 380.0 / max(n_ops, 1))
+    total_w = n_ops * cell_w + (n_ops - 1) * 8
+    start_x = -total_w / 2 + cell_w / 2
+    box_y = 40.0
+
+    def plate_y(depth: int) -> float:
+        return box_y + STACK_BOX_H - STACK_ITEM_H * (depth + 1)
+
+    return {
+        "cell_w": cell_w,
+        "start_x": start_x,
+        "ops_y": -180.0,
+        "box_x": 250.0,
+        "box_y": box_y,
+        "plate_y": plate_y,
+    }
+
+
 def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, Any]]:
+    metaphor = metaphor_for("stack")
+    if metaphor is None:  # pragma: no cover - the registry defines every family
+        logger.warning("No visual metaphor for family 'stack'")
+        return None
+    colors = metaphor.colors
+    motion_profile = metaphor.motion_profile
+    builder = _LAYOUT_BUILDERS.get(metaphor.layout)
+    if builder is None:
+        logger.warning("No layout builder for %r", metaphor.layout)
+        return None
+
     init = _init_events(events)
     if not init:
         return None
@@ -174,21 +246,24 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
     ops = [str(v) for v in ops][:STACK_MAX_OPS]
 
     n_ops = len(ops)
-    cell_w = min(64.0, 2 * 380.0 / max(n_ops, 1))
-    total_w = n_ops * cell_w + (n_ops - 1) * 8
-    start_x = -total_w / 2 + cell_w / 2
-    ops_y = -180.0
-    box_x = 250.0
-    box_y = 40.0
+    geom = builder(n_ops)
+    cell_w = geom["cell_w"]
+    start_x = geom["start_x"]
+    ops_y = geom["ops_y"]
+    box_x = geom["box_x"]
+    box_y = geom["box_y"]
+    plate_y = geom["plate_y"]
 
     shapes: List[dict] = []
     for i, op in enumerate(ops):
         x = round(start_x + i * (cell_w + 8), 2)
-        shapes.append(_rect(f"op_{i}", x, ops_y, cell_w, 40, radius=6))
+        shapes.append(_node_shape(metaphor, f"op_{i}", x, ops_y, cell_w, 40, radius=6))
         shapes.append(_text(f"op_val_{i}", x, ops_y, op, 20))
     shapes.append(_rect("stack_box", box_x, box_y, STACK_BOX_W, STACK_BOX_H, radius=10))
 
-    steps: List[dict] = _split_intro(shapes, f"Starting with operations {ops}.")
+    steps: List[dict] = _split_intro(
+        shapes, f"Starting with operations {ops}.", motion_profile
+    )
 
     stack_count = 0
     item_seq = 0
@@ -205,16 +280,16 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                     {
                         "target": f"op_{i}",
                         "op": "fill",
-                        "to": CHECK_FILL,
-                        "duration": 0.25,
+                        "to": colors["highlight_fill"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"op_{i}",
                         "op": "stroke",
-                        "to": CHECK_STROKE,
-                        "duration": 0.25,
+                        "to": colors["highlight_stroke"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
             narration = f"Process operation {i}: {ops[i] if 0 <= i < n_ops else ''}."
@@ -222,7 +297,7 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
             value = e.fields.get("value")
             new_shapes: List[dict] = []
             if stack_count < STACK_MAX_ITEMS:
-                item_y = box_y + STACK_BOX_H - STACK_ITEM_H * (stack_count + 1)
+                item_y = plate_y(stack_count)
                 item_w = STACK_BOX_W - 20
                 seq = item_seq
                 item_seq += 1
@@ -230,28 +305,41 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                 vid = f"stack_item_{seq}"
                 stack_ids.append(seq)
                 new_shapes.append(
-                    _rect(
+                    _node_shape(
+                        metaphor,
                         sid,
                         box_x,
                         box_y + STACK_BOX_H + 40,
                         item_w,
                         STACK_ITEM_H - 8,
                         radius=6,
-                        fill=ACTIVE_FILL,
-                        stroke=ACTIVE_STROKE,
+                        fill=colors["active_fill"],
+                        stroke=colors["active_stroke"],
                     )
                 )
                 new_shapes.append(
                     _text(vid, box_x, box_y + STACK_BOX_H + 40, str(value), 20)
                 )
-                motion.append({"target": sid, "op": "appear", "duration": 0.2})
-                motion.append({"target": vid, "op": "appear", "duration": 0.2})
+                motion.append(
+                    {
+                        "target": sid,
+                        "op": "appear",
+                        "duration": _duration(motion_profile, "appear"),
+                    }
+                )
+                motion.append(
+                    {
+                        "target": vid,
+                        "op": "appear",
+                        "duration": _duration(motion_profile, "appear"),
+                    }
+                )
                 motion.append(
                     {
                         "target": sid,
                         "op": "move",
                         "to": [box_x, item_y + (STACK_ITEM_H - 8) / 2],
-                        "duration": 0.4,
+                        "duration": _duration(motion_profile, "move"),
                     }
                 )
                 motion.append(
@@ -259,7 +347,7 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                         "target": vid,
                         "op": "move",
                         "to": [box_x, item_y + (STACK_ITEM_H - 8) / 2],
-                        "duration": 0.4,
+                        "duration": _duration(motion_profile, "move"),
                     }
                 )
                 stack_count += 1
@@ -280,7 +368,7 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                         "target": sid,
                         "op": "move",
                         "to": [box_x, box_y + STACK_BOX_H + 70],
-                        "duration": 0.4,
+                        "duration": _duration(motion_profile, "move"),
                     }
                 )
                 motion.append(
@@ -288,19 +376,31 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                         "target": vid,
                         "op": "move",
                         "to": [box_x, box_y + STACK_BOX_H + 70],
-                        "duration": 0.4,
+                        "duration": _duration(motion_profile, "move"),
                     }
                 )
-                motion.append({"target": sid, "op": "disappear", "duration": 0.2})
-                motion.append({"target": vid, "op": "disappear", "duration": 0.2})
+                motion.append(
+                    {
+                        "target": sid,
+                        "op": "disappear",
+                        "duration": _duration(motion_profile, "exit"),
+                    }
+                )
+                motion.append(
+                    {
+                        "target": vid,
+                        "op": "disappear",
+                        "duration": _duration(motion_profile, "exit"),
+                    }
+                )
                 for k, bottom_seq in enumerate(stack_ids):
-                    item_y = box_y + STACK_BOX_H - STACK_ITEM_H * (k + 1)
+                    item_y = plate_y(k)
                     motion.append(
                         {
                             "target": f"stack_cell_{bottom_seq}",
                             "op": "move",
                             "to": [box_x, item_y + (STACK_ITEM_H - 8) / 2],
-                            "duration": 0.3,
+                            "duration": _duration(motion_profile, "settle"),
                         }
                     )
                     motion.append(
@@ -308,7 +408,7 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                             "target": f"stack_item_{bottom_seq}",
                             "op": "move",
                             "to": [box_x, item_y + (STACK_ITEM_H - 8) / 2],
-                            "duration": 0.3,
+                            "duration": _duration(motion_profile, "settle"),
                         }
                     )
             narration = f"Pop {value} off the stack."
@@ -320,16 +420,16 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                     {
                         "target": f"op_{i}",
                         "op": "fill",
-                        "to": DONE_FILL,
-                        "duration": 0.3,
+                        "to": colors["success_fill"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"op_{i}",
                         "op": "stroke",
-                        "to": DONE_STROKE,
-                        "duration": 0.3,
+                        "to": colors["success_stroke"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
             narration = f"Operation {i} marked {state}."
@@ -339,7 +439,12 @@ def _compile_stack(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                 f"Finished. Result: {result}." if result is not None else "Finished."
             )
             motion.append(
-                {"target": "stack_box", "op": "scale", "to": 1.0, "duration": 0.25}
+                {
+                    "target": "stack_box",
+                    "op": "scale",
+                    "to": 1.0,
+                    "duration": _duration(motion_profile, "outro"),
+                }
             )
         if not motion:
             continue
@@ -355,9 +460,33 @@ LIST_MAX_NODES = 14
 LIST_PTR_DY = -70.0
 
 
+def _chain_layout(n: int) -> Dict[str, Any]:
+    """horizontal_chain: equal-size nodes on one row with uniform gaps."""
+    cell = min(88.0, (2 * 820.0 - (n - 1) * 12) / n)
+    spacing = cell + 12.0
+    total = n * cell + (n - 1) * 12
+    start = -total / 2 + cell / 2
+
+    def node_x(i: int) -> float:
+        return round(start + i * spacing, 2)
+
+    return {"cell": cell, "spacing": spacing, "node_x": node_x}
+
+
 def _compile_linked_list(
     events: List[TraceEvent], title: str
 ) -> Optional[Dict[str, Any]]:
+    metaphor = metaphor_for("linked_list")
+    if metaphor is None:  # pragma: no cover - the registry defines every family
+        logger.warning("No visual metaphor for family 'linked_list'")
+        return None
+    colors = metaphor.colors
+    motion_profile = metaphor.motion_profile
+    builder = _LAYOUT_BUILDERS.get(metaphor.layout)
+    if builder is None:
+        logger.warning("No layout builder for %r", metaphor.layout)
+        return None
+
     init = _init_events(events)
     if not init:
         return None
@@ -368,18 +497,15 @@ def _compile_linked_list(
         return None
 
     n = len(values)
-    cell = min(88.0, (2 * 820.0 - (n - 1) * 12) / n)
-    spacing = cell + 12.0
-    total = n * cell + (n - 1) * 12
-    start = -total / 2 + cell / 2
-
-    def node_x(i: int) -> float:
-        return round(start + i * spacing, 2)
+    geom = builder(n)
+    cell = geom["cell"]
+    spacing = geom["spacing"]
+    node_x = geom["node_x"]
 
     shapes: List[dict] = []
     for i, v in enumerate(values):
         x = node_x(i)
-        shapes.append(_rect(f"node_{i}", x, 0, cell, cell, radius=10))
+        shapes.append(_node_shape(metaphor, f"node_{i}", x, 0, cell, cell, radius=10))
         shapes.append(_text(f"val_{i}", x, 0, str(v), max(20, min(30, cell * 0.38))))
     for i in range(n - 1):
         x1 = node_x(i) + cell / 2
@@ -388,7 +514,7 @@ def _compile_linked_list(
             _line(
                 f"arrow_{i}",
                 [[x1, 0], [x1 + 10, 0], [x2, 0], [x2 - 8, -6], [x2 - 8, 6], [x2, 0]],
-                stroke="#64748b",
+                stroke=colors["arrow_stroke"],
                 lineWidth=2,
             )
         )
@@ -401,8 +527,8 @@ def _compile_linked_list(
             cell,
             cell,
             radius=10,
-            fill=MUTED_FILL,
-            stroke="#475569",
+            fill=colors["muted"],
+            stroke=colors["muted_stroke"],
         )
     )
     shapes.append(_text("null_val", null_x, 0, "null", 22))
@@ -416,7 +542,9 @@ def _compile_linked_list(
     for name in pointer_names:
         shapes.append(_polygon(f"ptr_{name}", node_x(0), LIST_PTR_DY, PTR_POINTS))
 
-    steps: List[dict] = _split_intro(shapes, f"Starting with the linked list {values}.")
+    steps: List[dict] = _split_intro(
+        shapes, f"Starting with the linked list {values}.", motion_profile
+    )
 
     cell_to_label = [f"val_{i}" for i in range(n)]
     state = list(values)
@@ -438,7 +566,7 @@ def _compile_linked_list(
                     "target": f"ptr_{name}",
                     "op": "move",
                     "to": [tx, LIST_PTR_DY],
-                    "duration": 0.35,
+                    "duration": _duration(motion_profile, "pointer"),
                 }
             )
         pending = []
@@ -448,16 +576,16 @@ def _compile_linked_list(
                 {
                     "target": f"node_{i}",
                     "op": "fill",
-                    "to": CHECK_FILL,
-                    "duration": 0.25,
+                    "to": colors["highlight_fill"],
+                    "duration": _duration(motion_profile, "highlight"),
                 }
             )
             motion.append(
                 {
                     "target": f"node_{i}",
                     "op": "stroke",
-                    "to": CHECK_STROKE,
-                    "duration": 0.25,
+                    "to": colors["highlight_stroke"],
+                    "duration": _duration(motion_profile, "highlight"),
                 }
             )
             narration = f"Visiting node {i}: {state[i]}."
@@ -465,16 +593,36 @@ def _compile_linked_list(
             i, j = int(e.i), int(e.j)
             li, lj = cell_to_label[i], cell_to_label[j]
             motion.append(
-                {"target": li, "op": "move", "to": [node_x(j), 0], "duration": 0.45}
+                {
+                    "target": li,
+                    "op": "move",
+                    "to": [node_x(j), 0],
+                    "duration": _duration(motion_profile, "swap"),
+                }
             )
             motion.append(
-                {"target": lj, "op": "move", "to": [node_x(i), 0], "duration": 0.45}
+                {
+                    "target": lj,
+                    "op": "move",
+                    "to": [node_x(i), 0],
+                    "duration": _duration(motion_profile, "swap"),
+                }
             )
             motion.append(
-                {"target": f"node_{i}", "op": "fill", "to": SWAP_FILL, "duration": 0.25}
+                {
+                    "target": f"node_{i}",
+                    "op": "fill",
+                    "to": colors["swap_fill"],
+                    "duration": _duration(motion_profile, "highlight"),
+                }
             )
             motion.append(
-                {"target": f"node_{j}", "op": "fill", "to": SWAP_FILL, "duration": 0.25}
+                {
+                    "target": f"node_{j}",
+                    "op": "fill",
+                    "to": colors["swap_fill"],
+                    "duration": _duration(motion_profile, "highlight"),
+                }
             )
             narration = f"Swap values at positions {i} and {j}."
             cell_to_label[i], cell_to_label[j] = lj, li
@@ -487,15 +635,15 @@ def _compile_linked_list(
                     "target": cell_to_label[i],
                     "op": "label",
                     "to": str(value),
-                    "duration": 0.3,
+                    "duration": _duration(motion_profile, "label"),
                 }
             )
             motion.append(
                 {
                     "target": f"node_{i}",
                     "op": "fill",
-                    "to": CHECK_FILL,
-                    "duration": 0.25,
+                    "to": colors["highlight_fill"],
+                    "duration": _duration(motion_profile, "highlight"),
                 }
             )
             narration = f"Position {i} becomes {value}."
@@ -503,14 +651,19 @@ def _compile_linked_list(
         elif e.kind == "mark":
             i = int(e.i)
             motion.append(
-                {"target": f"node_{i}", "op": "fill", "to": DONE_FILL, "duration": 0.35}
+                {
+                    "target": f"node_{i}",
+                    "op": "fill",
+                    "to": colors["success_fill"],
+                    "duration": _duration(motion_profile, "mark"),
+                }
             )
             motion.append(
                 {
                     "target": f"node_{i}",
                     "op": "stroke",
-                    "to": DONE_STROKE,
-                    "duration": 0.35,
+                    "to": colors["success_stroke"],
+                    "duration": _duration(motion_profile, "mark"),
                 }
             )
             narration = f"Node {i} marked {e.fields.get('state', '')}."
@@ -520,7 +673,12 @@ def _compile_linked_list(
                 f"Finished. Result: {result}." if result is not None else "Finished."
             )
             motion.append(
-                {"target": "node_0", "op": "scale", "to": 1.0, "duration": 0.25}
+                {
+                    "target": "node_0",
+                    "op": "scale",
+                    "to": 1.0,
+                    "duration": _duration(motion_profile, "outro"),
+                }
             )
         if not motion:
             continue
@@ -541,6 +699,17 @@ TREE_PTR_DY = 30.0
 
 
 def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, Any]]:
+    metaphor = metaphor_for("tree")
+    if metaphor is None:  # pragma: no cover - the registry defines every family
+        logger.warning("No visual metaphor for family 'tree'")
+        return None
+    colors = metaphor.colors
+    motion_profile = metaphor.motion_profile
+    builder = _LAYOUT_BUILDERS.get(metaphor.layout)
+    if builder is None:
+        logger.warning("No layout builder for %r", metaphor.layout)
+        return None
+
     init = _init_events(events)
     if not init:
         return None
@@ -550,7 +719,7 @@ def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
     present = [i for i, v in enumerate(raw) if v is not None]
     if not present:
         return None
-    positions = _tree_layout(max(present) + 1)
+    positions = builder(max(present) + 1)
     cell = 44.0
 
     shapes: List[dict] = []
@@ -563,13 +732,17 @@ def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                 _line(
                     f"tree_edge_{i}",
                     [[pp["x"], pp["y"] + cell / 2], [pos["x"], pos["y"] - cell / 2]],
-                    stroke="#475569",
+                    stroke=colors["muted_stroke"],
                     lineWidth=2,
                 )
             )
     for i in present:
         pos = positions[i]
-        shapes.append(_rect(f"node_{i}", pos["x"], pos["y"], cell, cell, radius=10))
+        shapes.append(
+            _node_shape(
+                metaphor, f"node_{i}", pos["x"], pos["y"], cell, cell, radius=10
+            )
+        )
         shapes.append(_text(f"val_{i}", pos["x"], pos["y"], str(raw[i]), 18))
 
     pointer_names: List[str] = []
@@ -586,11 +759,13 @@ def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                 first_pos["x"],
                 first_pos["y"] + TREE_PTR_DY,
                 [[-10, -18], [0, 6], [10, -18]],
-                fill="#facc15",
+                fill=colors["accent"],
             )
         )
 
-    steps: List[dict] = _split_intro(shapes, f"Starting with the tree {raw}.")
+    steps: List[dict] = _split_intro(
+        shapes, f"Starting with the tree {raw}.", motion_profile
+    )
 
     pending: List[TraceEvent] = []
     for e in events:
@@ -611,7 +786,7 @@ def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                         "target": f"ptr_{name}",
                         "op": "move",
                         "to": [pos["x"], pos["y"] + TREE_PTR_DY],
-                        "duration": 0.35,
+                        "duration": _duration(motion_profile, "pointer"),
                     }
                 )
         pending = []
@@ -622,16 +797,16 @@ def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                     {
                         "target": f"node_{i}",
                         "op": "fill",
-                        "to": CHECK_FILL,
-                        "duration": 0.25,
+                        "to": colors["highlight_fill"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"node_{i}",
                         "op": "stroke",
-                        "to": CHECK_STROKE,
-                        "duration": 0.25,
+                        "to": colors["highlight_stroke"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
             narration = f"Visiting node {i}: {raw[i] if i < len(raw) else ''}."
@@ -642,16 +817,16 @@ def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                     {
                         "target": f"node_{i}",
                         "op": "fill",
-                        "to": DONE_FILL,
-                        "duration": 0.35,
+                        "to": colors["success_fill"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"node_{i}",
                         "op": "stroke",
-                        "to": DONE_STROKE,
-                        "duration": 0.35,
+                        "to": colors["success_stroke"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
             narration = f"Node {i} marked {e.fields.get('state', '')}."
@@ -665,7 +840,7 @@ def _compile_tree(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                     "target": f"node_{present[0]}",
                     "op": "scale",
                     "to": 1.0,
-                    "duration": 0.25,
+                    "duration": _duration(motion_profile, "outro"),
                 }
             )
         if not motion:
@@ -684,7 +859,36 @@ GRID_GAP = 8.0
 GRID_Y = -80.0
 
 
+def _grid_layout(rows: int, cols: int) -> Dict[str, Any]:
+    """grid: uniform rows and columns with fixed gaps, anchored above center."""
+    cell_w = min(GRID_CELL, 2 * 420.0 / max(cols, 1))
+    cell_h = min(GRID_CELL, 2 * 300.0 / max(rows, 1))
+    total_w = cols * cell_w + (cols - 1) * GRID_GAP
+    total_h = rows * cell_h + (rows - 1) * GRID_GAP
+    x0 = -total_w / 2 + cell_w / 2
+    y0 = GRID_Y - total_h / 2 + cell_h / 2
+
+    def cell_x(c: int) -> float:
+        return round(x0 + c * (cell_w + GRID_GAP), 2)
+
+    def cell_y(r: int) -> float:
+        return round(y0 + r * (cell_h + GRID_GAP), 2)
+
+    return {"cell_w": cell_w, "cell_h": cell_h, "cell_x": cell_x, "cell_y": cell_y}
+
+
 def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, Any]]:
+    metaphor = metaphor_for("grid")
+    if metaphor is None:  # pragma: no cover - the registry defines every family
+        logger.warning("No visual metaphor for family 'grid'")
+        return None
+    colors = metaphor.colors
+    motion_profile = metaphor.motion_profile
+    builder = _LAYOUT_BUILDERS.get(metaphor.layout)
+    if builder is None:
+        logger.warning("No layout builder for %r", metaphor.layout)
+        return None
+
     init = _init_events(events)
     if not init:
         return None
@@ -700,25 +904,20 @@ def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
     if rows * cols == 0:
         return None
 
-    cell_w = min(GRID_CELL, 2 * 420.0 / max(cols, 1))
-    cell_h = min(GRID_CELL, 2 * 300.0 / max(rows, 1))
-    total_w = cols * cell_w + (cols - 1) * GRID_GAP
-    total_h = rows * cell_h + (rows - 1) * GRID_GAP
-    x0 = -total_w / 2 + cell_w / 2
-    y0 = GRID_Y - total_h / 2 + cell_h / 2
-
-    def cell_x(c: int) -> float:
-        return round(x0 + c * (cell_w + GRID_GAP), 2)
-
-    def cell_y(r: int) -> float:
-        return round(y0 + r * (cell_h + GRID_GAP), 2)
+    geom = builder(rows, cols)
+    cell_w = geom["cell_w"]
+    cell_h = geom["cell_h"]
+    cell_x = geom["cell_x"]
+    cell_y = geom["cell_y"]
 
     shapes: List[dict] = []
     for r in range(rows):
         for c in range(cols):
             value = data[r][c] if r < len(data) and c < len(data[r]) else None
             x, y = cell_x(c), cell_y(r)
-            shapes.append(_rect(f"cell_{r}_{c}", x, y, cell_w, cell_h, radius=6))
+            shapes.append(
+                _node_shape(metaphor, f"cell_{r}_{c}", x, y, cell_w, cell_h, radius=6)
+            )
             shapes.append(
                 _text(
                     f"val_{r}_{c}",
@@ -729,7 +928,9 @@ def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                 )
             )
 
-    steps: List[dict] = _split_intro(shapes, f"Starting with the grid {rows}x{cols}.")
+    steps: List[dict] = _split_intro(
+        shapes, f"Starting with the grid {rows}x{cols}.", motion_profile
+    )
 
     for e in events:
         if e.kind == "init":
@@ -742,7 +943,12 @@ def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                 f"Finished. Result: {result}." if result is not None else "Finished."
             )
             motion.append(
-                {"target": "cell_0_0", "op": "scale", "to": 1.0, "duration": 0.25}
+                {
+                    "target": "cell_0_0",
+                    "op": "scale",
+                    "to": 1.0,
+                    "duration": _duration(motion_profile, "outro"),
+                }
             )
             steps.append(_step(narration, motion))
             continue
@@ -761,16 +967,16 @@ def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                     {
                         "target": f"cell_{r}_{c}",
                         "op": "fill",
-                        "to": CHECK_FILL,
-                        "duration": 0.25,
+                        "to": colors["highlight_fill"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"cell_{r}_{c}",
                         "op": "stroke",
-                        "to": CHECK_STROKE,
-                        "duration": 0.25,
+                        "to": colors["highlight_stroke"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
             narration = f"Visiting cell ({r}, {c})."
@@ -780,8 +986,8 @@ def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                     {
                         "target": f"cell_{r}_{c}",
                         "op": "fill",
-                        "to": ACTIVE_FILL,
-                        "duration": 0.25,
+                        "to": colors["active_fill"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
             narration = f"Read cell ({r}, {c})."
@@ -791,16 +997,16 @@ def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                     {
                         "target": f"cell_{r}_{c}",
                         "op": "fill",
-                        "to": IDLE_FILL,
-                        "duration": 0.25,
+                        "to": colors["idle_fill"],
+                        "duration": _duration(motion_profile, "reset"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"cell_{r}_{c}",
                         "op": "stroke",
-                        "to": IDLE_STROKE,
-                        "duration": 0.25,
+                        "to": colors["idle_stroke"],
+                        "duration": _duration(motion_profile, "reset"),
                     }
                 )
             narration = f"Backtrack from cell ({r}, {c})."
@@ -812,15 +1018,15 @@ def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                         "target": f"val_{r}_{c}",
                         "op": "label",
                         "to": str(value),
-                        "duration": 0.3,
+                        "duration": _duration(motion_profile, "commit"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"cell_{r}_{c}",
                         "op": "fill",
-                        "to": DONE_FILL,
-                        "duration": 0.3,
+                        "to": colors["success_fill"],
+                        "duration": _duration(motion_profile, "commit"),
                     }
                 )
             narration = f"Cell ({r}, {c}) becomes {value}."
@@ -830,16 +1036,16 @@ def _compile_grid(events: List[TraceEvent], title: str) -> Optional[Dict[str, An
                     {
                         "target": f"cell_{r}_{c}",
                         "op": "fill",
-                        "to": DONE_FILL,
-                        "duration": 0.3,
+                        "to": colors["success_fill"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"cell_{r}_{c}",
                         "op": "stroke",
-                        "to": DONE_STROKE,
-                        "duration": 0.3,
+                        "to": colors["success_stroke"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
             narration = f"Cell ({r}, {c}) marked {e.fields.get('state', '')}."
@@ -862,7 +1068,32 @@ GRAPH_MAX_EDGES = 16
 GRAPH_RADIUS = 230.0
 
 
+def _circular_layout(n: int) -> List[tuple]:
+    """circular_force: vertices evenly spaced on a circle, first one on top."""
+    positions = []
+    for i in range(n):
+        angle = 2 * math.pi * i / n - math.pi / 2
+        positions.append(
+            (
+                round(GRAPH_RADIUS * math.cos(angle), 2),
+                round(GRAPH_RADIUS * math.sin(angle), 2),
+            )
+        )
+    return positions
+
+
 def _compile_graph(events: List[TraceEvent], title: str) -> Optional[Dict[str, Any]]:
+    metaphor = metaphor_for("graph")
+    if metaphor is None:  # pragma: no cover - the registry defines every family
+        logger.warning("No visual metaphor for family 'graph'")
+        return None
+    colors = metaphor.colors
+    motion_profile = metaphor.motion_profile
+    builder = _LAYOUT_BUILDERS.get(metaphor.layout)
+    if builder is None:
+        logger.warning("No layout builder for %r", metaphor.layout)
+        return None
+
     init = _init_events(events)
     if not init:
         return None
@@ -926,15 +1157,7 @@ def _compile_graph(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                 adjacency[a].append(b)
 
     n = min(len(adjacency), GRAPH_MAX_VERTICES)
-    positions = []
-    for i in range(n):
-        angle = 2 * math.pi * i / n - math.pi / 2
-        positions.append(
-            (
-                round(GRAPH_RADIUS * math.cos(angle), 2),
-                round(GRAPH_RADIUS * math.sin(angle), 2),
-            )
-        )
+    positions = builder(n)
 
     edge_pairs = set()
     for a in range(n):
@@ -947,14 +1170,21 @@ def _compile_graph(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
         xa, ya = positions[a]
         xb, yb = positions[b]
         shapes.append(
-            _line(f"ge_{a}_{b}", [[xa, ya], [xb, yb]], stroke="#475569", lineWidth=2)
+            _line(
+                f"ge_{a}_{b}",
+                [[xa, ya], [xb, yb]],
+                stroke=colors["muted_stroke"],
+                lineWidth=2,
+            )
         )
     for i in range(n):
         x, y = positions[i]
-        shapes.append(_ellipse(f"g_node_{i}", x, y, 64, 64))
+        shapes.append(_node_shape(metaphor, f"g_node_{i}", x, y, 64, 64))
         shapes.append(_text(f"g_val_{i}", x, y, str(i), 22))
 
-    steps: List[dict] = _split_intro(shapes, f"Starting with {n} vertices.")
+    steps: List[dict] = _split_intro(
+        shapes, f"Starting with {n} vertices.", motion_profile
+    )
 
     for e in events:
         if e.kind == "init":
@@ -968,16 +1198,16 @@ def _compile_graph(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                     {
                         "target": f"g_node_{i}",
                         "op": "fill",
-                        "to": CHECK_FILL,
-                        "duration": 0.25,
+                        "to": colors["highlight_fill"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"g_node_{i}",
                         "op": "stroke",
-                        "to": CHECK_STROKE,
-                        "duration": 0.25,
+                        "to": colors["highlight_stroke"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
             narration = f"Visiting vertex {i}."
@@ -989,8 +1219,8 @@ def _compile_graph(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                     {
                         "target": f"ge_{key[0]}_{key[1]}",
                         "op": "stroke",
-                        "to": SWAP_STROKE,
-                        "duration": 0.3,
+                        "to": colors["accent"],
+                        "duration": _duration(motion_profile, "edge"),
                     }
                 )
             narration = f"Traversing the edge between {a} and {b}."
@@ -1001,16 +1231,16 @@ def _compile_graph(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                     {
                         "target": f"g_node_{i}",
                         "op": "fill",
-                        "to": DONE_FILL,
-                        "duration": 0.3,
+                        "to": colors["success_fill"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
                 motion.append(
                     {
                         "target": f"g_node_{i}",
                         "op": "stroke",
-                        "to": DONE_STROKE,
-                        "duration": 0.3,
+                        "to": colors["success_stroke"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
             narration = f"Vertex {i} marked {e.fields.get('state', '')}."
@@ -1020,7 +1250,12 @@ def _compile_graph(events: List[TraceEvent], title: str) -> Optional[Dict[str, A
                 f"Finished. Result: {result}." if result is not None else "Finished."
             )
             motion.append(
-                {"target": "g_node_0", "op": "scale", "to": 1.0, "duration": 0.25}
+                {
+                    "target": "g_node_0",
+                    "op": "scale",
+                    "to": 1.0,
+                    "duration": _duration(motion_profile, "outro"),
+                }
             )
         if not motion:
             continue
@@ -1039,9 +1274,35 @@ IV_H = 40.0
 IV_GAP = 18.0
 
 
+def _interval_layout(lo: int, span: int) -> Dict[str, Any]:
+    """horizontal_tracks: one value-scaled bar per track, top to bottom."""
+
+    def bar_x(start: int) -> float:
+        return round(-IV_WIDTH / 2 + (start - lo) * IV_WIDTH / span, 2)
+
+    def bar_w(start: int, end: int) -> float:
+        return max(20.0, round((end - start) * IV_WIDTH / span, 2))
+
+    def bar_y(index: int) -> float:
+        return IV_Y0 + index * (IV_H + IV_GAP)
+
+    return {"bar_x": bar_x, "bar_w": bar_w, "bar_y": bar_y}
+
+
 def _compile_intervals(
     events: List[TraceEvent], title: str
 ) -> Optional[Dict[str, Any]]:
+    metaphor = metaphor_for("intervals")
+    if metaphor is None:  # pragma: no cover - the registry defines every family
+        logger.warning("No visual metaphor for family 'intervals'")
+        return None
+    colors = metaphor.colors
+    motion_profile = metaphor.motion_profile
+    builder = _LAYOUT_BUILDERS.get(metaphor.layout)
+    if builder is None:
+        logger.warning("No layout builder for %r", metaphor.layout)
+        return None
+
     init = _init_events(events)
     if not init:
         return None
@@ -1059,18 +1320,18 @@ def _compile_intervals(
     lo = min(s for s, _ in intervals)
     hi = max(e for _, e in intervals)
     span = max(hi - lo, 1)
-
-    def bar_x(start: int) -> float:
-        return round(-IV_WIDTH / 2 + (start - lo) * IV_WIDTH / span, 2)
-
-    def bar_w(start: int, end: int) -> float:
-        return max(20.0, round((end - start) * IV_WIDTH / span, 2))
+    geom = builder(lo, span)
+    bar_x = geom["bar_x"]
+    bar_w = geom["bar_w"]
+    bar_y = geom["bar_y"]
 
     shapes: List[dict] = []
     for i, (s, e) in enumerate(intervals):
-        y = IV_Y0 + i * (IV_H + IV_GAP)
+        y = bar_y(i)
         x = bar_x(s)
-        shapes.append(_rect(f"bar_{i}", x, y, bar_w(s, e), IV_H, radius=6))
+        shapes.append(
+            _node_shape(metaphor, f"bar_{i}", x, y, bar_w(s, e), IV_H, radius=6)
+        )
         shapes.append(_text(f"bar_val_{i}", x + bar_w(s, e) / 2, y, f"[{s},{e}]", 16))
     shapes.append(
         _polygon(
@@ -1078,11 +1339,13 @@ def _compile_intervals(
             bar_x(lo),
             IV_Y0 + IV_H + IV_GAP,
             [[-12, -22], [0, 0], [12, -22]],
-            fill="#facc15",
+            fill=colors["accent"],
         )
     )
 
-    steps: List[dict] = _split_intro(shapes, f"Starting with intervals {intervals}.")
+    steps: List[dict] = _split_intro(
+        shapes, f"Starting with intervals {intervals}.", motion_profile
+    )
 
     for e in events:
         if e.kind in ("init", "pointer"):
@@ -1096,8 +1359,8 @@ def _compile_intervals(
                     {
                         "target": f"bar_{i}",
                         "op": "fill",
-                        "to": CHECK_FILL,
-                        "duration": 0.25,
+                        "to": colors["highlight_fill"],
+                        "duration": _duration(motion_profile, "highlight"),
                     }
                 )
             narration = f"Considering interval {intervals[i] if 0 <= i < len(intervals) else ''}."
@@ -1109,8 +1372,8 @@ def _compile_intervals(
                     {
                         "target": f"bar_{i}",
                         "op": "fill",
-                        "to": DONE_FILL,
-                        "duration": 0.3,
+                        "to": colors["success_fill"],
+                        "duration": _duration(motion_profile, "mark"),
                     }
                 )
             narration = f"Interval {i} marked {state}."
@@ -1120,7 +1383,12 @@ def _compile_intervals(
                 f"Finished. Result: {result}." if result is not None else "Finished."
             )
             motion.append(
-                {"target": "bar_0", "op": "scale", "to": 1.0, "duration": 0.25}
+                {
+                    "target": "bar_0",
+                    "op": "scale",
+                    "to": 1.0,
+                    "duration": _duration(motion_profile, "outro"),
+                }
             )
         if not motion:
             continue
@@ -1134,6 +1402,18 @@ def _compile_intervals(
         "steps": steps,
     }
 
+
+# Layout builders keyed by the registry's layout name — ``metaphor.layout``
+# selects the geometry routine for the family being compiled; an unknown name
+# fails safe (the compiler returns None instead of guessing).
+_LAYOUT_BUILDERS: Dict[str, Any] = {
+    "vertical_stack": _stack_layout,
+    "horizontal_chain": _chain_layout,
+    "reingold_tilford": _tree_layout,
+    "grid": _grid_layout,
+    "circular_force": _circular_layout,
+    "horizontal_tracks": _interval_layout,
+}
 
 FAMILY_COMPILERS: Dict[str, Any] = {
     "array": _compile_array,
