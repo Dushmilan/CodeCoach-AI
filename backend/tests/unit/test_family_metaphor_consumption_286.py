@@ -17,6 +17,7 @@ delegates — there are no hardcoded visuals in ``family_compilers`` to replace.
 
 import dataclasses
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -191,4 +192,22 @@ class TestRegistryIsOnTheLivePath:
         assert not re.search(r"#[0-9a-fA-F]{6}", source), (
             "family_compilers must source every color from the visual metaphor "
             "registry — hardcoded hex literals are what issue #286 removes"
+        )
+
+
+class TestMotionProfileDegradation:
+    """A registry gap in motion timing must degrade, not crash the build (#286).
+
+    Durations are cosmetic. Before the wiring, they were literals that could
+    never fail; ``_duration`` reintroduced a KeyError path whose blast radius
+    is the whole animation request. Missing roles fall back to the module
+    default with a warning so the compile keeps serving.
+    """
+
+    def test_missing_motion_role_degrades_to_default_duration(self, caplog):
+        with caplog.at_level(logging.WARNING, logger=fc.logger.name):
+            duration = fc._duration({"intro": {"duration": 0.25}}, "appear")
+        assert duration == 0.25, "a missing role must fall back to the default"
+        assert any("appear" in record.getMessage() for record in caplog.records), (
+            "the fallback must log which motion role was missing"
         )

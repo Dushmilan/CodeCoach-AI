@@ -136,9 +136,24 @@ def _node_shape(
     raise ValueError(f"unsupported node base_shape: {metaphor.base_shape!r}")
 
 
+# Fallback motion duration when a registry motion_profile lacks a role (#286).
+DEFAULT_DURATION = 0.25
+
+
 def _duration(profile: Dict[str, Dict[str, Any]], role: str) -> float:
-    """Motion duration for ``role`` from a registry motion_profile."""
-    return float(profile[role]["duration"])
+    """Motion duration for ``role`` from a registry motion_profile.
+
+    Durations are cosmetic: a missing role is a registry gap, so degrade to
+    the module default with a warning rather than failing the whole compile
+    (the same fail-safe posture as an unknown metaphor or layout, #286).
+    """
+    spec = profile.get(role)
+    if spec is None:
+        logger.warning(
+            "motion_profile missing role %r; using the default duration", role
+        )
+        return DEFAULT_DURATION
+    return float(spec["duration"])
 
 
 def _step(
