@@ -33,7 +33,12 @@ logger = logging.getLogger(__name__)
 # Every family's registry entry carries this same base palette; the module
 # level names feed the shared shape helpers' defaults, while each _compile_*
 # reads its own metaphor.colors at compile time for motion targets.
-_BASE_PALETTE = metaphor_for("array").colors
+_BASE_METAPHOR = metaphor_for("array")
+if _BASE_METAPHOR is None:  # pragma: no cover - registry always defines array
+    raise RuntimeError(
+        "visual metaphor registry is missing the required 'array' family"
+    )
+_BASE_PALETTE = _BASE_METAPHOR.colors
 IDLE_FILL = _BASE_PALETTE["idle_fill"]
 IDLE_STROKE = _BASE_PALETTE["idle_stroke"]
 CHECK_FILL = _BASE_PALETTE["highlight_fill"]

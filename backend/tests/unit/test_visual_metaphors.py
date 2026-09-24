@@ -1,7 +1,8 @@
 """Unit tests for the visual metaphor registry (#240).
 
-The registry must mirror the compiler's current palette exactly so workstream D
-can flip family_compilers onto it with zero rendered-output change.
+The registry mirrors the compiler's rendered palette exactly — the wiring half
+(#286) flipped family_compilers onto it with zero rendered-output change, and
+this suite keeps the two in lockstep.
 
 The ``TestRegistryMirrorsRenderedOutput`` suite (added by #286) pins the full
 parity contract: colors, base shape, motion durations and layout geometry are

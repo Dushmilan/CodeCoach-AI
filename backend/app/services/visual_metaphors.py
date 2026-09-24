@@ -1,9 +1,10 @@
 """Visual Metaphor Registry — the compiler's visual vocabulary as data.
 
 Each family maps to a metaphor (stack → plates, tree → roots and branches) plus
-its base shape, layout, palette and motion profile. Colors are literal values
-mirroring the ``family_compilers`` palette; ``motion_profile`` maps semantic
-roles (``highlight``, ``mark``, ``pointer``, ...) to the durations the compiler
+its base shape, layout, palette and motion profile. This registry is the
+source of truth ``family_compilers`` reads at compile time: ``colors`` holds
+the literal palette values, ``motion_profile`` maps semantic roles
+(``highlight``, ``mark``, ``pointer``, ...) to the durations the compiler
 emits, and ``layout``/``base_shape`` name the geometry and node shape the
 compiler renders.
 
