@@ -20,7 +20,10 @@ from typing import Any, Dict, List, Optional
 from fastapi import HTTPException
 
 from app.ports.code_executor import CodeExecutor
-from app.services.trace_instrumenter import wrap_traced_solution
+from app.services.trace_instrumenter import (
+    display_code_and_map,
+    wrap_traced_solution,
+)
 from app.services.trace_parser import parse_trace
 from app.services.animation_inputs import parse_input_kwargs
 from app.services.family_compilers import compile_family
@@ -315,6 +318,31 @@ class SolutionAnimationService:
         for warning in self._validator.lint_quality(animation):
             logger.warning("Animation quality (%s): %s", algorithm, warning)
 
+    @staticmethod
+    def _attach_display_code(animation: Dict[str, Any], code: str) -> None:
+        """Ship the stripped display code and remap beats onto it (#284).
+
+        Trace lines address the canonical solution with ``__trace(...)``
+        statements interleaved; the pane shows ``display_code_and_map``'s
+        stripped copy, so each beat's ``code_line`` is rewritten through
+        the original→display map. Lines outside the map (wrapper-level,
+        never displayable) are dropped — honest absence over a wrong
+        highlight. Beats without ``code_line`` are untouched.
+        """
+        display_code, line_map = display_code_and_map(code)
+        animation["animated_code"] = display_code
+        for beat in animation.get("steps") or []:
+            if not isinstance(beat, dict):
+                continue
+            line = beat.get("code_line")
+            if not isinstance(line, int) or isinstance(line, bool):
+                continue
+            mapped = line_map.get(line)
+            if mapped is None:
+                beat.pop("code_line", None)
+            else:
+                beat["code_line"] = mapped
+
     async def build_animation(
         self,
         question: Optional[Dict[str, Any]],
@@ -379,6 +407,10 @@ class SolutionAnimationService:
             events, entry, algorithm, fallback_title, target=kwargs.get("target")
         )
         if planner_animation is not None:
+            # #284: ship the instrument-free display code and remap every
+            # beat's line onto it before validation, so the validated
+            # payload is exactly what the viewer receives.
+            self._attach_display_code(planner_animation, entry["code"])
             # #285 boundary: consume transient pacing roles where beats are
             # finalized so an unfinalized planner path can never leak
             # `role` past validation into the renderer output. No-op when
@@ -402,6 +434,11 @@ class SolutionAnimationService:
             return None
 
         animation = self._enrich_fallback_animation(animation, entry, algorithm)
+        # #284: the family-compiler fallback is still build_animation's
+        # output — ship the same instrument-free display code the dual-pane
+        # viewer renders. Fallback beats carry no traced line, so their
+        # code_line stays absent (null in the payload).
+        self._attach_display_code(animation, entry["code"])
         validated, reason = self._validator.validate(animation)
         if validated is None:
             logger.warning(
@@ -506,10 +543,23 @@ class SolutionAnimationService:
                                 and steps[-1].action == "mark"
                                 and last_match_index == return_result
                             ):
-                                steps.pop()
-                            steps.append(
-                                AnimationStepSpec(action="found", index=return_result)
-                            )
+                                # The climax replaces the mark beat on the
+                                # same cell — inherit its line so the
+                                # highlight never drops at the peak (#284).
+                                replaced = steps.pop()
+                                steps.append(
+                                    AnimationStepSpec(
+                                        action="found",
+                                        index=return_result,
+                                        line=replaced.line,
+                                    )
+                                )
+                            else:
+                                steps.append(
+                                    AnimationStepSpec(
+                                        action="found", index=return_result
+                                    )
+                                )
                         elif return_result == -1 and target is not None:
                             steps.append(AnimationStepSpec(action="not_found"))
                     continue
@@ -570,6 +620,10 @@ class SolutionAnimationService:
                 elif e.kind == "pop":
                     if e.has("value"):
                         kwargs["values"] = [e.fields["value"]]
+                if e.line is not None:
+                    # #284: the beat this step becomes highlights the trace
+                    # call's own line in the dual-pane viewer.
+                    kwargs["line"] = e.line
                 steps.append(AnimationStepSpec(**kwargs))
             if algorithm == "binary_search":
                 # #243: generic pointer/compare/mark actions render as

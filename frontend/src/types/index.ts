@@ -111,6 +111,9 @@ export interface AnimationStep {
   narration: string;
   shapes?: SceneShape[];
   motion?: MotionOp[];
+  // 1-based line of `animated_code` this beat choreographs; absent when the
+  // beat has no traced line (#284).
+  code_line?: number | null;
   // Legacy typed-frame fields (kept optional for backward compatibility)
   operation?: AnimationOperation | null;
   index?: number | null;

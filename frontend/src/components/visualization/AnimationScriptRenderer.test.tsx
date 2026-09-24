@@ -181,6 +181,44 @@ describe("AnimationScriptRenderer", () => {
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
+  it("omits the code pane when the script carries no animated code", () => {
+    const generic: AnimationScript = {
+      data: { family: "array" },
+      steps: [
+        { narration: "Intro", shapes: [{ id: "cell_0", type: "rect", x: 0, y: 0, width: 88, height: 88 }], motion: [{ target: "cell_0", op: "appear", duration: 0.4 }] },
+        { narration: "Compare", shapes: [], motion: [{ target: "cell_0", op: "fill", to: "#1d4ed8", duration: 0.3 }] },
+        { narration: "Done", shapes: [], motion: [{ target: "cell_0", op: "scale", to: 1.0, duration: 0.25 }] },
+      ],
+    };
+    render(<AnimationScriptRenderer script={generic} />);
+    expect(screen.queryByTestId("code-pane")).toBeNull();
+    expect(document.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("renders the code pane beside the scene and syncs it to the beat", () => {
+    const generic: AnimationScript = {
+      data: { family: "array" },
+      animated_code: ["line one", "line two", "line three"].join("\n"),
+      steps: [
+        { narration: "Intro", code_line: 1, shapes: [{ id: "cell_0", type: "rect", x: 0, y: 0, width: 88, height: 88 }], motion: [{ target: "cell_0", op: "appear", duration: 0.4 }] },
+        { narration: "Compare", code_line: 2, shapes: [], motion: [{ target: "cell_0", op: "fill", to: "#1d4ed8", duration: 0.3 }] },
+        { narration: "Done", code_line: 3, shapes: [], motion: [{ target: "cell_0", op: "scale", to: 1.0, duration: 0.25 }] },
+      ],
+    };
+    render(<AnimationScriptRenderer script={generic} />);
+    expect(screen.getByTestId("code-pane")).toBeInTheDocument();
+    expect(document.querySelector("svg")).toBeInTheDocument();
+
+    let active = document.querySelectorAll("[data-active-line='true']");
+    expect(active).toHaveLength(1);
+    expect(active[0].textContent).toContain("line one");
+
+    fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+    active = document.querySelectorAll("[data-active-line='true']");
+    expect(active).toHaveLength(1);
+    expect(active[0].textContent).toContain("line two");
+  });
+
   it("renders a plain trace for unsupported animation types", () => {
     const unknown: AnimationScript = {
       type: "quantum_sort",

@@ -3,6 +3,7 @@
 import { ComponentType } from "react";
 import { AnimationScript, AnimationStep } from "@/types";
 import { AnimationPlayer } from "./AnimationPlayer";
+import { CodePane } from "./CodePane";
 import { GenericSceneRenderer } from "./GenericSceneRenderer";
 import { LinearSearchVisualizer } from "./LinearSearchVisualizer";
 import { CodeComparisonVisualizer } from "./CodeComparisonVisualizer";
@@ -59,9 +60,24 @@ export function AnimationScriptRenderer({ script }: { script: AnimationScript })
   if (steps.some(isGenericStep)) {
     return (
       <AnimationPlayer steps={steps}>
-        {(step, index) => (
-          <GenericSceneRenderer script={script} step={step} stepIndex={index} />
-        )}
+        {(step, index) => {
+          const scene = (
+            <GenericSceneRenderer
+              script={script}
+              step={step}
+              stepIndex={index}
+            />
+          );
+          if (!script.animated_code) return scene;
+          // Dual-pane (#284): scene beside the code line the beat
+          // choreographs. Without animated_code the layout is unchanged.
+          return (
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="min-w-0">{scene}</div>
+              <CodePane code={script.animated_code} activeLine={step.code_line} />
+            </div>
+          );
+        }}
       </AnimationPlayer>
     );
   }
