@@ -166,6 +166,19 @@ class MotionOp(BaseModel):
     duration: float = Field(0.3, gt=0, le=5, description="Tween duration in seconds")
 
 
+class SceneAnnotation(BaseModel):
+    """Causal callout ("math bubble") text carried by a decision beat (#287).
+
+    The beat shows this text near the active shape while it plays and hides
+    it again when the player advances — the validated dict contract the
+    validator enforces (exactly one non-empty ``text`` field, <=200 chars).
+    """
+
+    text: str = Field(
+        ..., max_length=200, description="Why the algorithm made this decision"
+    )
+
+
 class AnimationStep(BaseModel):
     """One frame of a declarative animation scene."""
 
@@ -179,6 +192,13 @@ class AnimationStep(BaseModel):
     )
     motion: List[MotionOp] = Field(
         default_factory=list, description="Tweens applied to shapes this step"
+    )
+    annotation: Optional[SceneAnnotation] = Field(
+        default=None,
+        description=(
+            "Causal intent ('math bubble') for this beat (#287); absent "
+            "when the beat carries no traced decision"
+        ),
     )
     code_line: Optional[int] = Field(
         default=None,

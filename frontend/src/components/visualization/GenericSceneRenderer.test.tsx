@@ -108,3 +108,61 @@ describe("GenericSceneRenderer", () => {
     expect(container.querySelector("svg")?.getAttribute("viewBox")).toBe("-538 -432 1536 864");
   });
 });
+
+describe("GenericSceneRenderer intent callout (#287)", () => {
+  const introBeat = {
+    narration: "Array [1,3,5,7,9]",
+    shapes: [
+      { id: "cell_0", type: "rect", x: -50, y: 0, width: 88, height: 88, fill: "#1e293b", stroke: "#334155" },
+      { id: "val_0", type: "text", x: -50, y: 0, text: "5", fontSize: 28, fill: "#e2e8f0" },
+    ],
+    motion: [{ target: "cell_0", op: "appear", duration: 0.4 }],
+    camera: { action: "reset" },
+  };
+  const decisionBeat = {
+    narration: "Inspect mid [2] = 5",
+    shapes: [],
+    motion: [{ target: "cell_0", op: "fill", to: "#1d4ed8", duration: 0.35 }],
+    camera: { action: "focus", element: "cell_0", zoom: 1.25 },
+    annotation: { text: "5 < 7 → search right →" },
+  };
+  const outroBeat = {
+    narration: "Complexity O(log n) · O(1)",
+    shapes: [],
+    motion: [{ target: "cell_0", op: "scale", to: 1.0, duration: 0.25 }],
+    badge: { time: "O(log n)", space: "O(1)" },
+  };
+  const scene = { ...script, steps: [introBeat, decisionBeat, outroBeat] };
+
+  it("renders the callout anchored near the active shape", () => {
+    render(
+      <GenericSceneRenderer script={scene as never} step={decisionBeat as never} stepIndex={1} />,
+    );
+    const bubble = screen.getByTestId("annotation-bubble");
+    expect(bubble).toBeInTheDocument();
+    expect(bubble.textContent).toContain("5 < 7 → search right →");
+    // Anchored 96 units above cell_0 (x=-50, y=0) — the beat's focus target.
+    expect(bubble.getAttribute("transform")).toBe("translate(-50 -96)");
+  });
+
+  it("disappears again on the next beat (appear, hold, disappear)", () => {
+    render(<GenericSceneRenderer script={scene as never} step={outroBeat as never} stepIndex={2} />);
+    expect(screen.queryByTestId("annotation-bubble")).toBeNull();
+  });
+
+  it("never renders a callout for beats without an annotation", () => {
+    render(<GenericSceneRenderer script={scene as never} step={introBeat as never} stepIndex={0} />);
+    expect(screen.queryByTestId("annotation-bubble")).toBeNull();
+  });
+
+  it("collapses callout motion under prefers-reduced-motion", () => {
+    const { container } = render(
+      <GenericSceneRenderer script={scene as never} step={decisionBeat as never} stepIndex={1} />,
+    );
+    const css = container.querySelector("style")?.textContent ?? "";
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.a1-annotation[\s\S]*animation:\s*none/,
+    );
+    expect(css).toMatch(/\.a1-annotation\s*\{[^}]*animation:\s*a1-annotation-in/);
+  });
+});

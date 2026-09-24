@@ -62,7 +62,7 @@ def linear_search(values, target):
     __trace("init", values=__json.loads(__json.dumps(list(values))), family="array")
     for i, v in enumerate(values):
         __trace("pointer", name="i", index=i)
-        __trace("compare", i=i)
+        __trace("compare", i=i, intent=(f"{v} = {target} → found" if v == target else f"{v} ≠ {target} → keep scanning"))
         if v == target:
             __trace("mark", i=i, state="match")
             return i
@@ -85,7 +85,7 @@ def binary_search(nums, target):
         __trace("pointer", name="low", index=low)
         __trace("pointer", name="high", index=high)
         __trace("pointer", name="mid", index=mid)
-        __trace("compare", i=mid)
+        __trace("compare", i=mid, intent=(f"{nums[mid]} = {target} → found" if nums[mid] == target else f"{nums[mid]} < {target} → search right →" if nums[mid] < target else f"{nums[mid]} > {target} → search left ←"))
         if nums[mid] == target:
             __trace("mark", i=mid, state="match")
             return mid
@@ -577,7 +577,7 @@ def two_sum_ii(numbers, target):
     while l < r:
         __trace("pointer", name="l", index=l)
         __trace("pointer", name="r", index=r)
-        __trace("compare", i=l, j=r)
+        __trace("compare", i=l, j=r, intent=(lambda s: f"sum {s} = {target} → match at [{l},{r}]" if s == target else f"sum {s} > {target} → move right pointer left" if s > target else f"sum {s} < {target} → move left pointer right")(numbers[l] + numbers[r]))
         s = numbers[l] + numbers[r]
         if s == target:
             __trace("mark", i=l, state="match")
@@ -758,10 +758,10 @@ def longest_substring_without_repeating(s):
     left = 0
     best = 0
     for right, ch in enumerate(s):
-        if ch in seen and seen[ch] >= left:
+        if shrunk := (ch in seen and seen[ch] >= left):
             left = seen[ch] + 1
         seen[ch] = right
-        __trace("window", l=left, r=right)
+        __trace("window", l=left, r=right, **({"intent": f"'{ch}' repeats at [{left - 1}] → window now [{left}..{right}]"} if shrunk else {}))
         __trace("pointer", name="r", index=right)
         best = max(best, right - left + 1)
     return best

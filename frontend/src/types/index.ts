@@ -111,6 +111,9 @@ export interface AnimationStep {
   narration: string;
   shapes?: SceneShape[];
   motion?: MotionOp[];
+  // Causal callout ("math bubble") for this beat (#287); absent on beats
+  // that carry no traced decision intent.
+  annotation?: { text: string } | null;
   // 1-based line of `animated_code` this beat choreographs; absent when the
   // beat has no traced line (#284).
   code_line?: number | null;

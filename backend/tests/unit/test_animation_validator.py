@@ -622,3 +622,57 @@ class TestAdditiveBeatKeys:
         assert validated["steps"][1]["code_line"] == 3
         assert validated["steps"][1]["role"] == "climax"
         assert validated["steps"][1]["annotation"] == {"text": "why"}
+
+
+class TestAnnotationBeats:
+    """#287: the causal callout contract is validated, not just permitted.
+
+    The beat-level ``annotation`` object ({"text": ...}) is the IR the
+    viewer renders as the intent bubble. A dedicated shape type was
+    rejected: a callout IS text, and a shape would burn validator shape
+    caps, duplicate the ``text`` primitive, and force lifecycle motion ops
+    into beats that already animate. The annotation rides the decision
+    beat instead — appears with the beat, holds while it plays,
+    disappears when the player advances.
+    """
+
+    @staticmethod
+    def _plain_steps():
+        first = _step(
+            shapes=[_shape(), _shape(id="b", x=120)],
+            motion=[_motion(), _motion(target="b")],
+        )
+        second = _step(motion=[_motion(op="move", to=[200, 0])])
+        third = _step(motion=[_motion(op="fill", to="#22c55e")])
+        return [first, second, third]
+
+    def _scene_with(self, annotation):
+        steps = self._plain_steps()
+        steps[1]["annotation"] = annotation
+        return _scene(steps)
+
+    def test_valid_annotation_object_survives_untouched(self):
+        annotation = {"text": "sum 9 = 9 → match at [0,1]"}
+        validated, reason = animation_validator.validate(self._scene_with(annotation))
+        assert validated is not None, reason
+        assert validated["steps"][1]["annotation"] == annotation
+
+    def test_beat_without_annotation_stays_without_the_key(self):
+        validated, reason = animation_validator.validate(_scene(self._plain_steps()))
+        assert validated is not None, reason
+        assert all("annotation" not in s for s in validated["steps"])
+
+    def test_malformed_annotation_is_rejected(self):
+        bad_values = [
+            "plain string",  # must be an object, not bare text
+            {"text": ""},  # empty callout says nothing
+            {"text": "   "},  # whitespace says nothing
+            {"text": 5},  # non-string text
+            {"text": "x" * 201},  # over the 200-char annotation cap
+            {"nope": "x"},  # missing text
+            {"text": "ok", "anchor": "cell_0"},  # unknown field
+        ]
+        for bad in bad_values:
+            validated, reason = animation_validator.validate(self._scene_with(bad))
+            assert validated is None, f"annotation {bad!r} must be rejected"
+            assert "annotation" in reason, f"reason must name annotation: {reason}"

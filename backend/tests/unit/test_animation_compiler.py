@@ -199,3 +199,26 @@ class TestCompileAnimation:
 
     def test_default_compiler_instance(self):
         assert isinstance(AnimationCompiler(), AnimationCompiler)
+
+    def test_intent_event_field_becomes_step_annotation(self):
+        # #287: the fallback compiler must not silently drop causal intent —
+        # the step an event becomes carries that event's annotation.
+        events = _trace(
+            "\n".join(
+                [
+                    '{"event":"init","values":[3,1]}',
+                    '{"event":"pointer","name":"i","index":0}',
+                    '{"event":"compare","i":0,"intent":"3 > 1 → keep scanning"}',
+                    '{"event":"swap","i":0,"j":1}',
+                    '{"event":"return","result":[1,3]}',
+                ]
+            )
+        )
+        animation = _validated(AnimationCompiler().compile(events, title="Swap"))
+        annotated = [s for s in animation["steps"] if "annotation" in s]
+        assert len(annotated) == 1
+        assert annotated[0]["annotation"] == {"text": "3 > 1 → keep scanning"}
+
+    def test_events_without_intent_add_no_annotation_key(self):
+        animation = _validated(AnimationCompiler().compile(_bubble_trace(), title="B"))
+        assert all("annotation" not in s for s in animation["steps"])

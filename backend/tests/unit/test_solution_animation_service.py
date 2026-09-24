@@ -621,3 +621,138 @@ class TestCodeLineDisplaySync:
         assert animation is not None
         assert animation.get("animated_code")
         assert all("code_line" not in b for b in animation["steps"])
+
+
+class TestIntentAnnotations:
+    """#287: a real ``intent`` field on a decision event reaches the
+    validated payload as the beat's ``annotation`` — never invented,
+    never dropped."""
+
+    BINARY_STDOUT_INTENT = "\n".join(
+        [
+            '{"event":"init","values":[1,3,5,7,9],"family":"array"}',
+            '{"event":"pointer","name":"low","index":0}',
+            '{"event":"pointer","name":"high","index":4}',
+            '{"event":"pointer","name":"mid","index":2}',
+            '{"event":"compare","i":2,"intent":"5 < 7 → search right →"}',
+            '{"event":"pointer","name":"low","index":3}',
+            '{"event":"pointer","name":"high","index":4}',
+            '{"event":"pointer","name":"mid","index":3}',
+            '{"event":"compare","i":3,"intent":"7 = 7 → found"}',
+            '{"event":"mark","i":3,"state":"match"}',
+            '{"event":"return","result":3}',
+        ]
+    )
+
+    LINEAR_STDOUT_INTENT = "\n".join(
+        [
+            '{"event":"init","values":[4,1,7],"family":"array"}',
+            '{"event":"pointer","name":"i","index":0}',
+            '{"event":"compare","i":0,"intent":"4 ≠ 7 → keep scanning"}',
+            '{"event":"pointer","name":"i","index":1}',
+            '{"event":"compare","i":1,"intent":"1 ≠ 7 → keep scanning"}',
+            '{"event":"pointer","name":"i","index":2}',
+            '{"event":"compare","i":2,"intent":"7 = 7 → found"}',
+            '{"event":"mark","i":2,"state":"match"}',
+            '{"event":"return","result":2}',
+        ]
+    )
+
+    @staticmethod
+    def _annotations(animation):
+        return [
+            b["annotation"]["text"]
+            for b in animation["steps"]
+            if isinstance(b.get("annotation"), dict)
+        ]
+
+    @staticmethod
+    def _binary_question():
+        return {
+            "id": "binary-search",
+            "title": "Binary Search",
+            "category": "Binary Search",
+            "description": "Find the target with binary search.",
+            "examples": [{"input": "nums = [1,3,5,7,9], target = 7", "output": "3"}],
+        }
+
+    @staticmethod
+    def _linear_question():
+        return {
+            "id": "linear-search",
+            "title": "Linear Search",
+            "category": "Array",
+            "description": "Find the target with linear search.",
+            "examples": [{"input": "values = [4,1,7], target = 7", "output": "2"}],
+        }
+
+    @pytest.mark.asyncio
+    async def test_binary_search_inspect_beats_carry_intent(self):
+        executor = FakeExecutor(_ok_result(stdout=self.BINARY_STDOUT_INTENT))
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(self._binary_question())
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+        assert self._annotations(animation) == [
+            "5 < 7 → search right →",
+            "7 = 7 → found",
+        ]
+        # The intent rides the beat whose narration shows the same decision.
+        tagged = next(
+            b
+            for b in animation["steps"]
+            if "annotation" in b and "Inspect mid [2]" in b["narration"]
+        )
+        assert tagged["annotation"]["text"] == "5 < 7 → search right →"
+        # Intro/outro are synthesized — they carry no causal claim.
+        assert "annotation" not in animation["steps"][0]
+        assert "annotation" not in animation["steps"][-1]
+
+    @pytest.mark.asyncio
+    async def test_linear_search_decision_beats_carry_intent(self):
+        executor = FakeExecutor(_ok_result(stdout=self.LINEAR_STDOUT_INTENT))
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(self._linear_question())
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+        assert self._annotations(animation) == [
+            "4 ≠ 7 → keep scanning",
+            "1 ≠ 7 → keep scanning",
+            "7 = 7 → found",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_traces_without_intent_stay_unannotated(self):
+        # The plain fixture carries no intent — no beat may invent one
+        # (tracker #240 defect 4: no fake causality).
+        executor = FakeExecutor(_ok_result())
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(_question())
+        assert animation is not None
+        assert self._annotations(animation) == []
+
+    @pytest.mark.asyncio
+    async def test_found_climax_inherits_the_popped_marks_annotation(self):
+        # The found climax replaces the mark(match) step on the same cell —
+        # like the traced line (#284), the mark's causal intent must ride
+        # the replacement so the "why" never drops at the peak.
+        stdout = "\n".join(
+            [
+                '{"event":"init","values":[4,1,7],"family":"array"}',
+                '{"event":"pointer","name":"i","index":2}',
+                '{"event":"mark","i":2,"state":"match","intent":"7 = 7 → found"}',
+                '{"event":"return","result":2}',
+            ]
+        )
+        executor = FakeExecutor(_ok_result(stdout=stdout))
+        service = SolutionAnimationService(executor=executor)
+        animation = await service.build_animation(self._linear_question())
+        assert animation is not None
+        validated, reason = AnimationValidator().validate(animation)
+        assert validated is not None, reason
+        climax = next(
+            b for b in animation["steps"] if "Found 7" in (b.get("narration") or "")
+        )
+        assert climax["annotation"] == {"text": "7 = 7 → found"}
