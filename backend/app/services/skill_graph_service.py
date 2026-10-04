@@ -263,14 +263,33 @@ class SkillGraphService:
         ]
         return SkillGraphResponse(skills=roadmap_skills, edges=roadmap_edges)
 
+    async def _solved_question_ids(self, user_id: str) -> set[str]:
+        """Question ids the user has already passed (Issue #297).
+
+        Empty when no submission repository is wired (onboarding previews),
+        which keeps the pre-existing behaviour for those callers.
+        """
+        if self._submission_repository is None:
+            return set()
+        return set(await self._submission_repository.list_solved_question_ids(user_id))
+
     async def get_recommendations(
         self,
         user_id: str,
         now: Optional[datetime] = None,
         limit: int = 5,
         include_supporting: bool = False,
+        solved_question_ids: Optional[set[str]] = None,
     ) -> List[Recommendation]:
+        """Rank skills for the user; questions exclude solved ids (#297).
+
+        ``solved_question_ids`` is optional so callers that already loaded
+        the set (``get_recommended_questions``) avoid a second query; when
+        omitted it is loaded from the submission repository.
+        """
         now = now or datetime.now(timezone.utc)
+        if solved_question_ids is None:
+            solved_question_ids = await self._solved_question_ids(user_id)
         skills_by_slug, question_skills_by_q = await self._load_taxonomy()
         if not include_supporting:
             supporting = set(SUPPORTING_SKILL_SLUGS)
@@ -293,6 +312,7 @@ class SkillGraphService:
             question_by_skill=question_by_skill,
             now=now,
             limit=limit,
+            solved_question_ids=solved_question_ids,
         )
 
     async def get_enrolled_programme_starters(
@@ -353,8 +373,18 @@ class SkillGraphService:
         curated DEFAULT_COLD_START_QUESTION_IDS so whats-next is never empty.
         Both fallbacks resolve via ``question_loader`` and skip unresolvable
         IDs — the response never fabricates practice data.
+
+        Solved exclusion (Issue #297): the user's passed question IDs are
+        loaded once here, passed into the skill recs, and applied to both
+        cold-start fallbacks, so a solved question is never re-recommended.
         """
-        recs = await self.get_recommendations(user_id, now=now, limit=limit)
+        solved_question_ids = await self._solved_question_ids(user_id)
+        recs = await self.get_recommendations(
+            user_id,
+            now=now,
+            limit=limit,
+            solved_question_ids=solved_question_ids,
+        )
         results: List[RecommendedQuestion] = []
         for rec in recs:
             question_id = rec.suggested_question_id
@@ -386,7 +416,13 @@ class SkillGraphService:
             states = await self.repository.get_states(user_id)
             if not states:
                 starter_ids = cold_start_order(
-                    await self.get_enrolled_programme_starters(user_id, limit=limit),
+                    [
+                        qid
+                        for qid in await self.get_enrolled_programme_starters(
+                            user_id, limit=limit
+                        )
+                        if qid not in solved_question_ids
+                    ],
                     limit=limit,
                 )
                 results.extend(
@@ -400,7 +436,11 @@ class SkillGraphService:
                 )
                 if not results:
                     default_ids = cold_start_order(
-                        list(DEFAULT_COLD_START_QUESTION_IDS),
+                        [
+                            qid
+                            for qid in DEFAULT_COLD_START_QUESTION_IDS
+                            if qid not in solved_question_ids
+                        ],
                         limit=limit,
                     )
                     results.extend(
