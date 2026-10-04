@@ -46,6 +46,13 @@ class FakeSubmissions:
     async def list_by_user(self, user_id, limit=50):
         return [s for s in self._subs if s.user_id == user_id][:limit]
 
+    async def list_solved_question_ids(self, user_id):
+        return {
+            s.question_id
+            for s in self._subs
+            if s.user_id == user_id and s.passed and s.question_id
+        }
+
 
 def _sub(user: str, question_id: str, passed: bool, seq: int = 0) -> Submission:
     return Submission(

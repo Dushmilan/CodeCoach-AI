@@ -250,6 +250,7 @@ def recommend(
     question_by_skill: Dict[str, List[str]],
     now: datetime,
     limit: int = 5,
+    solved_question_ids: Optional[set[str]] = None,
 ) -> List[Recommendation]:
     """Rank recommended skills for a user.
 
@@ -260,6 +261,9 @@ def recommend(
        learning skills.
     3. New skills (no evidence) rank lowest among candidates.
     4. Recommendations carry an explanation and, when available, a question.
+    5. Solved questions are never re-suggested (Issue #297): a skill whose
+       candidates are all solved carries no question, so the caller can fill
+       the slot with other content instead of repeating a solved problem.
     """
     ordered = []
     for slug in skill_names:
@@ -301,6 +305,7 @@ def recommend(
     ordered.sort(key=lambda item: rank[item[1]], reverse=True)
 
     results: List[Recommendation] = []
+    solved = solved_question_ids or set()
     for slug, reason in ordered:
         if len(results) >= limit:
             break
@@ -308,7 +313,11 @@ def recommend(
             continue
         name = skill_names.get(slug, slug)
         candidates = question_by_skill.get(slug) or []
-        question: Optional[str] = candidates[0] if candidates else None
+        # Solved ids are skipped (Issue #297); first unsolved wins, and an
+        # all-solved skill yields None so the slot falls through.
+        question: Optional[str] = next(
+            (candidate for candidate in candidates if candidate not in solved), None
+        )
         results.append(
             Recommendation(
                 skill_slug=slug,
