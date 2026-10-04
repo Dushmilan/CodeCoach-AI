@@ -1,4 +1,6 @@
-fastapi>=0.115,<1
+# FastAPI bounded to <0.142: 0.142 adds native OTel spans that overlap our
+# middleware span and bypass its never-break-the-request tracer guard.
+fastapi>=0.115,<0.142
 uvicorn[standard]>=0.24,<1
 httpx>=0.28,<1
 python-dotenv==1.0.0
@@ -8,7 +10,9 @@ pydantic-settings>=2.0,<3
 python-multipart==0.0.6
 python-jose[cryptography]==3.3.0
 bcrypt==4.0.1
-sqlalchemy[asyncio]>=2.0,<3
+# SQLAlchemy bounded to <2.1: 2.1 removes sqlalchemy.ext.mypy, which mypy.ini
+# loads as a plugin, and runtime is only validated against the 2.0.x line.
+sqlalchemy[asyncio]>=2.0,<2.1
 alembic>=1.13,<2
 asyncpg>=0.29,<1
 psycopg[binary]>=3.1,<4
