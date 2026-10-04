@@ -1,4 +1,6 @@
-fastapi>=0.115,<1
+# FastAPI bounded to <0.142: 0.142 adds native OTel spans that overlap our
+# middleware span and bypass its never-break-the-request tracer guard.
+fastapi>=0.115,<0.142
 uvicorn[standard]>=0.24,<1
 httpx>=0.28,<1
 python-dotenv==1.0.0
