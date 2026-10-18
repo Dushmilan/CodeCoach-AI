@@ -344,6 +344,12 @@ class SkillGraphService:
         ``None``). Recommendations whose question cannot be resolved are
         skipped — the response never fabricates practice data.
 
+        Issue #317: different skills can legitimately map to the same
+        question (e.g. ``trees`` and ``recursion`` both map to
+        ``invert-binary-tree``); the first skill in ranked order keeps the
+        card and later duplicates by resolved question id are skipped, so
+        the panel never shows the same problem twice.
+
         Cold-start (Issue #186): when skill-graph recs resolve to nothing and
         the user has no skill states, fall back to the enrolled programme's
         starter questions in deterministic programme order.
@@ -356,13 +362,15 @@ class SkillGraphService:
         """
         recs = await self.get_recommendations(user_id, now=now, limit=limit)
         results: List[RecommendedQuestion] = []
+        seen_question_ids: set[str] = set()
         for rec in recs:
             question_id = rec.suggested_question_id
-            if not question_id:
+            if not question_id or question_id in seen_question_ids:
                 continue
             question = await question_loader(question_id)
             if question is None:
                 continue
+            seen_question_ids.add(question.id)
             results.append(
                 RecommendedQuestion(
                     skill_slug=rec.skill_slug,

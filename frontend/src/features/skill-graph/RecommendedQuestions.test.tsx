@@ -130,6 +130,36 @@ describe('RecommendedQuestions', () => {
     expect(screen.getByText(/no recommendations yet/i)).toBeInTheDocument();
   });
 
+  it('never logs duplicate-key warnings when two skills map the same question (issue #317)', () => {
+    const shared = sampleRecommendation.question;
+    const recursionRec: RecommendedQuestion = {
+      ...sampleRecommendation,
+      skill_slug: 'recursion',
+      skill_name: 'Recursion',
+      reason_text: 'Recursion needs practice to become a strength.',
+      question: shared,
+    };
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      setState({ recommendations: [sampleRecommendation, recursionRec] });
+      render(<RecommendedQuestions />);
+      expect(screen.getAllByText('Two Sum')).toHaveLength(2);
+      const keyWarning = [...consoleError.mock.calls, ...consoleWarn.mock.calls].some(
+        (args) =>
+          args.some(
+            (a) =>
+              typeof a === 'string' &&
+              a.includes('children with the same key'),
+          ),
+      );
+      expect(keyWarning).toBe(false);
+    } finally {
+      consoleError.mockRestore();
+      consoleWarn.mockRestore();
+    }
+  });
+
   it('shows an error state with a retry button that reloads', async () => {
     const user = userEvent.setup();
     setState({ error: 'Server error', recommendations: [] });
