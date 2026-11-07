@@ -3,8 +3,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package files. `.npmrc` (legacy-peer-deps) must be present for the
+# install below: the image resolves from package.json alone, and npm's peer
+# auto-install crashes on the current transitive graph (npm/cli#9787).
+COPY package.json .npmrc ./
 
 # Install dependencies using npm with BuildKit cache (saves data on rebuilds)
 RUN --mount=type=cache,target=/root/.npm npm install
