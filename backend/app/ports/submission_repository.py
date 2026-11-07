@@ -20,6 +20,16 @@ class SubmissionRepository(ABC):
     ) -> Sequence[Submission]:
         """Return the user's most recent submissions, newest first."""
 
+    @abstractmethod
+    async def list_solved_question_ids(self, user_id: str) -> set[str]:
+        """Return every question id the user has passed at least once.
+
+        Exact and uncapped — the whats-next solved exclusion (Issue #297)
+        must never resurrect an old solved question, so the SQL
+        implementation uses a DISTINCT query rather than a recent-submissions
+        window.
+        """
+
     async def list_by_users(
         self, user_ids: Sequence[str], *, limit: int = 1000
     ) -> dict[str, Sequence[Submission]]:

@@ -161,6 +161,23 @@ class SqlSubmissionRepository(SubmissionRepository):
         )
         return [self._orm_to_schema(o) for o in result.scalars().all()]
 
+    async def list_solved_question_ids(self, user_id: str) -> set[str]:
+        """Distinct passed question ids for one user (Issue #297).
+
+        Bounded by the bank size, not the submission history: a user's
+        solved set must be complete so recommendations never repeat a
+        solved question.
+        """
+        result = await self.session.execute(
+            select(SubmissionORM.question_id)
+            .where(
+                SubmissionORM.user_id == user_id,
+                SubmissionORM.passed.is_(True),
+            )
+            .distinct()
+        )
+        return set(result.scalars().all())
+
     async def list_by_users(
         self, user_ids: Sequence[str], *, limit: int = 1000
     ) -> dict[str, Sequence[Submission]]:
