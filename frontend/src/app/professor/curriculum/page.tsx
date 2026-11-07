@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getProfessorCourses, type ProfessorCourse } from "@/features/instructor/demo";
 import { FetchClient, getErrorDisplayMessage } from "@/lib/fetch-client";
 import { Button } from "@/components/ui/button";
@@ -19,14 +19,44 @@ export default function ProfessorCurriculumPage() {
     getProfessorCourses().then(setCourses).catch(() => setCourses([]));
   }, []);
 
+  // POST /api/professor/courses requires the full CourseCreate schema
+  // (id, title, description, language, order). Issue #296: the form used
+  // to send only the title and every create failed 422. The id is the
+  // title slugified into the backend's safe entity-ID alphabet; order
+  // slots after the highest existing order.
+  const nextOrder = useMemo(
+    () =>
+      courses.reduce((max, c) => (typeof c.order === "number" ? Math.max(max, c.order) : max), 0) + 1,
+    [courses],
+  );
+  const slugifiedId = useMemo(
+    () =>
+      title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 100),
+    [title],
+  );
+
   async function createCourse(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!slugifiedId) {
+      setError("Course title must contain at least one letter or digit");
+      return;
+    }
+    if (courses.some((c) => c.id === slugifiedId)) {
+      setError(`A course with id "${slugifiedId}" already exists: pick a different title`);
+      return;
+    }
     try {
       const created = await client.post<ProfessorCourse>("/api/professor/courses", {
+        id: slugifiedId,
         title,
         description: "",
         language: "python",
+        order: nextOrder,
       });
       setCourses((prev) => [...prev, created]);
       setTitle("");
