@@ -115,7 +115,7 @@ function CardGrid({ recommendations }: { recommendations: RecommendedQuestion[] 
   return (
     <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
       {recommendations.map((rec) => (
-        <li key={rec.question.id}>
+        <li key={`${rec.skill_slug}:${rec.question.id}`}>
           <Link
             href={`/problems/${rec.question.id}`}
             className="group flex h-full flex-col rounded-2xl border border-white/[0.04] bg-white/[0.01] p-4 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-white/[0.10] hover:bg-white/[0.04]"
